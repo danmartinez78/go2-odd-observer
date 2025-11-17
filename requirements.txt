@@ -1,0 +1,37 @@
+# Core dependencies
+numpy>=1.24.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+scipy>=1.10.0
+
+# ROS2 processing
+# Note: Install ROS2 separately via system packages
+# rosbag2_py is part of ROS2 distribution
+
+# Image processing
+Pillow>=10.0.0
+opencv-python>=4.8.0
+
+# Point cloud processing
+open3d>=0.17.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Jupyter notebooks
+jupyter>=1.0.0
+ipykernel>=6.25.0
+ipywidgets>=8.1.0
+
+# Google Cloud / Gemini (for agent notebooks)
+google-generativeai>=0.3.0
+google-cloud-aiplatform>=1.38.0
+
+# Utilities
+tqdm>=4.66.0
+python-dotenv>=1.0.0

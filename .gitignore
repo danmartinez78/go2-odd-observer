@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Data directories (exclude all data except manifest template)
+data/raw_rosbags/
+data/processed/runs/
+# Keep the manifest CSV structure but not actual data
+!data/processed/manifest.csv
+
+# ROS bags (large binary files)
+*.db3
+*.mcap
+*.bag
+*.bag.active
+
+# Processed data files (can be regenerated)
+*.json
+*.png
+*.csv
+# But allow CSV files in root and tests
+!*.csv
+!tests/**/*.csv
+!scripts/**/*.csv
+# Re-exclude data CSVs specifically
+data/**/*.csv
+!data/processed/manifest.csv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
