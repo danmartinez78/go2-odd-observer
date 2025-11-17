@@ -1,8 +1,2 @@
-# Data manifest for processed runs
-# This CSV tracks metadata for each scenario/run
-
-scenario_id,bag_filename,is_sim,notes
-# Example entries:
-# run_001,go2_real_corridor_01.db3,false,"Office corridor, evening lighting"
-# run_002,go2_sim_flat_01.db3,true,"Basic simulation, flat ground"
-# run_003,go2_real_outdoor_01.db3,false,"Outdoor grassy area, afternoon"
+run_id,is_sim,environment,notes
+demo_run,True,demo,Synthetic demo data for testing workflow

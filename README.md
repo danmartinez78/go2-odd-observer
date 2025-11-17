@@ -105,9 +105,13 @@ go2-odd-observer/
 │   └── images/                # Example outputs for documentation
 ├── scripts/
 │   ├── extract_windows.py     # ROS2 bag → multi-modal time windows
+│   ├── generate_demo_data.py  # Generate synthetic demo data
 │   ├── demo_pipeline_local.py # Local testing with fake agents
 │   ├── render_bev.py          # Standalone BEV renderer (deprecated)
 │   └── utils_ros.py           # ROS2 utilities
+├── notebooks/
+│   ├── odd_cod_workflow.ipynb # Complete analysis workflow notebook
+│   └── README.md              # Notebook documentation
 ├── odd_cod/
 │   ├── __init__.py
 │   ├── odd_spec_schema.py     # ODD schema definitions
@@ -144,6 +148,20 @@ cd go2-odd-observer
 # VS Code will automatically build the ROS2 Humble container
 # All dependencies (ROS2, Python packages) are pre-configured
 ```
+
+### Quick Start with Jupyter Notebook
+
+The fastest way to understand the complete workflow is through the interactive Jupyter notebook:
+
+```bash
+# Generate demo data
+python3 scripts/generate_demo_data.py
+
+# Start Jupyter and open the notebook
+jupyter notebook notebooks/odd_cod_workflow.ipynb
+```
+
+See [notebooks/README.md](notebooks/README.md) for detailed instructions, including how to use your own ROS2 bag data.
 
 ### Basic Workflow
 

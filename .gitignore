@@ -40,6 +40,7 @@ env/
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb_checkpoints/
+*_executed.ipynb
 
 # Data directories (exclude all data except manifest template)
 data/raw_rosbags/
