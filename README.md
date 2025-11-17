@@ -75,10 +75,15 @@ go2-odd-observer/
 │       │   ├── run_001/
 │       │   │   ├── motion_run_001_w000.json
 │       │   │   ├── cam_run_001_w000.png
-│       │   │   ├── bev_run_001_w000.png
+│       │   │   ├── bev_occupancy_run_001_w000.png
+│       │   │   ├── bev_height_run_001_w000.png
+│       │   │   ├── bev_density_run_001_w000.png
+│       │   │   ├── bev_roughness_run_001_w000.png
 │       │   │   └── index_run_001.csv
 │       │   └── run_002/
 │       └── manifest.csv       # Run metadata (sim/real tags)
+├── docs/
+│   └── images/                # Example outputs for documentation
 ├── scripts/
 │   ├── extract_windows.py     # ROS bag → time windows
 │   ├── render_bev.py          # LiDAR → Bird's Eye View images
@@ -138,10 +143,14 @@ python scripts/extract_windows.py \
 ```
 
 This generates:
-- Motion data (JSON): velocity, IMU, odometry
-- Camera frames (PNG): RGB snapshots
-- LiDAR BEV images (PNG): Bird's Eye View point cloud projections
-- Index CSV: Window metadata and file paths
+- **Motion data (JSON)**: Velocity, IMU (roll/pitch/yaw), odometry, accelerations
+- **Camera frames (PNG)**: RGB snapshots at 1280x720
+- **Multi-channel LiDAR BEV (4 PNGs per window)**:
+  - `bev_occupancy_*.png`: Binary presence grid
+  - `bev_height_*.png`: Elevation map (±2m range)
+  - `bev_density_*.png`: Measurement density/confidence
+  - `bev_roughness_*.png`: Terrain roughness (height variance)
+- **Index CSV**: Window metadata with paths to all modalities
 
 #### 2. Define Your ODD
 
@@ -199,10 +208,37 @@ Each time window captures a multi-modal snapshot:
 ```
 
 ### Camera Image (`cam_run_XXX_wNNN.png`)
-RGB snapshot from `/robot0/front_cam/rgb`
+RGB snapshot from `/robot0/front_cam/rgb` at 1280x720 resolution.
 
-### LiDAR BEV (`bev_run_XXX_wNNN.png`)
-Bird's Eye View projection of `/robot0/point_cloud2_L1`
+![Example Camera Frame](docs/images/example_camera.png)
+
+*Note: Simulation rosbags may contain placeholder camera data. Real robot deployments capture actual RGB frames.*
+
+### Multi-Channel LiDAR BEV Images
+
+The system generates **4 separate Bird's Eye View (BEV) feature images** per window, each encoding different terrain characteristics from the LiDAR point cloud:
+
+#### 1. Occupancy (`bev_occupancy_run_XXX_wNNN.png`)
+Binary presence grid showing where measurements exist (400x400, 5cm/pixel, ±10m range).
+
+![BEV Occupancy](docs/images/example_bev_occupancy.png)
+
+#### 2. Height (`bev_height_run_XXX_wNNN.png`)
+Average elevation per cell, normalized from ±2m range to 0-255 grayscale values.
+
+![BEV Height](docs/images/example_bev_height.png)
+
+#### 3. Density (`bev_density_run_XXX_wNNN.png`)
+Point cloud measurement density per cell, indicating measurement confidence/concentration.
+
+![BEV Density](docs/images/example_bev_density.png)
+
+#### 4. Roughness (`bev_roughness_run_XXX_wNNN.png`)
+Terrain roughness computed from height variance (std dev) within each cell.
+
+![BEV Roughness](docs/images/example_bev_roughness.png)
+
+**Multi-Channel BEV Design**: Separate feature images enable multi-modal vision models (e.g., Google Gemini 2.5 Flash) to independently reason about different terrain characteristics through multi-image prompting, improving terrain classification accuracy over single-channel encodings.
 
 ---
 
@@ -358,7 +394,9 @@ Generate human-readable summaries and visualizations
 
 ### Phase 1: Local Preprocessing ✅
 - [x] Window extraction from ROS bags
-- [x] BEV rendering
+- [x] Multi-channel BEV rendering (occupancy, height, density, roughness)
+- [x] ROS2 message deserialization (Image, PointCloud2, Odometry, IMU)
+- [x] Time-synchronized multi-modal data extraction
 - [x] Manifest management
 
 ### Phase 2: Core Python Library ✅

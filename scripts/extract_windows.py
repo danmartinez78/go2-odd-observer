@@ -158,7 +158,10 @@ class WindowExtractor:
                 "end_time": window_end,
                 "motion_path": f"motion_{self.run_id}_w{i:03d}.json",
                 "cam_image_path": f"cam_{self.run_id}_w{i:03d}.png",
-                "bev_image_path": f"bev_{self.run_id}_w{i:03d}.png",
+                "bev_occupancy_path": f"bev_occupancy_{self.run_id}_w{i:03d}.png",
+                "bev_height_path": f"bev_height_{self.run_id}_w{i:03d}.png",
+                "bev_density_path": f"bev_density_{self.run_id}_w{i:03d}.png",
+                "bev_roughness_path": f"bev_roughness_{self.run_id}_w{i:03d}.png",
             }
 
             index_data.append(window_info)
@@ -296,24 +299,38 @@ class WindowExtractor:
         cv2.imwrite(str(cam_path), cam_image)
 
     def _extract_lidar_bev(self, window_id: int, center_time: float):
-        """Extract and render LiDAR bird's-eye-view image."""
+        """Extract and render multi-channel LiDAR bird's-eye-view images."""
         closest = self._get_closest_message(self.topics['lidar'], center_time)
 
         if closest is None or not CV2_AVAILABLE:
-            # Create placeholder gray image
-            bev_image = np.ones((100, 100), dtype=np.uint8) * 200
+            # Create placeholder gray images
+            empty = np.zeros((400, 400), dtype=np.uint8)
+            bev_features = {
+                'occupancy': empty.copy(),
+                'height': empty.copy(),
+                'density': empty.copy(),
+                'roughness': empty.copy(),
+            }
         else:
             _, pc_msg = closest
-            # Render BEV from point cloud
+            # Render multi-channel BEV from point cloud
             try:
-                bev_image = self._render_bev_from_pointcloud(pc_msg)
+                bev_features = self._render_bev_from_pointcloud(pc_msg)
             except Exception as e:
                 print(f"Warning: Failed to render BEV: {e}")
-                bev_image = np.ones((100, 100), dtype=np.uint8) * 200
+                empty = np.zeros((400, 400), dtype=np.uint8)
+                bev_features = {
+                    'occupancy': empty.copy(),
+                    'height': empty.copy(),
+                    'density': empty.copy(),
+                    'roughness': empty.copy(),
+                }
 
-        # Save as PNG
-        bev_path = self.output_dir / f"bev_{self.run_id}_w{window_id:03d}.png"
-        cv2.imwrite(str(bev_path), bev_image)
+        # Save each feature as separate PNG
+        for feature_name, feature_img in bev_features.items():
+            bev_path = self.output_dir / \
+                f"bev_{feature_name}_{self.run_id}_w{window_id:03d}.png"
+            cv2.imwrite(str(bev_path), feature_img)
 
     def _quaternion_to_euler(self, x: float, y: float, z: float, w: float) -> Tuple[float, float, float]:
         """Convert quaternion to Euler angles (roll, pitch, yaw)."""
@@ -336,33 +353,47 @@ class WindowExtractor:
 
         return roll, pitch, yaw
 
-    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2) -> np.ndarray:
-        """Render a bird's-eye-view image from a point cloud."""
+    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2) -> Dict[str, np.ndarray]:
+        """
+        Render multi-channel bird's-eye-view images from a point cloud.
+
+        Returns:
+            Dictionary with keys: 'occupancy', 'height', 'density', 'roughness'
+            Each value is a 400x400 uint8 numpy array
+        """
         # Extract points from PointCloud2 message
         points = []
         for point in pc2.read_points(pc_msg, field_names=("x", "y", "z"), skip_nans=True):
             points.append(point)
 
-        if not points:
-            return np.ones((400, 400), dtype=np.uint8) * 200
-
-        points = np.array(points)
-
         # BEV parameters
         bev_size = 400
         meters_per_pixel = 0.05  # 5cm per pixel
-        bev_range = (bev_size * meters_per_pixel) / 2  # Range in meters
 
-        # Create empty BEV image
-        bev = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        if not points:
+            # Return empty feature maps
+            empty = np.zeros((bev_size, bev_size), dtype=np.uint8)
+            return {
+                'occupancy': empty.copy(),
+                'height': empty.copy(),
+                'density': empty.copy(),
+                'roughness': empty.copy(),
+            }
 
-        # Project points to BEV
+        points = np.array(points)
+
+        # Create accumulator grids for feature calculation
+        occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        height_grid = np.full((bev_size, bev_size), np.nan, dtype=np.float32)
+        height_sum = np.zeros((bev_size, bev_size), dtype=np.float32)
+        height_sq_sum = np.zeros((bev_size, bev_size), dtype=np.float32)
+        point_count = np.zeros((bev_size, bev_size), dtype=np.int32)
+        height_min = np.full((bev_size, bev_size), np.inf, dtype=np.float32)
+        height_max = np.full((bev_size, bev_size), -np.inf, dtype=np.float32)
+
+        # Project points to BEV and accumulate statistics
         for point in points:
             x, y, z = point
-
-            # Filter by height (only ground plane ±1m)
-            if abs(z) > 1.0:
-                continue
 
             # Convert to pixel coordinates (x forward, y left)
             pixel_x = int((x / meters_per_pixel) + bev_size / 2)
@@ -370,12 +401,58 @@ class WindowExtractor:
 
             # Check bounds
             if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
-                bev[pixel_y, pixel_x] = 255
+                # Occupancy: mark as occupied
+                occupancy_grid[pixel_y, pixel_x] = 255
 
-        # Apply slight blur to make points more visible
-        bev = cv2.GaussianBlur(bev, (3, 3), 0)
+                # Accumulate for height statistics
+                point_count[pixel_y, pixel_x] += 1
+                height_sum[pixel_y, pixel_x] += z
+                height_sq_sum[pixel_y, pixel_x] += z * z
+                height_min[pixel_y, pixel_x] = min(
+                    height_min[pixel_y, pixel_x], z)
+                height_max[pixel_y, pixel_x] = max(
+                    height_max[pixel_y, pixel_x], z)
 
-        return bev
+        # Calculate derived features
+
+        # 1. Height map (average elevation)
+        mask = point_count > 0
+        height_grid[mask] = height_sum[mask] / point_count[mask]
+        # Normalize to 0-255 range (assuming ±2m range)
+        height_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        height_img[mask] = np.clip(
+            (height_grid[mask] + 2.0) * 63.75, 0, 255).astype(np.uint8)
+
+        # 2. Density map (number of points per cell)
+        density_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        max_count = point_count.max() if point_count.max() > 0 else 1
+        density_img = np.clip((point_count / max_count)
+                              * 255, 0, 255).astype(np.uint8)
+
+        # 3. Roughness map (height variance within cell)
+        roughness_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        # Calculate variance: Var(X) = E[X²] - E[X]²
+        variance = np.zeros((bev_size, bev_size), dtype=np.float32)
+        variance[mask] = (height_sq_sum[mask] / point_count[mask]) - \
+            (height_sum[mask] / point_count[mask]) ** 2
+        # Ensure non-negative due to floating point errors
+        variance = np.maximum(variance, 0)
+        std_dev = np.sqrt(variance)
+        # Normalize: 0.5m std = 255 (very rough)
+        roughness_img = np.clip(std_dev * 510, 0, 255).astype(np.uint8)
+
+        # Apply slight blur to make features more visible
+        occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
+        height_img = cv2.GaussianBlur(height_img, (3, 3), 0)
+        density_img = cv2.GaussianBlur(density_img, (3, 3), 0)
+        roughness_img = cv2.GaussianBlur(roughness_img, (3, 3), 0)
+
+        return {
+            'occupancy': occupancy_grid,
+            'height': height_img,
+            'density': density_img,
+            'roughness': roughness_img,
+        }
 
     def _create_placeholder_window(
         self,
