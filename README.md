@@ -2,7 +2,21 @@
 
 > **Operational Design Domain (ODD) and Condition of Deployment (COD) Analysis for Unitree Go2 Robot**
 
+**Kaggle 5-Day Agents Intensive - Capstone Project**  
+🏆 [Competition Details](https://www.kaggle.com/competitions/agents-intensive-capstone-project) | 📚 [Learning Path](https://www.kaggle.com/learn-guide/5-day-agents)
+
 An AI-powered multi-modal system for analyzing Go2 robot behavior in both real and simulated environments. This project uses embodied AI agents to evaluate whether deployment scenarios align with operational design constraints, detect collisions, and measure the distance between actual operating conditions and design boundaries.
+
+---
+
+## Project Context
+
+This project is developed as a capstone for the **[Kaggle 5-Day Agents Intensive](https://www.kaggle.com/learn-guide/5-day-agents)**, demonstrating practical application of AI agents to real-world robotics challenges. The focus is on building multi-modal agents that can:
+
+1. **Process heterogeneous sensor data** (motion, camera, LiDAR) from physical robots
+2. **Reason about operational safety constraints** using structured domain knowledge
+3. **Provide quantitative assessments** of deployment risk through distance metrics
+4. **Bridge simulation and reality** by detecting and adapting to different data sources
 
 ---
 
@@ -68,6 +82,11 @@ The system evaluates scenarios across multiple dimensions:
 
 ```
 go2-odd-observer/
+├── .devcontainer/             # ROS2 Humble dev container config
+│   ├── devcontainer.json
+│   ├── Dockerfile
+│   ├── post-create.sh
+│   └── README.md
 ├── data/
 │   ├── raw_rosbags/           # ROS2 bag files (gitignored)
 │   └── processed/
@@ -85,10 +104,10 @@ go2-odd-observer/
 ├── docs/
 │   └── images/                # Example outputs for documentation
 ├── scripts/
-│   ├── extract_windows.py     # ROS bag → time windows
-│   ├── render_bev.py          # LiDAR → Bird's Eye View images
-│   ├── utils_ros.py           # ROS2 utilities
-│   └── demo_pipeline_local.py # Local testing pipeline
+│   ├── extract_windows.py     # ROS2 bag → multi-modal time windows
+│   ├── demo_pipeline_local.py # Local testing with fake agents
+│   ├── render_bev.py          # Standalone BEV renderer (deprecated)
+│   └── utils_ros.py           # ROS2 utilities
 ├── odd_cod/
 │   ├── __init__.py
 │   ├── odd_spec_schema.py     # ODD schema definitions
@@ -97,9 +116,6 @@ go2-odd-observer/
 │   └── config_example.py      # Example ODD specifications
 ├── tests/
 │   └── test_distance_metrics.py
-├── notebooks/
-│   ├── sandbox_local.ipynb    # Local development
-│   └── go2_odd_cod_agents.ipynb  # Full agent pipeline (Kaggle/ADK)
 ├── LICENSE
 ├── README.md
 ├── requirements.txt
@@ -113,9 +129,9 @@ go2-odd-observer/
 
 ### Prerequisites
 
-- Python 3.9+
-- ROS2 (for rosbag processing)
-- Google Cloud Project with Gemini API access (for agent notebooks)
+- Docker and VS Code with Dev Containers extension
+- ROS2 bag files from Unitree Go2 robot (sim or real)
+- Google Cloud Project with Gemini API access (for future agent integration)
 
 ### Installation
 
@@ -124,8 +140,9 @@ go2-odd-observer/
 git clone https://github.com/danmartinez78/go2-odd-observer.git
 cd go2-odd-observer
 
-# Install dependencies
-pip install -r requirements.txt
+# Open in VS Code Dev Container
+# VS Code will automatically build the ROS2 Humble container
+# All dependencies (ROS2, Python packages) are pre-configured
 ```
 
 ### Basic Workflow
@@ -135,9 +152,14 @@ pip install -r requirements.txt
 Process ROS2 bag files into time-windowed multi-modal snapshots:
 
 ```bash
-python scripts/extract_windows.py \
-  --rosbag data/raw_rosbags/go2_real_corridor_01.db3 \
+# Source ROS2 environment (required in dev container)
+source /opt/ros/humble/setup.bash
+
+# Extract windows with multi-channel BEV rendering
+python3 scripts/extract_windows.py \
+  --rosbag data/raw_rosbags/sim/1/sim_data_0.db3 \
   --output data/processed/runs/run_001 \
+  --run-id run_001 \
   --window-length 2.0 \
   --stride 1.0
 ```
@@ -154,26 +176,42 @@ This generates:
 
 #### 2. Define Your ODD
 
-Create a natural language ODD specification, for example:
+Create a natural language ODD specification using the Python library:
 
+```python
+from odd_cod.odd_spec_schema import OddSpec, AxisSpecNumeric, AxisSpecCategorical
+
+odd_spec = OddSpec(
+    version="1.0",
+    axes={
+        "speed": AxisSpecNumeric(
+            feature="forward_velocity",
+            units="m/s",
+            in_odd=[0.0, 1.5],
+            near_boundary=[0.0, 1.8],
+            hard_limit=[0.0, 2.0]
+        ),
+        "terrain": AxisSpecCategorical(
+            feature="terrain_type",
+            allowed_in_odd=["smooth", "moderate"],
+            allowed_all=["smooth", "moderate", "rough", "very_rough"]
+        )
+    },
+    importance={"speed": 1.0, "terrain": 0.8}
+)
 ```
-The Go2 robot shall operate:
-- At speeds between 0-1.5 m/s
-- On smooth to moderate terrain
-- In bright or dim lighting
-- With no humans closer than 1 meter
-- With roll/pitch within ±15 degrees
-- With zero collisions tolerated
+
+#### 3. Test with Demo Pipeline (Current)
+
+Run the local demo pipeline with fake agents:
+
+```bash
+python3 scripts/demo_pipeline_local.py \
+  --index data/processed/runs/run_001/index_run_001.csv \
+  --config odd_cod/config_example.py
 ```
 
-#### 3. Run Agent Analysis
-
-Open `notebooks/go2_odd_cod_agents.ipynb` in Kaggle or locally with ADK to:
-
-1. Convert natural language ODD → structured spec (ODD Spec Agent)
-2. Analyze each window with specialized agents
-3. Compute COD–ODD distances
-4. Generate scenario reports and visualizations
+*Note: Full Gemini agent integration is planned for future releases.*
 
 #### 4. Review Results
 
@@ -357,36 +395,27 @@ odd_spec = OddSpec(
 
 ---
 
-## Agent Pipeline (Kaggle Notebook)
+## Planned Agent Pipeline
 
-### 1. ODD Spec Agent
-Converts natural language → `OddSpec` JSON
+The following multi-modal AI agent architecture is planned for integration with Google Gemini 2.5 Flash:
 
-### 2. Per-Window Agents
-- **Motion Agent**: Speed, tracking, motion labels
-- **Image Agent**: Lighting, humans, environment type
-- **LiDAR Agent**: Terrain roughness, obstacles
+### 1. Per-Window Agents
+- **Motion Agent**: Analyze velocity, IMU, odometry for speed/tracking/motion classification
+- **Image Agent**: Extract lighting conditions, human proximity, environment type from camera
+- **LiDAR Agent**: Classify terrain roughness and obstacles from multi-channel BEV images
 
-### 3. Collision Agent
-Multi-modal fusion for impact detection
+### 2. Fusion Agents
+- **Collision Agent**: Multi-modal fusion for impact detection using motion + camera + LiDAR
+- **Data Source Agent**: Sim vs real classification from sensor characteristics
 
-### 4. Data Source Agent
-Sim/real classification
+### 3. Analysis Pipeline
+- **ODD Evaluator**: Per-axis compliance checking against ODD specification
+- **Distance Agent**: Compute window and scenario distance metrics
+- **COD Aggregator**: Build statistical COD profile across all windows
+- **Scenario Classifier**: Categorize runs as `IN_ODD`, `BOUNDARY_HEAVY`, or `ODD_EXIT`
+- **Report Agent**: Generate visualizations and human-readable summaries
 
-### 5. ODD Evaluator
-Per-axis compliance checking
-
-### 6. Distance Agent
-Window and scenario distance computation
-
-### 7. COD Aggregator
-Build statistical COD profile
-
-### 8. Scenario Classifier
-Categorize as: `IN_ODD`, `BOUNDARY_HEAVY`, or `ODD_EXIT`
-
-### 9. Report Agent
-Generate human-readable summaries and visualizations
+**Current Status**: Core preprocessing and Python library complete. Agent integration planned for future development.
 
 ---
 
@@ -405,19 +434,23 @@ Generate human-readable summaries and visualizations
 - [x] Distance metrics
 - [x] Unit tests
 
-### Phase 3: Local Pipeline (Current)
-- [ ] Demo pipeline with stubbed agents
-- [ ] Validation with sample data
+### Phase 3: Local Pipeline (In Progress)
+- [x] Demo pipeline with fake agents
+- [ ] Update demo pipeline for multi-channel BEV
+- [ ] End-to-end validation with sample data
 
-### Phase 4: Cloud Agent Integration
-- [ ] Kaggle/ADK notebook setup
-- [ ] Gemini agent implementation
-- [ ] Full pipeline testing
+### Phase 4: Gemini Agent Integration (Planned)
+- [ ] Motion analysis agent with Gemini 2.5 Flash
+- [ ] Camera analysis agent (lighting, humans, environment)
+- [ ] LiDAR analysis agent (terrain classification from 4-channel BEV)
+- [ ] Collision detection agent (multi-modal fusion)
+- [ ] Full pipeline integration and testing
 
-### Phase 5: Analytics & Visualization
-- [ ] Timeline plots
-- [ ] Distribution charts
-- [ ] Scenario reports
+### Phase 5: Analytics & Visualization (Planned)
+- [ ] Timeline plots for ODD compliance over time
+- [ ] Distribution charts for COD profile
+- [ ] Automated scenario reports
+- [ ] Real vs sim comparison dashboards
 
 ---
 
@@ -470,10 +503,10 @@ If you use this work in your research, please cite:
 
 ## Acknowledgments
 
+- **Kaggle 5-Day Agents Intensive Program** for inspiring this capstone project
 - Unitree Go2 robot platform
 - Google Gemini AI for multi-modal analysis
 - ROS2 ecosystem
-- Kaggle/ADK for cloud compute
 
 ---
 
