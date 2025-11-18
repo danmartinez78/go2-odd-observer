@@ -480,7 +480,7 @@ Indoor Delivery Robot ODD:
 
     DATA_DIR = Path(__file__).parent.parent / "data" / "processed" / "runs"
     scenario_path = DATA_DIR / "sim_run_new"
-    
+
     if not scenario_path.exists():
         # Fall back to demo_run if sim_run_new doesn't exist
         scenario_path = DATA_DIR / "demo_run"
@@ -488,7 +488,7 @@ Indoor Delivery Robot ODD:
             print(f"Error: No scenario data found in {DATA_DIR}")
             print("Please run scripts/extract_windows.py first.")
             return 1
-    
+
     print(f"User Input (NL ODD):\n{nl_odd_description}")
     print(f"\nDataset: {scenario_path}")
 
