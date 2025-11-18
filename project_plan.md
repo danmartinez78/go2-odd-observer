@@ -407,10 +407,21 @@ The notebook implements the full agent workflow using Google ADK following the K
 
 ### Workflow Pattern
 ```python
-sensor_team = ParallelAgent(sub_agents=[motion, vision, terrain, collision])
-root = SequentialAgent(sub_agents=[odd_spec, sensor_team, cod_eval, report])
-runner = InMemoryRunner(agent=root)
-response = await runner.run_debug(user_input)
+sensor_team = ParallelAgent(
+    name="SensorAnalysisTeam",
+    agents=[motion_agent, vision_agent, terrain_agent, collision_agent]
+)
+
+workflow = SequentialAgent(
+    name="ODDAnalysisWorkflow",
+    agents=[odd_spec_agent, sensor_team, cod_evaluator, report_generator]
+)
+
+runner = InMemoryRunner()
+result = await runner.run_debug(
+    agent=workflow,
+    inputs={"user_input": nl_odd_description}
+)
 ```
 
 **Key Principles:**
