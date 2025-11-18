@@ -197,22 +197,29 @@ cd go2-odd-observer
 
 ### Quick Start with Jupyter Notebook
 
-The complete AI-powered workflow is in the interactive Jupyter notebook using Google ADK agents:
+The complete AI-powered workflow is in the interactive Jupyter notebook using Google ADK agents.
+
+**⚠️ Prerequisites**: 
+- Google Gemini API key (get free at https://aistudio.google.com/apikey)
+- Jupyter notebook environment (or Kaggle)
 
 #### Using Demo Data (No ROS2 bags required)
 
 ```bash
-# Generate synthetic demo data
+# 1. Generate synthetic demo data
 python3 scripts/generate_demo_data.py
 
-# Open the agent workflow notebook
+# 2. Set your API key
+echo "GOOGLE_API_KEY=your_api_key_here" > .env
+
+# 3. Open the agent workflow notebook
 jupyter notebook notebooks/odd_cod_workflow.ipynb
 
-# Follow the notebook sections:
-# 1. Install google-adk package
-# 2. Configure your GOOGLE_API_KEY
-# 3. Define your ODD in natural language
-# 4. Run the ADK agent workflow
+# 4. Follow the notebook sections:
+# - Section 1: Install google-adk package
+# - Section 2: Load API key from .env
+# - Section 3: Define your ODD in natural language
+# - Section 4-7: Run the complete ADK agent workflow
 ```
 
 #### Using Your Own ROS2 Bag Data
@@ -291,19 +298,28 @@ odd_spec = OddSpec(
 Execute the complete ADK agent workflow in the Jupyter notebook:
 
 ```python
-# The notebook handles:
-# 1. ODD Spec Agent: Convert NL ODD → structured JSON
-# 2. Load window data from your processed runs
-# 3. ParallelAgent: Run Motion + Vision + Terrain + Collision agents simultaneously
-# 4. COD Evaluator: Aggregate features and compute distances using Python tools
-# 5. Report Agent: Generate markdown report with visualizations
+from google.adk.runners import InMemoryRunner
 
-# All coordinated by SequentialAgent and InMemoryRunner
+# The notebook orchestrates:
+# 1. ODD Spec Agent: Convert NL ODD → structured JSON
+# 2. ParallelAgent: Run Motion + Vision + Terrain + Collision simultaneously
+# 3. COD Evaluator: Aggregate features + compute distances (Python tools)
+# 4. Report Agent: Generate markdown report with visualizations
+
+runner = InMemoryRunner()
+result = await runner.run_debug(
+    agent=workflow,  # SequentialAgent defined in Section 6
+    inputs={"user_input": nl_odd_description}
+)
+
+# Access results from session state
+final_report = result.session_state.get("final_report")
+print(final_report)
 ```
 
 See [notebooks/odd_cod_workflow.ipynb](notebooks/odd_cod_workflow.ipynb) for the complete interactive workflow.
 
-*Note: The agent workflow requires a Google Gemini API key. Set `GOOGLE_API_KEY` environment variable before running.*
+**⚠️ Required**: Set `GOOGLE_API_KEY` environment variable before running (no demo mode available).
 
 #### 4. Review Results
 
@@ -537,23 +553,26 @@ The workflow uses **hierarchical agent composition** from the ADK:
 # Parallel sensor analysis team
 sensor_team = ParallelAgent(
     name="SensorAnalysisTeam",
-    sub_agents=[motion_agent, vision_agent, terrain_agent, collision_agent]
+    agents=[motion_agent, vision_agent, terrain_agent, collision_agent]
 )
 
 # Sequential workflow orchestration
-root_agent = SequentialAgent(
-    name="ODD_COD_Workflow",
-    sub_agents=[
-        odd_spec_agent,        # Step 1: Parse ODD
-        sensor_team,           # Step 2: Analyze sensors (parallel)
-        cod_evaluator_agent,   # Step 3: Evaluate compliance
-        report_agent           # Step 4: Generate report
+workflow = SequentialAgent(
+    name="ODDAnalysisWorkflow",
+    agents=[
+        odd_spec_agent,      # Step 1: Parse ODD
+        sensor_team,         # Step 2: Analyze sensors (parallel)
+        cod_evaluator,       # Step 3: Evaluate compliance
+        report_generator     # Step 4: Generate report
     ]
 )
 
 # Execute with InMemoryRunner
-runner = InMemoryRunner(agent=root_agent)
-response = await runner.run_debug(user_input)
+runner = InMemoryRunner()
+result = await runner.run_debug(
+    agent=workflow,
+    inputs={"user_input": nl_odd_description}
+)
 ```
 
 **Key Benefits:**
