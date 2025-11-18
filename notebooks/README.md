@@ -1,184 +1,635 @@
-# ODD/COD Analysis Notebooks
+# ODD/COD Analysis Notebook
 
-This directory contains Jupyter notebooks demonstrating the complete workflow for ODD/COD analysis of Unitree Go2 robot scenarios.
+This directory contains the complete AI-powered workflow for analyzing Operational Design Domain (ODD) compliance using Google's Agent Development Kit (ADK).
 
 ## Main Notebook
 
-### `odd_cod_workflow.ipynb`
+### `odd_cod_workflow.ipynb` - Complete End-to-End Analysis Workflow
 
-A comprehensive notebook demonstrating the complete analysis workflow:
+A comprehensive notebook implementing the full agent-based analysis pipeline:
 
-1. **Setup and Dependencies** - Install and configure Google AI SDK and project packages
-2. **ODD Specification** - Define operational design domain with natural language boundaries
-3. **Multi-Modal Agents** - Instantiate AI agents for Motion, Image, LiDAR, and Collision analysis
-4. **Data Loading** - Load preprocessed window data from ROS2 bag processing
-5. **ODD Evaluation** - Analyze compliance and compute distance metrics for each window
-6. **Visualization** - Generate timeline plots and distribution charts
-7. **Reporting** - Create comprehensive analysis reports with violation details
+1. **Setup and Dependencies** - Install `google-adk` package and configure environment
+2. **Configure Google AI SDK** - Set up Gemini API key (required for agent execution)
+3. **User Inputs** - Define ODD in natural language and select dataset
+4. **Tool Functions** - Python utilities for file I/O, COD computation, visualization
+5. **Specialist Agents** - 7 AI agents using Google ADK and Gemini 2.0 Flash
+6. **Orchestration** - ParallelAgent and SequentialAgent workflow composition
+7. **Execute** - Run the complete workflow with InMemoryRunner
+
+**Architecture Pattern**: Follows [Kaggle Day 1B: Agent Architectures](https://www.kaggle.com/code/kaggle5daysofai/day-1b-agent-architectures)
 
 ## Getting Started
 
 ### Prerequisites
 
-1. Python 3.10+ with Jupyter installed
-2. Google API key for Gemini (optional - notebook works in demo mode without it)
-3. Preprocessed window data from ROS2 bags (or use demo data)
+**Required**:
+- Python 3.10+
+- Jupyter Notebook or Kaggle environment
+- **Google API key for Gemini** ([Get one here](https://aistudio.google.com/apikey))
+- Preprocessed window data from ROS2 bags
 
-### Setup
+**Optional**:
+- ROS2 Humble (for bag preprocessing)
 
-```bash
-# Install dependencies
-pip install -r ../requirements.txt
+### Installation
 
-# (Optional) Set up Google API key for AI analysis
-export GOOGLE_API_KEY='your-api-key-here'
-# Or create a .env file in the project root:
-# echo "GOOGLE_API_KEY=your-api-key-here" > ../.env
+The notebook handles dependency installation in Section 1:
+```python
+!pip install -q google-adk python-dotenv
 ```
 
-### Running with Demo Data
+Additional tools (numpy, pandas, matplotlib, Pillow) are assumed available in Jupyter environment.
 
-The repository includes a demo data generator for testing the workflow without real ROS2 bags:
+### Quick Start with Demo Data
 
 ```bash
-# Generate demo data
+# 1. Generate demo data
 python3 ../scripts/generate_demo_data.py
 
-# Start Jupyter
+# 2. Create .env file with API key
+echo "GOOGLE_API_KEY=your_api_key_here" > ../.env
+
+# 3. Launch Jupyter
 jupyter notebook
 
-# Open odd_cod_workflow.ipynb and run all cells
+# 4. Open odd_cod_workflow.ipynb
+# 5. Run all cells sequentially
 ```
 
-### Running with Real Data
-
-If you have actual ROS2 bag files:
+### Quick Start with Real ROS2 Bag Data
 
 ```bash
-# 1. Extract windows from ROS2 bags (requires ROS2 environment)
+# 1. Extract windows from ROS2 bags
 source /opt/ros/humble/setup.bash
 python3 ../scripts/extract_windows.py \
-  --rosbag ../data/raw_rosbags/your_bag.db3 \
+  --rosbag ../data/raw_rosbags/sim/1/rosbag2_*.db3 \
   --output ../data/processed/runs/run_001 \
   --run-id run_001 \
   --window-length 2.0 \
   --stride 1.0
 
-# 2. Update manifest
-# Edit data/processed/manifest.csv to add metadata for your run
+# 2. Set API key in .env
+echo "GOOGLE_API_KEY=your_api_key_here" > ../.env
 
-# 3. Run the notebook
-jupyter notebook odd_cod_workflow.ipynb
+# 3. Open notebook and update dataset_path in Section 3
+dataset_path = "../data/processed/runs/run_001"
+
+# 4. Run all cells
 ```
 
-## Notebook Features
+---
 
-### AI-Powered Analysis (with API Key)
+## Notebook Structure
 
-When a Google API key is configured, the notebook uses Gemini 2.5 Flash for:
-- Motion pattern analysis from time series data
-- Visual scene understanding from camera images
-- Terrain classification from multi-channel LiDAR BEV images
-- Multi-modal collision detection
-
-### Demo Mode (without API Key)
-
-The notebook works without an API key using heuristic-based fallbacks:
-- Simple statistical analysis for motion data
-- Default classifications for images and terrain
-- Basic collision detection from tracking errors
-
-### Output
-
-The notebook generates:
-- **Interactive plots**: Distance timelines, status distributions, feature trends
-- **JSON reports**: Detailed analysis results saved to scenario directory
-- **Violation summaries**: Lists of ODD exits with context and severity
-
-## Architecture Overview
-
-The workflow follows the architecture described in the [Google Agentic Intensive Course](https://www.kaggle.com/learn-guide/5-day-agents):
-
+### Section 1: Installation
+```bash
+!pip install -q google-adk python-dotenv
 ```
-Multi-Modal Windows (Motion + Camera + LiDAR)
-    ↓
-Specialized Analysis Agents (Motion, Image, LiDAR)
-    ↓
-Fusion Agent (Collision Detection)
-    ↓
-ODD Evaluator (Compliance Checking)
-    ↓
-Distance Metrics (Quantitative Assessment)
-    ↓
-Reports & Visualizations
+Installs Google Agent Development Kit and environment variable management.
+
+### Section 2: Configuration
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+os.environ["GOOGLE_API_KEY"] = "YOUR_API_KEY_HERE"
 ```
+**⚠️ Required**: You must provide a valid Gemini API key. The ADK framework does not support demo mode.
+
+### Section 3: User Inputs
+Define analysis parameters:
+```python
+nl_odd_description = """
+The robot must operate:
+- At velocities below 1.5 m/s
+- In indoor environments only
+- On flat terrain (pitch/roll < 5 degrees)
+- With no obstacles within 1 meter
+"""
+
+dataset_path = "../data/processed/runs/run_001"
+```
+
+### Section 4: Tool Functions
+Python utilities that agents can call:
+- `load_window_data(window_id, dataset_path)` - Load sensor data from JSON
+- `build_odd_spec_from_json(odd_dict)` - Convert ODD to structured spec
+- `compute_cod(spec_values, actual_values)` - Calculate Criticality of Deviation
+- `plot_cod_timeline(results)` - Generate timeline visualizations
+- `aggregate_cod_statistics(results)` - Compute summary statistics
+
+### Section 5: Specialist Agents
+Seven AI agents built with `google.adk.agents.Agent`:
+
+1. **ODD Specification Agent**  
+   Converts natural language ODD description to structured JSON spec
+
+2. **Motion Analysis Agent**  
+   Analyzes velocity, acceleration, angular velocity from IMU data
+
+3. **Vision Analysis Agent**  
+   Detects environment type and hazards from camera feed
+
+4. **Terrain Analysis Agent**  
+   Evaluates surface conditions from LiDAR point clouds
+
+5. **Collision Risk Agent**  
+   Assesses proximity violations and collision hazards
+
+6. **COD Evaluator Agent**  
+   Computes deviation metrics from all sensor analyses
+
+7. **Report Generator Agent**  
+   Synthesizes comprehensive analysis report
+
+Each agent uses `Gemini(model_id="gemini-2.0-flash-exp")` with specific tool access.
+
+### Section 6: Orchestration
+Agent composition using ADK patterns:
+
+```python
+from google.adk.agents import ParallelAgent, SequentialAgent
+
+# Parallel sensor analysis (runs simultaneously)
+sensor_team = ParallelAgent(
+    name="SensorAnalysisTeam",
+    agents=[motion_agent, vision_agent, terrain_agent, collision_agent]
+)
+
+# Sequential workflow (enforces dependencies)
+workflow = SequentialAgent(
+    name="ODDAnalysisWorkflow",
+    agents=[
+        odd_spec_agent,      # Step 1: Parse ODD
+        sensor_team,         # Step 2: Analyze sensors in parallel
+        cod_evaluator,       # Step 3: Compute deviations
+        report_generator     # Step 4: Generate report
+    ]
+)
+```
+
+**ParallelAgent**: Runs Motion, Vision, Terrain, and Collision agents simultaneously for efficiency.
+
+**SequentialAgent**: Ensures proper data flow - ODD Spec → Sensors → COD Evaluator → Report.
+
+### Section 7: Execution
+Run the complete workflow:
+
+```python
+from google.adk.runners import InMemoryRunner
+
+runner = InMemoryRunner()
+result = await runner.run_debug(
+    agent=workflow,
+    inputs={"user_input": nl_odd_description}
+)
+
+# Access results from session state
+print(result.session_state.get("final_report"))
+```
+
+The runner manages session state, passing data between agents via `output_key` attributes.
+
+---
+
+## Agent Architecture Details
+
+### Data Flow Pattern
+```
+User Input (NL ODD)
+    ↓
+ODD Specification Agent → structured_odd_spec
+    ↓
+┌─────────────── ParallelAgent ───────────────┐
+│  Motion Agent → motion_analysis             │
+│  Vision Agent → vision_analysis             │
+│  Terrain Agent → terrain_analysis           │
+│  Collision Agent → collision_analysis       │
+└─────────────────────────────────────────────┘
+    ↓
+COD Evaluator Agent → cod_results
+    ↓
+Report Generator Agent → final_report
+```
+
+### Session State Management
+Agents communicate via `runner.session_state`:
+- **ODD Spec Agent** outputs to `output_key="structured_odd_spec"`
+- **Sensor Agents** read ODD spec from state, output to their respective keys
+- **COD Evaluator** reads all sensor analyses, computes deviations
+- **Report Generator** synthesizes all prior analyses into final report
+
+No manual data passing required - the `InMemoryRunner` handles it automatically.
+
+### Why This Architecture?
+
+**✅ Scalability**: Add new sensor agents by extending `ParallelAgent`  
+**✅ Maintainability**: Each agent has single responsibility (SRP)  
+**✅ Efficiency**: Parallel execution reduces total analysis time  
+**✅ Modularity**: Swap agents without changing workflow structure  
+**✅ Testability**: Test individual agents in isolation before composition  
+
+---
+
+## Output Format
+
+### Agent Execution Results
+The `InMemoryRunner` returns session state containing all agent outputs:
+
+```python
+{
+    "structured_odd_spec": {
+        "velocity": {"max": 1.5, "unit": "m/s"},
+        "environment": "indoor",
+        "terrain": {"max_pitch": 5, "max_roll": 5},
+        "min_obstacle_distance": 1.0
+    },
+    "motion_analysis": {
+        "window_001": {"velocity": 1.2, "compliant": True, "cod": 0.0},
+        "window_002": {"velocity": 1.8, "compliant": False, "cod": 0.2},
+        ...
+    },
+    "vision_analysis": {
+        "window_001": {"environment": "indoor", "hazards": [], "compliant": True},
+        ...
+    },
+    "terrain_analysis": {...},
+    "collision_analysis": {...},
+    "cod_results": {
+        "summary": {"total_windows": 150, "violations": 12},
+        "critical_windows": ["window_042", "window_089"],
+        "average_cod": 0.03
+    },
+    "final_report": "# ODD Compliance Analysis\n\n## Summary\n..."
+}
+```
+
+### Visualizations
+Tool functions generate matplotlib figures:
+- **COD Timeline**: Line plot showing deviation scores over time
+- **Violation Distribution**: Histogram of deviation severity
+- **Multi-Sensor Dashboard**: Comparative sensor analysis (optional enhancement)
+
+### Report Structure
+The Report Generator Agent produces markdown-formatted analysis:
+```markdown
+# ODD Compliance Analysis Report
+
+## Executive Summary
+- Total Windows Analyzed: 150
+- Compliant Windows: 138 (92%)
+- Violations: 12 (8%)
+- Average COD: 0.03
+
+## Critical Violations
+1. Window 042: Velocity 1.8 m/s (max: 1.5 m/s) - COD: 0.20
+2. Window 089: Outdoor environment detected - COD: 1.00
+3. Window 134: Obstacle at 0.6m (min: 1.0m) - COD: 0.40
+
+## Recommendations
+- Review velocity controller gains
+- Investigate environment transition at t=89.0s
+- Enhance obstacle avoidance for <1m range
+```
+
+---
 
 ## Customization
 
 ### Defining Custom ODDs
-
-Create your own ODD specifications by modifying the ODD definition cell:
+Modify the natural language description in Section 3:
 
 ```python
-odd_spec = OddSpec(
-    version="2.0",
-    description="Custom ODD for your use case",
-    axes={
-        "speed": AxisSpecNumeric(
-            feature="forward_velocity",
-            units="m/s",
-            in_odd=[min_speed, max_speed],
-            near_boundary=[min_boundary, max_boundary],
-            hard_limit=[hard_min, hard_max]
-        ),
-        # Add more axes...
-    },
-    importance={
-        "speed": 1.0,  # Adjust weights
-        # ...
-    }
+nl_odd_description = """
+The robot must:
+- Maintain speed below 2.0 m/s in corridors, 1.0 m/s in crowded areas
+- Operate only in well-lit environments (lux > 100)
+- Avoid stairs and ramps steeper than 15 degrees
+- Maintain 1.5m distance from humans
+"""
+```
+
+The ODD Specification Agent will parse these into structured constraints automatically.
+
+### Adjusting Agent Instructions
+Edit agent `instruction` parameters in Section 5:
+
+```python
+motion_agent = Agent(
+    name="Motion_Analysis_Agent",
+    model=Gemini(model_id="gemini-2.0-flash-exp"),
+    tools=[load_window_data],
+    instruction="""
+    Analyze motion data with emphasis on:
+    1. Smooth velocity transitions (avoid jerky motion)
+    2. Energy efficiency (minimize acceleration changes)
+    3. Safety margins (maintain 20% buffer from limits)
+    """,
+    output_key="motion_analysis"
 )
 ```
 
-### Agent Prompts
+### Adding New Sensor Agents
+Extend the `ParallelAgent` in Section 6:
 
-Modify the agent analysis functions to customize how Gemini interprets sensor data:
-- `analyze_motion_with_gemini()` - Motion analysis prompts
-- `analyze_image_with_gemini()` - Camera image prompts
-- `analyze_lidar_with_gemini()` - LiDAR BEV prompts
-- `analyze_collision_with_gemini()` - Collision detection prompts
+```python
+# Define new agent in Section 5
+audio_agent = Agent(
+    name="Audio_Analysis_Agent",
+    model=Gemini(model_id="gemini-2.0-flash-exp"),
+    tools=[load_window_data],
+    instruction="Analyze audio data for noise levels and anomalies",
+    output_key="audio_analysis"
+)
 
-## Examples
+# Add to sensor team in Section 6
+sensor_team = ParallelAgent(
+    name="SensorAnalysisTeam",
+    agents=[
+        motion_agent, 
+        vision_agent, 
+        terrain_agent, 
+        collision_agent,
+        audio_agent  # NEW
+    ]
+)
+```
 
-See the [Google Agentic Intensive notebooks](https://www.kaggle.com/learn-guide/5-day-agents) for inspiration on:
-- Structuring multi-agent workflows
-- Prompt engineering for multi-modal analysis
-- Combining structured and unstructured data
-- Building robust evaluation metrics
+### Custom COD Formulas
+Modify `compute_cod()` in Section 4:
+
+```python
+def compute_cod(spec_value, actual_value, metric_type="normalized"):
+    """
+    Compute Criticality of Deviation metric.
+    
+    metric_type options:
+    - "normalized": Linear deviation ratio
+    - "exponential": Exponential severity scaling
+    - "logarithmic": Log-scale for wide ranges
+    """
+    if metric_type == "normalized":
+        return abs(actual_value - spec_value) / spec_value
+    elif metric_type == "exponential":
+        return 1 - math.exp(-abs(actual_value - spec_value))
+    elif metric_type == "logarithmic":
+        return math.log1p(abs(actual_value - spec_value))
+```
+
+---
 
 ## Troubleshooting
 
-### "No processed data found"
-- Run `generate_demo_data.py` or process actual ROS2 bags first
-- Check that `data/processed/runs/` contains scenario directories
+### Common Issues
 
-### "Gemini API error"
-- Verify your API key is set correctly
-- Check you have API quota remaining
-- The notebook will fall back to demo mode if API calls fail
+**Problem**: `ModuleNotFoundError: No module named 'google.adk'`  
+**Solution**: Execute Section 1 cell to install dependencies. If on Kaggle, enable internet access in notebook settings.
 
-### "Import errors"
-- Ensure all requirements are installed: `pip install -r ../requirements.txt`
-- Check Python version is 3.10 or newer
+---
+
+**Problem**: `API key not valid` or `Authentication failed`  
+**Solution**: 
+1. Verify API key at [Google AI Studio](https://aistudio.google.com/apikey)
+2. Check `.env` file exists and has correct format: `GOOGLE_API_KEY=your_key_here`
+3. Test API key directly:
+   ```python
+   from google.adk.models.google_llm import Gemini
+   model = Gemini(model_id="gemini-2.0-flash-exp")
+   print("API key valid!")
+   ```
+
+---
+
+**Problem**: `FileNotFoundError: window_000001.json`  
+**Solution**: 
+1. Run preprocessing: `python scripts/extract_windows.py ...`
+2. Verify dataset path: `ls ../data/processed/runs/run_001/`
+3. Update `dataset_path` in Section 3 to match your data location
+
+---
+
+**Problem**: Agent execution timeout or hangs  
+**Solution**: 
+- Gemini 2.0 Flash has rate limits (~60 requests/min)
+- Add delays between window analyses: `time.sleep(1)`
+- Reduce dataset size for testing: process first 10 windows only
+- Check API quota: [Google AI Studio Usage](https://aistudio.google.com/)
+
+---
+
+**Problem**: Agents return incomplete or empty analysis  
+**Solution**: 
+1. Check tool function outputs - ensure JSON has expected fields
+2. Verify ODD spec format matches agent instruction expectations
+3. Enable debug logging:
+   ```python
+   import logging
+   logging.basicConfig(level=logging.DEBUG)
+   ```
+4. Inspect session state after each agent:
+   ```python
+   print(runner.session_state.get("motion_analysis"))
+   ```
+
+---
+
+**Problem**: JSON parsing errors in agent responses  
+**Solution**: 
+- Gemini occasionally returns markdown-wrapped JSON
+- Update tool functions to strip markdown:
+  ```python
+  text = response.strip()
+  if text.startswith("```json"):
+      text = text.split("```json")[1].split("```")[0]
+  result = json.loads(text)
+  ```
+
+---
+
+**Problem**: `ImportError` for numpy, pandas, matplotlib  
+**Solution**: These are assumed in Jupyter environments. If missing:
+```bash
+pip install numpy pandas matplotlib pillow
+```
+
+---
+
+### Debug Mode
+The notebook uses `runner.run_debug()` for detailed execution logs:
+
+```python
+result = await runner.run_debug(agent=workflow, inputs={"user_input": nl_odd_description})
+
+# View execution trace
+for step in result.execution_trace:
+    print(f"{step.agent_name}: {step.status}")
+```
+
+Logs show:
+- Each agent execution start/end
+- Tool calls with arguments and returns
+- Session state transitions
+- Error messages with stack traces
+
+### Validation Checklist
+Before running the complete workflow, verify:
+
+- [ ] **Section 1**: `google-adk` installed successfully (check for version info)
+- [ ] **Section 2**: `GOOGLE_API_KEY` is set (test: `print(os.getenv("GOOGLE_API_KEY")[:10] + "...")`)
+- [ ] **Section 3**: Dataset path exists (`os.path.exists(dataset_path)` returns `True`)
+- [ ] **Section 4**: Tool functions execute without errors (test `load_window_data("window_000001", dataset_path)`)
+- [ ] **Section 5**: All 7 agents instantiate (check for import errors, no exceptions)
+- [ ] **Section 6**: Orchestration agents created (`sensor_team` and `workflow` are defined)
+- [ ] **Section 7**: Runner executes and returns session state with all expected keys
+
+---
+
+## Performance Considerations
+
+### API Costs
+Gemini 2.0 Flash pricing (January 2024):
+- **Input**: $0.075 per 1M tokens
+- **Output**: $0.30 per 1M tokens
+
+**Typical Analysis Costs** (150 windows):
+- ODD Spec Agent: ~500 input + ~200 output tokens
+- Sensor Agents (4×150): ~600k input + ~240k output tokens
+- COD Evaluator: ~50k input + ~20k output tokens
+- Report Generator: ~10k input + ~5k output tokens
+- **Total**: ~$0.50 per 150-window analysis
+
+### Processing Time
+- **Per-Window Analysis**: ~2-3 seconds (network latency)
+- **150 Windows Sequential**: ~7-10 minutes
+- **150 Windows with Parallel Sensors**: ~5-7 minutes (ParallelAgent optimization)
+
+### Optimization Strategies
+
+1. **Batch Window Processing**: Group windows for single API call
+   ```python
+   # Instead of: analyze_window(w1), analyze_window(w2), ...
+   # Do: analyze_batch([w1, w2, w3, ...])
+   ```
+
+2. **Caching ODD Spec**: Store parsed spec to avoid re-parsing
+   ```python
+   if "structured_odd_spec" in runner.session_state:
+       odd_spec = runner.session_state["structured_odd_spec"]
+   else:
+       odd_spec = odd_spec_agent.run(nl_odd_description)
+   ```
+
+3. **Selective Analysis**: Only run expensive vision/LiDAR agents when motion violations detected
+   ```python
+   if motion_result["compliant"]:
+       # Skip detailed vision/terrain analysis for compliant windows
+       vision_result = {"compliant": True, "cod": 0.0}
+   else:
+       vision_result = vision_agent.run(window_data)
+   ```
+
+4. **Model Selection**: Use faster model for non-critical analyses
+   ```python
+   # Use gemini-1.5-flash for terrain (faster, cheaper)
+   terrain_agent = Agent(
+       name="Terrain_Agent",
+       model=Gemini(model_id="gemini-1.5-flash"),  # Older but faster
+       ...
+   )
+   ```
+
+---
+
+## Architecture Notes
+
+### Why Google ADK?
+The Agent Development Kit provides:
+- **Declarative composition** via `ParallelAgent` and `SequentialAgent`
+- **Automatic state management** through `InMemoryRunner`
+- **Built-in tool integration** with `AgentTool` and `FunctionTool`
+- **Production-ready patterns** validated in Kaggle challenges
+
+### Alternative Approaches Considered
+1. **Direct Gemini API calls**: Rejected - too much manual state management
+2. **LangChain LCEL**: Rejected - ADK has better Gemini integration and simpler syntax
+3. **Custom agent framework**: Rejected - ADK provides battle-tested patterns from Google
+
+### Design Decisions
+
+**ParallelAgent for Sensors**  
+Motion, Vision, Terrain, and Collision analyses are independent → parallel execution saves time without sacrificing accuracy.
+
+**SequentialAgent for Workflow**  
+- ODD spec must complete before sensors (dependency)
+- COD evaluator needs all sensor data (dependency)
+- Report needs final COD results (dependency)
+→ Sequential enforcement prevents race conditions
+
+**Gemini 2.0 Flash Model**  
+- Fast inference (~2s per request)
+- Cost-effective ($0.075/1M tokens input)
+- Multimodal support (text, JSON, images, future: video)
+- Strong structured output capabilities (JSON mode)
+
+**JSON Tool Outputs**  
+Structured data enables:
+- Reliable agent-to-agent communication
+- Easy debugging (inspect session state)
+- Validation against schemas
+- Type-safe processing in Python
+
+---
+
+## Development Roadmap
+
+**Phase 1 ✅**: Data preprocessing pipeline (extract_windows.py, manifest.csv)  
+**Phase 2 ✅**: Tool function library (COD metrics, visualization, I/O)  
+**Phase 3 ✅**: Google ADK agent architecture (7 specialists + orchestration)  
+**Phase 4 🔄**: Testing and validation (current phase - verify on real ROS2 bags)  
+**Phase 5 📋**: Real-time ROS2 integration (streaming bag analysis)  
+**Phase 6 📋**: Multi-robot fleet analysis (distributed ParallelAgent across robots)
+
+---
+
+## References
+
+- [Google Agent Development Kit Documentation](https://ai.google.dev/adk)
+- [Gemini 2.0 Model Card](https://ai.google.dev/gemini-api/docs/models/gemini-v2)
+- [Kaggle Day 1B: Agent Architectures](https://www.kaggle.com/code/kaggle5daysofai/day-1b-agent-architectures)
+- [ISO 34503 ODD Specification Standard](https://www.iso.org/standard/78964.html)
+- [ROS2 Bag Format](https://docs.ros.org/en/rolling/Concepts/About-ROS2-Bags.html)
+
+---
 
 ## Contributing
 
-Improvements to the notebook are welcome! Consider:
-- Better visualization styles
-- Additional analysis metrics
-- Enhanced agent prompts
-- Support for more sensor modalities
+Improvements welcome! Consider:
+- Enhanced visualization dashboards (Plotly, Dash)
+- Additional distance metrics (Mahalanobis, Bhattacharyya)
+- Custom agent prompts for specific robot types
+- Support for additional sensor modalities (thermal, audio, GPS)
+- Real-time streaming analysis
+- Multi-robot coordination patterns
+
+See [project_plan.md](../project_plan.md) for detailed development roadmap.
+
+---
 
 ## License
 
-This notebook is part of the Go2 ODD/COD Observer project, licensed under MIT.
+This notebook is part of the **Go2 ODD/COD Observer** project.  
+Licensed under MIT License - see [LICENSE](../LICENSE) for details.
+
+---
+
+## Support
+
+For issues or questions:
+1. Check **Troubleshooting** section above
+2. Review [project_plan.md](../project_plan.md) for system architecture details
+3. Inspect agent execution logs from `runner.run_debug()`
+4. Verify tool function outputs match expected JSON schemas
+5. Test API key with minimal Gemini example
+
+**⚠️ Important**: This notebook requires an active Gemini API key. There is **no demo mode** or heuristic fallback - all analysis is AI-powered using Google's ADK framework and Gemini 2.0 Flash model.

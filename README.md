@@ -43,25 +43,70 @@ This project implements a comprehensive framework for:
 
 ## Architecture
 
+### Agent Workflow (Google ADK Pattern)
+
+The system uses the **Google Agent Development Kit (ADK)** with a hierarchical agent architecture following the [Kaggle Day 1B pattern](https://www.kaggle.com/code/kaggle5daysofai/day-1b-agent-architectures):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Natural Language ODD Input                  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    ODD Spec Agent                           │
+│              (NL → Structured JSON ODD)                     │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  ParallelAgent: Sensor Analysis Team        │
+│  ┌──────────────┬──────────────┬──────────────┬─────────┐  │
+│  │Motion Agent  │Vision Agent  │Terrain Agent │Collision│  │
+│  │(Motion JSON) │(Camera PNG)  │(LiDAR BEV)   │Agent    │  │
+│  └──────────────┴──────────────┴──────────────┴─────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  COD Evaluator Agent                         │
+│        (Aggregates features + computes distances)           │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   Report Generation Agent                    │
+│          (Markdown report + visualization tools)            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+                    Final Analysis Report
+```
+
+**Key Components:**
+- **SequentialAgent**: Orchestrates the overall workflow (ODD Spec → Parallel Analysis → Evaluation → Report)
+- **ParallelAgent**: Runs sensor analysis agents simultaneously for each window
+- **InMemoryRunner**: Executes the agent workflow with session state management
+- **Tool Functions**: Python utilities for file I/O, COD math, and visualizations
+
 ### Data Flow
 
 ```
 ROS2 Bag Files (Go2 Robot)
          ↓
-   Window Extraction (Local)
+   Window Extraction (Local Script)
+    ├─ Motion JSON (velocity, IMU, odometry)
+    ├─ Camera PNG (RGB snapshot)
+    └─ LiDAR BEV PNGs (4-channel: occupancy, height, density, roughness)
          ↓
-   Multi-Modal Agents (Kaggle/ADK)
-    ├─ Motion Agent
-    ├─ Image Agent
-    ├─ LiDAR Agent
-    ├─ Collision Agent
-    └─ Data Source Agent
+   Upload to Kaggle Dataset
          ↓
-   ODD Evaluator & Distance Computation
+   ADK Agent Workflow (Jupyter Notebook)
+    ├─ ODD Spec Agent (NL → JSON)
+    ├─ ParallelAgent (Motion + Vision + Terrain + Collision)
+    ├─ COD Evaluator Agent (feature aggregation + distance computation)
+    └─ Report Agent (markdown + visualizations)
          ↓
-   COD Profile & Scenario Classification
-         ↓
-   Visualization & Reports
+   Analysis Results
+    ├─ Per-window ODD compliance status
+    ├─ Scenario-level COD distance metrics
+    ├─ Collision detection reports
+    └─ Visual timelines and distributions
 ```
 
 ### ODD Axes
@@ -135,7 +180,8 @@ go2-odd-observer/
 
 - Docker and VS Code with Dev Containers extension
 - ROS2 bag files from Unitree Go2 robot (sim or real)
-- Google Cloud Project with Gemini API access (for future agent integration)
+- Google Gemini API key (get free at https://aistudio.google.com/app/apikey)
+- Kaggle account for running the agent workflow notebook
 
 ### Installation
 
@@ -151,17 +197,38 @@ cd go2-odd-observer
 
 ### Quick Start with Jupyter Notebook
 
-The fastest way to understand the complete workflow is through the interactive Jupyter notebook:
+The complete AI-powered workflow is in the interactive Jupyter notebook using Google ADK agents:
+
+#### Using Demo Data (No ROS2 bags required)
 
 ```bash
-# Generate demo data
+# Generate synthetic demo data
 python3 scripts/generate_demo_data.py
 
-# Start Jupyter and open the notebook
+# Open the agent workflow notebook
+jupyter notebook notebooks/odd_cod_workflow.ipynb
+
+# Follow the notebook sections:
+# 1. Install google-adk package
+# 2. Configure your GOOGLE_API_KEY
+# 3. Define your ODD in natural language
+# 4. Run the ADK agent workflow
+```
+
+#### Using Your Own ROS2 Bag Data
+
+```bash
+# 1. Extract windows from your ROS bag
+python3 scripts/extract_windows.py \
+  --rosbag data/raw_rosbags/your_run.db3 \
+  --output data/processed/runs/run_001 \
+  --run-id run_001
+
+# 2. Open the notebook and point to your data
 jupyter notebook notebooks/odd_cod_workflow.ipynb
 ```
 
-See [notebooks/README.md](notebooks/README.md) for detailed instructions, including how to use your own ROS2 bag data.
+See [notebooks/README.md](notebooks/README.md) for detailed instructions.
 
 ### Basic Workflow
 
@@ -219,17 +286,24 @@ odd_spec = OddSpec(
 )
 ```
 
-#### 3. Test with Demo Pipeline (Current)
+#### 3. Run Agent Workflow (Kaggle/Jupyter)
 
-Run the local demo pipeline with fake agents:
+Execute the complete ADK agent workflow in the Jupyter notebook:
 
-```bash
-python3 scripts/demo_pipeline_local.py \
-  --index data/processed/runs/run_001/index_run_001.csv \
-  --config odd_cod/config_example.py
+```python
+# The notebook handles:
+# 1. ODD Spec Agent: Convert NL ODD → structured JSON
+# 2. Load window data from your processed runs
+# 3. ParallelAgent: Run Motion + Vision + Terrain + Collision agents simultaneously
+# 4. COD Evaluator: Aggregate features and compute distances using Python tools
+# 5. Report Agent: Generate markdown report with visualizations
+
+# All coordinated by SequentialAgent and InMemoryRunner
 ```
 
-*Note: Full Gemini agent integration is planned for future releases.*
+See [notebooks/odd_cod_workflow.ipynb](notebooks/odd_cod_workflow.ipynb) for the complete interactive workflow.
+
+*Note: The agent workflow requires a Google Gemini API key. Set `GOOGLE_API_KEY` environment variable before running.*
 
 #### 4. Review Results
 
@@ -413,27 +487,80 @@ odd_spec = OddSpec(
 
 ---
 
-## Planned Agent Pipeline
+## Agent Architecture Details
 
-The following multi-modal AI agent architecture is planned for integration with Google Gemini 2.5 Flash:
+### Specialist Agents (Google ADK)
 
-### 1. Per-Window Agents
-- **Motion Agent**: Analyze velocity, IMU, odometry for speed/tracking/motion classification
-- **Image Agent**: Extract lighting conditions, human proximity, environment type from camera
-- **LiDAR Agent**: Classify terrain roughness and obstacles from multi-channel BEV images
+Each agent is an instance of `google.adk.agents.Agent` with a specific role:
 
-### 2. Fusion Agents
-- **Collision Agent**: Multi-modal fusion for impact detection using motion + camera + LiDAR
-- **Data Source Agent**: Sim vs real classification from sensor characteristics
+1. **ODD Spec Agent**
+   - **Input**: Natural language ODD description
+   - **Output**: Structured JSON matching `OddSpec` schema
+   - **Model**: Gemini 2.0 Flash with JSON mode
 
-### 3. Analysis Pipeline
-- **ODD Evaluator**: Per-axis compliance checking against ODD specification
-- **Distance Agent**: Compute window and scenario distance metrics
-- **COD Aggregator**: Build statistical COD profile across all windows
-- **Scenario Classifier**: Categorize runs as `IN_ODD`, `BOUNDARY_HEAVY`, or `ODD_EXIT`
-- **Report Agent**: Generate visualizations and human-readable summaries
+2. **Motion Analysis Agent**
+   - **Input**: Motion JSON (velocity, IMU, odometry time series)
+   - **Output**: `{avg_forward_speed, max_forward_speed, max_abs_roll_pitch_deg, tracking_error, motion_label}`
+   - **Purpose**: Extract motion features for ODD compliance checking
 
-**Current Status**: Core preprocessing and Python library complete. Agent integration planned for future development.
+3. **Vision Analysis Agent**
+   - **Input**: Camera PNG image
+   - **Output**: `{lighting_class, humans_visible, humans_very_close, environment_type}`
+   - **Purpose**: Classify environmental conditions from visual data
+
+4. **Terrain Analysis Agent**
+   - **Input**: LiDAR BEV PNG images (4 channels)
+   - **Output**: `{terrain_roughness_class, terrain_roughness_score, obstacle_density}`
+   - **Purpose**: Analyze terrain from multi-channel Bird's Eye View
+
+5. **Collision Detection Agent**
+   - **Input**: Motion features + Camera PNG + LiDAR BEV PNGs (multi-modal fusion)
+   - **Output**: `{collision_suspected, collision_confidence, collision_type}`
+   - **Purpose**: Detect collision events using sensor fusion
+
+6. **COD Evaluator Agent**
+   - **Input**: Merged features from sensor agents + ODD spec JSON
+   - **Output**: `{merged_features, odd_violations, overall_status}`
+   - **Purpose**: Aggregate results and identify ODD violations
+   - **Tools**: Uses Python functions for COD vector building and distance computation
+
+7. **Report Generation Agent**
+   - **Input**: ODD spec + COD evaluation results + window analyses
+   - **Output**: Markdown report with findings and recommendations
+   - **Tools**: Uses Python visualization functions (distance plots, status distributions)
+
+### Orchestration Pattern
+
+The workflow uses **hierarchical agent composition** from the ADK:
+
+```python
+# Parallel sensor analysis team
+sensor_team = ParallelAgent(
+    name="SensorAnalysisTeam",
+    sub_agents=[motion_agent, vision_agent, terrain_agent, collision_agent]
+)
+
+# Sequential workflow orchestration
+root_agent = SequentialAgent(
+    name="ODD_COD_Workflow",
+    sub_agents=[
+        odd_spec_agent,        # Step 1: Parse ODD
+        sensor_team,           # Step 2: Analyze sensors (parallel)
+        cod_evaluator_agent,   # Step 3: Evaluate compliance
+        report_agent           # Step 4: Generate report
+    ]
+)
+
+# Execute with InMemoryRunner
+runner = InMemoryRunner(agent=root_agent)
+response = await runner.run_debug(user_input)
+```
+
+**Key Benefits:**
+- Agents pass data via `output_key` session state (no manual orchestration code)
+- Parallel execution for independent sensor analyses
+- Sequential composition ensures proper data dependencies
+- Clean separation of AI reasoning (agents) and math/tools (Python functions)
 
 ---
 
@@ -445,6 +572,7 @@ The following multi-modal AI agent architecture is planned for integration with 
 - [x] ROS2 message deserialization (Image, PointCloud2, Odometry, IMU)
 - [x] Time-synchronized multi-modal data extraction
 - [x] Manifest management
+- [x] Demo data generator
 
 ### Phase 2: Core Python Library ✅
 - [x] ODD schema
@@ -452,23 +580,33 @@ The following multi-modal AI agent architecture is planned for integration with 
 - [x] Distance metrics
 - [x] Unit tests
 
-### Phase 3: Local Pipeline (In Progress)
-- [x] Demo pipeline with fake agents
-- [ ] Update demo pipeline for multi-channel BEV
-- [ ] End-to-end validation with sample data
+### Phase 3: Agent Architecture ✅
+- [x] Google ADK integration
+- [x] Specialist agent definitions (ODD Spec, Motion, Vision, Terrain, Collision, COD Evaluator, Report)
+- [x] ParallelAgent for sensor analysis team
+- [x] SequentialAgent for workflow orchestration
+- [x] InMemoryRunner execution pattern
+- [x] Tool functions (file I/O, COD computation, visualization)
+- [x] Complete Jupyter notebook workflow
 
-### Phase 4: Gemini Agent Integration (Planned)
-- [ ] Motion analysis agent with Gemini 2.5 Flash
-- [ ] Camera analysis agent (lighting, humans, environment)
-- [ ] LiDAR analysis agent (terrain classification from 4-channel BEV)
-- [ ] Collision detection agent (multi-modal fusion)
-- [ ] Full pipeline integration and testing
+### Phase 4: Testing & Validation (In Progress)
+- [ ] End-to-end testing with demo data
+- [ ] Validation with real ROS2 bag data
+- [ ] Agent prompt optimization
+- [ ] Error handling and edge cases
 
 ### Phase 5: Analytics & Visualization (Planned)
-- [ ] Timeline plots for ODD compliance over time
-- [ ] Distribution charts for COD profile
-- [ ] Automated scenario reports
-- [ ] Real vs sim comparison dashboards
+- [ ] Enhanced timeline visualizations
+- [ ] Interactive dashboards
+- [ ] Scenario comparison tools
+- [ ] Real vs sim transfer analysis
+- [ ] Automated report generation improvements
+
+### Phase 6: Production Deployment (Planned)
+- [ ] Kaggle dataset publishing
+- [ ] Batch processing pipeline
+- [ ] Results caching and incremental updates
+- [ ] Multi-run comparative analysis
 
 ---
 
