@@ -85,3 +85,4 @@ logs/
 *.tmp
 *.temp
 *.bak
+.env
