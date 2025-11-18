@@ -178,68 +178,80 @@ go2-odd-observer/
 
 ### Prerequisites
 
-- Docker and VS Code with Dev Containers extension
-- ROS2 bag files from Unitree Go2 robot (sim or real)
-- Google Gemini API key (get free at https://aistudio.google.com/app/apikey)
-- Kaggle account for running the agent workflow notebook
+- **Python 3.10+** (tested with 3.10 on Ubuntu 22.04)
+- **Google Gemini API Key**: Get one from [Google AI Studio](https://aistudio.google.com/app/apikey) *(required for full notebook workflow)*
+- **Optional**: ROS2 Humble for processing new bag files
+- **Optional**: Unitree Go2 robot for data collection (or use provided data)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/danmartinez78/go2-odd-observer.git
+git clone https://github.com/YOUR_USERNAME/go2-odd-observer.git
 cd go2-odd-observer
 
-# Open in VS Code Dev Container
-# VS Code will automatically build the ROS2 Humble container
-# All dependencies (ROS2, Python packages) are pre-configured
+# Install dependencies
+pip install -r requirements.txt
+
+# Set your Gemini API key (for notebook workflow)
+export GOOGLE_API_KEY="your-api-key-here"
 ```
+
+### Quick Start: Local Testing (No API Key Required)
+
+**Test the complete data flow without API calls:**
+
+```bash
+# Run the demo pipeline with mock ADK agents
+python scripts/demo_pipeline_local.py
+```
+
+This validates:
+- ✅ File schema alignment (motion JSON, camera PNG, LiDAR BEV)
+- ✅ Data loading and parsing
+- ✅ Agent orchestration pattern (ParallelAgent + SequentialAgent)
+- ✅ Report generation
+
+The demo script mirrors the notebook architecture but uses mock agents that return fake JSON instead of calling Gemini. This is useful for:
+- Testing data extraction without API costs
+- Validating schema changes locally
+- Understanding the agent workflow before running the full notebook
 
 ### Quick Start with Jupyter Notebook
 
-The complete AI-powered workflow is in the interactive Jupyter notebook using Google ADK agents.
-
-**⚠️ Prerequisites**: 
-- Google Gemini API key (get free at https://aistudio.google.com/apikey)
-- Jupyter notebook environment (or Kaggle)
-
-#### Using Demo Data (No ROS2 bags required)
+**Run the full ADK agent workflow with real Gemini:**
 
 ```bash
-# 1. Generate synthetic demo data
-python3 scripts/generate_demo_data.py
-
-# 2. Set your API key
-echo "GOOGLE_API_KEY=your_api_key_here" > .env
-
-# 3. Open the agent workflow notebook
-jupyter notebook notebooks/odd_cod_workflow.ipynb
-
-# 4. Follow the notebook sections:
-# - Section 1: Install google-adk package
-# - Section 2: Load API key from .env
-# - Section 3: Define your ODD in natural language
-# - Section 4-7: Run the complete ADK agent workflow
-```
-
-#### Using Your Own ROS2 Bag Data
-
-```bash
-# 1. Extract windows from your ROS bag
-python3 scripts/extract_windows.py \
-  --rosbag data/raw_rosbags/your_run.db3 \
-  --output data/processed/runs/run_001 \
-  --run-id run_001
-
-# 2. Open the notebook and point to your data
+# Launch Jupyter
 jupyter notebook notebooks/odd_cod_workflow.ipynb
 ```
 
-See [notebooks/README.md](notebooks/README.md) for detailed instructions.
+Follow the notebook sections:
+1. **Install**: `pip install google-adk`
+2. **Configure**: Set `GOOGLE_API_KEY` environment variable
+3. **Define ODD**: Write natural language constraints
+4. **Execute Workflow**: Run ADK agents on your data
+5. **Review Results**: Analyze compliance reports
 
-### Basic Workflow
+---
 
-#### 1. Extract Windows from ROS Bags
+## Basic Workflow
+
+### Architecture: Notebook vs Local Demo
+
+This project uses a **unified architecture** with two execution modes:
+
+| Aspect | **Notebook** (Source of Truth) | **Local Demo Script** |
+|--------|--------------------------------|-----------------------|
+| **Purpose** | Full ADK workflow with Gemini | Local testing without API |
+| **Agents** | Real Google ADK agents | Mock agents (fake JSON) |
+| **Data Flow** | Identical tool functions | Identical tool functions |
+| **Orchestration** | ADK `ParallelAgent` + `SequentialAgent` | Mock orchestrators |
+| **Use Case** | Production analysis | Schema validation |
+
+**Key Principle**: The notebook is the **source of truth** for data flow and agent architecture. The local demo script intentionally duplicates this pattern with mocks to enable rapid testing without Gemini API calls.
+
+### 1. Extract Windows from ROS Bags
 
 Process ROS2 bag files into time-windowed multi-modal snapshots:
 
