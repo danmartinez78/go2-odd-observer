@@ -226,7 +226,7 @@ def run_validation():
         print("\n✓ Running image comparison agent...\n")
 
         # Run the agent asynchronously
-        result = asyncio.run(runner(
+        result = asyncio.run(runner.run_debug(
             user_messages="Compare the raw bytes and base64 versions of the images. Verify they represent the same data. Analyze the images for size, colors, brightness, and key features."
         ))
 
