@@ -87,12 +87,20 @@ def get_window_image(window_id: str, image_type: str) -> dict:
         with open(file_path, 'rb') as f:
             image_base64 = base64.b64encode(f.read()).decode('utf-8')
 
-        return {
+        # Extract basic features from image metadata to reduce token usage
+        import os
+        file_size = os.path.getsize(file_path)
+
+        features = {
             "status": "success",
             "window_id": window_id,
             "image_type": image_type,
             "base64": image_base64,
+            "file_size_bytes": file_size,
+            "description": f"Image available for analysis: {image_type} for window {window_id}"
         }
+
+        return features
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -277,24 +285,17 @@ INSTRUCTIONS:
 2. For each window, call get_motion_json(window_id)
 3. Extract metrics: avg_forward_speed, max_forward_speed, max_abs_roll_pitch_deg
 4. Classify each window's motion as "smooth" or "dynamic"
-5. Return ONLY JSON with per-window analysis:
+5. Return ONLY JSON with per-window analysis for ALL windows:
 
 {
-  "windows_analyzed": ["006", "007"],
+  "windows_analyzed": ["<id>", "<id>", ...],
   "per_window_motion": [
     {
-      "window_id": "006",
-      "avg_forward_speed": 0.5,
-      "max_forward_speed": 1.2,
-      "max_abs_roll_pitch_deg": 4.54,
-      "motion_label": "smooth"
-    },
-    {
-      "window_id": "007",
-      "avg_forward_speed": 0.3,
-      "max_forward_speed": 0.8,
-      "max_abs_roll_pitch_deg": 1.75,
-      "motion_label": "smooth"
+      "window_id": "<id>",
+      "avg_forward_speed": <float>,
+      "max_forward_speed": <float>,
+      "max_abs_roll_pitch_deg": <float>,
+      "motion_label": "smooth|dynamic"
     }
   ]
 }""",
@@ -303,53 +304,52 @@ INSTRUCTIONS:
 
 
 def create_perception_agent() -> Agent:
-    """Analyze multi-modal perception (camera + LiDAR) per window."""
+    """Analyze multi-modal perception (camera + LiDAR) per window and classify environment."""
     return Agent(
         name="Perception_Agent",
         model=Gemini(model=GEMINI_MODEL, api_key=GOOGLE_API_KEY),
-        tools=[get_windows_tool],
-        instruction="""You are a multi-modal perception specialist (camera + LiDAR BEV analysis).
+        tools=[get_windows_tool, get_image_tool],
+        instruction="""You are a multi-modal perception specialist analyzing camera and LiDAR BEV data.
 
-TASK: Analyze vision (camera) and terrain (LiDAR BEV) for ALL windows.
+TASK: For ALL windows, analyze images to extract perception metrics and classify environment.
 
-NOTE: For this test run, generate realistic perception estimates without accessing images.
-In production, tools would fetch camera and LiDAR BEV data.
-
-INSTRUCTIONS:
-1. Call get_scenario_windows() to get list of window IDs
-2. For each window, estimate realistic perception metrics:
-   - lighting_class: bright/dim/dark
-   - visibility_score: 0.0-1.0
-   - terrain_roughness_class: smooth/moderate/rough/very_rough
-   - occupancy_ratio: 0.0-1.0
-   - obstacle_density: 0.0-1.0
-   - traversability_score: 0.0-1.0
-3. Return ONLY JSON with per-window analysis:
+STEP-BY-STEP:
+1. Call get_scenario_windows() to get window IDs (returns list like ['006', '007'])
+2. For EACH window ID:
+   a) Call get_image_tool(window_id, "camera") - analyze camera view for lighting, visibility, humans
+   b) Call get_image_tool(window_id, "bev_occupancy") - analyze LiDAR for terrain/obstacles
+3. From image analysis, estimate metrics (0.0-1.0 unless noted):
+   - lighting_class: "bright" (well-lit), "dim" (moderate), or "dark" (low light)
+   - visibility_score: Image clarity (0=blurry/dark, 1=clear/sharp)
+   - terrain_roughness_class: "smooth" (flat), "moderate", "rough", "very_rough"
+   - occupancy_ratio: Fraction of BEV with obstacles
+   - obstacle_density: Concentration of obstacles (0=sparse, 1=dense)
+   - traversability_score: How easily robot can move (0=blocked, 1=open)
+   - humans_detected: true/false from camera analysis
+   - environmental_constraints: List observed features
+4. Classify environment:
+   - Compare all windows' characteristics
+   - Determine if "indoor_office", "indoor_corridor", "indoor", "outdoor_urban", "outdoor_natural", "open_space"
+5. Return ONLY valid JSON:
 
 {
-  "windows_analyzed": ["006", "007"],
+  "windows_analyzed": ["<id>", "<id>", ...],
+  "environment_classification": {
+    "primary_class": "<class>",
+    "confidence": <0.0-1.0>,
+    "evidence": ["<observation1>", "<observation2>", "<observation3>"]
+  },
   "per_window_perception": [
     {
-      "window_id": "006",
-      "lighting_class": "bright",
-      "visibility_score": 0.8,
-      "terrain_roughness_class": "moderate",
-      "occupancy_ratio": 0.3,
-      "obstacle_density": 0.2,
-      "traversability_score": 0.7,
-      "humans_detected": false,
-      "environmental_constraints": ["moderate_obstacles"]
-    },
-    {
-      "window_id": "007",
-      "lighting_class": "bright",
-      "visibility_score": 0.8,
-      "terrain_roughness_class": "moderate",
-      "occupancy_ratio": 0.3,
-      "obstacle_density": 0.2,
-      "traversability_score": 0.7,
-      "humans_detected": false,
-      "environmental_constraints": ["moderate_obstacles"]
+      "window_id": "<id>",
+      "lighting_class": "bright|dim|dark",
+      "visibility_score": <float>,
+      "terrain_roughness_class": "smooth|moderate|rough|very_rough",
+      "occupancy_ratio": <float>,
+      "obstacle_density": <float>,
+      "traversability_score": <float>,
+      "humans_detected": <bool>,
+      "environmental_constraints": ["<constraint>"]
     }
   ]
 }""",
@@ -362,38 +362,42 @@ def create_collision_agent() -> Agent:
     return Agent(
         name="Collision_Agent",
         model=Gemini(model=GEMINI_MODEL, api_key=GOOGLE_API_KEY),
-        tools=[get_windows_tool, get_motion_tool],
+        tools=[get_windows_tool, get_motion_tool, get_image_tool],
         instruction="""You are a collision detection specialist (multi-modal fusion).
 
-TASK: Analyze collision risks for ALL windows using motion + camera + LiDAR.
+TASK: Analyze collision risks for ALL windows using motion + LiDAR BEV data fusion.
 
-NOTE: For this test run, estimate collision likelihood based on motion metrics.
-In production, tools would fetch motion, camera, and LiDAR BEV data.
-
-INSTRUCTIONS:
+STEP-BY-STEP INSTRUCTIONS:
 1. Call get_scenario_windows() to get list of window IDs
-2. For each window:
-   - Get motion data to check for deceleration/jerk patterns
-   - Estimate collision likelihood based on motion anomalies
-3. Determine collision likelihood per window
-4. Return ONLY JSON with per-window collision analysis:
+2. For EACH window ID returned:
+   a) Call get_motion_json(window_id) to get motion metrics:
+      - Extract: avg_forward_speed, max_forward_speed
+      - Analyze: sudden speed drops = deceleration detected
+   b) Call get_image_tool(window_id, "bev_occupancy") to analyze LiDAR:
+      - Check occupancy grid for obstacles near robot
+      - Bright pixels = obstacles, dark = clear space
+   c) Combine signals:
+      - Smooth motion + clear LiDAR = SAFE
+      - Deceleration + occupied front cells = ALERT
+      - Minor jerk + distance obstacles = CAUTION
+3. Classification:
+   - SAFE: Smooth motion, clear LiDAR occupancy
+   - CAUTION: Minor motion anomalies or obstacles at distance
+   - ALERT: Deceleration + near obstacles or sudden velocity drops
+4. Return ONLY JSON:
 
 {
-  "windows_analyzed": ["006", "007"],
+  "windows_analyzed": ["<id>", "<id>"],
   "per_window_collision": [
     {
-      "window_id": "006",
-      "collision_suspected": false,
-      "collision_confidence": 0.0,
-      "collision_type": "none",
-      "risk_level": "safe"
-    },
-    {
-      "window_id": "007",
-      "collision_suspected": false,
-      "collision_confidence": 0.0,
-      "collision_type": "none",
-      "risk_level": "safe"
+      "window_id": "<id>",
+      "collision_suspected": <bool>,
+      "collision_confidence": <0.0-1.0>,
+      "collision_type": "none|front_bump|side_impact|rear_impact",
+      "risk_level": "safe|caution|alert",
+      "motion_anomaly": "<description>",
+      "lidar_finding": "<description>",
+      "fusion_evidence": ["<evidence1>", "<evidence2>"]
     }
   ]
 }""",
@@ -544,16 +548,17 @@ TASK: Synthesize all analyses into a final narrative report.
 INSTRUCTIONS:
 1. Read all agent outputs from session state:
    - odd_spec: ODD specification
-   - data_source: scenario domain
+   - data_source: scenario domain (sim/real)
+   - perception_analysis: includes environment_classification
    - motion_analysis: per-window motion data
-   - perception_analysis: per-window perception data
    - collision_analysis: per-window collision data
    - window_evaluations: per-window IN/BOUNDARY/EXIT status
    - scenario_aggregation: scenario COD profile with ranges
    - odd_classification: scenario status and violations
 2. Structure report:
-   - Scenario metadata (ID, domain, total windows)
+   - Scenario metadata (ID, domain, total windows, environment)
    - ODD specification summary
+   - Environment classification with confidence
    - Scenario-level COD profile with ranges
    - Overall scenario status (IN_ODD / BOUNDARY / ODD_EXIT)
    - Per-window status details for all windows
@@ -564,9 +569,14 @@ INSTRUCTIONS:
 {
   "report_title": "ODD/COD Analysis Report",
   "scenario_id": "<id>",
-  "scenario_domain": "sim" | "real",
+  "scenario_domain": "sim|real",
+  "environment_classification": {
+    "primary_class": "<class>",
+    "confidence": <0.0-1.0>,
+    "evidence": ["<observation>"]
+  },
   "total_windows": <count>,
-  "scenario_status": "IN_ODD" | "BOUNDARY" | "ODD_EXIT",
+  "scenario_status": "IN_ODD|BOUNDARY|ODD_EXIT",
   "cod_distance_from_odd": <0.0-1.0>,
   "motion_summary": "<summary>",
   "perception_summary": "<summary>",
@@ -578,10 +588,10 @@ INSTRUCTIONS:
     "exit": <count>
   },
   "window_details": [
-    {"window_id": "<id>", "status": "IN_ODD" | "BOUNDARY" | "ODD_EXIT"}
+    {"window_id": "<id>", "status": "IN_ODD|BOUNDARY|ODD_EXIT"}
   ],
-  "violations": ["<violation details with window IDs>"],
-  "overall_assessment": "<narrative summary>",
+  "violations": ["<violation details>"],
+  "overall_assessment": "<narrative>",
   "confidence": <0.0-1.0>
 }""",
         output_key="final_report"
@@ -779,6 +789,14 @@ async def test_orchestration():
         if perception['json']:
             print(
                 f"   Windows: {perception['json'].get('windows_analyzed', [])}")
+            env_class = perception['json'].get(
+                'environment_classification', {})
+            if env_class:
+                print(
+                    f"   Environment: {env_class.get('primary_class', 'N/A')} (confidence: {env_class.get('confidence', 'N/A')})")
+                if env_class.get('evidence'):
+                    print(
+                        f"   Evidence: {env_class['evidence'][:2]}")
 
         print(
             f"\n✅ Collision: {collision['agent_messages']} events, output={'YES' if collision['has_output'] else 'NO'}")
@@ -819,6 +837,14 @@ async def test_orchestration():
             print(f"   Domain: {report['json'].get('scenario_domain', 'N/A')}")
             print(
                 f"   Total Windows: {report['json'].get('total_windows', 'N/A')}")
+            env_class_report = report['json'].get(
+                'environment_classification', {})
+            if env_class_report:
+                print(
+                    f"   Environment: {env_class_report.get('primary_class', 'N/A')} (confidence: {env_class_report.get('confidence', 'N/A')})")
+                if env_class_report.get('evidence'):
+                    print(
+                        f"   Evidence: {env_class_report['evidence'][:1]}")
 
         print("\n" + "=" * 90)
         print("✅ SCENARIO ANALYSIS COMPLETE")
