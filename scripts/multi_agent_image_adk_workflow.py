@@ -46,7 +46,8 @@ if not GOOGLE_API_KEY:
     print("❌ GOOGLE_API_KEY not found! Check your .env.")
     raise SystemExit(1)
 
-PROJECT_ROOT = Path(__file__).parent
+# Go up from scripts/ to project root
+PROJECT_ROOT = Path(__file__).parent.parent
 genai_client = genai.Client(api_key=GOOGLE_API_KEY)
 
 
@@ -167,7 +168,7 @@ async def main() -> None:
     print("AGENT-AS-TOOL LOOP DEMO: 4 IMAGES → DESCRIPTIONS → STORY")
     print("=" * 80)
 
-    images_dir_rel = "data/test_images"
+    images_dir_rel = "data/test/images"
     images_dir = PROJECT_ROOT / images_dir_rel
 
     if not images_dir.exists():

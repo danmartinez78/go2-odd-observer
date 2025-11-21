@@ -16,6 +16,7 @@ draw.ellipse([75, 200, 175, 280], fill='green', outline='darkgreen')
 draw.text((150, 10), "Test Image", fill='black')
 
 # Save
-os.makedirs('/workspaces/go2-odd-observer/test_data', exist_ok=True)
-img.save('/workspaces/go2-odd-observer/test_data/sample_detection.png')
-print("Test image created: /workspaces/go2-odd-observer/test_data/sample_detection.png")
+os.makedirs(
+    '/workspaces/go2-odd-observer/data/test/unit_test_data', exist_ok=True)
+img.save('/workspaces/go2-odd-observer/data/test/unit_test_data/sample_detection.png')
+print("Test image created: /workspaces/go2-odd-observer/data/test/unit_test_data/sample_detection.png")
