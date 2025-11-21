@@ -6,6 +6,7 @@ Orchestrates perception, motion, collision, ODD spec, COD analysis, and reportin
 
 import asyncio
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -173,12 +174,11 @@ ANALYZE_WINDOW_PERCEPTION = FunctionTool(func=analyze_window_perception_tool)
 # =============================================================================
 
 
-async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
-    """Tool: analyze motion metrics for one window."""
+async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
+    """Tool: run a direct Gemini call to analyze raw IMU motion sensor data."""
     try:
         scenario_name = SCENARIO_PATH.name
-        motion_file = SCENARIO_PATH / \
-            f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
 
         if not motion_file.exists():
             return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
@@ -186,22 +186,72 @@ async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
         with open(motion_file, 'r') as f:
             motion_data = json.load(f)
 
-        avg_speed = motion_data.get("avg_forward_speed", 0.0)
-        max_speed = motion_data.get("max_forward_speed", 0.0)
-        max_roll_pitch = motion_data.get("max_abs_roll_pitch_deg", 0.0)
+        # Calculate summary statistics for the prompt
+        accel_x = motion_data["accel_x"]
+        accel_y = motion_data["accel_y"]
+        gyro_z = motion_data["gyro_z"]
+        roll = motion_data["roll"]
+        pitch = motion_data["pitch"]
+        
+        # Calculate horizontal acceleration magnitude
+        horiz_accel = [math.sqrt(ax**2 + ay**2) for ax, ay in zip(accel_x, accel_y)]
+        peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
+        avg_horiz_accel = sum(horiz_accel) / len(horiz_accel) if horiz_accel else 0.0
+        
+        # Calculate angular velocity stats
+        peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
+        avg_gyro_z = sum(abs(gz) for gz in gyro_z) / len(gyro_z) if gyro_z else 0.0
+        
+        # Platform tilt stats
+        max_roll = max(abs(r) for r in roll) if roll else 0.0
+        max_pitch = max(abs(p) for p in pitch) if pitch else 0.0
 
-        if max_speed > 1.0 or max_roll_pitch > 10.0:
-            motion_label = "dynamic"
-        else:
-            motion_label = "smooth"
+        prompt = f"""You are a robotics motion analyst for window {window_id}.
 
-        return {
-            "window_id": window_id,
-            "avg_forward_speed": round(avg_speed, 3),
-            "max_forward_speed": round(max_speed, 3),
-            "max_abs_roll_pitch_deg": round(max_roll_pitch, 2),
-            "motion_label": motion_label,
-        }
+IMU ACCELEROMETER DATA (gravity-compensated, body frame):
+- Horizontal acceleration samples (sqrt(accel_x² + accel_y²)): {len(horiz_accel)} samples
+- Peak horizontal accel: {peak_horiz_accel:.4f} m/s²
+- Average horizontal accel: {avg_horiz_accel:.4f} m/s²
+- Sample values: {horiz_accel[:10]} (first 10 of {len(horiz_accel)})
+
+IMU GYROSCOPE DATA:
+- Peak angular velocity (|gyro_z|): {peak_gyro_z:.4f} rad/s
+- Average angular velocity: {avg_gyro_z:.4f} rad/s
+- Sample values: {gyro_z[:10]} (first 10 of {len(gyro_z)})
+
+PLATFORM ORIENTATION:
+- Max roll: {max_roll:.1f}°
+- Max pitch: {max_pitch:.1f}°
+
+MOTION DETECTION GUIDANCE:
+- Horizontal accel > 0.05 m/s² indicates translation (robot moving forward/sideways)
+- Horizontal accel > 0.5 m/s² indicates strong acceleration/deceleration
+- Angular velocity > 0.1 rad/s indicates rotation (turning)
+- Roll/pitch > 15° indicates platform instability
+
+TASK: Analyze this sensor data and provide a JSON object with this EXACT schema:
+{{
+  "window_id": "{window_id}",
+  "motion_detected": true|false,
+  "motion_type": "stationary|rotation|translation|complex",
+  "peak_horizontal_accel_mps2": <float>,
+  "peak_angular_velocity_radps": <float>,
+  "platform_stability": "stable|unstable",
+  "max_tilt_deg": <float>,
+  "motion_confidence": 0.0-1.0,
+  "evidence": "brief explanation of your analysis"
+}}
+
+No explanations outside the JSON."""
+
+        response = GENAI_CLIENT.models.generate_content(
+            model=GEMINI_MODEL_MOTION,
+            contents=[types.Part(text=prompt.strip())],
+        )
+
+        data = _extract_json_block(response.text or "")
+        data["window_id"] = window_id
+        return data
 
     except Exception as err:
         return {"status": "error", "window_id": window_id, "message": str(err)}
@@ -237,11 +287,23 @@ async def analyze_collision_risk_tool(window_id: str, tool_context: ToolContext)
         camera_bytes = camera_path.read_bytes()
         bev_bytes = bev_path.read_bytes()
 
+        # Calculate motion metrics from raw IMU data
+        accel_x = motion_data["accel_x"]
+        accel_y = motion_data["accel_y"]
+        gyro_z = motion_data["gyro_z"]
+        roll = motion_data["roll"]
+        pitch = motion_data["pitch"]
+        
+        horiz_accel = [math.sqrt(ax**2 + ay**2) for ax, ay in zip(accel_x, accel_y)]
+        peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
+        peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
+        max_tilt = max(max(abs(r) for r in roll) if roll else 0.0,
+                       max(abs(p) for p in pitch) if pitch else 0.0)
+        
         motion_summary = {
-            "avg_forward_speed": motion_data.get("avg_forward_speed", 0.0),
-            "max_forward_speed": motion_data.get("max_forward_speed", 0.0),
-            "avg_angular_velocity": motion_data.get("avg_angular_velocity_z", 0.0),
-            "max_abs_roll_pitch": motion_data.get("max_abs_roll_pitch_deg", 0.0),
+            "peak_horizontal_accel_mps2": round(peak_horiz_accel, 3),
+            "peak_angular_velocity_radps": round(peak_gyro_z, 3),
+            "max_tilt_deg": round(max_tilt, 1),
         }
 
         prompt = f"""You are a collision risk assessment expert analyzing synchronized sensor data for window {window_id}.
@@ -383,14 +445,21 @@ If no data is provided, respond with:
 
 Otherwise:
 1. Read the JSON string carefully.
-2. Calculate overall motion statistics (average speed across windows, max observed speed, etc.)
+2. Calculate overall motion statistics:
+   - Motion detection rate (% windows with motion_detected=true)
+   - Motion type distribution
+   - Peak values across all windows
 3. Produce final JSON:
 {
   "windows_analyzed": [...],
-  "overall_motion_stats": {
-    "avg_speed_across_windows": <float>,
-    "max_observed_speed": <float>,
-    "predominant_motion_class": "smooth|dynamic"
+  "overall_stats": {
+    "total_windows": <int>,
+    "motion_detected_count": <int>,
+    "motion_detection_rate": <float 0-1>,
+    "motion_type_distribution": {"stationary": X, "translation": Y, ...},
+    "max_horizontal_accel_mps2": <float>,
+    "max_angular_velocity_radps": <float>,
+    "overall_assessment": "stationary_scenario|low_activity|moderate_activity|high_activity"
   },
   "per_window_motion": [...]
 }
@@ -474,7 +543,8 @@ SYNTHESIS LOGIC:
 - terrain_type: Aggregate from perception.per_window_perception[*].terrain_roughness_class
 
 **Numeric Axes (extract ranges):**
-- speed_range: [min, max] from motion.per_window_motion[*].avg_forward_speed
+- motion_detection_rate: from motion.overall_stats.motion_detection_rate
+- peak_horizontal_accel: from motion.overall_stats.max_horizontal_accel_mps2
 - obstacle_density: [min, max] from perception.per_window_perception[*].obstacle_density
 - traversability: [min, max] from perception.per_window_perception[*].traversability_score
 - collision_risk: [min, max] from collision.collision_events[*].collision_likelihood_score
