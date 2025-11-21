@@ -9,7 +9,7 @@ We tested all agents with `gemini-2.0-flash-lite` vs `gemini-2.5-pro` to optimiz
 | Agent | Flash-Lite Performance | Recommended Model | Rationale |
 |-------|----------------------|-------------------|-----------|
 | **Perception Agent** | ⚠️ Degraded | `gemini-2.5-pro` | Vision-heavy analysis; flash-lite misclassified lighting (called bright scenes "dim"), produced less detailed environmental constraints |
-| **Motion Agent** | ✅ Perfect | `gemini-2.0-flash-lite` | Simple numeric JSON extraction, no vision required |
+| **Motion Agent** | ⚠️ Data Loss | `gemini-2.5-pro` | Flash-lite failed to preserve per-window motion arrays during aggregation; 2.5-pro needed for reliable data structure preservation |
 | **Collision Agent** | ⚠️ Acceptable | `gemini-2.5-pro` | Complex multimodal fusion (motion+camera+LiDAR); flash-lite more conservative but less nuanced |
 | **ODD Spec Agent** | ✅ Perfect | `gemini-2.0-flash-lite` | Pure JSON synthesis from structured data, no vision or complex reasoning |
 
@@ -17,13 +17,15 @@ We tested all agents with `gemini-2.0-flash-lite` vs `gemini-2.5-pro` to optimiz
 
 **Use `gemini-2.5-pro` for:**
 - Perception Agent - requires accurate vision analysis
+- Motion Agent - needs reliable data structure preservation during aggregation
 - Collision Agent - needs sophisticated multimodal fusion
+- Report Agent - high-quality report generation
 
 **Use `gemini-2.0-flash-lite` for:**
-- Motion Agent - simple data processing
 - ODD Spec Agent - JSON aggregation only
+- COD Agent - simple comparison logic
 
-**Estimated Cost Savings:** ~40-50% reduction by using flash-lite for motion + odd_spec agents
+**Estimated Cost Savings:** ~30% reduction by using flash-lite for odd_spec + cod agents (updated from original 40-50% estimate after motion agent reassignment)
 
 ### Implementation Notes
 
