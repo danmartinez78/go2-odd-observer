@@ -309,47 +309,58 @@ def create_perception_agent() -> Agent:
         name="Perception_Agent",
         model=Gemini(model=GEMINI_MODEL, api_key=GOOGLE_API_KEY),
         tools=[get_windows_tool, get_image_tool],
-        instruction="""You are a multi-modal perception specialist analyzing camera and LiDAR BEV data.
+        instruction="""You are a multi-modal perception specialist analyzing camera and LiDAR BEV images.
 
-TASK: For ALL windows, analyze images to extract perception metrics and classify environment.
+TASK: Analyze camera and LiDAR images for ALL windows to extract perception metrics and classify environment.
 
 STEP-BY-STEP:
-1. Call get_scenario_windows() to get window IDs (returns list like ['006', '007'])
+1. Call get_scenario_windows() to get window IDs
 2. For EACH window ID:
-   a) Call get_image_tool(window_id, "camera") - analyze camera view for lighting, visibility, humans
-   b) Call get_image_tool(window_id, "bev_occupancy") - analyze LiDAR for terrain/obstacles
-3. From image analysis, estimate metrics (0.0-1.0 unless noted):
-   - lighting_class: "bright" (well-lit), "dim" (moderate), or "dark" (low light)
-   - visibility_score: Image clarity (0=blurry/dark, 1=clear/sharp)
-   - terrain_roughness_class: "smooth" (flat), "moderate", "rough", "very_rough"
-   - occupancy_ratio: Fraction of BEV with obstacles
-   - obstacle_density: Concentration of obstacles (0=sparse, 1=dense)
-   - traversability_score: How easily robot can move (0=blocked, 1=open)
+   a) Call get_image_tool(window_id, "camera") to get and analyze camera view
+   b) Call get_image_tool(window_id, "bev_occupancy") to get and analyze LiDAR occupancy
+3. From image analysis, extract metrics:
+   - lighting_class: Assess from camera brightness (bright/dim/dark)
+   - visibility_score: 0.0-1.0 based on image clarity/contrast
+   - terrain_roughness_class: From floor texture in camera (smooth/moderate/rough/very_rough)
+   - occupancy_ratio: Fraction of bright pixels in BEV (0.0-1.0)
+   - obstacle_density: Concentration of obstacles in BEV (0.0-1.0)
+   - traversability_score: Combine floor smoothness + obstacle clearance (0.0-1.0)
    - humans_detected: true/false from camera analysis
-   - environmental_constraints: List observed features
+   - environmental_constraints: List features (furniture, walls, etc.)
 4. Classify environment:
-   - Compare all windows' characteristics
-   - Determine if "indoor_office", "indoor_corridor", "indoor", "outdoor_urban", "outdoor_natural", "open_space"
-5. Return ONLY valid JSON:
+   - Analyze all windows for consistent characteristics
+   - Determine class: "indoor_office", "indoor_corridor", "indoor", "outdoor_urban", "outdoor_natural", "open_space"
+5. Return ONLY JSON for ALL windows:
 
 {
-  "windows_analyzed": ["<id>", "<id>", ...],
+  "windows_analyzed": ["006", "007"],
   "environment_classification": {
-    "primary_class": "<class>",
+    "primary_class": "<inferred_from_images>",
     "confidence": <0.0-1.0>,
-    "evidence": ["<observation1>", "<observation2>", "<observation3>"]
+    "evidence": ["<observation>", "<observation>"]
   },
   "per_window_perception": [
     {
-      "window_id": "<id>",
-      "lighting_class": "bright|dim|dark",
-      "visibility_score": <float>,
-      "terrain_roughness_class": "smooth|moderate|rough|very_rough",
-      "occupancy_ratio": <float>,
-      "obstacle_density": <float>,
-      "traversability_score": <float>,
-      "humans_detected": <bool>,
-      "environmental_constraints": ["<constraint>"]
+      "window_id": "006",
+      "lighting_class": "bright",
+      "visibility_score": 0.85,
+      "terrain_roughness_class": "smooth",
+      "occupancy_ratio": 0.15,
+      "obstacle_density": 0.1,
+      "traversability_score": 0.9,
+      "humans_detected": false,
+      "environmental_constraints": ["hallway", "tiled floor"]
+    },
+    {
+      "window_id": "007",
+      "lighting_class": "bright",
+      "visibility_score": 0.85,
+      "terrain_roughness_class": "smooth",
+      "occupancy_ratio": 0.1,
+      "obstacle_density": 0.05,
+      "traversability_score": 0.95,
+      "humans_detected": false,
+      "environmental_constraints": ["hallway", "tiled floor"]
     }
   ]
 }""",
@@ -363,7 +374,7 @@ def create_collision_agent() -> Agent:
         name="Collision_Agent",
         model=Gemini(model=GEMINI_MODEL, api_key=GOOGLE_API_KEY),
         tools=[get_windows_tool, get_motion_tool, get_image_tool],
-        instruction="""You are a collision detection specialist (multi-modal fusion).
+        instruction="""You are a collision detection specialist(multi-modal fusion).
 
 TASK: Analyze collision risks for ALL windows using motion + LiDAR BEV data fusion.
 
@@ -391,8 +402,8 @@ STEP-BY-STEP INSTRUCTIONS:
   "per_window_collision": [
     {
       "window_id": "<id>",
-      "collision_suspected": <bool>,
-      "collision_confidence": <0.0-1.0>,
+      "collision_suspected": < bool >,
+      "collision_confidence": < 0.0-1.0 >,
       "collision_type": "none|front_bump|side_impact|rear_impact",
       "risk_level": "safe|caution|alert",
       "motion_anomaly": "<description>",
