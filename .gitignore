@@ -42,11 +42,28 @@ env/
 *.ipynb_checkpoints/
 *_executed.ipynb
 
-# Data directories (exclude all data except manifest template)
-data/raw_rosbags/
-data/processed/runs/
-# Keep the manifest CSV structure but not actual data
+# Data directories (organized structure)
+# Raw inputs (large binary files)
+data/raw_rosbags/**
+!data/raw_rosbags/.gitkeep
+
+# Processed outputs (regenerable)
+data/processed/runs/**
+!data/processed/runs/.gitkeep
 !data/processed/manifest.csv
+
+# Development artifacts (temporary)
+data/development/**
+!data/development/.gitkeep
+
+# Test data (keep fixtures, ignore generated)
+data/test/images/*.png
+data/test/images/*.jpg
+!data/test/unit_test_data/**
+
+# Examples (keep organized, ignore temp)
+data/examples/**
+!data/examples/.gitkeep
 
 # ROS bags (large binary files)
 *.db3
@@ -85,3 +102,4 @@ logs/
 *.tmp
 *.temp
 *.bak
+.env
