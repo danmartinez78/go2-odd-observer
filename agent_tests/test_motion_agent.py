@@ -19,10 +19,11 @@ SCENARIO_PATH = DATA_DIR / "sim_run_test"
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = "gemini-2.5-pro"
+GEMINI_MODEL = "gemini-2.0-flash-lite"  # Testing cheaper model
 
 if not GOOGLE_API_KEY:
-    raise SystemExit("❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
+    raise SystemExit(
+        "❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
 
 
 async def list_windows_tool() -> Dict[str, Any]:
@@ -42,7 +43,8 @@ async def list_windows_tool() -> Dict[str, Any]:
 
     for _, row in index_df.iterrows():
         window_id = str(row["window_id"]).zfill(3)
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
         if motion_file.exists():
             windows.append(window_id)
 
@@ -57,7 +59,8 @@ async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
     """Tool: analyze motion metrics for one window."""
     try:
         scenario_name = SCENARIO_PATH.name
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
 
         if not motion_file.exists():
             return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
@@ -146,7 +149,8 @@ motion_workflow = SequentialAgent(
 def _extract_json_block(text: str) -> Dict[str, Any]:
     cleaned = text.strip()
     if cleaned.startswith("```"):
-        cleaned = "\n".join(line for line in cleaned.splitlines() if not line.strip().startswith("```"))
+        cleaned = "\n".join(line for line in cleaned.splitlines()
+                            if not line.strip().startswith("```"))
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start == -1 or end == -1:
@@ -171,7 +175,8 @@ async def test_motion_agent() -> Optional[Dict[str, Any]]:
     print("MOTION WORKFLOW TEST")
     print("=" * 80)
 
-    runner = InMemoryRunner(agent=motion_workflow, app_name="MotionWorkflowApp")
+    runner = InMemoryRunner(agent=motion_workflow,
+                            app_name="MotionWorkflowApp")
     events = await runner.run_debug("Analyze motion for all available windows")
 
     result = _extract_result(events)

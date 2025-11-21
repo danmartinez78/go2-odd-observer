@@ -23,10 +23,11 @@ SCENARIO_PATH = DATA_DIR / "sim_run_test"
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = "gemini-2.5-pro"
+GEMINI_MODEL = "gemini-2.0-flash-lite"  # Testing cheaper model
 
 if not GOOGLE_API_KEY:
-    raise SystemExit("❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
+    raise SystemExit(
+        "❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
 
 GENAI_CLIENT = genai.Client(api_key=GOOGLE_API_KEY)
 
@@ -48,7 +49,8 @@ async def list_windows_tool() -> Dict[str, Any]:
 
     for _, row in index_df.iterrows():
         window_id = str(row["window_id"]).zfill(3)
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
         if motion_file.exists():
             windows.append(window_id)
 
@@ -63,25 +65,27 @@ async def analyze_collision_risk_tool(window_id: str, tool_context: ToolContext)
     """Tool: multimodal collision risk assessment (motion + camera + BEV)."""
     try:
         scenario_name = SCENARIO_PATH.name
-        
+
         # Load motion data
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
         if not motion_file.exists():
             return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
-        
+
         with open(motion_file, 'r') as f:
             motion_data = json.load(f)
-        
+
         # Load images
         camera_path = SCENARIO_PATH / f"cam_{scenario_name}_w{window_id}.png"
-        bev_path = SCENARIO_PATH / f"bev_occupancy_{scenario_name}_w{window_id}.png"
-        
+        bev_path = SCENARIO_PATH / \
+            f"bev_occupancy_{scenario_name}_w{window_id}.png"
+
         if not camera_path.exists() or not bev_path.exists():
             return {"status": "error", "window_id": window_id, "message": "Images not found"}
-        
+
         camera_bytes = camera_path.read_bytes()
         bev_bytes = bev_path.read_bytes()
-        
+
         # Format motion metrics for prompt
         motion_summary = {
             "avg_forward_speed": motion_data.get("avg_forward_speed", 0.0),
@@ -89,7 +93,7 @@ async def analyze_collision_risk_tool(window_id: str, tool_context: ToolContext)
             "avg_angular_velocity": motion_data.get("avg_angular_velocity_z", 0.0),
             "max_abs_roll_pitch": motion_data.get("max_abs_roll_pitch_deg", 0.0),
         }
-        
+
         prompt = f"""You are a collision risk assessment expert analyzing synchronized sensor data for window {window_id}.
 
 MOTION DATA:
@@ -124,22 +128,24 @@ No explanations outside JSON."""
             contents=[
                 types.Part(text=prompt.strip()),
                 types.Part(text="Image A (camera):"),
-                types.Part.from_bytes(data=camera_bytes, mime_type="image/png"),
+                types.Part.from_bytes(
+                    data=camera_bytes, mime_type="image/png"),
                 types.Part(text="Image B (LiDAR BEV occupancy):"),
                 types.Part.from_bytes(data=bev_bytes, mime_type="image/png"),
             ],
         )
-        
+
         def extract_json(text: str) -> dict:
             cleaned = text.strip()
             if cleaned.startswith("```"):
-                cleaned = "\n".join(line for line in cleaned.splitlines() if not line.strip().startswith("```"))
+                cleaned = "\n".join(line for line in cleaned.splitlines(
+                ) if not line.strip().startswith("```"))
             start = cleaned.find("{")
             end = cleaned.rfind("}")
             if start == -1 or end == -1:
                 raise ValueError("No JSON found")
             return json.loads(cleaned[start:end + 1])
-        
+
         data = extract_json(response.text or "")
         data["window_id"] = window_id
         return data
@@ -208,7 +214,8 @@ collision_workflow = SequentialAgent(
 def _extract_json_block(text: str) -> Dict[str, Any]:
     cleaned = text.strip()
     if cleaned.startswith("```"):
-        cleaned = "\n".join(line for line in cleaned.splitlines() if not line.strip().startswith("```"))
+        cleaned = "\n".join(line for line in cleaned.splitlines()
+                            if not line.strip().startswith("```"))
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start == -1 or end == -1:
@@ -233,7 +240,8 @@ async def test_collision_agent() -> Optional[Dict[str, Any]]:
     print("COLLISION WORKFLOW TEST (Motion + Camera + LiDAR Fusion)")
     print("=" * 80)
 
-    runner = InMemoryRunner(agent=collision_workflow, app_name="CollisionWorkflowApp")
+    runner = InMemoryRunner(agent=collision_workflow,
+                            app_name="CollisionWorkflowApp")
     events = await runner.run_debug("Analyze collision risks for all available windows using multimodal fusion")
 
     result = _extract_result(events)

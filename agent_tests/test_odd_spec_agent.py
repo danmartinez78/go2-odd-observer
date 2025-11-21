@@ -17,10 +17,11 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = "gemini-2.5-pro"
+GEMINI_MODEL = "gemini-2.0-flash-lite"  # Testing cheaper model
 
 if not GOOGLE_API_KEY:
-    raise SystemExit("❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
+    raise SystemExit(
+        "❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
 
 
 # Mock upstream agent outputs (in real workflow, these come from actual agents)
@@ -212,7 +213,8 @@ No explanations outside JSON.""",
 def _extract_json_block(text: str) -> Dict[str, Any]:
     cleaned = text.strip()
     if cleaned.startswith("```"):
-        cleaned = "\n".join(line for line in cleaned.splitlines() if not line.strip().startswith("```"))
+        cleaned = "\n".join(line for line in cleaned.splitlines()
+                            if not line.strip().startswith("```"))
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start == -1 or end == -1:

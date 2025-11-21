@@ -23,7 +23,7 @@ SCENARIO_PATH = DATA_DIR / "sim_run_test"
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_MODEL = "gemini-2.0-flash-lite"  # Testing cheaper model
 
 if not GOOGLE_API_KEY:
     raise SystemExit(
