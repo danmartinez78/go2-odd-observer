@@ -1,69 +1,131 @@
-# IMU-Based Motion Detection Update
+# ODD/COD Workflow Updates
 
 ## Summary
-Refactored motion agent to use IMU accelerometer/gyroscope data instead of broken odometry for motion detection.
+Major restructuring of the ODD (Operational Design Domain) and COD (Current Operating Domain) workflow with IMU-based motion detection and proper terminology.
 
-## Changes Made
+## Key Terminology
 
-### 1. Test Script (`tests/test_motion_agent.py`)
-- **Tool redesign**: `analyze_motion_tool()` now uses direct Gemini API call
-- **Raw sensor analysis**: Calculates horizontal acceleration magnitude from IMU data
-- **Motion classification**: stationary/rotation/translation/complex based on thresholds
-- **Platform stability**: Detects unstable conditions from roll/pitch angles
-- **Follows perception agent pattern**: Proven reliable multi-agent workflow
+- **ODD (Operational Design Domain)**: The environment the robot is **designed** to work in (specification)
+- **COD (Current Operating Domain)**: The environment the robot is **actually** in (measured from sensors)
+- **ODD Compliance**: Comparison of COD against ODD to detect violations
 
-### 2. Full Workflow (`scripts/odd_workflow_full.py`)
-- Updated `analyze_motion_tool()` to match test pattern
-- Updated collision tool to compute motion metrics from raw IMU arrays
-- Updated motion summary agent instructions for new data structure
-- Updated ODD spec agent to use `motion_detection_rate` and `peak_horizontal_accel` fields
+## Workflow Structure
 
-### 3. Extraction Pipeline (`scripts/extract_windows.py`)
-- **No changes needed** - already extracts all required IMU data
+### 1. ODD Specification Agent
+- **Input**: Natural language ODD description (user-provided or default)
+- **Output**: Formal ODD specification with categorical constraints and numeric thresholds
+- **Runs**: First in pipeline (no sensor data needed)
+- **Purpose**: Define allowed/prohibited values and in_odd/boundary/out_odd zones
 
-## Motion Detection Strategy
+### 2. Sensor Analysis Agents (COD Measurement)
+- **Perception Loop + Summary**: Analyze camera + LiDAR BEV images
+  - Environment classification (indoor_office, outdoor, etc.)
+  - Lighting, terrain, obstacle analysis
+  - **NEW**: Sim vs real classification based on image characteristics
+- **Motion Loop + Summary**: Analyze IMU sensor data
+  - IMU-based motion detection (replaces broken odometry)
+  - Motion type classification (stationary/rotation/translation/complex)
+  - Platform stability assessment
+- **Collision Loop + Summary**: Multimodal risk assessment
+  - Fuses motion + camera + LiDAR data
+  - Risk levels and likelihood scores
 
-### Primary: IMU Accelerometer
-- Horizontal acceleration (√(accel_x² + accel_y²)) indicates translation
-- Threshold: >0.05 m/s² suggests motion (gravity-compensated IMU)
-- Threshold: >0.5 m/s² indicates strong acceleration
+### 3. COD Classifier Agent
+- **Input**: Aggregated sensor analysis (perception + motion + collision)
+- **Output**: Current Operating Domain classification
+- **Purpose**: Synthesize what environment the robot is currently in
 
-### Secondary: IMU Gyroscope
-- gyro_z indicates yaw rotation (turning)
-- Threshold: >0.1 rad/s is significant rotation
+### 4. ODD Compliance Agent
+- **Input**: ODD specification + COD classification
+- **Output**: Compliance report (IN_ODD / ODD_BOUNDARY / OUT_ODD)
+- **Purpose**: Detect violations and warnings
 
-### Stability: Orientation
-- Roll/pitch changes detect platform tilt/instability
-- Threshold: >15° indicates unstable platform
+### 5. Report Agent
+- **Input**: All previous outputs
+- **Output**: Comprehensive human-readable report
+- **Includes**: Data source (sim vs real), compliance summary, recommendations
 
-## Test Results (sim_run_test)
+## IMU-Based Motion Detection
+
+### Changes Made
+1. **Test Script** (`tests/test_motion_agent.py`)
+   - Direct Gemini API call with raw sensor data
+   - Follows proven perception agent pattern
+   
+2. **Full Workflow** (`scripts/odd_workflow_full.py`)
+   - Motion tool analyzes IMU accelerometer/gyroscope
+   - Collision tool computes motion from raw IMU arrays
+   - Summary agent calculates motion detection rate
+   
+3. **Extraction Pipeline** (`scripts/extract_windows.py`)
+   - No changes needed - already extracts IMU data
+
+### Motion Detection Strategy
+- **Primary**: IMU Accelerometer (horizontal acceleration √(accel_x² + accel_y²))
+  - >0.05 m/s² indicates motion
+  - >0.5 m/s² indicates strong acceleration
+- **Secondary**: IMU Gyroscope (yaw rotation)
+  - >0.1 rad/s indicates significant rotation
+- **Stability**: Roll/Pitch orientation
+  - >15° indicates unstable platform
+
+### Why IMU Over Odometry
+- Odometry showed zero velocities (broken in simulation)
+- IMU showed clear acceleration signatures (0.93-0.98 m/s²)
+- Agent directly interprets sensor arrays for better accuracy
+
+## Sim vs Real Classification
+
+### Implementation
+- Added to **perception_summary_agent**
+- Analyzes image characteristics:
+  - **Simulation indicators**: Perfect textures, uniform lighting, geometric regularity, lack of noise
+  - **Real-world indicators**: Natural lighting variations, sensor noise, organic textures
+- Classification flows through to final report metadata
+- Includes confidence score
+
+### TODO
+Consider extracting into dedicated agent that runs early in pipeline to provide context to all downstream agents.
+
+## Test Results (sim_run_test - 2 windows)
 
 ```json
 {
-  "overall_stats": {
+  "motion_stats": {
     "motion_detected_count": 2,
     "motion_detection_rate": 1.0,
     "motion_type_distribution": {"complex": 2},
     "max_horizontal_accel_mps2": 0.9755,
     "max_angular_velocity_radps": 0.8592,
     "overall_assessment": "high_activity"
-  }
+  },
+  "data_source": "simulation",
+  "data_source_confidence": 0.95
 }
 ```
 
-**Window 006**: 0.925 m/s² peak accel, 0.859 rad/s rotation → complex motion  
-**Window 007**: 0.976 m/s² peak accel, 0.133 rad/s rotation → complex motion
+## Usage
 
-## Why This Works
+```python
+# Default ODD
+result = await run_odd_workflow(scenario_name="sim_run_test")
 
-1. **Odometry was broken**: Showed zero velocities despite robot movement
-2. **IMU showed truth**: Clear acceleration signatures (0.93-0.98 m/s²)
-3. **Agent analyzes raw data**: Gemini directly interprets sensor arrays
-4. **Reliable pattern**: Follows proven perception agent design
+# Custom ODD
+custom_odd = "A robot designed for outdoor environments..."
+result = await run_odd_workflow(
+    scenario_name="sim_run_test",
+    nl_odd_description=custom_odd
+)
+```
 
 ## Next Steps
 
+- [x] IMU-based motion detection
+- [x] ODD/COD restructuring with correct terminology
+- [x] NL ODD description as input parameter
+- [x] Sim vs real classification
 - [ ] Test on full scenario (13 windows)
-- [ ] Update notebook with same pattern
+- [ ] Update notebook with same patterns
 - [ ] Test on real robot data
-- [ ] Document in TODO Priority 0
+- [ ] Validate ODD compliance detection
+- [ ] Consider dedicated data source classifier agent
