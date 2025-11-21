@@ -310,16 +310,24 @@ go2-odd-observer/
 │   ├── odd_spec_schema.py          # ODD definitions
 │   ├── cod_features.py             # Feature mappings
 │   └── distance_metrics.py         # Compliance computation
-├── 📁 data/
-│   ├── raw_rosbags/                # ROS2 input (gitignored)
-│   └── processed/
-│       ├── manifest.csv            # Scenario metadata
-│       └── runs/
-│           └── sim_run_new/        # Example: 13 windows
-│               ├── index_*.csv
-│               ├── motion_*.json
-│               ├── cam_*.png
-│               └── bev_occupancy_*.png
+├── 📁 data/                        # Organized data storage
+│   ├── raw_rosbags/                # ROS2 bag files (gitignored)
+│   │   ├── real/                   # Physical robot data
+│   │   └── sim/                    # Simulation data
+│   ├── processed/                  # Extracted windows
+│   │   ├── manifest.csv            # Scenario metadata
+│   │   └── runs/                   # Per-scenario results
+│   │       └── sim_run_new/        # Example: 13 windows
+│   │           ├── index_*.csv
+│   │           ├── motion_*.json
+│   │           ├── cam_*.png
+│   │           └── bev_occupancy_*.png
+│   ├── test/                       # Test fixtures
+│   │   ├── images/                 # Test images
+│   │   └── unit_test_data/         # Test JSON/CSV
+│   ├── development/                # Debug artifacts (gitignored)
+│   │   └── debug_frames/           # Debug images
+│   └── README.md                   # Data organization guide
 ├── 📚 docs/
 │   ├── guides/                     # Project documentation
 │   │   ├── GETTING_STARTED.md      # Comprehensive setup guide
