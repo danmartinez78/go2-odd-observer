@@ -40,7 +40,8 @@ if not GOOGLE_API_KEY:
 # Data aggregation agents use 2.5-pro to preserve structure
 # Simple processing agents use flash-lite for cost savings
 GEMINI_MODEL_PERCEPTION = "gemini-2.5-pro"  # Vision analysis needs accuracy
-GEMINI_MODEL_MOTION = "gemini-2.5-pro"  # Data aggregation needs structure preservation
+# Data aggregation needs structure preservation
+GEMINI_MODEL_MOTION = "gemini-2.5-pro"
 GEMINI_MODEL_COLLISION = "gemini-2.5-pro"  # Complex multimodal fusion
 GEMINI_MODEL_ODD_SPEC = "gemini-2.0-flash-lite"  # JSON synthesis only
 GEMINI_MODEL_COD = "gemini-2.0-flash-lite"  # Comparison logic
