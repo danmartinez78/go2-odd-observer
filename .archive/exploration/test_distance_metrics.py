@@ -1,9 +1,16 @@
 """
-Unit tests for distance metrics module.
+Unit tests for distance metrics module (legacy).
+Note: odd_cod module is archived but test retained for reference.
 """
 
 import pytest
+import sys
+from pathlib import Path
 import numpy as np
+
+# Add archived odd_cod to path for legacy test
+sys.path.insert(0, str(Path(__file__).parent.parent / ".archive" / "exploration"))
+
 from odd_cod.odd_spec_schema import OddSpec, AxisSpecNumeric, AxisSpecCategorical
 from odd_cod.distance_metrics import (
     compute_window_distance,
