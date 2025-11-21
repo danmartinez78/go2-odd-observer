@@ -3,15 +3,20 @@
 
 import asyncio
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.models.google_llm import Gemini
 from google.adk.runners import InMemoryRunner
 from google.adk.tools import FunctionTool
+from google.adk.tools.tool_context import ToolContext
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data" / "processed" / "runs"
@@ -24,6 +29,20 @@ GEMINI_MODEL = "gemini-2.0-flash-lite"  # Testing cheaper model
 if not GOOGLE_API_KEY:
     raise SystemExit(
         "❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
+
+GENAI_CLIENT = genai.Client(api_key=GOOGLE_API_KEY)
+
+
+def _extract_json_block(text: str) -> Dict[str, Any]:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = "\n".join(line for line in cleaned.splitlines()
+                            if not line.strip().startswith("```"))
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError(f"No JSON object found in response: {text}")
+    return json.loads(cleaned[start:end + 1])
 
 
 async def list_windows_tool() -> Dict[str, Any]:
@@ -55,8 +74,8 @@ async def list_windows_tool() -> Dict[str, Any]:
     }
 
 
-async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
-    """Tool: analyze motion metrics for one window."""
+async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
+    """Tool: run a direct Gemini call to analyze raw motion sensor data."""
     try:
         scenario_name = SCENARIO_PATH.name
         motion_file = SCENARIO_PATH / \
@@ -68,29 +87,81 @@ async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
         with open(motion_file, 'r') as f:
             motion_data = json.load(f)
 
-        # Extract key metrics
-        avg_speed = motion_data.get("avg_forward_speed", 0.0)
-        max_speed = motion_data.get("max_forward_speed", 0.0)
-        max_roll_pitch = motion_data.get("max_abs_roll_pitch_deg", 0.0)
+        # Calculate summary statistics for the prompt
+        accel_x = motion_data["accel_x"]
+        accel_y = motion_data["accel_y"]
+        gyro_z = motion_data["gyro_z"]
+        roll = motion_data["roll"]
+        pitch = motion_data["pitch"]
 
-        # Classify motion dynamics
-        if max_speed > 1.0 or max_roll_pitch > 10.0:
-            motion_label = "dynamic"
-        else:
-            motion_label = "smooth"
+        # Calculate horizontal acceleration magnitude
+        horiz_accel = [math.sqrt(ax**2 + ay**2)
+                       for ax, ay in zip(accel_x, accel_y)]
+        peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
+        avg_horiz_accel = sum(horiz_accel) / \
+            len(horiz_accel) if horiz_accel else 0.0
 
-        return {
-            "window_id": window_id,
-            "avg_forward_speed": round(avg_speed, 3),
-            "max_forward_speed": round(max_speed, 3),
-            "max_abs_roll_pitch_deg": round(max_roll_pitch, 2),
-            "motion_label": motion_label,
-        }
+        # Calculate angular velocity stats
+        peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
+        avg_gyro_z = sum(abs(gz) for gz in gyro_z) / \
+            len(gyro_z) if gyro_z else 0.0
+
+        # Platform tilt stats
+        max_roll = max(abs(r) for r in roll) if roll else 0.0
+        max_pitch = max(abs(p) for p in pitch) if pitch else 0.0
+
+        prompt = f"""You are a robotics motion analyst for window {window_id}.
+
+IMU ACCELEROMETER DATA (gravity-compensated, body frame):
+- Horizontal acceleration samples (sqrt(accel_x² + accel_y²)): {len(horiz_accel)} samples
+- Peak horizontal accel: {peak_horiz_accel:.4f} m/s²
+- Average horizontal accel: {avg_horiz_accel:.4f} m/s²
+- Sample values: {horiz_accel[:10]} (first 10 of {len(horiz_accel)})
+
+IMU GYROSCOPE DATA:
+- Peak angular velocity (|gyro_z|): {peak_gyro_z:.4f} rad/s
+- Average angular velocity: {avg_gyro_z:.4f} rad/s
+- Sample values: {gyro_z[:10]} (first 10 of {len(gyro_z)})
+
+PLATFORM ORIENTATION:
+- Max roll: {max_roll:.1f}°
+- Max pitch: {max_pitch:.1f}°
+
+MOTION DETECTION GUIDANCE:
+- Horizontal accel > 0.05 m/s² indicates translation (robot moving forward/sideways)
+- Horizontal accel > 0.5 m/s² indicates strong acceleration/deceleration
+- Angular velocity > 0.1 rad/s indicates rotation (turning)
+- Roll/pitch > 15° indicates platform instability
+
+TASK: Analyze this sensor data and provide a JSON object with this EXACT schema:
+{{
+  "window_id": "{window_id}",
+  "motion_detected": true|false,
+  "motion_type": "stationary|rotation|translation|complex",
+  "peak_horizontal_accel_mps2": <float>,
+  "peak_angular_velocity_radps": <float>,
+  "platform_stability": "stable|unstable",
+  "max_tilt_deg": <float>,
+  "motion_confidence": 0.0-1.0,
+  "evidence": "brief explanation of your analysis"
+}}
+
+No explanations outside the JSON."""
+
+        response = GENAI_CLIENT.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[types.Part(text=prompt.strip())],
+        )
+
+        data = _extract_json_block(response.text or "")
+        data["window_id"] = window_id
+        return data
 
     except Exception as err:
         return {"status": "error", "window_id": window_id, "message": str(err)}
 
 
+LIST_WINDOWS = FunctionTool(func=list_windows_tool)
 LIST_WINDOWS = FunctionTool(func=list_windows_tool)
 ANALYZE_MOTION = FunctionTool(func=analyze_motion_tool)
 
@@ -110,8 +181,7 @@ Steps you MUST follow:
   "windows_analyzed": ["..."],
   "per_window_motion": [<tool_response_objects_in_order>]
 }
-Do not add commentary. Ensure valid JSON.""",
-)
+Do not add commentary. Ensure valid JSON.""")
 
 motion_summary_agent = Agent(
     name="MotionSummaryAgent",
@@ -126,19 +196,25 @@ If no data is provided, respond with:
 
 Otherwise:
 1. Read the JSON string carefully.
-2. Calculate overall motion statistics (average speed across windows, max observed speed, etc.)
+2. Calculate overall motion statistics:
+   - Motion detection rate (% windows with motion_detected=true)
+   - Motion type distribution
+   - Peak values across all windows
 3. Produce final JSON:
 {
   "windows_analyzed": [...],
-  "overall_motion_stats": {
-    "avg_speed_across_windows": <float>,
-    "max_observed_speed": <float>,
-    "predominant_motion_class": "smooth|dynamic"
+  "overall_stats": {
+    "total_windows": <int>,
+    "motion_detected_count": <int>,
+    "motion_detection_rate": <float 0-1>,
+    "motion_type_distribution": {"stationary": X, "translation": Y, ...},
+    "max_horizontal_accel_mps2": <float>,
+    "max_angular_velocity_radps": <float>,
+    "overall_assessment": "stationary_scenario|low_activity|moderate_activity|high_activity"
   },
   "per_window_motion": [...]
 }
-Only output JSON.""",
-)
+Only output JSON.""")
 
 motion_workflow = SequentialAgent(
     name="MotionWorkflow",
@@ -185,6 +261,8 @@ async def test_motion_agent() -> Optional[Dict[str, Any]]:
         print(json.dumps(result, indent=2))
     else:
         print("\n❌ No valid JSON output produced")
+
+    return result
 
     return result
 
