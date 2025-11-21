@@ -24,7 +24,8 @@ from google.adk.tools.tool_context import ToolContext
 # Configuration
 # =============================================================================
 
-PROJECT_ROOT = Path(__file__).parent
+# Go up from scripts/ to project root
+PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data" / "processed" / "runs"
 SCENARIO_PATH = DATA_DIR / "sim_run_new"  # Full dataset (13 windows)
 
