@@ -26,27 +26,31 @@ from google.adk.tools.tool_context import ToolContext
 
 PROJECT_ROOT = Path(__file__).parent
 DATA_DIR = PROJECT_ROOT / "data" / "processed" / "runs"
-SCENARIO_PATH = DATA_DIR / "sim_run_test"
+SCENARIO_PATH = DATA_DIR / "sim_run_new"  # Full dataset (13 windows)
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 if not GOOGLE_API_KEY:
-    raise SystemExit("❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
+    raise SystemExit(
+        "❌ GOOGLE_API_KEY not found. Set it in your environment or .env file.")
 
-# Model assignments per agent (start with 2.5-pro for all, optimize later)
-GEMINI_MODEL_PERCEPTION = "gemini-2.5-pro"
-GEMINI_MODEL_MOTION = "gemini-2.5-pro"
-GEMINI_MODEL_COLLISION = "gemini-2.5-pro"
-GEMINI_MODEL_ODD_SPEC = "gemini-2.5-pro"
-GEMINI_MODEL_COD = "gemini-2.5-pro"
-GEMINI_MODEL_REPORT = "gemini-2.5-pro"
+# Model assignments per agent (optimized for cost/performance)
+# Vision-heavy agents use 2.5-pro for accuracy
+# JSON processing agents use flash-lite for cost savings
+GEMINI_MODEL_PERCEPTION = "gemini-2.5-pro"  # Vision analysis needs accuracy
+GEMINI_MODEL_MOTION = "gemini-2.0-flash-lite"  # Simple numeric extraction
+GEMINI_MODEL_COLLISION = "gemini-2.5-pro"  # Complex multimodal fusion
+GEMINI_MODEL_ODD_SPEC = "gemini-2.0-flash-lite"  # JSON synthesis only
+GEMINI_MODEL_COD = "gemini-2.0-flash-lite"  # Comparison logic
+GEMINI_MODEL_REPORT = "gemini-2.5-pro"  # High-quality report generation
 
 GENAI_CLIENT = genai.Client(api_key=GOOGLE_API_KEY)
 
 # =============================================================================
 # Utility Functions
 # =============================================================================
+
 
 def _build_image_path(prefix: str, window_id: str) -> Path:
     scenario_name = SCENARIO_PATH.name
@@ -63,7 +67,8 @@ def _ensure_image_bytes(path: Path) -> bytes:
 def _extract_json_block(text: str) -> Dict[str, Any]:
     cleaned = text.strip()
     if cleaned.startswith("```"):
-        cleaned = "\n".join(line for line in cleaned.splitlines() if not line.strip().startswith("```"))
+        cleaned = "\n".join(line for line in cleaned.splitlines()
+                            if not line.strip().startswith("```"))
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start == -1 or end == -1:
@@ -92,7 +97,8 @@ async def list_windows_tool() -> Dict[str, Any]:
 
     for _, row in index_df.iterrows():
         window_id = str(row["window_id"]).zfill(3)
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
         if motion_file.exists():
             windows.append(window_id)
 
@@ -141,7 +147,8 @@ async def analyze_window_perception_tool(window_id: str, tool_context: ToolConte
             contents=[
                 types.Part(text=prompt.strip()),
                 types.Part(text="Image A (camera):"),
-                types.Part.from_bytes(data=camera_bytes, mime_type="image/png"),
+                types.Part.from_bytes(
+                    data=camera_bytes, mime_type="image/png"),
                 types.Part(text="Image B (LiDAR BEV occupancy):"),
                 types.Part.from_bytes(data=bev_bytes, mime_type="image/png"),
             ],
@@ -162,11 +169,13 @@ ANALYZE_WINDOW_PERCEPTION = FunctionTool(func=analyze_window_perception_tool)
 # MOTION AGENT TOOLS
 # =============================================================================
 
+
 async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
     """Tool: analyze motion metrics for one window."""
     try:
         scenario_name = SCENARIO_PATH.name
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
 
         if not motion_file.exists():
             return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
@@ -201,34 +210,37 @@ ANALYZE_MOTION = FunctionTool(func=analyze_motion_tool)
 # COLLISION AGENT TOOLS
 # =============================================================================
 
+
 async def analyze_collision_risk_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
     """Tool: multimodal collision risk assessment (motion + camera + BEV)."""
     try:
         scenario_name = SCENARIO_PATH.name
-        
-        motion_file = SCENARIO_PATH / f"motion_{scenario_name}_w{window_id}.json"
+
+        motion_file = SCENARIO_PATH / \
+            f"motion_{scenario_name}_w{window_id}.json"
         if not motion_file.exists():
             return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
-        
+
         with open(motion_file, 'r') as f:
             motion_data = json.load(f)
-        
+
         camera_path = SCENARIO_PATH / f"cam_{scenario_name}_w{window_id}.png"
-        bev_path = SCENARIO_PATH / f"bev_occupancy_{scenario_name}_w{window_id}.png"
-        
+        bev_path = SCENARIO_PATH / \
+            f"bev_occupancy_{scenario_name}_w{window_id}.png"
+
         if not camera_path.exists() or not bev_path.exists():
             return {"status": "error", "window_id": window_id, "message": "Images not found"}
-        
+
         camera_bytes = camera_path.read_bytes()
         bev_bytes = bev_path.read_bytes()
-        
+
         motion_summary = {
             "avg_forward_speed": motion_data.get("avg_forward_speed", 0.0),
             "max_forward_speed": motion_data.get("max_forward_speed", 0.0),
             "avg_angular_velocity": motion_data.get("avg_angular_velocity_z", 0.0),
             "max_abs_roll_pitch": motion_data.get("max_abs_roll_pitch_deg", 0.0),
         }
-        
+
         prompt = f"""You are a collision risk assessment expert analyzing synchronized sensor data for window {window_id}.
 
 MOTION DATA:
@@ -263,12 +275,13 @@ No explanations outside JSON."""
             contents=[
                 types.Part(text=prompt.strip()),
                 types.Part(text="Image A (camera):"),
-                types.Part.from_bytes(data=camera_bytes, mime_type="image/png"),
+                types.Part.from_bytes(
+                    data=camera_bytes, mime_type="image/png"),
                 types.Part(text="Image B (LiDAR BEV occupancy):"),
                 types.Part.from_bytes(data=bev_bytes, mime_type="image/png"),
             ],
         )
-        
+
         data = _extract_json_block(response.text or "")
         data["window_id"] = window_id
         return data
@@ -628,29 +641,29 @@ def _extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def run_odd_workflow(scenario_name: str = "sim_run_test") -> Optional[Dict[str, Any]]:
+async def run_odd_workflow(scenario_name: str = "sim_run_new") -> Optional[Dict[str, Any]]:
     """Run the complete ODD analysis workflow."""
     global SCENARIO_PATH
     SCENARIO_PATH = DATA_DIR / scenario_name
-    
+
     if not SCENARIO_PATH.exists():
         print(f"❌ Scenario not found: {scenario_name}")
         return None
-    
+
     print("\n" + "=" * 80)
     print(f"ODD WORKFLOW - FULL PIPELINE")
     print(f"Scenario: {scenario_name}")
     print("=" * 80)
-    
+
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
     events = await runner.run_debug(f"Analyze scenario: {scenario_name}")
-    
+
     report = _extract_final_report(events)
-    
+
     if report:
         print("\n✅ WORKFLOW COMPLETED - Final Report:\n")
         print(json.dumps(report, indent=2))
-        
+
         # Save report to file
         output_file = SCENARIO_PATH / "odd_analysis_report.json"
         with open(output_file, 'w') as f:
@@ -658,7 +671,7 @@ async def run_odd_workflow(scenario_name: str = "sim_run_test") -> Optional[Dict
         print(f"\n📄 Report saved to: {output_file}")
     else:
         print("\n❌ No valid report generated")
-    
+
     return report
 
 
