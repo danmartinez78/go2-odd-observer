@@ -2,7 +2,7 @@
 
 > **⚠️ This file is a REFERENCE implementation - DO NOT DELETE**
 
-This file demonstrates the **proven ADK pattern** that eliminated hallucinations in vision workflows. It was used as the foundation for `odd_workflow_full.py` and all agents in `agent_tests/`.
+This file demonstrates the **proven ADK pattern** that eliminated hallucinations in vision workflows. It was used as the foundation for `scripts/odd_workflow_full.py` and all agents in `agent_tests/`.
 
 ---
 
@@ -79,7 +79,7 @@ workflow = SequentialAgent(
 
 ## 📊 How This Pattern Was Applied
 
-### In `odd_workflow_full.py`:
+### In `scripts/odd_workflow_full.py`:
 
 **Perception Analysis** (Loop + Summary):
 - `PerceptionLoopAgent` - Analyze camera + BEV for each window
@@ -122,7 +122,7 @@ Then: `OddSpecAgent` → `CodAgent` → `ReportAgent` for synthesis
 
 ## 📖 Related Files
 
-- **Production**: `odd_workflow_full.py` - Full 9-agent pipeline
+- **Production**: `scripts/odd_workflow_full.py` - Full 9-agent pipeline
 - **Examples**: `agent_tests/test_*_agent.py` - Individual agent implementations
 - **Archive**: `.archive/exploration/REFERENCE_PATTERN.md` - Detailed pattern documentation
 - **Documentation**: `docs/MODEL_SELECTION_GUIDE.md` - Model selection rationale
