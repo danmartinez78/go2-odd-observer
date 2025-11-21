@@ -37,9 +37,10 @@ if not GOOGLE_API_KEY:
 
 # Model assignments per agent (optimized for cost/performance)
 # Vision-heavy agents use 2.5-pro for accuracy
-# JSON processing agents use flash-lite for cost savings
+# Data aggregation agents use 2.5-pro to preserve structure
+# Simple processing agents use flash-lite for cost savings
 GEMINI_MODEL_PERCEPTION = "gemini-2.5-pro"  # Vision analysis needs accuracy
-GEMINI_MODEL_MOTION = "gemini-2.0-flash-lite"  # Simple numeric extraction
+GEMINI_MODEL_MOTION = "gemini-2.5-pro"  # Data aggregation needs structure preservation
 GEMINI_MODEL_COLLISION = "gemini-2.5-pro"  # Complex multimodal fusion
 GEMINI_MODEL_ODD_SPEC = "gemini-2.0-flash-lite"  # JSON synthesis only
 GEMINI_MODEL_COD = "gemini-2.0-flash-lite"  # Comparison logic
@@ -533,27 +534,27 @@ DESIGN PARAMETERS (expected ODD):
 
 ANALYSIS:
 For each axis, classify as:
-- "in_design": Observed value within expected parameters
-- "near_boundary": Close to design limits
-- "out_of_design": Exceeds design parameters
+- "IN_ODD": Observed value within expected parameters
+- "ODD_BOUNDARY": Close to design limits
+- "OUT_ODD": Exceeds design parameters
 
 Return ONLY valid JSON:
 {
   "cod_analysis": {
     "categorical_compliance": {
-      "environment_type": "in_design|out_of_design",
-      "lighting_conditions": "in_design|out_of_design",
-      "terrain_type": "in_design|out_of_design"
+      "environment_type": "IN_ODD|OUT_ODD",
+      "lighting_conditions": "IN_ODD|OUT_ODD",
+      "terrain_type": "IN_ODD|OUT_ODD"
     },
     "numeric_compliance": {
-      "speed_range": "in_design|near_boundary|out_of_design",
-      "obstacle_density": "in_design|near_boundary|out_of_design",
-      "traversability": "in_design|near_boundary|out_of_design",
-      "collision_risk": "in_design|near_boundary|out_of_design"
+      "speed_range": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
+      "obstacle_density": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
+      "traversability": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
+      "collision_risk": "IN_ODD|ODD_BOUNDARY|OUT_ODD"
     },
-    "overall_compliance": "in_design|near_boundary|out_of_design",
-    "violations": ["list of any parameters out of design"],
-    "warnings": ["list of any parameters near boundary"],
+    "overall_compliance": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
+    "violations": ["list of any parameters OUT_ODD"],
+    "warnings": ["list of any parameters at ODD_BOUNDARY"],
     "summary": "Brief assessment of COD compliance"
   }
 }
