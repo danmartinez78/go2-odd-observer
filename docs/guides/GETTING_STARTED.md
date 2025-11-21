@@ -71,7 +71,7 @@ os.environ["GOOGLE_API_KEY"] = "your-api-key-here"
 
 ```bash
 # Run the complete 9-agent workflow on the sim dataset
-python odd_workflow_full.py
+python scripts/odd_workflow_full.py
 
 # Output: data/processed/runs/sim_run_new/odd_analysis_report.json
 ```
@@ -179,8 +179,8 @@ python scripts/extract_windows.py \
   --window-length 2.0
 
 # Run analysis
-python odd_workflow_full.py
-# Edit odd_workflow_full.py first: SCENARIO_PATH = "office_test"
+python scripts/odd_workflow_full.py
+# Edit scripts/odd_workflow_full.py first: SCENARIO_PATH = "office_test"
 
 # Review compliance in report
 jq '.full_analysis.cod.cod_analysis' data/processed/runs/office_test/odd_analysis_report.json
@@ -192,12 +192,12 @@ jq '.full_analysis.cod.cod_analysis' data/processed/runs/office_test/odd_analysi
 
 ```bash
 # Analyze simulation run
-python odd_workflow_full.py  # SCENARIO_PATH = "sim_run_new"
+python scripts/odd_workflow_full.py  # SCENARIO_PATH = "sim_run_new"
 cp data/processed/runs/sim_run_new/odd_analysis_report.json reports/sim_baseline.json
 
 # Analyze real-world run
-# Edit odd_workflow_full.py: SCENARIO_PATH = "real_run_001"
-python odd_workflow_full.py
+# Edit scripts/odd_workflow_full.py: SCENARIO_PATH = "real_run_001"
+python scripts/odd_workflow_full.py
 cp data/processed/runs/real_run_001/odd_analysis_report.json reports/real_deployment.json
 
 # Compare compliance
@@ -217,7 +217,7 @@ python scripts/extract_windows.py \
   --run-id incident_analysis
 
 # Focus on collision detection
-python odd_workflow_full.py
+python scripts/odd_workflow_full.py
 
 # Examine collision events
 jq '.full_analysis.collision.collision_events[] | select(.risk_level == "alert")' \
@@ -294,7 +294,7 @@ SCENARIO_PATH = DATA_DIR / "my_scenario"  # Your scenario name
 
 Then run:
 ```bash
-python odd_workflow_full.py
+python scripts/odd_workflow_full.py
 ```
 
 ---

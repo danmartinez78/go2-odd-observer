@@ -165,7 +165,7 @@ export GOOGLE_API_KEY="your-api-key-from-google-ai-studio"
 
 ```bash
 # Run full 9-agent workflow on example dataset (13 windows, ~2 minutes)
-python odd_workflow_full.py
+python scripts/odd_workflow_full.py
 
 # Output saved to: data/processed/runs/sim_run_new/odd_analysis_report.json
 ```
@@ -290,7 +290,14 @@ go2-odd-observer/
 
 ```
 go2-odd-observer/
-├── 📊 odd_workflow_full.py          # Main 9-agent sequential pipeline
+├── �️ scripts/                      # All executable scripts
+│   ├── odd_workflow_full.py        # Main 9-agent sequential pipeline
+│   ├── multi_agent_image_adk_workflow.py  # Reference pattern
+│   ├── extract_windows.py          # ROS2 bag → time windows
+│   ├── render_bev.py               # LiDAR → bird's eye view
+│   ├── generate_demo_data.py       # Synthetic data generator
+│   ├── demo_pipeline_local.py      # Mock agent testing
+│   └── README.md                   # Scripts documentation
 ├── 📓 notebooks/
 │   ├── odd_workflow_interactive.ipynb  # Interactive analysis (14 cells)
 │   └── README.md
@@ -303,10 +310,6 @@ go2-odd-observer/
 │   ├── odd_spec_schema.py          # ODD definitions
 │   ├── cod_features.py             # Feature mappings
 │   └── distance_metrics.py         # Compliance computation
-├── 🛠️ scripts/
-│   ├── extract_windows.py          # ROS2 bag → time windows
-│   ├── render_bev.py               # LiDAR → bird's eye view
-│   └── generate_demo_data.py       # Synthetic data generator
 ├── 📁 data/
 │   ├── raw_rosbags/                # ROS2 input (gitignored)
 │   └── processed/
@@ -318,15 +321,19 @@ go2-odd-observer/
 │               ├── cam_*.png
 │               └── bev_occupancy_*.png
 ├── 📚 docs/
+│   ├── guides/                     # Project documentation
+│   │   ├── GETTING_STARTED.md      # Comprehensive setup guide
+│   │   ├── REFERENCE_multi_agent_pattern.md  # ADK pattern guide
+│   │   └── project_plan.md         # Development roadmap
 │   ├── examples/                   # Real output samples
 │   │   ├── example_report.json
 │   │   └── example_motion_window.json
 │   ├── MODEL_SELECTION_GUIDE.md    # Cost optimization
 │   └── images/
 ├── 🧬 go2_ros2_sdk/                # ROS2 robot SDK (submodule)
-├── GETTING_STARTED.md              # Comprehensive setup guide
 ├── README.md                       # This file
-└── requirements.txt                # Python dependencies
+├── requirements.txt                # Python dependencies
+└── LICENSE                         # MIT License
 ```
 
 ---
@@ -451,7 +458,7 @@ final_risk = multimodal_fusion(motion_risk, visual_risk, lidar_risk)
 
 ### Custom ODD Specification
 
-Edit agent instructions in `odd_workflow_full.py`:
+Edit agent instructions in `scripts/odd_workflow_full.py`:
 
 ```python
 # COD Agent instruction (lines 512-567)
@@ -476,11 +483,11 @@ python scripts/extract_windows.py \
   --window-length 2.0 \
   --stride 1.0
 
-# Update scenario path in odd_workflow_full.py
+# Update scenario path in scripts/odd_workflow_full.py
 SCENARIO_PATH = DATA_DIR / "my_scenario"
 
 # Run analysis
-python odd_workflow_full.py
+python scripts/odd_workflow_full.py
 ```
 
 ### Interactive Notebook Analysis
@@ -613,11 +620,13 @@ git push origin feature/my-improvement
 
 ## 📚 Documentation
 
-- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Complete setup and usage guide
+- **[docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)** - Complete setup and usage guide
+- **[docs/guides/REFERENCE_multi_agent_pattern.md](docs/guides/REFERENCE_multi_agent_pattern.md)** - ADK pattern reference
+- **[docs/guides/project_plan.md](docs/guides/project_plan.md)** - Development roadmap
 - **[docs/MODEL_SELECTION_GUIDE.md](docs/MODEL_SELECTION_GUIDE.md)** - Cost optimization strategies
 - **[docs/examples/](docs/examples/)** - Real output samples and schemas
+- **[scripts/README.md](scripts/README.md)** - Scripts documentation
 - **[notebooks/README.md](notebooks/README.md)** - Interactive notebook guide
-- **[project_plan.md](project_plan.md)** - Development roadmap and architecture decisions
 
 ---
 
@@ -665,6 +674,6 @@ If you find this project useful:
 
 **Built with ❤️ using Google ADK and Gemini 2.5 Pro**
 
-[🏠 Home](https://github.com/danmartinez78/go2-odd-observer) • [📚 Docs](GETTING_STARTED.md) • [🐛 Issues](https://github.com/danmartinez78/go2-odd-observer/issues) • [🤝 Contribute](CONTRIBUTING.md)
+[🏠 Home](https://github.com/danmartinez78/go2-odd-observer) • [📚 Docs](docs/guides/GETTING_STARTED.md) • [🐛 Issues](https://github.com/danmartinez78/go2-odd-observer/issues) • [💬 Discussions](https://github.com/danmartinez78/go2-odd-observer/discussions)
 
 </div>

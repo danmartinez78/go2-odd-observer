@@ -23,7 +23,7 @@ Files used to explore different ADK agent architectures and discover the optimal
 
 ### Reference Implementation
 
-- **`multi_agent_image_adk_workflow.py`** - The PROVEN loop+summary pattern that became our foundation
+- **`scripts/multi_agent_image_adk_workflow.py`** - The PROVEN loop+summary pattern that became our foundation
   - This file demonstrated the hallucination-free approach
   - Tools call Gemini directly and return text/JSON (not Part objects)
   - Loop agent processes items individually, summary agent aggregates

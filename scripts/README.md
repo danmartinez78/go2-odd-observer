@@ -1,6 +1,41 @@
 # Scripts Directory
 
-This directory contains data processing and testing utilities for the Go2 ODD Observer project.
+This directory contains **all executable scripts** for the Go2 ODD Observer project, including the main workflow, data processing tools, and testing utilities.
+
+---
+
+## 🚀 Main Workflow
+
+### `odd_workflow_full.py` - 9-Agent Sequential Pipeline
+
+**Purpose**: Complete ODD/COD analysis using the proven loop+summary pattern.
+
+**Usage**:
+```bash
+python scripts/odd_workflow_full.py
+```
+
+**What it does**:
+- Analyzes multi-modal sensor data (camera, LiDAR, motion)
+- Runs 9 specialized AI agents in sequence
+- Generates comprehensive ODD compliance report
+- Outputs to: `data/processed/runs/{scenario}/odd_analysis_report.json`
+
+**Agents**: Perception Loop/Summary → Motion Loop/Summary → Collision Loop/Summary → ODD Spec → COD → Report
+
+---
+
+### `multi_agent_image_adk_workflow.py` - Reference Pattern
+
+**Purpose**: Proven loop+summary pattern for multimodal vision workflows.
+
+**This is the reference implementation** that demonstrated:
+- Hallucination-free vision analysis
+- Tools calling Gemini directly with `types.Part.from_bytes`
+- Loop agent processing items individually
+- Summary agent aggregating results
+
+**Do not modify** - this is the pattern foundation for `odd_workflow_full.py`.
 
 ---
 
