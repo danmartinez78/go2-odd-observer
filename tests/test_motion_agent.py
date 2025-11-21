@@ -41,7 +41,8 @@ async def test_motion_agent() -> Optional[Dict[str, Any]]:
     print("MOTION WORKFLOW TEST (IMU Sensor Analysis)")
     print("=" * 80)
 
-    runner = InMemoryRunner(agent=motion_workflow, app_name="MotionWorkflowApp")
+    runner = InMemoryRunner(agent=motion_workflow,
+                            app_name="MotionWorkflowApp")
     events = await runner.run_debug("Analyze motion for all available windows")
 
     result = _extract_result(events)

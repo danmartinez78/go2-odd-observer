@@ -67,13 +67,13 @@ async def run_odd_workflow(
     Args:
         scenario_name: Name of the scenario to analyze
         nl_odd_description: Natural language ODD description. If None, uses default.
-        
+
     Returns:
         Dictionary containing the final analysis report, or None if failed.
     """
     # Set the scenario path (updates global config)
     scenario_path = set_scenario(scenario_name)
-    
+
     if not scenario_path.exists():
         print(f"❌ Scenario not found: {scenario_name}")
         return None
