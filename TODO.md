@@ -2,6 +2,17 @@
 
 ## Priority Tasks
 
+### 0. Validate with Real Robot Data
+- [ ] Run complete pipeline on real robot bagfile (not simulation)
+  - Current sim data has stationary robot (zero velocities)
+  - Need to verify workflow with actual movement data
+  - Test with data/raw_rosbags/real/ if available
+  - Expected: Non-zero motion features, realistic ODD violations
+- [ ] Document differences between sim and real data
+  - Motion characteristics
+  - Sensor noise patterns
+  - ODD compliance patterns
+
 ### 1. Improve Agent Testing
 - [ ] Implement LLM-as-judge evaluation pattern
   - Use secondary LLM to assess agent output quality
