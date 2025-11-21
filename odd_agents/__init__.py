@@ -13,16 +13,16 @@ Core Components:
     - workflow: High-level workflow orchestration
 
 Quick Start:
-    >>> from odd_agents.workflow import run_odd_workflow
-    >>> result = await run_odd_workflow(scenario="sim_run_test")
+    >>> from odd_agents import run_odd_workflow
+    >>> result = await run_odd_workflow(scenario_name="sim_run_test")
     >>> print(result["report"]["executive_summary"])
 
 For more control:
-    >>> from odd_agents.agents import build_odd_workflow
-    >>> from odd_agents.config import set_scenario
+    >>> from odd_agents import odd_workflow, set_scenario
+    >>> from google.adk.runners import InMemoryRunner
     >>> 
     >>> set_scenario("my_scenario")
-    >>> workflow = build_odd_workflow()
+    >>> runner = InMemoryRunner(agent=odd_workflow, app_name="MyApp")
     >>> # ... customize and run workflow
 """
 
@@ -55,13 +55,19 @@ from .utils import (
     extract_json_block,
 )
 
+from .workflow import (
+    odd_workflow,
+    run_odd_workflow,
+    extract_final_report,
+)
+
 __all__ = [
     # Modules
     "config",
     "utils",
     "tools",
     "agents",
-    
+
     # Config exports
     "GOOGLE_API_KEY",
     "GENAI_CLIENT",
@@ -73,9 +79,14 @@ __all__ = [
     "GEMINI_MODEL_REPORT",
     "set_scenario",
     "get_scenario_path",
-    
+
     # Utils exports
     "build_image_path",
     "ensure_image_bytes",
     "extract_json_block",
+    
+    # Workflow exports
+    "odd_workflow",
+    "run_odd_workflow",
+    "extract_final_report",
 ]

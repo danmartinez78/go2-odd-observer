@@ -66,10 +66,10 @@ GEMINI_MODEL_REPORT = "gemini-2.5-pro"
 def set_scenario(scenario_name: str) -> Path:
     """
     Set the active scenario path.
-    
+
     Args:
         scenario_name: Name of scenario directory (e.g., "sim_run_test")
-        
+
     Returns:
         Path to the scenario directory
     """
