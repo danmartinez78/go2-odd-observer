@@ -365,6 +365,10 @@ ANALYZE_COLLISION = FunctionTool(func=analyze_collision_risk_tool)
 # =============================================================================
 # PERCEPTION AGENTS
 # =============================================================================
+# TODO: Consider extracting sim vs real classification into a dedicated agent
+# that runs early in the pipeline (after ODD spec, before perception loop).
+# This would provide the data source classification as context to all downstream
+# agents. Current implementation adds it to perception_summary_agent for simplicity.
 
 perception_loop_agent = Agent(
     name="PerceptionLoopAgent",
@@ -400,7 +404,10 @@ If no data is provided, respond with:
 Otherwise:
 1. Read the JSON string carefully.
 2. Determine overall environment class (choose from: indoor_office, indoor_corridor, indoor, outdoor_urban, outdoor_natural, open_space).
-3. Produce final JSON:
+3. **CLASSIFY DATA SOURCE**: Analyze image and sensor characteristics to determine if data is from simulation or real-world:
+   - Simulation indicators: Perfect textures, uniform lighting, geometric regularity, lack of noise, synthetic appearance
+   - Real-world indicators: Natural lighting variations, sensor noise, organic textures, imperfections
+4. Produce final JSON:
 {
   "windows_analyzed": [...],
   "environment_classification": {
@@ -408,9 +415,16 @@ Otherwise:
     "confidence": 0.0-1.0,
     "evidence": ["short", "observations"]
   },
+  "data_source_classification": {
+    "source": "simulation|real_world",
+    "confidence": 0.0-1.0,
+    "evidence": ["indicators", "observed"]
+  },
   "per_window_perception": [...]
 }
-Only output JSON.""",
+Only output JSON.
+
+NOTE: This data source classification will flow through the entire pipeline to the final report.""",
 )
 
 # =============================================================================
@@ -705,7 +719,9 @@ Return ONLY valid JSON with this structure:
     "executive_summary": "2-3 sentence overview of the scenario",
     "scenario_metadata": {
       "total_windows_analyzed": <int>,
-      "scenario_name": "<name>"
+      "scenario_name": "<name>",
+      "data_source": "simulation|real_world",
+      "data_source_confidence": 0.0-1.0
     },
     "perception_summary": "Brief summary of perception findings",
     "motion_summary": "Brief summary of motion characteristics",
@@ -725,6 +741,8 @@ Return ONLY valid JSON with this structure:
     "odd_compliance": <odd_compliance>
   }
 }
+
+IMPORTANT: Extract data_source and confidence from perception.data_source_classification and include in scenario_metadata.
 
 No explanations outside JSON.""",
 )
@@ -768,7 +786,7 @@ async def run_odd_workflow(
     nl_odd_description: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """Run the complete ODD analysis workflow.
-    
+
     Args:
         scenario_name: Name of the scenario to analyze
         nl_odd_description: Natural language ODD description. If None, uses default.
@@ -824,7 +842,8 @@ async def run_odd_workflow(
 
 if __name__ == "__main__":
     try:
-        result = asyncio.run(run_odd_workflow())
+        # Test with small 2-window dataset
+        result = asyncio.run(run_odd_workflow(scenario_name="sim_run_test"))
         if result is None:
             raise SystemExit(1)
         print("\n" + "=" * 80)
