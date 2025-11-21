@@ -1,4 +1,0 @@
-run_id,timestamp,environment,duration_seconds,status
-run_001,2025-11-18T10:00:00Z,simulation,120.5,completed
-run_002,2025-11-18T10:15:30Z,simulation,150.2,completed
-run_003,2025-11-18T11:00:00Z,real,200.8,completed
