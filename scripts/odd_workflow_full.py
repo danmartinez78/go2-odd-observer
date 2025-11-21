@@ -534,16 +534,11 @@ odd_spec_agent = Agent(
     output_key="temp:odd_spec",
     instruction="""You are an Operational Design Domain (ODD) specification expert.
 
-TASK: Convert a natural language ODD description into a formal specification.
+TASK: Convert the provided natural language ODD description into a formal specification.
 
-NATURAL LANGUAGE ODD:
-"A quadruped robot designed for indoor office environments. Operates on smooth, flat floors
-with adequate lighting (bright or dim). Maximum speed 1.5 m/s. Designed for environments with
-moderate obstacle density and good traversability. Requires low collision risk conditions.
-Not designed for: outdoor environments, stairs, rough terrain, dark/low-light areas, or
-high-density obstacle fields."
+The user will provide the ODD description in their query.
 
-CONVERT to formal specification with clear thresholds:
+CONVERT the natural language description to formal specification with clear thresholds:
 
 Return ONLY valid JSON:
 {
@@ -768,8 +763,16 @@ def _extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def run_odd_workflow(scenario_name: str = "sim_run_new") -> Optional[Dict[str, Any]]:
-    """Run the complete ODD analysis workflow."""
+async def run_odd_workflow(
+    scenario_name: str = "sim_run_new",
+    nl_odd_description: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Run the complete ODD analysis workflow.
+    
+    Args:
+        scenario_name: Name of the scenario to analyze
+        nl_odd_description: Natural language ODD description. If None, uses default.
+    """
     global SCENARIO_PATH
     SCENARIO_PATH = DATA_DIR / scenario_name
 
@@ -777,13 +780,30 @@ async def run_odd_workflow(scenario_name: str = "sim_run_new") -> Optional[Dict[
         print(f"❌ Scenario not found: {scenario_name}")
         return None
 
+    # Default ODD description
+    if nl_odd_description is None:
+        nl_odd_description = (
+            "A quadruped robot designed for indoor office environments. "
+            "Operates on smooth, flat floors with adequate lighting (bright or dim). "
+            "Maximum speed 1.5 m/s. Designed for environments with moderate obstacle "
+            "density and good traversability. Requires low collision risk conditions. "
+            "Not designed for: outdoor environments, stairs, rough terrain, "
+            "dark/low-light areas, or high-density obstacle fields."
+        )
+
     print("\n" + "=" * 80)
     print(f"ODD WORKFLOW - FULL PIPELINE")
     print(f"Scenario: {scenario_name}")
+    print(f"ODD Description: {nl_odd_description[:100]}...")
     print("=" * 80)
 
+    user_query = (
+        f"Analyze scenario '{scenario_name}' against this ODD specification:\n\n"
+        f"{nl_odd_description}"
+    )
+
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
-    events = await runner.run_debug(f"Analyze scenario: {scenario_name}")
+    events = await runner.run_debug(user_query)
 
     report = _extract_final_report(events)
 
