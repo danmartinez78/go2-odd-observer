@@ -84,7 +84,7 @@ __all__ = [
     "build_image_path",
     "ensure_image_bytes",
     "extract_json_block",
-    
+
     # Workflow exports
     "odd_workflow",
     "run_odd_workflow",

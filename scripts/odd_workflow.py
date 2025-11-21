@@ -20,16 +20,16 @@ async def main():
     try:
         # Test with small 2-window dataset
         result = await run_odd_workflow(scenario_name="sim_run_test")
-        
+
         if result is None:
             print("\n❌ WORKFLOW FAILED")
             return 1
-            
+
         print("\n" + "=" * 80)
         print("✅ ODD WORKFLOW COMPLETED SUCCESSFULLY")
         print("=" * 80)
         return 0
-        
+
     except Exception as exc:
         print(f"\n❌ Fatal error: {exc}")
         import traceback
