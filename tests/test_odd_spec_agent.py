@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""ODD Specification Agent test using shared odd_agents module."""
+"""MANUAL TESTING: ODD Specification Agent interactive test.
+
+This script is for MANUAL TESTING and inspection of the ODD Spec Agent.
+Run it directly to see the agent's output and verify behavior.
+
+For AUTOMATED EVALUATION (when available), see:
+- tests/test_adk_evaluation.py::test_odd_spec_*
+- tests/evaluation/odd_spec/README.md
+
+Usage:
+    python tests/test_odd_spec_agent.py
+    
+Expected: Structured ODD specification parsed from natural language.
+"""
 
 from odd_agents.agents import create_odd_spec_agent
 from odd_agents import extract_json_block
