@@ -41,6 +41,7 @@ pip install -r requirements.txt
 
 **Core dependencies installed:**
 - `google-genai` (Google ADK for AI agents)
+- `python-dotenv` (environment variable management)
 - `pandas`, `numpy` (data processing)
 - `matplotlib`, `seaborn` (visualization)
 - `Pillow` (image handling)
@@ -70,30 +71,40 @@ os.environ["GOOGLE_API_KEY"] = "your-api-key-here"
 ### Option 1: Full Pipeline (Command Line)
 
 ```bash
-# Run the complete 9-agent workflow on the sim dataset
-python scripts/odd_workflow_full.py
+# Set up API key in .env file (one time setup)
+echo "GOOGLE_API_KEY=your-api-key-here" > .env
 
-# Output: data/processed/runs/sim_run_new/odd_analysis_report.json
+# Run the complete 10-agent workflow on the test dataset
+python scripts/odd_workflow.py
+
+# Output: data/processed/runs/sim_run_test/odd_analysis_report.json
 ```
 
 **What this does:**
-- Analyzes 13 time windows (26 seconds of robot operation)
-- Runs perception, motion, and collision analysis
-- Classifies operational domain and checks ODD compliance
+- Analyzes 2 time windows (demo dataset for fast execution)
+- Runs 10 agents: ODD spec → perception → motion → collision → COD → compliance → report
+- Uses parameterized architecture with no global state
 - Generates comprehensive JSON report with findings
 
-**Expected runtime:** 2-3 minutes (depends on API rate limits)
+**Expected runtime:** 30-60 seconds (depends on API rate limits)
+
+**For larger dataset:**
+```python
+# Edit scripts/odd_workflow.py, change:
+SCENARIO_PATH = DATA_DIR / "sim_run_new"  # 13 windows, ~3 minutes
+```
 
 ### Option 2: Interactive Notebook
 
 ```bash
 # Launch Jupyter
-jupyter notebook notebooks/odd_workflow_interactive.ipynb
+jupyter notebook notebooks/odd_analysis_demo.ipynb
 ```
 
 **Notebook features:**
+- Complete workflow with model configuration
 - Step-by-step walkthrough with visualizations
-- Interactive parameter tuning
+- Per-agent model selection for cost optimization
 - Real-time result inspection
 - Export capabilities for reports
 
@@ -126,8 +137,8 @@ jupyter notebook notebooks/odd_workflow_interactive.ipynb
     "motion": { /* speed and orientation data */ },
     "collision": { /* risk assessment data */ },
     "odd_spec": { /* domain classification */ },
-    "cod": {
-      "cod_analysis": {
+    "odd_compliance": {
+      "odd_compliance": {
         "categorical_compliance": {
           "environment_type": "IN_ODD",
           "lighting_conditions": "OUT_ODD",
@@ -179,11 +190,11 @@ python scripts/extract_windows.py \
   --window-length 2.0
 
 # Run analysis
-python scripts/odd_workflow_full.py
-# Edit scripts/odd_workflow_full.py first: SCENARIO_PATH = "office_test"
+# Edit scripts/odd_workflow.py first: SCENARIO_PATH = DATA_DIR / "office_test"
+python scripts/odd_workflow.py
 
 # Review compliance in report
-jq '.full_analysis.cod.cod_analysis' data/processed/runs/office_test/odd_analysis_report.json
+jq '.full_analysis.odd_compliance.odd_compliance' data/processed/runs/office_test/odd_analysis_report.json
 ```
 
 **Outcome:** Know immediately if the new environment is safe for deployment.
@@ -192,17 +203,18 @@ jq '.full_analysis.cod.cod_analysis' data/processed/runs/office_test/odd_analysi
 
 ```bash
 # Analyze simulation run
-python scripts/odd_workflow_full.py  # SCENARIO_PATH = "sim_run_new"
+# Edit scripts/odd_workflow.py: SCENARIO_PATH = DATA_DIR / "sim_run_new"
+python scripts/odd_workflow.py
 cp data/processed/runs/sim_run_new/odd_analysis_report.json reports/sim_baseline.json
 
 # Analyze real-world run
-# Edit scripts/odd_workflow_full.py: SCENARIO_PATH = "real_run_001"
-python scripts/odd_workflow_full.py
+# Edit scripts/odd_workflow.py: SCENARIO_PATH = DATA_DIR / "real_run_001"
+python scripts/odd_workflow.py
 cp data/processed/runs/real_run_001/odd_analysis_report.json reports/real_deployment.json
 
 # Compare compliance
-diff <(jq '.full_analysis.cod' reports/sim_baseline.json) \
-     <(jq '.full_analysis.cod' reports/real_deployment.json)
+diff <(jq '.full_analysis.odd_compliance' reports/sim_baseline.json) \
+     <(jq '.full_analysis.odd_compliance' reports/real_deployment.json)
 ```
 
 **Outcome:** Identify sim-to-real transfer gaps.
@@ -216,8 +228,8 @@ python scripts/extract_windows.py \
   --output data/processed/runs/incident_analysis \
   --run-id incident_analysis
 
-# Focus on collision detection
-python scripts/odd_workflow_full.py
+# Run analysis (edit scripts/odd_workflow.py: SCENARIO_PATH = DATA_DIR / "incident_analysis")
+python scripts/odd_workflow.py
 
 # Examine collision events
 jq '.full_analysis.collision.collision_events[] | select(.risk_level == "alert")' \
@@ -286,15 +298,15 @@ my_scenario,false,"Office deployment test",2025-11-21T10:30:00
 
 ### Step 4: Run Analysis
 
-Edit `odd_workflow_full.py`:
+Edit `scripts/odd_workflow.py`:
 ```python
-# Change this line (around line 26)
+# Change this line (around line 17)
 SCENARIO_PATH = DATA_DIR / "my_scenario"  # Your scenario name
 ```
 
 Then run:
 ```bash
-python scripts/odd_workflow_full.py
+python scripts/odd_workflow.py
 ```
 
 ---
@@ -347,7 +359,9 @@ pip install google-genai
 
 **Issue: "API key not found"**
 ```bash
-# Solution: Set environment variable
+# Solution: Create .env file
+echo "GOOGLE_API_KEY=your-key" > .env
+# Or set environment variable
 export GOOGLE_API_KEY="your-key"
 # Verify
 echo $GOOGLE_API_KEY
@@ -355,9 +369,10 @@ echo $GOOGLE_API_KEY
 
 **Issue: "Rate limit exceeded"**
 ```bash
-# Solution: Add delays between windows (edit odd_workflow_full.py)
+# Solution: Add delays between windows
+# Edit odd_agents/tools/perception.py (or motion.py, collision.py)
 import asyncio
-await asyncio.sleep(1.0)  # Add in loop agent tools
+await asyncio.sleep(1.0)  # Add before Gemini API call in tool function
 ```
 
 **Issue: "Motion data incomplete"**
@@ -375,16 +390,18 @@ ros2 bag info your_bag.db3 | grep -E 'cmd_vel|odom|imu'
 ### Learn the Codebase
 
 1. **Read the architecture docs**: `docs/MODEL_SELECTION_GUIDE.md`
-2. **Study individual agents**: `agent_tests/test_*_agent.py`
-3. **Understand the workflow**: `odd_workflow_full.py`
-4. **Explore visualizations**: `notebooks/odd_workflow_interactive.ipynb`
+2. **Study the module structure**: `odd_agents/` (tools, agents, workflow)
+3. **Understand individual agents**: `tests/test_*_agent.py`
+4. **Review the workflow**: `scripts/odd_workflow.py` and `odd_agents/workflow.py`
+5. **Explore visualizations**: `notebooks/odd_analysis_demo.ipynb`
 
 ### Customize for Your Robot
 
-1. **Adjust ODD specification**: Edit agent instructions in `odd_workflow_full.py`
-2. **Add new axes**: Extend perception/motion agents for custom metrics
-3. **Tune thresholds**: Modify compliance boundaries in COD agent
-4. **Add visualizations**: Extend notebook with domain-specific plots
+1. **Adjust ODD specification**: Pass custom `nl_odd_description` to `run_odd_workflow()`
+2. **Add new axes**: Extend agents in `odd_agents/agents/` for custom metrics
+3. **Tune thresholds**: Modify compliance logic in `odd_agents/agents/compliance.py`
+4. **Add visualizations**: Extend `odd_analysis_demo.ipynb` with domain-specific plots
+5. **Optimize costs**: Configure per-agent models in workflow call (see MODEL_SELECTION_GUIDE.md)
 
 ### Contribute
 
