@@ -21,6 +21,21 @@ Topics covered:
 
 ---
 
+### [AGENT_EVALUATION.md](AGENT_EVALUATION.md)
+**LLM-as-judge evaluation framework**
+
+Topics covered:
+- Avoiding model similarity bias
+- Majority voting for robustness
+- Custom rubrics for each agent type
+- Integration patterns (standalone, tests, batch)
+- Cost optimization strategies
+- Regression testing
+
+**Use this to assess and improve agent quality.**
+
+---
+
 ## 🔗 Related Documentation
 
 - **[../MODEL_SELECTION_GUIDE.md](../MODEL_SELECTION_GUIDE.md)** - Cost optimization strategies
@@ -47,6 +62,9 @@ Topics covered:
 
 **Optimize costs with model selection**
 → [../MODEL_SELECTION_GUIDE.md](../MODEL_SELECTION_GUIDE.md)
+
+**Evaluate agent output quality**
+→ [AGENT_EVALUATION.md](AGENT_EVALUATION.md)
 
 **See example outputs**
 → [../examples/README.md](../examples/README.md)
