@@ -316,3 +316,113 @@ async def test_odd_spec_comprehensive():
         if config_backup.exists():
             shutil.copy(config_backup, config_main)
             config_backup.unlink()
+
+
+# =============================================================================
+# COLLISION AGENT EVALUATION TESTS
+# Tests orchestration + multimodal collision risk inference
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_collision_tool_trajectory_only():
+    """
+    Fast collision test - tool trajectory only.
+    
+    Validates correct tool usage (list_windows, analyze_collision_risk for each window).
+    Runtime: ~20s
+    """
+    import shutil
+    collision_dir = EVAL_DIR / "collision"
+    config_main = collision_dir / "test_config.json"
+    config_tool = collision_dir / "test_config_tool_traj.json"
+    config_backup = collision_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_tool, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.collision.collision_agent",
+            eval_dataset_file_path_or_dir=str(collision_dir / "collision_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_collision_rubric_quality():
+    """
+    Test collision agent with rubric-based LLM judging.
+    
+    Evaluates JSON output quality AND multimodal inference quality:
+    - Valid JSON structure (windows_analyzed, collision_events)
+    - Collision risk assessment completeness (all windows, all metrics)
+    - Risk score validity (proper ranges, reasonable values)
+    - Collision detection quality (multimodal fusion, specific hazards)
+    - Data integrity (tool outputs preserved)
+    
+    NOTE: This tests INFERENCE quality because the loop agent calls
+    analyze_collision_risk_tool which makes actual multimodal LLM calls
+    (camera + BEV + motion fusion).
+    
+    Runtime: ~70-80s (makes LLM API calls for inference + judging)
+    """
+    import shutil
+    collision_dir = EVAL_DIR / "collision"
+    config_main = collision_dir / "test_config.json"
+    config_rubric = collision_dir / "test_config_rubric_only.json"
+    config_backup = collision_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.collision.collision_agent",
+            eval_dataset_file_path_or_dir=str(collision_dir / "collision_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_collision_comprehensive():
+    """
+    Full collision agent evaluation with all applicable criteria.
+    
+    Tests:
+    - Tool trajectory (IN_ORDER match)
+    - Rubric-based quality (structure, completeness, validity, detection, integrity)
+    - Hallucinations (grounding validation - no fabricated hazards)
+    
+    Runtime: ~120-200s (includes multimodal inference + judging LLM calls)
+    """
+    import shutil
+    collision_dir = EVAL_DIR / "collision"
+    config_main = collision_dir / "test_config.json"
+    config_comprehensive = collision_dir / "test_config_comprehensive.json"
+    config_backup = collision_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.collision.collision_agent",
+            eval_dataset_file_path_or_dir=str(collision_dir / "collision_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
