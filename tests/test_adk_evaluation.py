@@ -316,3 +316,90 @@ async def test_odd_spec_comprehensive():
         if config_backup.exists():
             shutil.copy(config_backup, config_main)
             config_backup.unlink()
+
+
+# =============================================================================
+# COMPLIANCE AGENT EVALUATION TESTS
+# Tests single-inference agent (NO TOOLS) - ODD vs COD comparison
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_compliance_rubric_quality():
+    """
+    Test Compliance agent with rubric-based LLM judging.
+    
+    NOTE: This agent has NO TOOLS - it's a single inference agent.
+    Input: Mock context data (temp:odd_spec, temp:cod_classification)
+    Output: JSON compliance assessment with gap analysis
+    
+    Evaluates:
+    - JSON structure validity (required compliance fields)
+    - Categorical compliance accuracy (allowed vs prohibited)
+    - Numeric compliance accuracy (boundary checking)
+    - Violations identification (completeness and specificity)
+    - Overall compliance reasoning (logical aggregation)
+    
+    Pattern difference from loop agents:
+    - No expected_tool_uses (this agent doesn't call tools)
+    - Test cases use mock context data, not window IDs
+    - Rubrics focus on comparison logic quality
+    
+    Runtime: ~100-120s (3 test cases × LLM inference + judging)
+    """
+    import shutil
+    compliance_dir = EVAL_DIR / "compliance"
+    config_main = compliance_dir / "test_config.json"
+    config_rubric = compliance_dir / "test_config_rubric_only.json"
+    config_backup = compliance_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.compliance.compliance_agent",
+            eval_dataset_file_path_or_dir=str(compliance_dir / "compliance_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_compliance_comprehensive():
+    """
+    Full Compliance agent evaluation.
+    
+    Tests:
+    - Rubric-based quality (structure, accuracy, reasoning)
+    - Hallucinations (no fabricated constraints or violations)
+    
+    Note: No tool_trajectory criterion (this agent has no tools!)
+    
+    Runtime: ~120-180s (includes inference + judging + hallucination detection)
+    """
+    import shutil
+    compliance_dir = EVAL_DIR / "compliance"
+    config_main = compliance_dir / "test_config.json"
+    config_comprehensive = compliance_dir / "test_config_comprehensive.json"
+    config_backup = compliance_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.compliance.compliance_agent",
+            eval_dataset_file_path_or_dir=str(compliance_dir / "compliance_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
