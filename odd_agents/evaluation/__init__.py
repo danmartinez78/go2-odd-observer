@@ -1,17 +1,21 @@
 """
-Agent evaluation framework using LLM-as-judge pattern.
+Agent evaluation framework using ADK's built-in evaluation capabilities.
 
-This module provides evaluation capabilities for assessing agent output quality
-using a different/larger model as judge to avoid model similarity bias.
+This module provides evaluation rubrics and test data for assessing agent
+output quality using ADK's AgentEvaluator with criteria like:
+- tool_trajectory_avg_score: Tool call trajectory matching
+- rubric_based_final_response_quality_v1: Custom rubrics for response quality
+- rubric_based_tool_use_quality_v1: Custom rubrics for tool usage
+- hallucinations_v1: Grounding check
+- safety_v1: Safety check
 
 Key patterns:
-- Use gemini-2.5-pro (or larger) as judge for agents using flash-lite
-- Majority voting across multiple samples for robustness
-- Custom rubrics for different agent types
-- Structured evaluation reports with per-rubric scores
+- Use different judge model (gemini-2.5-pro) than agent model (gemini-flash-lite)
+- Define custom rubrics for each agent type
+- Create .test.json files in ADK EvalSet/EvalCase schema
+- Use AgentEvaluator.evaluate() for programmatic testing
 """
 
-from .base import AgentEvaluator, EvaluationResult, EvaluationCriteria
 from .rubrics import (
     PERCEPTION_RUBRICS,
     MOTION_RUBRICS,
@@ -21,16 +25,8 @@ from .rubrics import (
     COMPLIANCE_RUBRICS,
     REPORT_RUBRICS,
 )
-from .llm_judge import LLMJudge
-from .reporter import EvaluationReporter, compare_evaluations
 
 __all__ = [
-    "AgentEvaluator",
-    "EvaluationResult",
-    "EvaluationCriteria",
-    "LLMJudge",
-    "EvaluationReporter",
-    "compare_evaluations",
     "PERCEPTION_RUBRICS",
     "MOTION_RUBRICS",
     "COLLISION_RUBRICS",

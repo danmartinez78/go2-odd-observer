@@ -1,232 +1,433 @@
 # Agent Evaluation Integration Guide
 
-This guide shows how to integrate the LLM-as-judge evaluation framework into your workflow.
+This guide shows how to integrate ADK's evaluation framework into your workflow.
+
+## Overview
+
+We use **Google ADK's AgentEvaluator** for agent quality assessment. This provides:
+- ✅ Built-in evaluation criteria (tool trajectory, rubrics, hallucination detection)
+- ✅ Multiple interfaces (pytest, CLI, web UI)
+- ✅ Vertex AI integration
+- ✅ Standard test data format (EvalSet/EvalCase)
 
 ## Quick Start
 
-### 1. Run the Demo
-
-```bash
-python scripts/evaluation_demo.py
-```
-
-This evaluates sample outputs from perception, motion, and collision agents using:
-- **Judge model**: `gemini-2.5-pro` (different from agent models to avoid bias)
-- **Majority voting**: 3 samples per rubric for robustness
-- **Custom rubrics**: Agent-specific quality criteria
-
-Output:
-- Console summary with scores and pass/fail status
-- `data/examples/evaluation_demo_report.md` - Detailed markdown report
-- `data/examples/evaluation_demo_summary.json` - JSON metrics
-
-### 2. Run Unit Tests
+### 1. Run Evaluation via pytest
 
 ```bash
 # Run all evaluation tests
-pytest tests/test_llm_judge.py -v
+pytest tests/test_adk_evaluation.py -v
 
-# Run specific test
-pytest tests/test_llm_judge.py::TestLLMJudge::test_perception_evaluation_perfect_output -v
+# Run specific agent evaluation
+pytest tests/test_adk_evaluation.py::test_perception_agent_evaluation -v
 
-# Skip slow LLM tests during development
-pytest tests/test_llm_judge.py -v -m "not slow"
+# Skip slow evaluation tests during development
+pytest tests/test_adk_evaluation.py -v -m "not slow"
+```
+
+### 2. Run Evaluation via CLI
+
+```bash
+# Evaluate perception agent
+adk eval \
+  --agent-module odd_agents.agents.perception \
+  --eval-dataset tests/evaluation/perception_agent.test.json \
+  --config tests/evaluation/test_config.json
+
+# Evaluate all agents
+adk eval \
+  --agent-module odd_agents \
+  --eval-dataset tests/evaluation/ \
+  --config tests/evaluation/test_config.json
+```
+
+### 3. Run Evaluation via Web UI
+
+```bash
+# Launch ADK web interface
+adk web
+
+# Then:
+# 1. Navigate to "Evaluation" section
+# 2. Select agent module (odd_agents.agents.perception)
+# 3. Upload test file (perception_agent.test.json)
+# 4. Select config (test_config.json)
+# 5. Click "Run Evaluation"
 ```
 
 ## Integration Patterns
 
-### Pattern 1: Standalone Evaluation
+### Pattern 1: pytest Integration
 
-Use when you want to evaluate agent outputs independently:
-
-```python
-from odd_agents.evaluation import LLMJudge, PERCEPTION_RUBRICS
-
-# Run your agent
-perception_output = run_perception_agent(window_data)
-
-# Evaluate output
-judge = LLMJudge("perception", PERCEPTION_RUBRICS, num_samples=5)
-result = judge.evaluate(
-    agent_output=perception_output,
-    reference_output=golden_perception_output,  # Optional
-)
-
-if not result.passed:
-    print(f"Quality issue detected! Score: {result.overall_score:.2f}")
-    for rs in result.rubric_scores:
-        if not rs.passed:
-            print(f"  Failed: {rs.rubric_id} - {rs.reasoning}")
-```
-
-### Pattern 2: Test Integration
-
-Use in pytest tests to assert quality standards:
+Add evaluation tests to your test suite:
 
 ```python
 import pytest
-from odd_agents.evaluation import LLMJudge, MOTION_RUBRICS
+from google.adk.evaluation.agent_evaluator import AgentEvaluator
 
+@pytest.mark.asyncio
 @pytest.mark.slow
-def test_motion_agent_quality():
-    """Test that motion agent meets quality standards."""
-    # Arrange
-    window_data = load_test_window()
-    
-    # Act
-    motion_output = run_motion_agent(window_data)
-    
-    # Assert with LLM judge
-    judge = LLMJudge("motion", MOTION_RUBRICS, num_samples=3)
-    result = judge.evaluate(
-        agent_output=motion_output,
-        context={"window_data": window_data},
+async def test_perception_agent_quality():
+    """Test perception agent meets quality standards."""
+    results = await AgentEvaluator.evaluate(
+        agent_module="odd_agents.agents.perception",
+        eval_dataset_file_path_or_dir="tests/evaluation/perception_agent.test.json",
+        config_file_path="tests/evaluation/test_config.json",
     )
     
-    assert result.overall_score >= 0.7, (
-        f"Motion agent quality below threshold: {result.overall_score:.2f}\n"
-        f"Failed rubrics:\n" + "\n".join(
-            f"  - {rs.rubric_id}: {rs.reasoning}"
-            for rs in result.rubric_scores if not rs.passed
+    # Assert quality thresholds
+    for result in results:
+        # Check tool trajectory
+        assert result.criteria_results["tool_trajectory_avg_score"].score == 1.0, \
+            "Tool trajectory doesn't match expected sequence"
+        
+        # Check rubric quality
+        rubric_result = result.criteria_results["rubric_based_final_response_quality_v1"]
+        assert rubric_result.score >= 0.7, \
+            f"Response quality too low: {rubric_result.score:.2f}"
+        
+        # Check no hallucinations
+        hallucination_result = result.criteria_results.get("hallucinations_v1")
+        if hallucination_result:
+            assert hallucination_result.score >= 0.8, \
+                "Hallucinations detected in output"
+```
+
+### Pattern 2: Programmatic Evaluation
+
+Evaluate agents programmatically in scripts:
+
+```python
+from google.adk.evaluation.agent_evaluator import AgentEvaluator
+import asyncio
+
+async def evaluate_all_agents():
+    """Evaluate all agents and print results."""
+    results = await AgentEvaluator.evaluate(
+        agent_module="odd_agents",
+        eval_dataset_file_path_or_dir="tests/evaluation/",
+        config_file_path="tests/evaluation/test_config.json",
+    )
+    
+    for result in results:
+        print(f"\n{'='*70}")
+        print(f"Eval ID: {result.eval_id}")
+        print(f"Overall Score: {result.overall_score:.2f}")
+        print(f"{'='*70}")
+        
+        # Tool trajectory results
+        if "tool_trajectory_avg_score" in result.criteria_results:
+            traj = result.criteria_results["tool_trajectory_avg_score"]
+            status = "✅" if traj.score == 1.0 else "❌"
+            print(f"{status} Tool Trajectory: {traj.score:.2f}")
+        
+        # Rubric results
+        if "rubric_based_final_response_quality_v1" in result.criteria_results:
+            rubric = result.criteria_results["rubric_based_final_response_quality_v1"]
+            status = "✅" if rubric.score >= 0.7 else "❌"
+            print(f"{status} Response Quality: {rubric.score:.2f}")
+            
+            # Per-rubric breakdown
+            for rubric_id, rubric_score in rubric.rubric_scores.items():
+                print(f"  - {rubric_id}: {rubric_score:.2f}")
+        
+        # Hallucination check
+        if "hallucinations_v1" in result.criteria_results:
+            hall = result.criteria_results["hallucinations_v1"]
+            status = "✅" if hall.score >= 0.8 else "⚠️"
+            print(f"{status} Grounding: {hall.score:.2f}")
+
+if __name__ == "__main__":
+    asyncio.run(evaluate_all_agents())
+```
+
+### Pattern 3: Continuous Integration
+
+Add to GitHub Actions or CI/CD pipeline:
+
+```yaml
+# .github/workflows/evaluation.yml
+name: Agent Evaluation
+
+on:
+  pull_request:
+    paths:
+      - 'odd_agents/**'
+      - 'tests/evaluation/**'
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Run agent evaluation
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          pytest tests/test_adk_evaluation.py -v --tb=short
+      
+      - name: Upload evaluation results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: evaluation-results
+          path: evaluation_results/
+```
+
+### Pattern 4: Regression Detection
+
+Compare evaluation results before/after changes:
+
+```python
+import json
+from pathlib import Path
+from google.adk.evaluation.agent_evaluator import AgentEvaluator
+
+async def detect_regressions():
+    """Detect quality regressions between baseline and current."""
+    # Load baseline results
+    baseline_file = Path("evaluation_results/baseline.json")
+    baseline = json.loads(baseline_file.read_text())
+    
+    # Run current evaluation
+    current_results = await AgentEvaluator.evaluate(
+        agent_module="odd_agents",
+        eval_dataset_file_path_or_dir="tests/evaluation/",
+        config_file_path="tests/evaluation/test_config.json",
+    )
+    
+    # Compare results
+    regressions = []
+    for current in current_results:
+        baseline_result = next(
+            (b for b in baseline if b['eval_id'] == current.eval_id),
+            None
         )
-    )
-```
-
-### Pattern 3: Batch Evaluation with Reporting
-
-Use for evaluating multiple agents across multiple scenarios:
-
-```python
-from odd_agents.evaluation import LLMJudge, EvaluationReporter
-from odd_agents.evaluation import PERCEPTION_RUBRICS, MOTION_RUBRICS
-
-reporter = EvaluationReporter()
-
-# Evaluate across multiple windows
-for window_id in range(10):
-    window_data = load_window(window_id)
+        
+        if baseline_result:
+            baseline_score = baseline_result['overall_score']
+            current_score = current.overall_score
+            
+            if current_score < baseline_score - 0.1:  # 10% threshold
+                regressions.append({
+                    'eval_id': current.eval_id,
+                    'baseline_score': baseline_score,
+                    'current_score': current_score,
+                    'delta': current_score - baseline_score,
+                })
     
-    # Evaluate perception
-    perception_output = run_perception_agent(window_data)
-    perception_judge = LLMJudge("perception", PERCEPTION_RUBRICS)
-    result = perception_judge.evaluate(perception_output)
-    reporter.add_result(result)
+    if regressions:
+        print("⚠️  Quality regressions detected:")
+        for reg in regressions:
+            print(f"  {reg['eval_id']}: {reg['baseline_score']:.2f} → {reg['current_score']:.2f} ({reg['delta']:+.2f})")
+        return False
     
-    # Evaluate motion
-    motion_output = run_motion_agent(window_data)
-    motion_judge = LLMJudge("motion", MOTION_RUBRICS)
-    result = motion_judge.evaluate(motion_output)
-    reporter.add_result(result)
-
-# Generate comprehensive report
-reporter.print_summary()
-reporter.save_report(Path("evaluation_report.md"))
+    print("✅ No regressions detected")
+    return True
+```
 ```
 
-### Pattern 4: Regression Testing
+## Creating Test Files
 
-Use to detect quality regressions when changing code:
+ADK uses `.test.json` files in **EvalSet/EvalCase** schema:
 
-```python
-from odd_agents.evaluation import compare_evaluations
-
-# Evaluate before changes
-results_before = [evaluate_agent(...) for _ in test_cases]
-
-# Make changes to agent
-update_agent_code()
-
-# Evaluate after changes
-results_after = [evaluate_agent(...) for _ in test_cases]
-
-# Compare
-comparison = compare_evaluations(results_before, results_after)
-
-if comparison['overall']['score_improvement'] < 0:
-    print(f"⚠️  Quality regression detected!")
-    print(f"Score decreased by {-comparison['overall']['score_improvement']:.2f}")
-    print("Per-agent regressions:")
-    for agent, improvement in comparison['per_agent_improvements'].items():
-        if improvement < 0:
-            print(f"  - {agent}: {improvement:.2f}")
+```json
+{
+  "eval_set_id": "perception_agent_basic_tests",
+  "eval_cases": [{
+    "eval_id": "perception_basic_analysis",
+    "conversation": [{
+      "user_content": {
+        "parts": [{"text": "Analyze perception for all available windows"}]
+      },
+      "final_response": {
+        "parts": [{"text": "{\"windows_analyzed\": 2, \"environment_classification\": \"outdoor\", ...}"}]
+      },
+      "intermediate_data": {
+        "tool_uses": [
+          {"name": "list_windows_tool"},
+          {"name": "analyze_window_perception_tool", "args": {"window_id": "w000"}},
+          {"name": "analyze_window_perception_tool", "args": {"window_id": "w001"}}
+        ],
+        "intermediate_responses": []
+      }
+    }],
+    "session_input": {
+      "app_name": "PerceptionWorkflowApp",
+      "user_id": "test_user"
+    }
+  }]
+}
 ```
+
+Key components:
+- **eval_set_id**: Identifier for the test set
+- **eval_cases**: List of test cases
+- **user_content**: Input to the agent
+- **final_response**: Expected final output (optional, for response_match_score)
+- **tool_uses**: Expected tool call sequence (for tool_trajectory_avg_score)
+- **session_input**: Session configuration (app_name, user_id, etc.)
+
+## Configuring Evaluation Criteria
+
+`test_config.json` defines which criteria to use and their thresholds:
+
+```json
+{
+  "criteria": {
+    "tool_trajectory_avg_score": {
+      "threshold": 1.0,
+      "match_type": "IN_ORDER"
+    },
+    "response_match_score": {
+      "threshold": 0.7
+    },
+    "rubric_based_final_response_quality_v1": {
+      "threshold": 0.7,
+      "judge_model_options": {
+        "judge_model": "gemini-2.5-pro",
+        "num_samples": 5
+      },
+      "rubrics": [
+        {
+          "rubric_id": "environment_classification",
+          "rubric_content": {
+            "text_property": "The agent correctly identifies environment type (indoor, outdoor, mixed) based on camera data and multimodal consistency."
+          }
+        }
+      ]
+    },
+    "hallucinations_v1": {
+      "threshold": 0.8
+    }
+  }
+}
+```
+
+Available criteria:
+- **tool_trajectory_avg_score**: Tool usage verification (EXACT, IN_ORDER, ANY_ORDER)
+- **response_match_score**: ROUGE-1 similarity to reference
+- **final_response_match_v2**: LLM-judged semantic equivalence
+- **rubric_based_final_response_quality_v1**: Custom quality rubrics
+- **rubric_based_tool_use_quality_v1**: Custom tool usage rubrics
+- **hallucinations_v1**: Grounding/factuality check
+- **safety_v1**: Harmful content detection
 
 ## Cost Optimization
 
-LLM-as-judge calls can be expensive. Optimize costs with:
+LLM-as-judge evaluation can be expensive. Optimize with:
 
 ### 1. Adjust num_samples Based on Importance
 
-```python
-# Development: Fast iteration
-judge = LLMJudge(..., num_samples=1)  # ~$0.001/evaluation
-
-# CI/Testing: Moderate robustness
-judge = LLMJudge(..., num_samples=3)  # ~$0.003/evaluation
-
-# Production: High confidence
-judge = LLMJudge(..., num_samples=7)  # ~$0.007/evaluation
+```json
+{
+  "judge_model_options": {
+    "num_samples": 1  // Development: fast iteration (~$0.001/eval)
+    // OR
+    "num_samples": 3  // CI/Testing: moderate robustness (~$0.003/eval)
+    // OR
+    "num_samples": 7  // Production: high confidence (~$0.007/eval)
+  }
+}
 ```
 
-### 2. Use Smaller Judge Model for Less Critical Evaluations
+### 2. Use Fewer Rubrics for Quick Checks
 
-```python
-# For format validation (less critical)
-judge = LLMJudge(..., judge_model="gemini-2.5-flash", num_samples=1)
-
-# For accuracy assessment (critical)
-judge = LLMJudge(..., judge_model="gemini-2.5-pro", num_samples=5)
+```json
+{
+  "rubrics": [
+    // Just critical rubrics for fast iteration
+    {"rubric_id": "json_format_compliance", ...},
+    {"rubric_id": "safety_critical", ...}
+  ]
+}
 ```
 
-### 3. Cache Evaluation Results
+### 3. Skip Expensive Criteria During Development
 
-```python
-import hashlib
-import json
-from pathlib import Path
-
-def get_cached_evaluation(agent_output, cache_dir="eval_cache"):
-    """Check for cached evaluation result."""
-    cache_dir = Path(cache_dir)
-    cache_dir.mkdir(exist_ok=True)
+```json
+{
+  "criteria": {
+    // Always cheap
+    "tool_trajectory_avg_score": {...},
     
-    # Generate cache key from output
-    output_str = json.dumps(agent_output, sort_keys=True)
-    cache_key = hashlib.sha256(output_str.encode()).hexdigest()
-    cache_file = cache_dir / f"{cache_key}.json"
+    // Moderate cost - use in CI
+    "response_match_score": {...},
     
-    if cache_file.exists():
-        return json.loads(cache_file.read_text())
-    return None
-
-def save_evaluation_cache(agent_output, result, cache_dir="eval_cache"):
-    """Save evaluation result to cache."""
-    cache_dir = Path(cache_dir)
-    
-    output_str = json.dumps(agent_output, sort_keys=True)
-    cache_key = hashlib.sha256(output_str.encode()).hexdigest()
-    cache_file = cache_dir / f"{cache_key}.json"
-    
-    cache_file.write_text(json.dumps(result.to_dict(), indent=2))
+    // Expensive - use selectively
+    // "rubric_based_final_response_quality_v1": {...},
+    // "hallucinations_v1": {...}
+  }
+}
 ```
 
-### 4. Prioritize Critical Rubrics
+### 4. Use Different Configs for Different Environments
 
-```python
-# Only evaluate high-importance rubrics
-critical_rubrics = [
-    r for r in PERCEPTION_RUBRICS 
-    if r.importance >= 0.9
-]
+```bash
+# Development: fast, cheap
+adk eval --config tests/evaluation/test_config_dev.json ...
 
-judge = LLMJudge("perception", critical_rubrics, num_samples=3)
+# CI: moderate coverage
+adk eval --config tests/evaluation/test_config_ci.json ...
+
+# Production: comprehensive
+adk eval --config tests/evaluation/test_config_prod.json ...
+```
+
+## File Structure
+
+```
+tests/evaluation/
+├── perception_agent.test.json      # Perception test cases
+├── motion_agent.test.json          # Motion test cases (TODO)
+├── collision_agent.test.json       # Collision test cases (TODO)
+├── odd_spec_agent.test.json        # ODD spec test cases (TODO)
+├── cod_agent.test.json             # COD classifier test cases (TODO)
+├── compliance_agent.test.json      # Compliance test cases (TODO)
+├── report_agent.test.json          # Report test cases (TODO)
+├── test_config.json                # Evaluation criteria config
+├── test_config_dev.json            # Dev config (fast, cheap) (TODO)
+├── test_config_ci.json             # CI config (moderate) (TODO)
+└── test_config_prod.json           # Prod config (comprehensive) (TODO)
+
+odd_agents/evaluation/
+├── __init__.py                     # Exports rubrics
+├── rubrics.py                      # All rubrics in ADK format
+└── README.md                       # Detailed evaluation docs
+
+tests/
+└── test_adk_evaluation.py          # pytest integration
 ```
 
 ## Next Steps
 
-1. **Integrate into CI/CD**: Add evaluation tests to GitHub Actions
-2. **Build Benchmark Dataset**: Create golden outputs for systematic evaluation
-3. **Monitor Quality Trends**: Track evaluation scores over time
-4. **Expand Rubrics**: Add domain-specific quality criteria as needed
+1. ✅ **Core infrastructure**: Rubrics, test file, config, pytest integration
+2. **Create test files**: Add .test.json for motion, collision, odd_spec, cod, compliance, report agents
+3. **Environment-specific configs**: Create dev/ci/prod config variants
+4. **CI/CD integration**: Add evaluation to GitHub Actions
+5. **Benchmark dataset**: Expand test cases with more scenarios
+6. **Vertex AI integration**: Connect to Vertex Gen AI Evaluation Service
 
-See `odd_agents/evaluation/README.md` for detailed documentation.
+See `odd_agents/evaluation/README.md` for detailed documentation on:
+- Test file format (EvalSet/EvalCase schema)
+- Config file format (criteria and rubric definitions)
+- Available evaluation criteria
+- Rubric design guidelines
+- Best practices
+
+## References
+
+- [Google ADK Evaluation Guide](https://google.github.io/adk-docs/evaluate/)
+- [ADK Evaluation Criteria](https://google.github.io/adk-docs/evaluate/criteria/)
+- [Kaggle 5 Days of AI - Agent Evaluation](https://www.kaggle.com/code/kaggle5daysofai/day-4b-agent-evaluation)
+- [LLM-as-Judge Best Practices](https://google.github.io/adk-docs/evaluate/criteria/#rubric_based_final_response_quality_v1)
