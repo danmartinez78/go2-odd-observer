@@ -1,0 +1,721 @@
+{
+  "report": {
+    "executive_summary": "The Unitree Go2 robot is operating in a simulated indoor office environment. While the environment generally aligns with the ODD, a low traversability score and high collision risk, coupled with multiple instances of near-collision scenarios, suggest a need for caution and potential adjustments to the operating strategy.",
+    "scenario_metadata": {
+      "total_windows_analyzed": 13,
+      "scenario_name": "sim_run_new",
+      "data_source": "simulation",
+      "data_source_confidence": 1.0
+    },
+    "perception_summary": "The robot's perception system accurately identifies the indoor office environment, smooth terrain, and varying lighting conditions. However, the system frequently detects the presence of obstacles, particularly furniture, which sometimes lead to occlusions and reduced visibility.",
+    "motion_summary": "No motion was detected during the analysis, indicating the robot remained stationary throughout the scenario. This results in no contribution to the collision risk.",
+    "collision_summary": "The collision risk is assessed as moderate, with high collision risk present in 4 of the 13 windows. The robot is frequently positioned in close proximity to obstacles, with a few windows showing complete occlusion or imminent collisions.  The average collision likelihood score is 0.412.",
+    "odd_spec_summary": "The ODD specifies that the robot is designed for indoor office navigation with smooth terrain, varying lighting conditions and a defined range of obstacle density and traversability. The ODD also sets limits on collision risk.",
+    "cod_classification_summary": "The current operating domain is classified as indoor office with bright lighting, smooth terrain, moderate obstacle density and a moderate level of collision risk.",
+    "odd_compliance_summary": "Overall ODD compliance is rated as OUT_ODD, primarily because the traversability score fell outside of the acceptable range and the collision risk approached boundary conditions.  There were no violations of the allowed categorical ODD constraints. ",
+    "key_findings": [
+      "The robot is frequently positioned in environments with high obstacle density and reduced traversability.",
+      "The robot is often positioned in close proximity to static obstacles which causes high collision risk",
+      "The robot has a high average collision risk."
+    ],
+    "recommendations": [
+      "Implement path planning and obstacle avoidance strategies to reduce the likelihood of close proximity to obstacles and prevent potential collisions. ",
+      "Investigate and address the factors contributing to the low traversability score in order to operate more reliably."
+    ]
+  },
+  "full_analysis": {
+    "perception": {
+      "windows_analyzed": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012"
+      ],
+      "per_window_perception": [
+        {
+          "bev_summary": "LiDAR shows a dense, concave obstacle immediately in front of the robot, completely blocking the path forward.",
+          "camera_summary": "The camera is fully occluded, pressed against a dark, wood-textured surface.",
+          "environmental_constraints": [
+            "path_blocked",
+            "complete_occlusion",
+            "low_light"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dark",
+          "obstacle_density": 0.9,
+          "occupancy_ratio": 0.15,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0,
+          "visibility_score": 0,
+          "window_id": "000"
+        },
+        {
+          "bev_summary": "The LiDAR shows a dense, solid obstacle immediately in front and curving to the left of the robot, indicating it is cornered or blocked. A large portion of the sensor's field of view is occluded.",
+          "camera_summary": "The camera is extremely close to a dark, wood-grained vertical surface, likely a wall or large furniture, completely obstructing the forward view.",
+          "environmental_constraints": [
+            "obstructed view",
+            "confined space",
+            "close proximity to obstacle"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dark",
+          "obstacle_density": 0.9,
+          "occupancy_ratio": 0.2,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0,
+          "visibility_score": 0,
+          "window_id": "001"
+        },
+        {
+          "bev_summary": "A dense cluster of LiDAR points forms a concave curve immediately to the front and left of the robot, with open space to the right.",
+          "camera_summary": "A close-up view of a large, curved wooden and white counter, indicating immediate proximity to a large obstacle.",
+          "environmental_constraints": [
+            "large furniture",
+            "close proximity obstacle",
+            "occlusion"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.9,
+          "occupancy_ratio": 0.25,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.2,
+          "visibility_score": 0.1,
+          "window_id": "002"
+        },
+        {
+          "bev_summary": "The LiDAR map shows a dense, curved cluster of obstacles directly in front and slightly to the right, with the surrounding area being clear.",
+          "camera_summary": "A robot on a flat, gridded surface faces a uniform gray background, with a single flowering bush visible on the right side.",
+          "environmental_constraints": [
+            "vegetation"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dim",
+          "obstacle_density": 0.8,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.9,
+          "visibility_score": 1,
+          "window_id": "003"
+        },
+        {
+          "bev_summary": "LiDAR shows large, dense obstacles corresponding to furniture immediately to the left and right of the robot, indicating a tightly constrained path forward.",
+          "camera_summary": "Indoor scene looking at a black leather sofa on the right and a white cabinet next to a wooden bookshelf on the left, creating a narrow space.",
+          "environmental_constraints": [
+            "narrow passage",
+            "furniture"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.6,
+          "occupancy_ratio": 0.25,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.2,
+          "visibility_score": 1,
+          "window_id": "004"
+        },
+        {
+          "bev_summary": "LiDAR shows two distinct rectangular obstacles to the front-left, with clear, open space directly ahead and to the right.",
+          "camera_summary": "Two black couches are positioned on a smooth, light-colored floor in a sparse indoor environment.",
+          "environmental_constraints": [
+            "Large furniture",
+            "Static obstacles"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dim",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.25,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.8,
+          "visibility_score": 1,
+          "window_id": "005"
+        },
+        {
+          "bev_summary": "LiDAR shows two large, dense obstacles corresponding to the sofas to the front-left and front-right, with the path between them blocked.",
+          "camera_summary": "An indoor scene with two black sofas facing each other, separated by a central glass coffee table on a smooth, light-colored floor.",
+          "environmental_constraints": [
+            "sofas",
+            "coffee table",
+            "narrow passage"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.7,
+          "occupancy_ratio": 0.35,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.1,
+          "visibility_score": 1,
+          "window_id": "006"
+        },
+        {
+          "bev_summary": "The forward-facing LiDAR scan shows a dense cluster of obstacles corresponding to furniture located to the front and left of the robot, with an open area to the right.",
+          "camera_summary": "A synthetic indoor scene with a black sofa, a chair, and a glass table on a flat, light-colored floor.",
+          "environmental_constraints": [
+            "sofa",
+            "chair",
+            "table"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.7,
+          "occupancy_ratio": 0.25,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "007"
+        },
+        {
+          "bev_summary": "LiDAR detects a large, solid obstacle directly ahead and to the right, consistent with a sofa, and smaller obstacles to the left, leaving a clear path to the right.",
+          "camera_summary": "A black leather sofa and a small side table are positioned on a flat, light gray floor in a well-lit room.",
+          "environmental_constraints": [
+            "sofa",
+            "side_table",
+            "planter"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.25,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.6,
+          "visibility_score": 0.95,
+          "window_id": "008"
+        },
+        {
+          "bev_summary": "LiDAR detects a large, dense obstacle to the right (sofa) and a smaller, distinct obstacle directly ahead (table), indicating the immediate forward and right paths are blocked.",
+          "camera_summary": "An indoor scene featuring a black sofa to the right, a small side table directly ahead, and a tall plant to the left, all on a smooth, gridded floor.",
+          "environmental_constraints": [
+            "sofa",
+            "side table",
+            "plant",
+            "confined space"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.7,
+          "occupancy_ratio": 0.3,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.2,
+          "visibility_score": 1,
+          "window_id": "009"
+        },
+        {
+          "bev_summary": "LiDAR shows a large, dense obstacle directly in front of and to the left of the robot, indicating the robot is in a corner with a blocked path.",
+          "camera_summary": "A close-up, low-angle view of a large, dark leather sofa in a dimly lit indoor environment.",
+          "environmental_constraints": [
+            "large obstacle",
+            "confined space",
+            "low light"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dim",
+          "obstacle_density": 0.8,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.1,
+          "visibility_score": 0.3,
+          "window_id": "010"
+        },
+        {
+          "bev_summary": "A large, solid, rectangular obstacle is detected directly in front of the robot at very close range. The surrounding area appears mostly open.",
+          "camera_summary": "Extreme close-up view of a black leather couch, which is occupying the entire camera frame.",
+          "environmental_constraints": [
+            "Obstacle at close range",
+            "Imminent collision"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dim",
+          "obstacle_density": 0.1,
+          "occupancy_ratio": 0.15,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0,
+          "visibility_score": 0,
+          "window_id": "011"
+        },
+        {
+          "bev_summary": "LiDAR shows a large, solid, flat-faced obstacle directly in front of the robot, with open, traversable space to the left.",
+          "camera_summary": "Extreme close-up of a black leather sofa, indicating the robot is immediately adjacent to or touching a large piece of furniture.",
+          "environmental_constraints": [
+            "large static obstacle",
+            "low light",
+            "blocked path"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dark",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.4,
+          "visibility_score": 0.1,
+          "window_id": "012"
+        }
+      ],
+      "environment_classification": {
+        "primary_class": "indoor_office",
+        "confidence": 0.95,
+        "evidence": [
+          "Consistent presence of office-style furniture (sofas, tables, cabinets)",
+          "All windows depict indoor scenes on smooth, flat surfaces",
+          "Lighting conditions are artificial (bright, dim)"
+        ]
+      },
+      "data_source_classification": {
+        "source": "simulation",
+        "confidence": 1.0,
+        "evidence": [
+          "Window 007 explicitly described as a 'synthetic indoor scene'",
+          "Window 003 and 009 mention a 'gridded surface', a common simulation artifact",
+          "Uniform backgrounds and perfectly textured surfaces noted",
+          "Lack of sensor noise, dust, or real-world imperfections in descriptions"
+        ]
+      }
+    },
+    "motion": {
+      "windows_analyzed": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012"
+      ],
+      "overall_stats": {
+        "total_windows": 13,
+        "motion_detected_count": 0,
+        "motion_detection_rate": 0.0,
+        "motion_type_distribution": {
+          "stationary": 0,
+          "translation": 0,
+          "rotation": 0,
+          "other": 0
+        },
+        "max_horizontal_accel_mps2": 0.0,
+        "max_angular_velocity_radps": 0.0,
+        "overall_assessment": "stationary_scenario"
+      },
+      "per_window_motion": []
+    },
+    "collision": {
+      "windows_analyzed": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012"
+      ],
+      "collision_events": [
+        {
+          "window_id": "000",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.95,
+          "evidence": "Robot is stationary, but both the camera view and BEV LiDAR map confirm an object is in extremely close proximity to the front and left. Any forward or leftward motion would result in an immediate collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.05,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "Object in very close proximity directly in front"
+          ],
+          "bev_hazards": [
+            "Solid obstacle in close proximity to front and left"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.9
+        },
+        {
+          "window_id": "001",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.95,
+          "evidence": "Robot is stationary, which prevents an immediate collision. However, both the camera feed (showing a surface filling the entire frame) and the BEV LiDAR map confirm a large obstacle is in extremely close proximity (<0.1m) to the front and left. Any forward or leftward motion would likely cause a collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.1,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "Object in extremely close proximity, possibly in contact",
+            "Forward view completely obstructed by surface"
+          ],
+          "bev_hazards": [
+            "Large, solid obstacle detected at near-zero distance",
+            "Obstacle occupies front and left quadrants"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.9
+        },
+        {
+          "window_id": "002",
+          "collision_risk_level": "medium",
+          "risk_confidence": 0.95,
+          "evidence": "The robot is stationary but positioned extremely close to a large, curved obstacle. Both the camera and BEV LiDAR confirm the object's presence and proximity to the front and left. Any forward or leftward motion would likely result in an immediate collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.1,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "Very close proximity to large curved object (furniture/wall)"
+          ],
+          "bev_hazards": [
+            "Dense obstacle detection at very close range to the front and left"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.5
+        },
+        {
+          "window_id": "003",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "evidence": "Robot is stationary, which prevents immediate collision. However, both camera and BEV LiDAR confirm a large, static obstacle (bush) in very close proximity to the robot's right side. The lack of motion is the only mitigating factor.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.8,
+          "obstacle_direction": "right",
+          "camera_hazards": [
+            "Close vegetation on the right"
+          ],
+          "bev_hazards": [
+            "Dense static obstacle cluster to the front-right"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.25
+        },
+        {
+          "window_id": "004",
+          "collision_risk_level": "low",
+          "risk_confidence": 1,
+          "evidence": "Robot is stationary, which mitigates immediate risk. However, both camera and BEV LiDAR confirm multiple large obstacles are within inches of the robot on multiple sides. Any unplanned or forward/sideways motion would result in an immediate collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.2,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "Sofa in close proximity on the right",
+            "Cabinet in close proximity on the left"
+          ],
+          "bev_hazards": [
+            "Dense obstacles detected in immediate proximity to the front, left, and right"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.25
+        },
+        {
+          "window_id": "005",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "evidence": "The robot is stationary, which negates any immediate collision risk. However, both camera and BEV LiDAR data confirm the robot is in extremely close proximity to two large couches located in front and to the left. Any forward or leftward motion would result in an immediate collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "Couch directly in front",
+            "Couch to the left"
+          ],
+          "bev_hazards": [
+            "Large static object in front",
+            "Large static object to the left"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.25
+        },
+        {
+          "window_id": "006",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "evidence": "Robot is stationary, so immediate risk is low. However, both camera and BEV data confirm multiple large obstacles (sofas, table) in very close proximity to the front, left, and right. Any movement without careful path planning would likely result in a collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.8,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "coffee table (front)",
+            "sofa (left)",
+            "sofa (right)"
+          ],
+          "bev_hazards": [
+            "obstacle cluster (front)",
+            "obstacle cluster (left)",
+            "obstacle cluster (right)"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.25
+        },
+        {
+          "window_id": "007",
+          "collision_risk_level": "none",
+          "risk_confidence": 1,
+          "evidence": "The robot is stationary, so there is no immediate collision risk. Both camera and BEV LiDAR data confirm the presence of close-proximity static obstacles (furniture) in front and to the left. The lack of motion makes the situation safe.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "glass table",
+            "sofa",
+            "chair"
+          ],
+          "bev_hazards": [
+            "static obstacle (front)",
+            "static obstacle (left)"
+          ],
+          "recommended_action": "continue",
+          "collision_likelihood_score": 0
+        },
+        {
+          "window_id": "008",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "evidence": "Robot is stationary, eliminating motion-based risk. However, camera and BEV LiDAR data confirm the robot is in very close proximity to multiple obstacles, including a table directly in front, a sofa to the right, and a planter to the left. Any forward or turning motion would likely result in an immediate collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.4,
+          "obstacle_direction": "multiple",
+          "camera_hazards": [
+            "Small table",
+            "Sofa",
+            "Planter"
+          ],
+          "bev_hazards": [
+            "Close-proximity obstacle in front",
+            "Large obstacle to the right",
+            "Obstacle to the left"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.25
+        },
+        {
+          "window_id": "009",
+          "collision_risk_level": "none",
+          "risk_confidence": 1,
+          "evidence": "The robot is stationary (0.0 m/s\u00b2 accel, 0.0 rad/s velocity), so there is no immediate collision risk. Both camera and BEV LiDAR confirm the presence of a table directly in front at a very close distance, with a large sofa to the right.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "front",
+          "camera_hazards": [
+            "table",
+            "sofa"
+          ],
+          "bev_hazards": [
+            "obstacle directly in front",
+            "large obstacle to the front-right"
+          ],
+          "recommended_action": "continue",
+          "collision_likelihood_score": 0
+        },
+        {
+          "window_id": "010",
+          "collision_risk_level": "none",
+          "risk_confidence": 1,
+          "evidence": "The robot is stationary, so there is no immediate collision risk. However, both camera and BEV LiDAR confirm a large obstacle is directly in front at extremely close range. Any forward motion would be hazardous.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.1,
+          "obstacle_direction": "front",
+          "camera_hazards": [
+            "Large object (couch) in immediate proximity"
+          ],
+          "bev_hazards": [
+            "Dense obstacle detection directly in front"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0
+        },
+        {
+          "window_id": "011",
+          "collision_risk_level": "high",
+          "risk_confidence": 1,
+          "evidence": "Camera view shows the robot is almost touching a large object, likely a sofa. The BEV LiDAR map corroborates this, showing a dense wall of points directly in front of the sensor. Although the robot is stationary, the extreme proximity makes any forward motion impossible without collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.1,
+          "obstacle_direction": "front",
+          "camera_hazards": [
+            "Large obstacle (sofa) at extremely close range"
+          ],
+          "bev_hazards": [
+            "Dense obstacle detected immediately in front"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.9
+        },
+        {
+          "window_id": "012",
+          "collision_risk_level": "high",
+          "risk_confidence": 1,
+          "evidence": "Robot is stationary but positioned extremely close to a large obstacle, confirmed by both the camera feed and BEV LiDAR map. Any forward motion would result in an immediate collision.",
+          "motion_contributes_to_risk": false,
+          "closest_obstacle_meters": 0.1,
+          "obstacle_direction": "front",
+          "camera_hazards": [
+            "Large object (couch/chair) directly in front at close range"
+          ],
+          "bev_hazards": [
+            "Dense obstacle cluster directly in front at very close range"
+          ],
+          "recommended_action": "stop",
+          "collision_likelihood_score": 0.9
+        }
+      ],
+      "overall_collision_stats": {
+        "total_windows": 13,
+        "safe_count": 3,
+        "caution_count": 6,
+        "alert_count": 4,
+        "avg_collision_likelihood": 0.412
+      }
+    },
+    "odd_spec": {
+      "categorical_constraints": {
+        "environment_type": {
+          "allowed": [
+            "indoor_office",
+            "indoor_corridor"
+          ],
+          "prohibited": [
+            "outdoor_urban",
+            "outdoor_natural",
+            "stairs"
+          ]
+        },
+        "lighting_conditions": {
+          "allowed": [
+            "bright",
+            "dim"
+          ],
+          "prohibited": [
+            "dark",
+            "low_light"
+          ]
+        },
+        "terrain_type": {
+          "allowed": [
+            "smooth"
+          ],
+          "prohibited": [
+            "moderate",
+            "rough",
+            "very_rough"
+          ]
+        }
+      },
+      "numeric_constraints": {
+        "max_speed_mps": {
+          "in_odd": [
+            0.0,
+            0.5
+          ],
+          "boundary": [
+            0.5,
+            1.0
+          ],
+          "out_odd": [
+            1.0,
+            "inf"
+          ]
+        },
+        "obstacle_density": {
+          "in_odd": [
+            0.0,
+            0.6
+          ],
+          "boundary": [
+            0.6,
+            0.8
+          ],
+          "out_odd": [
+            0.8,
+            1.0
+          ]
+        },
+        "traversability_score": {
+          "in_odd": [
+            0.5,
+            1.0
+          ],
+          "boundary": [
+            0.3,
+            0.5
+          ],
+          "out_odd": [
+            0.0,
+            0.3
+          ]
+        },
+        "collision_risk": {
+          "in_odd": [
+            0.0,
+            0.3
+          ],
+          "boundary": [
+            0.3,
+            0.5
+          ],
+          "out_odd": [
+            0.5,
+            1.0
+          ]
+        },
+        "platform_stability_degrees": {
+          "in_odd": [
+            0.0,
+            15.0
+          ],
+          "boundary": [
+            15.0,
+            20.0
+          ],
+          "out_odd": [
+            20.0,
+            "inf"
+          ]
+        }
+      },
+      "odd_summary": "Defines the operational domain for a quadruped robot in well-lit, indoor office environments with smooth, flat terrain. The robot is designed for slow, walking-pace navigation through low-to-moderate obstacle density, avoiding stairs, steep slopes, and dark or highly cluttered areas."
+    },
+    "cod_classification": {
+      "categorical": {
+        "environment_type": "indoor_office",
+        "lighting_conditions": "bright",
+        "terrain_type": "smooth"
+      },
+      "numeric": {
+        "obstacle_density": 0.53,
+        "traversability_score": 0.38,
+        "collision_risk": 0.412
+      },
+      "cod_summary": "The robot is in an indoor office environment with bright lighting and smooth terrain. The environment contains moderate obstacle density and a moderate level of collision risk."
+    },
+    "odd_compliance": {
+      "categorical_compliance": {
+        "environment_type": "IN_ODD",
+        "lighting_conditions": "IN_ODD",
+        "terrain_type": "IN_ODD"
+      },
+      "numeric_compliance": {
+        "obstacle_density": "IN_ODD",
+        "traversability_score": "OUT_ODD",
+        "collision_risk": "ODD_BOUNDARY"
+      },
+      "overall_compliance": "OUT_ODD",
+      "violations": [
+        "traversability_score: 0.38 is below the minimum allowed value of 0.5"
+      ],
+      "warnings": [
+        "collision_risk: 0.412 is within the boundary of [0.3, 0.5]"
+      ],
+      "compliance_summary": "The robot's current operating domain is primarily within the ODD, but the traversability score is outside the acceptable range, and the collision risk is approaching design limits."
+    }
+  }
+}
