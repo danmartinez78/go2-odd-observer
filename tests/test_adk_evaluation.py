@@ -316,3 +316,89 @@ async def test_odd_spec_comprehensive():
         if config_backup.exists():
             shutil.copy(config_backup, config_main)
             config_backup.unlink()
+
+
+# =============================================================================
+# REPORT AGENT EVALUATION TESTS
+# Tests single-inference agent (NO TOOLS) - Aggregates all {temp:*} outputs
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_report_rubric_quality():
+    """
+    Test Report agent with rubric-based LLM judging.
+    
+    NOTE: This agent has NO TOOLS - it's a single inference agent.
+    Input: Mock context data for all {temp:*} outputs (perception, motion, collision, odd_spec, cod, compliance)
+    Output: JSON report with executive summary + full analysis aggregation
+    
+    Evaluates:
+    - JSON structure validity (required fields, correct types)
+    - Executive summary quality (2-3 sentences, actionable)
+    - Data aggregation accuracy (correctly extracts from inputs)
+    - Report completeness (all 6 summary sections present)
+    - Actionability and clarity (specific findings, actionable recommendations)
+    
+    Pattern difference from loop agents:
+    - No expected_tool_uses (this agent doesn't call tools)
+    - Test cases use complete mock context data, not window IDs
+    - Rubrics focus on aggregation and report quality
+    
+    Runtime: ~100-120s (3 test cases × 5 rubrics × LLM inference + judging)
+    """
+    import shutil
+    report_dir = EVAL_DIR / "report"
+    config_main = report_dir / "test_config.json"
+    config_rubric = report_dir / "test_config_rubric_only.json"
+    config_backup = report_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.report.report_agent",
+            eval_dataset_file_path_or_dir=str(report_dir / "report_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_report_comprehensive():
+    """
+    Full Report agent evaluation.
+    
+    Tests:
+    - Rubric-based quality (structure, summary, aggregation, completeness, actionability)
+    - Hallucinations (no fabricated data)
+    
+    Note: No tool_trajectory criterion (this agent has no tools!)
+    
+    Runtime: ~120-180s (includes inference + judging + hallucination detection)
+    """
+    import shutil
+    report_dir = EVAL_DIR / "report"
+    config_main = report_dir / "test_config.json"
+    config_comprehensive = report_dir / "test_config_comprehensive.json"
+    config_backup = report_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.report.report_agent",
+            eval_dataset_file_path_or_dir=str(report_dir / "report_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
