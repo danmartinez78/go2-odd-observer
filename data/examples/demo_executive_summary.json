@@ -1,0 +1,38 @@
+{
+  "scenario": "sim_run_new",
+  "executive_summary": "The Unitree Go2 robot is operating in a simulated indoor office environment. While the environment generally aligns with the ODD, a low traversability score and high collision risk, coupled with multiple instances of near-collision scenarios, suggest a need for caution and potential adjustments to the operating strategy.",
+  "key_findings": [
+    "The robot is frequently positioned in environments with high obstacle density and reduced traversability.",
+    "The robot is often positioned in close proximity to static obstacles which causes high collision risk",
+    "The robot has a high average collision risk."
+  ],
+  "recommendations": [
+    "Implement path planning and obstacle avoidance strategies to reduce the likelihood of close proximity to obstacles and prevent potential collisions. ",
+    "Investigate and address the factors contributing to the low traversability score in order to operate more reliably."
+  ],
+  "metadata": {
+    "total_windows_analyzed": 13,
+    "scenario_name": "sim_run_new",
+    "data_source": "simulation",
+    "data_source_confidence": 1.0
+  },
+  "compliance": {
+    "overall_compliance": "OUT_ODD",
+    "violations": [
+      "traversability_score: 0.38 is below the minimum allowed value of 0.5"
+    ],
+    "warnings": [
+      "collision_risk: 0.412 is within the boundary of [0.3, 0.5]"
+    ],
+    "categorical_compliance": {
+      "environment_type": "IN_ODD",
+      "lighting_conditions": "IN_ODD",
+      "terrain_type": "IN_ODD"
+    },
+    "numeric_compliance": {
+      "obstacle_density": "IN_ODD",
+      "traversability_score": "OUT_ODD",
+      "collision_risk": "ODD_BOUNDARY"
+    }
+  }
+}

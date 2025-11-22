@@ -1,48 +1,71 @@
 # Archive Directory
 
-This directory contains historical exploration and development files that were used during the project's evolution but are not part of the final workflow.
+This directory contains historical exploration, development files, and planning documents from the project's evolution.
+
+## Organization
+
+```
+.archive/
+├── development_notes/    # Debug findings, agent fixes, migration notes
+├── docs/                 # Old documentation (factory pattern, IMU updates, reference patterns)
+├── experimental_agents/  # Early agent implementations and debugging scripts
+├── experimental_orchestrators/  # Orchestration pattern exploration
+├── exploration/          # ADK pattern testing and proof-of-concepts
+├── notebooks/           # Archived notebooks (educational, minimal, old workflows)
+├── planning/            # Planning docs (refactor plans, TODO lists, project plans)
+└── scripts/             # Old workflow scripts and backups
+```
 
 ## Purpose
 
-These files demonstrate the learning journey and architectural decisions that led to the final implementation. They are preserved for:
-- Historical reference
-- Understanding design evolution
-- Educational purposes
-- Pattern comparison
+These files demonstrate the learning journey and architectural decisions that led to the final implementation:
+- Historical reference for design evolution
+- Educational examples of what worked and what didn't
+- Pattern comparison and A/B testing results
+- Development documentation and debugging notes
 
-## Contents
+## Key Archived Items
 
-### `/exploration/` - ADK Pattern Testing
+### Planning & Documentation
+- **`planning/REFACTOR_PLAN.md`** - Complete shared-agent-module refactor plan (completed)
+- **`planning/REFACTOR_SUMMARY.md`** - Config.py removal refactor summary
+- **`planning/TODO.md`** - Historical TODO list and feature tracking
+- **`planning/project_plan.md`** - Original ODD/COD project architecture plan
+- **`docs/FACTORY_PATTERN.md`** - Factory pattern implementation guide
+- **`docs/IMU_MOTION_DETECTION_UPDATE.md`** - IMU-based motion detection changes
+- **`docs/REFERENCE_multi_agent_pattern.md`** - Loop+summary pattern reference
 
-Files used to explore different ADK agent architectures and discover the optimal patterns:
+### Notebooks
+- **`notebooks/odd_workflow_educational.ipynb`** - Full implementation with visible code
+- **`notebooks/odd_workflow_minimal.ipynb`** - Minimal interface using odd_agents module
+- **`notebooks/odd_cod_workflow_ARCHIVED.ipynb`** - Earlier ODD/COD workflow version
+- **`notebooks/odd_cod_misc.ipynb`** - Miscellaneous ODD/COD explorations
 
-- **`compare_agent_variants.py`** - A/B testing of specialized vs unified agent architectures
-- **`simple_agent_example.py`** - Basic ADK agent setup and file access testing
-- **`single_agent_image_adk_workflow.py`** - Direct image→Gemini approach (pre-tool pattern)
-- **`orchestrator_scenario_complete.py`** - Earlier orchestration attempt (pre-loop+summary)
+### Scripts
+- **`scripts/odd_workflow_full.py`** - Complete 9-agent sequential pipeline (before parameterization)
+- **`scripts/multi_agent_image_adk_workflow.py`** - PROVEN loop+summary pattern reference
 
-### Reference Implementation
-
-- **`scripts/multi_agent_image_adk_workflow.py`** - The PROVEN loop+summary pattern that became our foundation
-  - This file demonstrated the hallucination-free approach
-  - Tools call Gemini directly and return text/JSON (not Part objects)
-  - Loop agent processes items individually, summary agent aggregates
-  - **This pattern was successfully applied to create `odd_workflow_full.py`**
+### Exploration
+- **`exploration/compare_agent_variants.py`** - A/B testing of agent architectures
+- **`exploration/odd_cod/`** - Early ODD/COD distance metric implementations
+- **`exploration/orchestrator_scenario_complete.py`** - Pre-loop+summary orchestration
 
 ## Key Learnings
 
 1. **Hallucination Prevention**: Tools must call Gemini directly with `types.Part.from_bytes()` and return text/JSON, NOT Part objects
 2. **Loop + Summary Pattern**: Process items individually in loop agent, aggregate in summary agent
-3. **Model Selection**: Vision/aggregation needs 2.5-pro, simple synthesis can use flash-lite
-4. **Data Preservation**: Complex data structures require 2.5-pro to maintain arrays during aggregation
+3. **No Global State**: Parameterized factory functions prevent test isolation issues
+4. **Model Selection**: Vision/aggregation needs 2.5-pro, simple synthesis can use flash-lite
+5. **IMU Over Odometry**: Accelerometer/gyroscope more robust than broken odometry
 
-## Final Production Code
+## Current Production Code
 
-The exploration led to these production files (in project root):
-- `odd_workflow_full.py` - 9-agent sequential pipeline
-- `agent_tests/` - Individual agent implementations
-- `notebooks/odd_workflow_interactive.ipynb` - Interactive analysis
+The final implementation is in the project root:
+- **`odd_agents/`** - Parameterized module (tools, agents, workflow)
+- **`scripts/odd_workflow.py`** - Production CLI script
+- **`notebooks/odd_analysis_demo.ipynb`** - Current demo notebook
+- **`tests/`** - Isolated test suite
 
 ## Note
 
-These archived files are **not maintained** and may not work with current dependencies. They are for reference only. See the main README.md for current usage instructions.
+Archived files are **not maintained** and may not work with current dependencies. They are for reference only. See the main `README.md` for current usage instructions.
