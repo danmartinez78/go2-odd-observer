@@ -10,13 +10,15 @@ from google.adk.runners import InMemoryRunner
 
 # Import from shared module
 from odd_agents import set_scenario, extract_json_block
-from odd_agents.agents import motion_loop_agent, motion_summary_agent
+from odd_agents.agents import create_motion_loop_agent, create_motion_summary_agent
 
 # Set test scenario
 set_scenario("sim_run_test")
 
 
-# Create workflow using shared agents
+# Create workflow using factory functions
+motion_loop_agent = create_motion_loop_agent()
+motion_summary_agent = create_motion_summary_agent()
 motion_workflow = SequentialAgent(
     name="MotionWorkflow",
     sub_agents=[motion_loop_agent, motion_summary_agent],

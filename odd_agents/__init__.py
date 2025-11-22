@@ -56,7 +56,7 @@ from .utils import (
 )
 
 from .workflow import (
-    odd_workflow,
+    create_odd_workflow,
     run_odd_workflow,
     extract_final_report,
 )
@@ -86,7 +86,7 @@ __all__ = [
     "extract_json_block",
 
     # Workflow exports
-    "odd_workflow",
+    "create_odd_workflow",
     "run_odd_workflow",
     "extract_final_report",
 ]

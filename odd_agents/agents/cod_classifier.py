@@ -9,11 +9,13 @@ from google.adk.models.google_llm import Gemini
 from ..config import GEMINI_MODEL_COD, GOOGLE_API_KEY
 
 
-cod_classifier_agent = Agent(
-    name="CodClassifierAgent",
-    model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
-    output_key="temp:cod_classification",
-    instruction="""You are a Current Operating Domain (COD) classifier.
+def create_cod_classifier_agent() -> Agent:
+    """Create a new CodClassifierAgent instance."""
+    return Agent(
+        name="CodClassifierAgent",
+        model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
+        output_key="temp:cod_classification",
+        instruction="""You are a Current Operating Domain (COD) classifier.
 
 TASK: Classify the robot's CURRENT operating domain from sensor analysis.
 
@@ -52,4 +54,4 @@ Return ONLY valid JSON:
 }
 
 No explanations outside JSON.""",
-)
+    )

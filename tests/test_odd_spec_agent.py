@@ -9,7 +9,7 @@ from google.adk.runners import InMemoryRunner
 
 # Import from shared module
 from odd_agents import extract_json_block
-from odd_agents.agents import odd_spec_agent
+from odd_agents.agents import create_odd_spec_agent
 
 
 async def test_odd_spec_agent() -> Optional[dict[str, Any]]:
@@ -27,6 +27,8 @@ async def test_odd_spec_agent() -> Optional[dict[str, Any]]:
         "dark/low-light areas, or high-density obstacle fields."
     )
 
+    # Create agent instance
+    odd_spec_agent = create_odd_spec_agent()
     runner = InMemoryRunner(agent=odd_spec_agent, app_name="OddSpecAgentApp")
     events = await runner.run_debug(nl_odd_description)
 

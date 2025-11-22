@@ -10,12 +10,14 @@ from ..config import GEMINI_MODEL_COLLISION, GOOGLE_API_KEY
 from ..tools import LIST_WINDOWS, ANALYZE_COLLISION_RISK
 
 
-collision_loop_agent = Agent(
-    name="CollisionLoopAgent",
-    model=Gemini(model=GEMINI_MODEL_COLLISION, api_key=GOOGLE_API_KEY),
-    tools=[LIST_WINDOWS, ANALYZE_COLLISION_RISK],
-    output_key="temp:collision_data",
-    instruction="""You orchestrate collision risk analysis across all scenario windows.
+def create_collision_loop_agent() -> Agent:
+    """Create a new CollisionLoopAgent instance."""
+    return Agent(
+        name="CollisionLoopAgent",
+        model=Gemini(model=GEMINI_MODEL_COLLISION, api_key=GOOGLE_API_KEY),
+        tools=[LIST_WINDOWS, ANALYZE_COLLISION_RISK],
+        output_key="temp:collision_data",
+        instruction="""You orchestrate collision risk analysis across all scenario windows.
 
 Steps you MUST follow:
 1. Call list_windows_tool() exactly once to get the ordered window_id list.
@@ -27,13 +29,16 @@ Steps you MUST follow:
   "collision_events": [<tool_response_objects_in_order>]
 }
 Do not add commentary. Ensure valid JSON.""",
-)
+    )
 
-collision_summary_agent = Agent(
-    name="CollisionSummaryAgent",
-    model=Gemini(model=GEMINI_MODEL_COLLISION, api_key=GOOGLE_API_KEY),
-    output_key="temp:collision_output",
-    instruction="""You finalize the collision risk report.
+
+def create_collision_summary_agent() -> Agent:
+    """Create a new CollisionSummaryAgent instance."""
+    return Agent(
+        name="CollisionSummaryAgent",
+        model=Gemini(model=GEMINI_MODEL_COLLISION, api_key=GOOGLE_API_KEY),
+        output_key="temp:collision_output",
+        instruction="""You finalize the collision risk report.
 
 Input data from the previous agent:
 {temp:collision_data?}
@@ -57,4 +62,4 @@ Otherwise:
   "collision_events": [...]
 }
 Only output JSON.""",
-)
+    )

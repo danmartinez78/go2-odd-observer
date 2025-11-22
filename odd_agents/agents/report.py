@@ -9,10 +9,12 @@ from google.adk.models.google_llm import Gemini
 from ..config import GEMINI_MODEL_REPORT, GOOGLE_API_KEY
 
 
-report_agent = Agent(
-    name="ReportAgent",
-    model=Gemini(model=GEMINI_MODEL_REPORT, api_key=GOOGLE_API_KEY),
-    instruction="""You are a technical report generator for ODD/COD analysis.
+def create_report_agent() -> Agent:
+    """Create a new ReportAgent instance."""
+    return Agent(
+        name="ReportAgent",
+        model=Gemini(model=GEMINI_MODEL_REPORT, api_key=GOOGLE_API_KEY),
+        instruction="""You are a technical report generator for ODD/COD analysis.
 
 TASK: Produce a comprehensive human-readable report.
 
@@ -56,4 +58,4 @@ Return ONLY valid JSON with this structure:
 IMPORTANT: Extract data_source and confidence from perception.data_source_classification and include in scenario_metadata.
 
 No explanations outside JSON.""",
-)
+    )

@@ -15,12 +15,14 @@ from ..tools import LIST_WINDOWS, ANALYZE_WINDOW_PERCEPTION
 # This would provide the data source classification as context to all downstream
 # agents. Current implementation adds it to perception_summary_agent for simplicity.
 
-perception_loop_agent = Agent(
-    name="PerceptionLoopAgent",
-    model=Gemini(model=GEMINI_MODEL_PERCEPTION, api_key=GOOGLE_API_KEY),
-    tools=[LIST_WINDOWS, ANALYZE_WINDOW_PERCEPTION],
-    output_key="temp:perception_data",
-    instruction="""You orchestrate perception analysis across all scenario windows.
+def create_perception_loop_agent():
+    """Factory function to create a new PerceptionLoopAgent instance."""
+    return Agent(
+        name="PerceptionLoopAgent",
+        model=Gemini(model=GEMINI_MODEL_PERCEPTION, api_key=GOOGLE_API_KEY),
+        tools=[LIST_WINDOWS, ANALYZE_WINDOW_PERCEPTION],
+        output_key="temp:perception_data",
+        instruction="""You orchestrate perception analysis across all scenario windows.
 
 Steps you MUST follow:
 1. Call list_windows_tool() exactly once to get the ordered window_id list.
@@ -32,13 +34,16 @@ Steps you MUST follow:
   "per_window_perception": [<tool_response_objects_in_order>]
 }
 Do not add commentary. Ensure valid JSON.""",
-)
+    )
 
-perception_summary_agent = Agent(
-    name="PerceptionSummaryAgent",
-    model=Gemini(model=GEMINI_MODEL_PERCEPTION, api_key=GOOGLE_API_KEY),
-    output_key="temp:perception_output",
-    instruction="""You finalize the ODD perception report.
+
+def create_perception_summary_agent():
+    """Factory function to create a new PerceptionSummaryAgent instance."""
+    return Agent(
+        name="PerceptionSummaryAgent",
+        model=Gemini(model=GEMINI_MODEL_PERCEPTION, api_key=GOOGLE_API_KEY),
+        output_key="temp:perception_output",
+        instruction="""You finalize the ODD perception report.
 
 Input data from the previous agent:
 {temp:perception_data?}
@@ -70,4 +75,4 @@ Otherwise:
 Only output JSON.
 
 NOTE: This data source classification will flow through the entire pipeline to the final report.""",
-)
+    )

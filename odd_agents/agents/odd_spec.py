@@ -9,11 +9,13 @@ from google.adk.models.google_llm import Gemini
 from ..config import GEMINI_MODEL_ODD_SPEC, GOOGLE_API_KEY
 
 
-odd_spec_agent = Agent(
-    name="OddSpecAgent",
-    model=Gemini(model=GEMINI_MODEL_ODD_SPEC, api_key=GOOGLE_API_KEY),
-    output_key="temp:odd_spec",
-    instruction="""You are an Operational Design Domain (ODD) specification expert.
+def create_odd_spec_agent() -> Agent:
+    """Create a new OddSpecAgent instance."""
+    return Agent(
+        name="OddSpecAgent",
+        model=Gemini(model=GEMINI_MODEL_ODD_SPEC, api_key=GOOGLE_API_KEY),
+        output_key="temp:odd_spec",
+        instruction="""You are an Operational Design Domain (ODD) specification expert.
 
 TASK: Convert the provided natural language ODD description into a formal specification.
 
@@ -65,4 +67,4 @@ Return ONLY valid JSON:
 }
 
 No explanations outside JSON.""",
-)
+    )
