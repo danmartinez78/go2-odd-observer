@@ -37,6 +37,34 @@ async def test_perception_agent_evaluation():
 
 
 @pytest.mark.asyncio
+async def test_toy_agent_simple():
+    """
+    Minimal toy test to learn how ADK evaluation works.
+    Simple greeting agent with one tool call.
+    """
+    # Temporarily swap configs
+    import shutil
+    config_full = EVAL_DIR / "test_config.json"
+    config_toy = EVAL_DIR / "toy_config.json"
+    config_backup = EVAL_DIR / "test_config_backup.json"
+
+    if config_full.exists():
+        shutil.copy(config_full, config_backup)
+        shutil.copy(config_toy, config_full)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.toy_agent",
+            eval_dataset_file_path_or_dir=str(
+                EVAL_DIR / "toy_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_full)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
 async def test_perception_tool_trajectory_only():
     """
     Fast test - only check tool trajectory (no expensive LLM judging).
