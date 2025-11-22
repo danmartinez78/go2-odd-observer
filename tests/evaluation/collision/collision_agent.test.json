@@ -1,0 +1,69 @@
+{
+  "eval_set_id": "collision_agent_eval",
+  "description": "ADK evaluation tests for CollisionLoopAgent using sim_run_test windows 006 and 007. Tests tool orchestration (list_windows + analyze_collision_risk) and JSON output quality.",
+  "eval_cases": [
+    {
+      "eval_case_id": "collision_windows_006_007",
+      "conversation": [
+        {
+          "role": "user",
+          "parts": [
+            {
+              "text": "Analyze collision risk for windows 006 and 007"
+            }
+          ]
+        }
+      ],
+      "tool_uses": [
+        {
+          "tool_name": "list_windows_tool",
+          "args": {}
+        },
+        {
+          "tool_name": "analyze_collision_risk_tool",
+          "args": {
+            "window_id": "006"
+          }
+        },
+        {
+          "tool_name": "analyze_collision_risk_tool",
+          "args": {
+            "window_id": "007"
+          }
+        }
+      ],
+      "response_criteria": [
+        {
+          "criterion_id": "json_structure",
+          "rubric": "Evaluate the JSON output structure:\n\n**Required Keys** (score 10/10 if all present, 0/10 if any missing):\n- 'windows_analyzed': Array of window IDs\n- 'collision_events': Array of collision risk objects\n\n**Structure Validity**:\n- Output must be valid, parseable JSON\n- No syntax errors\n- Proper nesting and data types\n\nScore:\n- 10/10: All required keys present, valid JSON, correct structure\n- 5-7/10: Valid JSON but missing optional fields or minor issues\n- 0/10: Invalid JSON or missing required keys",
+          "grading_context": "Expected windows: ['006', '007']. Each collision event should have: window_id, collision_risk_level, risk_confidence, closest_obstacle_meters, recommended_action.",
+          "pass_threshold": 7
+        },
+        {
+          "criterion_id": "completeness",
+          "rubric": "Evaluate analysis completeness:\n\n**Window Coverage** (check windows_analyzed):\n- Must contain both '006' and '007'\n- Windows must be in correct order\n\n**Collision Events** (check collision_events array):\n- Must have exactly 2 entries (one per window)\n- Each entry must have a window_id field\n- Window IDs in collision_events must match windows_analyzed\n\nScore:\n- 10/10: Both windows analyzed, all events present, IDs match\n- 5-7/10: Both windows present but minor inconsistencies\n- 0/10: Missing windows or major data gaps",
+          "grading_context": "Test uses windows 006 and 007. Both must be fully analyzed with complete collision risk assessments.",
+          "pass_threshold": 7
+        },
+        {
+          "criterion_id": "risk_score_validity",
+          "rubric": "Evaluate collision risk assessment quality:\n\n**Risk Level** (check collision_risk_level):\n- Must be one of: 'none', 'low', 'medium', 'high', 'critical'\n- Should be reasonable given test data (indoor scenario, moderate obstacles)\n\n**Risk Confidence** (check risk_confidence):\n- Must be a float between 0.0 and 1.0\n- Should not be exactly 0.0 or 1.0 (unrealistic extremes)\n\n**Obstacle Distance** (check closest_obstacle_meters):\n- If provided, must be a positive number or null\n- Should be reasonable for indoor robot navigation (0.1-10m range)\n\nScore:\n- 10/10: All risk metrics valid, reasonable values, appropriate confidence\n- 5-7/10: Metrics valid but some unrealistic values\n- 0/10: Invalid metric types or out-of-range values",
+          "grading_context": "Indoor environment with moderate obstacle density (~0.45). Risk levels should reflect this. Confidence should be moderate (0.5-0.9 range typical).",
+          "pass_threshold": 7
+        },
+        {
+          "criterion_id": "collision_detection_quality",
+          "rubric": "Evaluate collision detection reasoning:\n\n**Multimodal Analysis** (check evidence field):\n- Should reference camera observations\n- Should reference BEV/occupancy data\n- Should integrate motion context if available\n\n**Hazard Identification** (check camera_hazards and bev_hazards):\n- Should identify specific obstacles or hazards\n- Lists should not be empty unless truly hazard-free\n- Hazards should be concrete and specific\n\n**Recommendations** (check recommended_action):\n- Must be one of: 'continue', 'slow_down', 'stop', 'change_direction'\n- Should be appropriate for identified risk level\n- Should be consistent with hazard analysis\n\nScore:\n- 10/10: Clear multimodal reasoning, specific hazards, appropriate recommendations\n- 5-7/10: Basic analysis but vague or incomplete reasoning\n- 0/10: Generic responses, empty hazard lists, inconsistent recommendations",
+          "grading_context": "Windows 006 and 007 are indoor scenes with visible obstacles. Good analysis should identify specific environmental features and provide actionable guidance.",
+          "pass_threshold": 7
+        },
+        {
+          "criterion_id": "data_integrity",
+          "rubric": "Evaluate data preservation and consistency:\n\n**Tool Output Preservation**:\n- collision_events should contain actual tool responses\n- Window IDs must match between windows_analyzed and collision_events\n- All fields from tool output should be present (not truncated)\n\n**Consistency**:\n- Same window_id should not appear multiple times\n- Risk metrics should be internally consistent (e.g., high risk + 'continue' recommendation = inconsistent)\n- Evidence should support the risk level assigned\n\nScore:\n- 10/10: Perfect data preservation, all IDs consistent, no contradictions\n- 5-7/10: Minor inconsistencies but core data intact\n- 0/10: Data loss, duplicate windows, or major contradictions",
+          "grading_context": "Each analyze_collision_risk_tool call returns a structured JSON object. The loop agent should preserve these objects exactly in the collision_events array.",
+          "pass_threshold": 7
+        }
+      ]
+    }
+  ]
+}

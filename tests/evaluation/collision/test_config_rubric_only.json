@@ -1,0 +1,10 @@
+{
+    "criteria": {
+        "rubric_based_avg_score": {
+            "threshold": 0.7
+        }
+    },
+    "config": {
+        "max_workers": 3
+    }
+}
