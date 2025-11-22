@@ -65,15 +65,14 @@ async def test_toy_agent_simple():
 
 
 @pytest.mark.asyncio
-async def test_perception_tool_trajectory_only():
+async def test_toy_tool_trajectory():
     """
-    Fast test - only check tool trajectory (no expensive LLM judging).
-    Uses simple config with just tool_trajectory_avg_score.
+    Learn: Tool trajectory matching (EXACT match type).
+    Fast test (~10s) - no LLM judging.
     """
-    # Temporarily use tool-only config
     import shutil
     config_full = EVAL_DIR / "test_config.json"
-    config_tool = EVAL_DIR / "test_config_tool_only.json"
+    config_tool = EVAL_DIR / "toy_config_tool_only.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
 
     if config_full.exists():
@@ -82,12 +81,97 @@ async def test_perception_tool_trajectory_only():
 
     try:
         await AgentEvaluator.evaluate(
-            agent_module="tests.evaluation.perception_agent",
+            agent_module="tests.evaluation.toy_agent",
             eval_dataset_file_path_or_dir=str(
-                EVAL_DIR / "perception_agent.test.json"),
+                EVAL_DIR / "toy_tests.test.json"),
         )
     finally:
         if config_backup.exists():
+            shutil.copy(config_backup, config_full)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+async def test_toy_response_match():
+    """
+    Learn: Response similarity with ROUGE-1.
+    Fast test (~10s) - no LLM judging.
+    """
+    import shutil
+    config_full = EVAL_DIR / "test_config.json"
+    config_response = EVAL_DIR / "toy_config_response_only.json"
+    config_backup = EVAL_DIR / "test_config_backup.json"
+
+    if config_full.exists():
+        shutil.copy(config_full, config_backup)
+        shutil.copy(config_response, config_full)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.toy_agent",
+            eval_dataset_file_path_or_dir=str(
+                EVAL_DIR / "toy_tests.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_full)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_toy_rubric_quality():
+    """
+    Learn: Rubric-based LLM judging.
+    Slower test (~30s) - makes LLM calls for judging.
+    """
+    import shutil
+    config_full = EVAL_DIR / "test_config.json"
+    config_rubric = EVAL_DIR / "toy_config_rubric_only.json"
+    config_backup = EVAL_DIR / "test_config_backup.json"
+
+    if config_full.exists():
+        shutil.copy(config_full, config_backup)
+        shutil.copy(config_rubric, config_full)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.toy_agent",
+            eval_dataset_file_path_or_dir=str(
+                EVAL_DIR / "toy_tests.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_full)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_toy_comprehensive():
+    """
+    Learn: All ADK evaluation criteria combined.
+    Comprehensive test (~60s+) - all criteria including LLM judging.
+    """
+    import shutil
+    config_full = EVAL_DIR / "test_config.json"
+    config_comp = EVAL_DIR / "toy_config_comprehensive.json"
+    config_backup = EVAL_DIR / "test_config_backup.json"
+
+    if config_full.exists():
+        shutil.copy(config_full, config_backup)
+        shutil.copy(config_comp, config_full)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.toy_agent",
+            eval_dataset_file_path_or_dir=str(
+                EVAL_DIR / "toy_tests.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_full)
+            config_backup.unlink()
             shutil.copy(config_backup, config_full)
             config_backup.unlink()
 
