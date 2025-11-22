@@ -53,7 +53,7 @@ tests/evaluation/
 
 Each agent has **3 test types** with different speed/coverage tradeoffs:
 
-### 1. Tool Trajectory Only (~20-25s)
+### 1. Tool Trajectory (~20-25s)
 **Purpose**: Fast validation of orchestration logic
 
 **Tests**: Tool calling sequence matches expected pattern
@@ -296,7 +296,7 @@ See `perception/perception_agent.test.json` as reference. Must include:
 ### 4. Create Test Configs
 Create 4 config files (see `perception/` for examples):
 - `test_config.json` - Main (tool + rubric)
-- `test_config_tool_only.json` - Fast validation
+- `test_config_tool_traj.json` - Fast validation
 - `test_config_rubric_only.json` - Quality only
 - `test_config_comprehensive.json` - All criteria
 
@@ -315,7 +315,7 @@ def test_{agent}_tool_trajectory_only():
     """Fast test - validates tool calling sequence only (~20s)."""
     result = evaluate_agent(
         agent={agent}_loop_agent,
-        config_path="tests/evaluation/{agent}/test_config_tool_only.json",
+        config_path="tests/evaluation/{agent}/test_config_tool_traj.json",
         test_json_path="tests/evaluation/{agent}/{agent}_agent.test.json"
     )
     assert result.overall_score >= 1.0

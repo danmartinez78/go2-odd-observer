@@ -35,7 +35,7 @@ async def test_perception_tool_trajectory_only():
     import shutil
     perception_dir = EVAL_DIR / "perception"
     config_main = perception_dir / "test_config.json"
-    config_tool = perception_dir / "test_config_tool_only.json"
+    config_tool = perception_dir / "test_config_tool_traj.json"
     config_backup = perception_dir / "test_config_backup.json"
 
     if config_main.exists():
@@ -144,7 +144,7 @@ async def test_motion_tool_trajectory_only():
     import shutil
     motion_dir = EVAL_DIR / "motion"
     config_main = motion_dir / "test_config.json"
-    config_tool = motion_dir / "test_config_tool_only.json"
+    config_tool = motion_dir / "test_config_tool_traj.json"
     config_backup = motion_dir / "test_config_backup.json"
 
     if config_main.exists():
