@@ -1,0 +1,42 @@
+{
+  "criteria": {
+    "rubric_avg_score": {
+      "threshold": 0.7,
+      "rubrics": [
+        {
+          "name": "json_structure",
+          "rubric": "Evaluate if the output is valid JSON with the required structure for ODD compliance. The output must have:\n- 'odd_compliance' root object\n- 'categorical_compliance' object with compliance status for each categorical axis (environment_type, lighting_conditions, terrain_type)\n- 'numeric_compliance' object with compliance status for each numeric axis (obstacle_density, traversability_score, collision_risk)\n- 'overall_compliance' field with IN_ODD, ODD_BOUNDARY, or OUT_ODD\n- 'violations' array listing specific OUT_ODD conditions\n- 'warnings' array listing specific ODD_BOUNDARY conditions\n- 'compliance_summary' field with brief assessment\n\nScore 10/10 if all required fields are present and properly structured, 5/10 if some fields missing or improperly nested, 0/10 if not valid JSON or missing major sections.",
+          "grading_context": "Valid compliance status values are: IN_ODD, ODD_BOUNDARY, OUT_ODD. All required fields must be present.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "categorical_compliance_accuracy",
+          "rubric": "Evaluate if categorical compliance assessments are correct based on ODD constraints:\n- Compare each categorical axis (environment_type, lighting_conditions, terrain_type) in COD against allowed/prohibited lists in ODD\n- If COD value is in 'allowed' list → status should be IN_ODD\n- If COD value is in 'prohibited' list → status should be OUT_ODD\n- If COD value is neither → reasonable inference is acceptable\n\nScore 10/10 if all categorical assessments are correct, 7/10 if mostly correct with minor errors, 3/10 if several errors, 0/10 if majority incorrect.",
+          "grading_context": "For compliant scenario: all categorical should be IN_ODD. For non-compliant: violations should be detected. For boundary: categorical should generally be IN_ODD.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "numeric_compliance_accuracy",
+          "rubric": "Evaluate if numeric compliance assessments are correct based on ODD constraints:\n- For obstacle_density: if value > max_allowed → OUT_ODD, if in boundary_zone → ODD_BOUNDARY, otherwise → IN_ODD\n- For traversability_score: if value < min_required → OUT_ODD, if in boundary_zone → ODD_BOUNDARY, otherwise → IN_ODD\n- For collision_risk: if value > max_allowed → OUT_ODD, if in boundary_zone → ODD_BOUNDARY, otherwise → IN_ODD\n\nScore 10/10 if all numeric assessments are correct, 7/10 if mostly correct, 3/10 if several errors, 0/10 if majority incorrect.",
+          "grading_context": "Boundary zones indicate values close to limits. Values exactly on boundaries may be classified as either boundary or safe (both acceptable).",
+          "pass_threshold": 7
+        },
+        {
+          "name": "violations_identification",
+          "rubric": "Evaluate if violations are correctly identified and listed:\n- 'violations' array should contain specific OUT_ODD conditions only\n- Each violation should be clearly described (which axis, what value, why it violates)\n- If overall_compliance is OUT_ODD, violations array should be non-empty\n- If overall_compliance is IN_ODD, violations array should be empty\n- Violations should correspond to actual constraint violations in the data\n\nScore 10/10 if violations are complete and accurate, 7/10 if mostly correct, 3/10 if several missing or incorrect, 0/10 if violations don't match actual data.",
+          "grading_context": "Non-compliant scenario should have multiple violations. Compliant scenario should have zero violations. Boundary scenario should have zero violations but may have warnings.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "overall_compliance_reasoning",
+          "rubric": "Evaluate if the overall_compliance assessment is logical and well-reasoned:\n- overall_compliance should be OUT_ODD if ANY axis is OUT_ODD\n- overall_compliance should be ODD_BOUNDARY if ANY axis is ODD_BOUNDARY and none are OUT_ODD\n- overall_compliance should be IN_ODD only if ALL axes are IN_ODD\n- compliance_summary should provide clear, actionable explanation\n\nScore 10/10 if overall assessment is correct with clear reasoning, 7/10 if correct but reasoning could be clearer, 3/10 if assessment logic is flawed, 0/10 if overall assessment contradicts individual axes.",
+          "grading_context": "The agent should prioritize safety (OUT_ODD > ODD_BOUNDARY > IN_ODD). Summary should be concise but informative.",
+          "pass_threshold": 7
+        }
+      ]
+    },
+    "hallucinations_avg_score": {
+      "threshold": 1.0
+    }
+  }
+}

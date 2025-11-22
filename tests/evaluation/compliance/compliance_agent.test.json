@@ -1,0 +1,189 @@
+{
+  "eval_set_id": "compliance_agent_eval",
+  "description": "ODD Compliance Agent evaluation - compares ODD specification against COD classification",
+  "eval_cases": [
+    {
+      "eval_case_id": "compliant_scenario",
+      "conversation": [
+        {
+          "invocation_id": "0",
+          "user_content": "Assess compliance between the ODD specification and current operating domain classification.",
+          "context": {
+            "temp:odd_spec": {
+              "odd_specification": {
+                "categorical_constraints": {
+                  "environment_type": {
+                    "allowed": ["indoor", "outdoor_structured"],
+                    "prohibited": ["outdoor_unstructured", "underwater"]
+                  },
+                  "lighting_conditions": {
+                    "allowed": ["daylight", "artificial_light"],
+                    "prohibited": ["darkness", "low_light"]
+                  },
+                  "terrain_type": {
+                    "allowed": ["flat", "mild_incline"],
+                    "prohibited": ["stairs", "rough_terrain"]
+                  }
+                },
+                "numeric_constraints": {
+                  "obstacle_density": {
+                    "max_allowed": 0.3,
+                    "boundary_zone": [0.25, 0.3]
+                  },
+                  "traversability_score": {
+                    "min_required": 0.7,
+                    "boundary_zone": [0.7, 0.75]
+                  },
+                  "collision_risk": {
+                    "max_allowed": 0.2,
+                    "boundary_zone": [0.15, 0.2]
+                  }
+                }
+              }
+            },
+            "temp:cod_classification": {
+              "cod_classification": {
+                "categorical": {
+                  "environment_type": "indoor",
+                  "lighting_conditions": "artificial_light",
+                  "terrain_type": "flat"
+                },
+                "numeric": {
+                  "obstacle_density": 0.15,
+                  "traversability_score": 0.85,
+                  "collision_risk": 0.08
+                }
+              }
+            }
+          },
+          "final_response": "Valid JSON with IN_ODD compliance status for all axes, no violations, overall IN_ODD",
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_id": "non_compliant_scenario",
+      "conversation": [
+        {
+          "invocation_id": "0",
+          "user_content": "Assess compliance between the ODD specification and current operating domain classification.",
+          "context": {
+            "temp:odd_spec": {
+              "odd_specification": {
+                "categorical_constraints": {
+                  "environment_type": {
+                    "allowed": ["indoor"],
+                    "prohibited": ["outdoor_structured", "outdoor_unstructured"]
+                  },
+                  "lighting_conditions": {
+                    "allowed": ["daylight"],
+                    "prohibited": ["darkness", "artificial_light"]
+                  },
+                  "terrain_type": {
+                    "allowed": ["flat"],
+                    "prohibited": ["stairs", "rough_terrain", "mild_incline"]
+                  }
+                },
+                "numeric_constraints": {
+                  "obstacle_density": {
+                    "max_allowed": 0.2,
+                    "boundary_zone": [0.15, 0.2]
+                  },
+                  "traversability_score": {
+                    "min_required": 0.8,
+                    "boundary_zone": [0.8, 0.85]
+                  },
+                  "collision_risk": {
+                    "max_allowed": 0.15,
+                    "boundary_zone": [0.12, 0.15]
+                  }
+                }
+              }
+            },
+            "temp:cod_classification": {
+              "cod_classification": {
+                "categorical": {
+                  "environment_type": "outdoor_structured",
+                  "lighting_conditions": "artificial_light",
+                  "terrain_type": "mild_incline"
+                },
+                "numeric": {
+                  "obstacle_density": 0.35,
+                  "traversability_score": 0.65,
+                  "collision_risk": 0.22
+                }
+              }
+            }
+          },
+          "final_response": "Valid JSON with OUT_ODD compliance status, multiple violations listed, overall OUT_ODD",
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_id": "boundary_scenario",
+      "conversation": [
+        {
+          "invocation_id": "0",
+          "user_content": "Assess compliance between the ODD specification and current operating domain classification.",
+          "context": {
+            "temp:odd_spec": {
+              "odd_specification": {
+                "categorical_constraints": {
+                  "environment_type": {
+                    "allowed": ["indoor", "outdoor_structured"],
+                    "prohibited": ["outdoor_unstructured"]
+                  },
+                  "lighting_conditions": {
+                    "allowed": ["daylight", "artificial_light"],
+                    "prohibited": ["darkness"]
+                  },
+                  "terrain_type": {
+                    "allowed": ["flat", "mild_incline"],
+                    "prohibited": ["stairs", "rough_terrain"]
+                  }
+                },
+                "numeric_constraints": {
+                  "obstacle_density": {
+                    "max_allowed": 0.3,
+                    "boundary_zone": [0.25, 0.3]
+                  },
+                  "traversability_score": {
+                    "min_required": 0.7,
+                    "boundary_zone": [0.7, 0.75]
+                  },
+                  "collision_risk": {
+                    "max_allowed": 0.2,
+                    "boundary_zone": [0.15, 0.2]
+                  }
+                }
+              }
+            },
+            "temp:cod_classification": {
+              "cod_classification": {
+                "categorical": {
+                  "environment_type": "outdoor_structured",
+                  "lighting_conditions": "daylight",
+                  "terrain_type": "mild_incline"
+                },
+                "numeric": {
+                  "obstacle_density": 0.27,
+                  "traversability_score": 0.72,
+                  "collision_risk": 0.18
+                }
+              }
+            }
+          },
+          "final_response": "Valid JSON with ODD_BOUNDARY compliance status for numeric axes, warnings listed, overall ODD_BOUNDARY",
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    }
+  ]
+}
