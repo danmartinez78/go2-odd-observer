@@ -10,12 +10,14 @@ from ..config import GEMINI_MODEL_MOTION, GOOGLE_API_KEY
 from ..tools import LIST_WINDOWS, ANALYZE_MOTION
 
 
-motion_loop_agent = Agent(
-    name="MotionLoopAgent",
-    model=Gemini(model=GEMINI_MODEL_MOTION, api_key=GOOGLE_API_KEY),
-    tools=[LIST_WINDOWS, ANALYZE_MOTION],
-    output_key="temp:motion_data",
-    instruction="""You orchestrate motion analysis across all scenario windows.
+def create_motion_loop_agent() -> Agent:
+    """Create a new MotionLoopAgent instance."""
+    return Agent(
+        name="MotionLoopAgent",
+        model=Gemini(model=GEMINI_MODEL_MOTION, api_key=GOOGLE_API_KEY),
+        tools=[LIST_WINDOWS, ANALYZE_MOTION],
+        output_key="temp:motion_data",
+        instruction="""You orchestrate motion analysis across all scenario windows.
 
 Steps you MUST follow:
 1. Call list_windows_tool() exactly once to get the ordered window_id list.
@@ -27,13 +29,16 @@ Steps you MUST follow:
   "per_window_motion": [<tool_response_objects_in_order>]
 }
 Do not add commentary. Ensure valid JSON.""",
-)
+    )
 
-motion_summary_agent = Agent(
-    name="MotionSummaryAgent",
-    model=Gemini(model=GEMINI_MODEL_MOTION, api_key=GOOGLE_API_KEY),
-    output_key="temp:motion_output",
-    instruction="""You finalize the motion analysis report.
+
+def create_motion_summary_agent() -> Agent:
+    """Create a new MotionSummaryAgent instance."""
+    return Agent(
+        name="MotionSummaryAgent",
+        model=Gemini(model=GEMINI_MODEL_MOTION, api_key=GOOGLE_API_KEY),
+        output_key="temp:motion_output",
+        instruction="""You finalize the motion analysis report.
 
 Input data from the previous agent:
 {temp:motion_data?}
@@ -62,4 +67,4 @@ Otherwise:
   "per_window_motion": [...]
 }
 Only output JSON.""",
-)
+    )

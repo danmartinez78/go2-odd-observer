@@ -9,11 +9,13 @@ from google.adk.models.google_llm import Gemini
 from ..config import GEMINI_MODEL_COD, GOOGLE_API_KEY
 
 
-odd_compliance_agent = Agent(
-    name="OddComplianceAgent",
-    model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
-    output_key="temp:odd_compliance",
-    instruction="""You are an ODD compliance analyst.
+def create_odd_compliance_agent() -> Agent:
+    """Create a new OddComplianceAgent instance."""
+    return Agent(
+        name="OddComplianceAgent",
+        model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
+        output_key="temp:odd_compliance",
+        instruction="""You are an ODD compliance analyst.
 
 TASK: Compare Current Operating Domain (COD) against Operational Design Domain (ODD).
 
@@ -48,4 +50,4 @@ Return ONLY valid JSON:
 }
 
 No explanations outside JSON.""",
-)
+    )

@@ -11,16 +11,16 @@ from google.adk.runners import InMemoryRunner
 from .config import DATA_DIR, set_scenario
 from .utils import extract_json_block
 from .agents import (
-    odd_spec_agent,
-    perception_loop_agent,
-    perception_summary_agent,
-    motion_loop_agent,
-    motion_summary_agent,
-    collision_loop_agent,
-    collision_summary_agent,
-    cod_classifier_agent,
-    odd_compliance_agent,
-    report_agent,
+    create_odd_spec_agent,
+    create_perception_loop_agent,
+    create_perception_summary_agent,
+    create_motion_loop_agent,
+    create_motion_summary_agent,
+    create_collision_loop_agent,
+    create_collision_summary_agent,
+    create_cod_classifier_agent,
+    create_odd_compliance_agent,
+    create_report_agent,
 )
 
 
@@ -28,27 +28,29 @@ from .agents import (
 # FULL WORKFLOW
 # =============================================================================
 
-odd_workflow = SequentialAgent(
-    name="OddWorkflow",
-    sub_agents=[
-        odd_spec_agent,            # 1. Define ODD specification from NL
-        perception_loop_agent,     # 2. Analyze perception (current conditions)
-        perception_summary_agent,
-        motion_loop_agent,         # 3. Analyze motion (current conditions)
-        motion_summary_agent,
-        collision_loop_agent,      # 4. Analyze collision (current conditions)
-        collision_summary_agent,
-        cod_classifier_agent,      # 5. Classify current operating domain (COD)
-        odd_compliance_agent,      # 6. Compare COD vs ODD (violations)
-        report_agent,              # 7. Generate final report
-    ],
-)
+def create_odd_workflow() -> SequentialAgent:
+    """Create a new ODD workflow instance with fresh agent instances."""
+    return SequentialAgent(
+        name="OddWorkflow",
+        sub_agents=[
+            create_odd_spec_agent(),            # 1. Define ODD specification from NL
+            create_perception_loop_agent(),     # 2. Analyze perception (current conditions)
+            create_perception_summary_agent(),
+            create_motion_loop_agent(),         # 3. Analyze motion (current conditions)
+            create_motion_summary_agent(),
+            create_collision_loop_agent(),      # 4. Analyze collision (current conditions)
+            create_collision_summary_agent(),
+            create_cod_classifier_agent(),      # 5. Classify current operating domain (COD)
+            create_odd_compliance_agent(),      # 6. Compare COD vs ODD (violations)
+            create_report_agent(),              # 7. Generate final report
+        ],
+    )
 
 
 def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     """Extract final report from ReportAgent output."""
     for event in events:
-        if event.author == report_agent.name and event.content:
+        if event.author == "ReportAgent" and event.content:
             for part in event.content.parts:
                 if part.text:
                     try:
@@ -100,6 +102,8 @@ async def run_odd_workflow(
         f"{nl_odd_description}"
     )
 
+    # Create fresh workflow instance
+    odd_workflow = create_odd_workflow()
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
     events = await runner.run_debug(user_query)
 

@@ -10,23 +10,16 @@ from google.adk.runners import InMemoryRunner
 
 # Import from shared module
 from odd_agents import set_scenario, extract_json_block
-from odd_agents.agents import perception_loop_agent, perception_summary_agent
+from odd_agents.agents.perception import create_perception_loop_agent, create_perception_summary_agent
 
 # Set test scenario
 set_scenario("sim_run_test")
 
 
-# Create workflow using shared agents
-perception_workflow = SequentialAgent(
-    name="PerceptionWorkflow",
-    sub_agents=[perception_loop_agent, perception_summary_agent],
-)
-
-
-def _extract_result(events: List[Any]) -> Optional[Dict[str, Any]]:
+def _extract_result(events: List[Any], agent_name: str = "PerceptionSummaryAgent") -> Optional[Dict[str, Any]]:
     """Extract final result from perception summary agent."""
     for event in events:
-        if event.author == perception_summary_agent.name and event.content:
+        if event.author == agent_name and event.content:
             for part in event.content.parts:
                 if part.text:
                     try:
@@ -40,6 +33,13 @@ async def test_perception_agent() -> Optional[Dict[str, Any]]:
     print("\n" + "=" * 80)
     print("PERCEPTION WORKFLOW TEST (Camera + LiDAR BEV)")
     print("=" * 80)
+
+    # Create workflow using factory functions (creates new instances)
+    perception_workflow = SequentialAgent(
+        name="PerceptionWorkflow",
+        sub_agents=[create_perception_loop_agent(
+        ), create_perception_summary_agent()],
+    )
 
     runner = InMemoryRunner(agent=perception_workflow,
                             app_name="PerceptionWorkflowApp")

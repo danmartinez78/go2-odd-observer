@@ -10,13 +10,15 @@ from google.adk.runners import InMemoryRunner
 
 # Import from shared module
 from odd_agents import set_scenario, extract_json_block
-from odd_agents.agents import collision_loop_agent, collision_summary_agent
+from odd_agents.agents import create_collision_loop_agent, create_collision_summary_agent
 
 # Set test scenario
 set_scenario("sim_run_test")
 
 
-# Create workflow using shared agents
+# Create workflow using factory functions
+collision_loop_agent = create_collision_loop_agent()
+collision_summary_agent = create_collision_summary_agent()
 collision_workflow = SequentialAgent(
     name="CollisionWorkflow",
     sub_agents=[collision_loop_agent, collision_summary_agent],
