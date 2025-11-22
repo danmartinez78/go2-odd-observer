@@ -6,6 +6,7 @@ Orchestrates perception, motion, collision, ODD spec, COD analysis, and reportin
 
 import asyncio
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -173,8 +174,8 @@ ANALYZE_WINDOW_PERCEPTION = FunctionTool(func=analyze_window_perception_tool)
 # =============================================================================
 
 
-async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
-    """Tool: analyze motion metrics for one window."""
+async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
+    """Tool: run a direct Gemini call to analyze raw IMU motion sensor data."""
     try:
         scenario_name = SCENARIO_PATH.name
         motion_file = SCENARIO_PATH / \
@@ -186,22 +187,75 @@ async def analyze_motion_tool(window_id: str) -> Dict[str, Any]:
         with open(motion_file, 'r') as f:
             motion_data = json.load(f)
 
-        avg_speed = motion_data.get("avg_forward_speed", 0.0)
-        max_speed = motion_data.get("max_forward_speed", 0.0)
-        max_roll_pitch = motion_data.get("max_abs_roll_pitch_deg", 0.0)
+        # Calculate summary statistics for the prompt
+        accel_x = motion_data["accel_x"]
+        accel_y = motion_data["accel_y"]
+        gyro_z = motion_data["gyro_z"]
+        roll = motion_data["roll"]
+        pitch = motion_data["pitch"]
 
-        if max_speed > 1.0 or max_roll_pitch > 10.0:
-            motion_label = "dynamic"
-        else:
-            motion_label = "smooth"
+        # Calculate horizontal acceleration magnitude
+        horiz_accel = [math.sqrt(ax**2 + ay**2)
+                       for ax, ay in zip(accel_x, accel_y)]
+        peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
+        avg_horiz_accel = sum(horiz_accel) / \
+            len(horiz_accel) if horiz_accel else 0.0
 
-        return {
-            "window_id": window_id,
-            "avg_forward_speed": round(avg_speed, 3),
-            "max_forward_speed": round(max_speed, 3),
-            "max_abs_roll_pitch_deg": round(max_roll_pitch, 2),
-            "motion_label": motion_label,
-        }
+        # Calculate angular velocity stats
+        peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
+        avg_gyro_z = sum(abs(gz) for gz in gyro_z) / \
+            len(gyro_z) if gyro_z else 0.0
+
+        # Platform tilt stats
+        max_roll = max(abs(r) for r in roll) if roll else 0.0
+        max_pitch = max(abs(p) for p in pitch) if pitch else 0.0
+
+        prompt = f"""You are a robotics motion analyst for window {window_id}.
+
+IMU ACCELEROMETER DATA (gravity-compensated, body frame):
+- Horizontal acceleration samples (sqrt(accel_x² + accel_y²)): {len(horiz_accel)} samples
+- Peak horizontal accel: {peak_horiz_accel:.4f} m/s²
+- Average horizontal accel: {avg_horiz_accel:.4f} m/s²
+- Sample values: {horiz_accel[:10]} (first 10 of {len(horiz_accel)})
+
+IMU GYROSCOPE DATA:
+- Peak angular velocity (|gyro_z|): {peak_gyro_z:.4f} rad/s
+- Average angular velocity: {avg_gyro_z:.4f} rad/s
+- Sample values: {gyro_z[:10]} (first 10 of {len(gyro_z)})
+
+PLATFORM ORIENTATION:
+- Max roll: {max_roll:.1f}°
+- Max pitch: {max_pitch:.1f}°
+
+MOTION DETECTION GUIDANCE:
+- Horizontal accel > 0.05 m/s² indicates translation (robot moving forward/sideways)
+- Horizontal accel > 0.5 m/s² indicates strong acceleration/deceleration
+- Angular velocity > 0.1 rad/s indicates rotation (turning)
+- Roll/pitch > 15° indicates platform instability
+
+TASK: Analyze this sensor data and provide a JSON object with this EXACT schema:
+{{
+  "window_id": "{window_id}",
+  "motion_detected": true|false,
+  "motion_type": "stationary|rotation|translation|complex",
+  "peak_horizontal_accel_mps2": <float>,
+  "peak_angular_velocity_radps": <float>,
+  "platform_stability": "stable|unstable",
+  "max_tilt_deg": <float>,
+  "motion_confidence": 0.0-1.0,
+  "evidence": "brief explanation of your analysis"
+}}
+
+No explanations outside the JSON."""
+
+        response = GENAI_CLIENT.models.generate_content(
+            model=GEMINI_MODEL_MOTION,
+            contents=[types.Part(text=prompt.strip())],
+        )
+
+        data = _extract_json_block(response.text or "")
+        data["window_id"] = window_id
+        return data
 
     except Exception as err:
         return {"status": "error", "window_id": window_id, "message": str(err)}
@@ -237,11 +291,24 @@ async def analyze_collision_risk_tool(window_id: str, tool_context: ToolContext)
         camera_bytes = camera_path.read_bytes()
         bev_bytes = bev_path.read_bytes()
 
+        # Calculate motion metrics from raw IMU data
+        accel_x = motion_data["accel_x"]
+        accel_y = motion_data["accel_y"]
+        gyro_z = motion_data["gyro_z"]
+        roll = motion_data["roll"]
+        pitch = motion_data["pitch"]
+
+        horiz_accel = [math.sqrt(ax**2 + ay**2)
+                       for ax, ay in zip(accel_x, accel_y)]
+        peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
+        peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
+        max_tilt = max(max(abs(r) for r in roll) if roll else 0.0,
+                       max(abs(p) for p in pitch) if pitch else 0.0)
+
         motion_summary = {
-            "avg_forward_speed": motion_data.get("avg_forward_speed", 0.0),
-            "max_forward_speed": motion_data.get("max_forward_speed", 0.0),
-            "avg_angular_velocity": motion_data.get("avg_angular_velocity_z", 0.0),
-            "max_abs_roll_pitch": motion_data.get("max_abs_roll_pitch_deg", 0.0),
+            "peak_horizontal_accel_mps2": round(peak_horiz_accel, 3),
+            "peak_angular_velocity_radps": round(peak_gyro_z, 3),
+            "max_tilt_deg": round(max_tilt, 1),
         }
 
         prompt = f"""You are a collision risk assessment expert analyzing synchronized sensor data for window {window_id}.
@@ -298,6 +365,10 @@ ANALYZE_COLLISION = FunctionTool(func=analyze_collision_risk_tool)
 # =============================================================================
 # PERCEPTION AGENTS
 # =============================================================================
+# TODO: Consider extracting sim vs real classification into a dedicated agent
+# that runs early in the pipeline (after ODD spec, before perception loop).
+# This would provide the data source classification as context to all downstream
+# agents. Current implementation adds it to perception_summary_agent for simplicity.
 
 perception_loop_agent = Agent(
     name="PerceptionLoopAgent",
@@ -333,7 +404,10 @@ If no data is provided, respond with:
 Otherwise:
 1. Read the JSON string carefully.
 2. Determine overall environment class (choose from: indoor_office, indoor_corridor, indoor, outdoor_urban, outdoor_natural, open_space).
-3. Produce final JSON:
+3. **CLASSIFY DATA SOURCE**: Analyze image and sensor characteristics to determine if data is from simulation or real-world:
+   - Simulation indicators: Perfect textures, uniform lighting, geometric regularity, lack of noise, synthetic appearance
+   - Real-world indicators: Natural lighting variations, sensor noise, organic textures, imperfections
+4. Produce final JSON:
 {
   "windows_analyzed": [...],
   "environment_classification": {
@@ -341,9 +415,16 @@ Otherwise:
     "confidence": 0.0-1.0,
     "evidence": ["short", "observations"]
   },
+  "data_source_classification": {
+    "source": "simulation|real_world",
+    "confidence": 0.0-1.0,
+    "evidence": ["indicators", "observed"]
+  },
   "per_window_perception": [...]
 }
-Only output JSON.""",
+Only output JSON.
+
+NOTE: This data source classification will flow through the entire pipeline to the final report.""",
 )
 
 # =============================================================================
@@ -383,14 +464,21 @@ If no data is provided, respond with:
 
 Otherwise:
 1. Read the JSON string carefully.
-2. Calculate overall motion statistics (average speed across windows, max observed speed, etc.)
+2. Calculate overall motion statistics:
+   - Motion detection rate (% windows with motion_detected=true)
+   - Motion type distribution
+   - Peak values across all windows
 3. Produce final JSON:
 {
   "windows_analyzed": [...],
-  "overall_motion_stats": {
-    "avg_speed_across_windows": <float>,
-    "max_observed_speed": <float>,
-    "predominant_motion_class": "smooth|dynamic"
+  "overall_stats": {
+    "total_windows": <int>,
+    "motion_detected_count": <int>,
+    "motion_detection_rate": <float 0-1>,
+    "motion_type_distribution": {"stationary": X, "translation": Y, ...},
+    "max_horizontal_accel_mps2": <float>,
+    "max_angular_velocity_radps": <float>,
+    "overall_assessment": "stationary_scenario|low_activity|moderate_activity|high_activity"
   },
   "per_window_motion": [...]
 }
@@ -457,10 +545,72 @@ Only output JSON.""",
 odd_spec_agent = Agent(
     name="OddSpecAgent",
     model=Gemini(model=GEMINI_MODEL_ODD_SPEC, api_key=GOOGLE_API_KEY),
-    output_key="temp:odd_spec_output",
-    instruction="""You are an Operational Design Domain (ODD) classification specialist.
+    output_key="temp:odd_spec",
+    instruction="""You are an Operational Design Domain (ODD) specification expert.
 
-TASK: Classify the robot's operational domain using multimodal analysis data.
+TASK: Convert the provided natural language ODD description into a formal specification.
+
+The user will provide the ODD description in their query.
+
+CONVERT the natural language description to formal specification with clear thresholds:
+
+Return ONLY valid JSON:
+{
+  "odd_specification": {
+    "categorical_constraints": {
+      "environment_type": {
+        "allowed": ["indoor_office", "indoor_corridor"],
+        "prohibited": ["outdoor_urban", "outdoor_natural", "stairs"]
+      },
+      "lighting_conditions": {
+        "allowed": ["bright", "dim"],
+        "prohibited": ["dark", "low_light"]
+      },
+      "terrain_type": {
+        "allowed": ["smooth"],
+        "prohibited": ["moderate", "rough", "very_rough"]
+      }
+    },
+    "numeric_constraints": {
+      "max_speed_mps": {
+        "in_odd": [0.0, 1.5],
+        "boundary": [1.5, 2.0],
+        "out_odd": [2.0, "inf"]
+      },
+      "obstacle_density": {
+        "in_odd": [0.0, 0.6],
+        "boundary": [0.6, 0.8],
+        "out_odd": [0.8, 1.0]
+      },
+      "traversability_score": {
+        "in_odd": [0.5, 1.0],
+        "boundary": [0.3, 0.5],
+        "out_odd": [0.0, 0.3]
+      },
+      "collision_risk": {
+        "in_odd": [0.0, 0.3],
+        "boundary": [0.3, 0.5],
+        "out_odd": [0.5, 1.0]
+      }
+    }
+  },
+  "odd_summary": "Brief description of what this ODD specification defines"
+}
+
+No explanations outside JSON.""",
+)
+
+# =============================================================================
+# COD CLASSIFIER AGENT
+# =============================================================================
+
+cod_classifier_agent = Agent(
+    name="CodClassifierAgent",
+    model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
+    output_key="temp:cod_classification",
+    instruction="""You are a Current Operating Domain (COD) classifier.
+
+TASK: Classify the robot's CURRENT operating domain from sensor analysis.
 
 INPUT DATA from previous agents:
 Perception: {temp:perception_output?}
@@ -470,94 +620,74 @@ Collision: {temp:collision_output?}
 SYNTHESIS LOGIC:
 **Categorical Axes:**
 - environment_type: Use perception.environment_classification.primary_class
-- lighting_conditions: Aggregate from perception.per_window_perception[*].lighting_class
-- terrain_type: Aggregate from perception.per_window_perception[*].terrain_roughness_class
+- lighting_conditions: Aggregate from perception.per_window_perception[*].lighting_class (majority vote)
+- terrain_type: Aggregate from perception.per_window_perception[*].terrain_roughness_class (majority vote)
 
-**Numeric Axes (extract ranges):**
-- speed_range: [min, max] from motion.per_window_motion[*].avg_forward_speed
-- obstacle_density: [min, max] from perception.per_window_perception[*].obstacle_density
-- traversability: [min, max] from perception.per_window_perception[*].traversability_score
-- collision_risk: [min, max] from collision.collision_events[*].collision_likelihood_score
+**Numeric Axes (extract ranges/averages):**
+- max_speed_mps: from motion.overall_stats.max_horizontal_accel_mps2 (convert accel to speed estimate)
+- obstacle_density: average from perception.per_window_perception[*].obstacle_density
+- traversability_score: average from perception.per_window_perception[*].traversability_score
+- collision_risk: average from collision.collision_events[*].collision_likelihood_score
 
 Return ONLY valid JSON:
 {
-  "odd_classification": {
+  "cod_classification": {
     "categorical": {
       "environment_type": "<value>",
       "lighting_conditions": "<value>",
       "terrain_type": "<value>"
     },
     "numeric": {
-      "speed_range": [<min>, <max>],
-      "obstacle_density": [<min>, <max>],
-      "traversability": [<min>, <max>],
-      "collision_risk": [<min>, <max>]
+      "obstacle_density": <float>,
+      "traversability_score": <float>,
+      "collision_risk": <float>
     }
   },
-  "confidence_scores": {
-    "environment_type": 0.0-1.0,
-    "lighting_conditions": 0.0-1.0,
-    "terrain_type": 0.0-1.0
-  },
-  "supporting_evidence": {
-    "environment_type": ["evidence"],
-    "lighting_conditions": ["evidence"],
-    "terrain_type": ["evidence"]
-  },
-  "summary": "Brief natural language summary of the ODD"
+  "cod_summary": "Brief description of current operating conditions"
 }
 
 No explanations outside JSON.""",
 )
 
 # =============================================================================
-# COD ANALYSIS AGENT
+# ODD COMPLIANCE AGENT
 # =============================================================================
 
-cod_agent = Agent(
-    name="CodAgent",
+odd_compliance_agent = Agent(
+    name="OddComplianceAgent",
     model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
-    output_key="temp:cod_output",
-    instruction="""You are a Conditions of Design (COD) analysis specialist.
+    output_key="temp:odd_compliance",
+    instruction="""You are an ODD compliance analyst.
 
-TASK: Compare observed ODD against expected design parameters.
+TASK: Compare Current Operating Domain (COD) against Operational Design Domain (ODD).
 
-INPUT DATA from previous agent:
-{temp:odd_spec_output?}
-
-DESIGN PARAMETERS (expected ODD):
-- environment_type: indoor_office, indoor_corridor (designed for indoor only)
-- lighting_conditions: bright, dim (requires adequate lighting)
-- terrain_type: smooth_floor (designed for smooth surfaces only)
-- speed_range: [0.0, 1.5] m/s (max design speed)
-- obstacle_density: [0.0, 0.6] (moderate obstacles)
-- traversability: [0.5, 1.0] (requires navigable space)
-- collision_risk: [0.0, 0.3] (low risk threshold)
+INPUT DATA:
+ODD Specification: {temp:odd_spec?}
+COD Classification: {temp:cod_classification?}
 
 ANALYSIS:
-For each axis, classify as:
-- "IN_ODD": Observed value within expected parameters
-- "ODD_BOUNDARY": Close to design limits
-- "OUT_ODD": Exceeds design parameters
+For each axis in COD, compare against ODD constraints and classify as:
+- "IN_ODD": Current conditions within allowed parameters
+- "ODD_BOUNDARY": Close to design limits (in boundary zones)
+- "OUT_ODD": Violates design parameters (in prohibited zones)
 
 Return ONLY valid JSON:
 {
-  "cod_analysis": {
+  "odd_compliance": {
     "categorical_compliance": {
       "environment_type": "IN_ODD|OUT_ODD",
       "lighting_conditions": "IN_ODD|OUT_ODD",
       "terrain_type": "IN_ODD|OUT_ODD"
     },
     "numeric_compliance": {
-      "speed_range": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
       "obstacle_density": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
-      "traversability": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
+      "traversability_score": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
       "collision_risk": "IN_ODD|ODD_BOUNDARY|OUT_ODD"
     },
     "overall_compliance": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
-    "violations": ["list of any parameters OUT_ODD"],
-    "warnings": ["list of any parameters at ODD_BOUNDARY"],
-    "summary": "Brief assessment of COD compliance"
+    "violations": ["list of specific OUT_ODD conditions"],
+    "warnings": ["list of specific ODD_BOUNDARY conditions"],
+    "compliance_summary": "Brief assessment"
   }
 }
 
@@ -579,8 +709,9 @@ INPUT DATA from all previous agents:
 Perception: {temp:perception_output?}
 Motion: {temp:motion_output?}
 Collision: {temp:collision_output?}
-ODD Spec: {temp:odd_spec_output?}
-COD Analysis: {temp:cod_output?}
+ODD Spec: {temp:odd_spec?}
+COD Classification: {temp:cod_classification?}
+ODD Compliance: {temp:odd_compliance?}
 
 Return ONLY valid JSON with this structure:
 {
@@ -588,25 +719,30 @@ Return ONLY valid JSON with this structure:
     "executive_summary": "2-3 sentence overview of the scenario",
     "scenario_metadata": {
       "total_windows_analyzed": <int>,
-      "scenario_path": "<path>"
+      "scenario_name": "<name>",
+      "data_source": "simulation|real_world",
+      "data_source_confidence": 0.0-1.0
     },
     "perception_summary": "Brief summary of perception findings",
     "motion_summary": "Brief summary of motion characteristics",
     "collision_summary": "Brief summary of collision risk assessment",
-    "odd_classification_summary": "Brief summary of ODD classification",
-    "cod_compliance_summary": "Brief summary of COD compliance",
+    "odd_spec_summary": "Brief summary of ODD specification",
+    "cod_classification_summary": "Brief summary of current operating domain",
+    "odd_compliance_summary": "Brief summary of ODD compliance",
     "key_findings": ["finding1", "finding2", "finding3"],
-    "recommendations": ["recommendation1", "recommendation2"],
-    "timestamp": "<current_datetime>"
+    "recommendations": ["recommendation1", "recommendation2"]
   },
   "full_analysis": {
     "perception": <perception_output>,
     "motion": <motion_output>,
     "collision": <collision_output>,
-    "odd_spec": <odd_spec_output>,
-    "cod": <cod_output>
+    "odd_spec": <odd_spec>,
+    "cod_classification": <cod_classification>,
+    "odd_compliance": <odd_compliance>
   }
 }
+
+IMPORTANT: Extract data_source and confidence from perception.data_source_classification and include in scenario_metadata.
 
 No explanations outside JSON.""",
 )
@@ -618,15 +754,16 @@ No explanations outside JSON.""",
 odd_workflow = SequentialAgent(
     name="OddWorkflow",
     sub_agents=[
-        perception_loop_agent,
+        odd_spec_agent,            # 1. Define ODD specification from NL
+        perception_loop_agent,     # 2. Analyze perception (current conditions)
         perception_summary_agent,
-        motion_loop_agent,
+        motion_loop_agent,         # 3. Analyze motion (current conditions)
         motion_summary_agent,
-        collision_loop_agent,
+        collision_loop_agent,      # 4. Analyze collision (current conditions)
         collision_summary_agent,
-        odd_spec_agent,
-        cod_agent,
-        report_agent,
+        cod_classifier_agent,      # 5. Classify current operating domain (COD)
+        odd_compliance_agent,      # 6. Compare COD vs ODD (violations)
+        report_agent,              # 7. Generate final report
     ],
 )
 
@@ -644,8 +781,16 @@ def _extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def run_odd_workflow(scenario_name: str = "sim_run_new") -> Optional[Dict[str, Any]]:
-    """Run the complete ODD analysis workflow."""
+async def run_odd_workflow(
+    scenario_name: str = "sim_run_new",
+    nl_odd_description: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Run the complete ODD analysis workflow.
+
+    Args:
+        scenario_name: Name of the scenario to analyze
+        nl_odd_description: Natural language ODD description. If None, uses default.
+    """
     global SCENARIO_PATH
     SCENARIO_PATH = DATA_DIR / scenario_name
 
@@ -653,13 +798,30 @@ async def run_odd_workflow(scenario_name: str = "sim_run_new") -> Optional[Dict[
         print(f"❌ Scenario not found: {scenario_name}")
         return None
 
+    # Default ODD description
+    if nl_odd_description is None:
+        nl_odd_description = (
+            "A quadruped robot designed for indoor office environments. "
+            "Operates on smooth, flat floors with adequate lighting (bright or dim). "
+            "Maximum speed 1.5 m/s. Designed for environments with moderate obstacle "
+            "density and good traversability. Requires low collision risk conditions. "
+            "Not designed for: outdoor environments, stairs, rough terrain, "
+            "dark/low-light areas, or high-density obstacle fields."
+        )
+
     print("\n" + "=" * 80)
     print(f"ODD WORKFLOW - FULL PIPELINE")
     print(f"Scenario: {scenario_name}")
+    print(f"ODD Description: {nl_odd_description[:100]}...")
     print("=" * 80)
 
+    user_query = (
+        f"Analyze scenario '{scenario_name}' against this ODD specification:\n\n"
+        f"{nl_odd_description}"
+    )
+
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
-    events = await runner.run_debug(f"Analyze scenario: {scenario_name}")
+    events = await runner.run_debug(user_query)
 
     report = _extract_final_report(events)
 
@@ -680,7 +842,8 @@ async def run_odd_workflow(scenario_name: str = "sim_run_new") -> Optional[Dict[
 
 if __name__ == "__main__":
     try:
-        result = asyncio.run(run_odd_workflow())
+        # Test with small 2-window dataset
+        result = asyncio.run(run_odd_workflow(scenario_name="sim_run_test"))
         if result is None:
             raise SystemExit(1)
         print("\n" + "=" * 80)

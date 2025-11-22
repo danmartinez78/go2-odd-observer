@@ -1,42 +1,118 @@
 # Model Selection Guide for ODD Workflow Agents
 
-## Test Results (Nov 21, 2025)
+## Current Configuration (Nov 22, 2025)
 
-We tested all agents with `gemini-2.0-flash-lite` vs `gemini-2.5-pro` to optimize cost/performance.
+All agents default to `gemini-2.0-flash-lite` for cost-effective operation. The parameterized workflow allows per-agent model customization.
 
-### Agent Performance Summary
+### Default Configuration
 
-| Agent | Flash-Lite Performance | Recommended Model | Rationale |
-|-------|----------------------|-------------------|-----------|
-| **Perception Agent** | ⚠️ Degraded | `gemini-2.5-pro` | Vision-heavy analysis; flash-lite misclassified lighting (called bright scenes "dim"), produced less detailed environmental constraints |
-| **Motion Agent** | ⚠️ Data Loss | `gemini-2.5-pro` | Flash-lite failed to preserve per-window motion arrays during aggregation; 2.5-pro needed for reliable data structure preservation |
-| **Collision Agent** | ⚠️ Acceptable | `gemini-2.5-pro` | Complex multimodal fusion (motion+camera+LiDAR); flash-lite more conservative but less nuanced |
-| **ODD Spec Agent** | ✅ Perfect | `gemini-2.0-flash-lite` | Pure JSON synthesis from structured data, no vision or complex reasoning |
+The workflow uses `gemini-2.0-flash-lite` for all agents by default:
+
+```python
+from google.genai import Client
+from odd_agents import run_odd_workflow
+
+client = Client(api_key=api_key)
+
+result = await run_odd_workflow(
+    scenario_path="data/processed/runs/sim_run_test",
+    genai_client=client,
+    api_key=api_key,
+    # All agents default to gemini-2.0-flash-lite
+)
+```
+
+### Per-Agent Model Override
+
+For cost optimization or quality requirements, override specific agents:
+
+```python
+result = await run_odd_workflow(
+    scenario_path="data/processed/runs/sim_run_test",
+    genai_client=client,
+    api_key=api_key,
+    model_perception="gemini-2.5-pro",      # Vision-heavy analysis
+    model_motion="gemini-2.5-pro",          # Data structure preservation
+    model_collision="gemini-2.5-pro",       # Multimodal fusion
+    model_odd_spec="gemini-2.0-flash-lite", # JSON synthesis (default)
+    model_cod="gemini-2.0-flash-lite",      # Simple comparison (default)
+    model_report="gemini-2.5-pro"           # High-quality reports
+)
+```
+
+### Agent-Specific Recommendations
+
+| Agent | Default Model | Recommended Upgrade | When to Upgrade |
+|-------|--------------|---------------------|-----------------|
+| **Perception** | flash-lite | `gemini-2.5-pro` | Need highly accurate vision analysis, detailed environment classification |
+| **Motion** | flash-lite | `gemini-2.5-pro` | Complex motion patterns, need perfect data structure preservation |
+| **Collision** | flash-lite | `gemini-2.5-pro` | High-stakes scenarios requiring sophisticated multimodal fusion |
+| **ODD Spec** | flash-lite | *(keep default)* | JSON synthesis works well with flash-lite |
+| **COD Classifier** | flash-lite | *(keep default)* | Simple comparison logic doesn't require advanced model |
+| **Compliance** | flash-lite | `gemini-2.5-pro` | Need detailed compliance reasoning and violation analysis |
+| **Report** | flash-lite | `gemini-2.5-pro` | Professional reports for stakeholders, comprehensive summaries |
 
 ### Cost/Performance Strategy
 
-**Use `gemini-2.5-pro` for:**
-- Perception Agent - requires accurate vision analysis
-- Motion Agent - needs reliable data structure preservation during aggregation
-- Collision Agent - needs sophisticated multimodal fusion
-- Report Agent - high-quality report generation
+**Start with defaults (all flash-lite):**
+- Fast execution (~2-3 minutes for 2 windows)
+- Low cost (~$0.01 per analysis)
+- Suitable for development and testing
 
-**Use `gemini-2.0-flash-lite` for:**
-- ODD Spec Agent - JSON aggregation only
-- COD Agent - simple comparison logic
+**Upgrade selectively for production:**
+- Perception, Motion, Collision → `gemini-2.5-pro` for critical analysis
+- Keep ODD Spec and COD Classifier on flash-lite
+- Upgrade Report for stakeholder deliverables
 
-**Estimated Cost Savings:** ~30% reduction by using flash-lite for odd_spec + cod agents (updated from original 40-50% estimate after motion agent reassignment)
+**Estimated Cost Impact:**
+- All flash-lite: **baseline cost** (cheapest)
+- Selective upgrade (3-4 agents to 2.5-pro): **~3-5x increase**
+- All 2.5-pro: **~6-8x increase**
 
-### Implementation Notes
+### Model Capabilities
 
-- Each agent has its own `GEMINI_MODEL_*` variable in the full workflow
-- Start with 2.5-pro for all agents during initial testing
-- Switch to hybrid approach once pipeline is validated
-- COD and Report agents TBD (test after full workflow implementation)
+**gemini-2.0-flash-lite:**
+- ✅ Fast and cost-effective
+- ✅ Good for JSON synthesis and simple reasoning
+- ⚠️ Less detailed vision analysis
+- ⚠️ May simplify complex data structures
+
+**gemini-2.5-pro:**
+- ✅ Superior vision understanding
+- ✅ Preserves complex nested data structures
+- ✅ Sophisticated multimodal fusion
+- ✅ Higher quality reports
+- ⚠️ ~5-8x more expensive per token
+- ⚠️ Slower response time
+
+### Implementation Example
+
+```python
+# Demo notebook configuration cell
+MODEL_PERCEPTION = "gemini-2.5-pro"      # High-quality vision
+MODEL_MOTION = "gemini-2.0-flash-lite"   # Good enough for IMU analysis
+MODEL_COLLISION = "gemini-2.5-pro"       # Critical safety analysis
+MODEL_ODD_SPEC = "gemini-2.0-flash-lite" # JSON synthesis
+MODEL_COD = "gemini-2.0-flash-lite"      # Simple comparison
+MODEL_REPORT = "gemini-2.5-pro"          # Professional output
+
+result = await run_odd_workflow(
+    scenario_path=SCENARIO_PATH,
+    genai_client=genai_client,
+    api_key=GOOGLE_API_KEY,
+    model_perception=MODEL_PERCEPTION,
+    model_motion=MODEL_MOTION,
+    model_collision=MODEL_COLLISION,
+    model_odd_spec=MODEL_ODD_SPEC,
+    model_cod=MODEL_COD,
+    model_report=MODEL_REPORT
+)
+```
 
 ### Future Optimization
 
-Consider testing:
-- `gemini-1.5-flash` for even cheaper motion/odd_spec processing
-- Different models for loop vs summary agents in sequential workflows
-- Caching strategies for repeated scenario analysis
+Consider exploring:
+- **gemini-1.5-flash**: Even cheaper alternative for simple agents
+- **Caching**: Reuse ODD spec across multiple scenario analyses
+- **Batch processing**: Amortize agent orchestration overhead
+- **Model routing**: Dynamically select model based on window complexity

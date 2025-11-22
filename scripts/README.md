@@ -1,41 +1,51 @@
 # Scripts Directory
 
-This directory contains **all executable scripts** for the Go2 ODD Observer project, including the main workflow, data processing tools, and testing utilities.
+Executable scripts for the Go2 ODD Observer project.
 
 ---
 
 ## 🚀 Main Workflow
 
-### `odd_workflow_full.py` - 9-Agent Sequential Pipeline
+### `odd_workflow.py` - **CURRENT** Production Script
 
-**Purpose**: Complete ODD/COD analysis using the proven loop+summary pattern.
+**Purpose**: Run complete ODD/COD analysis using the parameterized `odd_agents` module.
 
 **Usage**:
 ```bash
-python scripts/odd_workflow_full.py
+# Set up API key in .env file (one time)
+echo "GOOGLE_API_KEY=your-key-here" > .env
+
+# Run analysis
+python scripts/odd_workflow.py
 ```
 
 **What it does**:
-- Analyzes multi-modal sensor data (camera, LiDAR, motion)
-- Runs 9 specialized AI agents in sequence
+- Analyzes multi-modal sensor data (camera, LiDAR, IMU)
+- Runs 10-agent sequential pipeline with parameterized workflow
+- No global state - fully isolated execution
+- Defaults to `gemini-2.0-flash-lite` for all agents
 - Generates comprehensive ODD compliance report
 - Outputs to: `data/processed/runs/{scenario}/odd_analysis_report.json`
 
-**Agents**: Perception Loop/Summary → Motion Loop/Summary → Collision Loop/Summary → ODD Spec → COD → Report
+**Source code**: Clean ~50 lines - imports from `odd_agents` module (single source of truth)
 
----
+**Configuration**:
+```python
+# Edit odd_workflow.py to customize:
+SCENARIO_PATH = DATA_DIR / "sim_run_test"  # Change scenario
+nl_odd_description = "..."  # Custom ODD specification
 
-### `multi_agent_image_adk_workflow.py` - Reference Pattern
+# Use default models (flash-lite) or override:
+result = await run_odd_workflow(
+    scenario_path=SCENARIO_PATH,
+    genai_client=client,
+    api_key=api_key,
+    model_perception="gemini-2.5-pro",  # Override specific agents
+    # ... other model_* parameters
+)
+```
 
-**Purpose**: Proven loop+summary pattern for multimodal vision workflows.
-
-**This is the reference implementation** that demonstrated:
-- Hallucination-free vision analysis
-- Tools calling Gemini directly with `types.Part.from_bytes`
-- Loop agent processing items individually
-- Summary agent aggregating results
-
-**Do not modify** - this is the pattern foundation for `odd_workflow_full.py`.
+**Agents**: ODD Spec → Perception Loop/Summary → Motion Loop/Summary → Collision Loop/Summary → COD Classifier → ODD Compliance → Report
 
 ---
 
@@ -58,7 +68,10 @@ python scripts/extract_windows.py \
 **Outputs per window**:
 - `motion_<scenario>_w<NNN>.json` - Velocity, IMU, odometry time series
 - `cam_<scenario>_w<NNN>.png` - RGB camera frame
-- `bev_occupancy_<scenario>_w<NNN>.png` - LiDAR bird's eye view
+- `bev_occupancy_<scenario>_w<NNN>.png` - LiDAR BEV (occupancy)
+- `bev_height_<scenario>_w<NNN>.png` - LiDAR BEV (height map)
+- `bev_density_<scenario>_w<NNN>.png` - LiDAR BEV (point density)
+- `bev_roughness_<scenario>_w<NNN>.png` - LiDAR BEV (surface roughness)
 - `index_<scenario>.csv` - Window metadata
 
 **Dependencies**: ROS2 Humble, sensor_msgs, nav_msgs
@@ -67,8 +80,7 @@ python scripts/extract_windows.py \
 
 ### `render_bev.py` - LiDAR BEV Renderer
 
-**Purpose**: Convert LiDAR PointCloud2 messages to bird's eye view images.
-
+**Multi-channel BEV rendering (occupancy, height, density, roughness)
 **Features**:
 - Occupancy grid generation
 - Height mapping
@@ -102,42 +114,17 @@ python scripts/generate_demo_data.py
 ```
 
 **Generates**:
-- 10 time windows with realistic motion profiles
+- Synthetic time windows with realistic motion profiles
 - Synthetic camera images (640x480)
-- Synthetic LiDAR BEV images
-- Complete index CSV and manifest entry
-- Intentional ODD violations in windows 7-8 for demo
+- Synthetic LiDAR BEV images (all 4 channels)
+- Complete index CSV
+- Intentional ODD violations for demo
 
 **Use cases**:
 - Test workflow without real robot data
 - Validate agent pipeline changes
 - Demonstrate ODD violations
 - CI/CD testing
-
----
-
-### `demo_pipeline_local.py` - Mock Agent Testing
-
-**Purpose**: Validate data flow and orchestration without API calls.
-
-**Features**:
-- Mock agents that return fake JSON (no Gemini API required)
-- Mirrors notebook architecture exactly
-- Tests file I/O, schema alignment, and aggregation logic
-- Useful for rapid iteration during development
-
-**Usage**:
-```bash
-python scripts/demo_pipeline_local.py
-```
-
-**Output**: Console validation of data processing steps
-
-**When to use**:
-- Before running expensive API workflows
-- Testing schema changes
-- Validating new window extraction logic
-- Understanding agent orchestration pattern
 
 ---
 
@@ -163,35 +150,34 @@ data/processed/runs/
 ## 🔧 Development Notes
 
 ### Adding New Sensors
+rchitecture
+
+The current architecture uses a **shared module pattern**:
+
+- **`odd_agents/`** - Source of truth for all agent definitions and workflow
+- **`scripts/odd_workflow.py`** - Production entry point (imports from module)
+- **`notebooks/odd_analysis_demo.ipynb`** - Interactive analysis (imports from module)
+- **`tests/test_*.py`** - Individual agent tests (imports from module)
+
+**No code duplication** - everything imports from `odd_agents` module.
+
+### Adding New Sensors
 
 To extract additional sensor data:
 
-1. Add topic name to `extract_windows.py` (line ~50)
+1. Add topic name to `extract_windows.py` configuration
 2. Add deserialization logic in `utils_ros.py`
-3. Update window output schema
-4. Modify agent tools to process new data type
+---
 
-### Customizing Window Parameters
+## � Archived Scripts
 
-Common adjustments in `extract_windows.py`:
+Superseded implementations moved to [`../.archive/scripts/`](../.archive/scripts/):
 
-- **Window length**: Duration of each analysis window (default: 2.0s)
-- **Stride**: Overlap between windows (default: 1.0s)
-- **BEV resolution**: Pixel size (default: 0.05m/pixel)
-- **BEV range**: Spatial extent (default: ±10m)
+- `odd_workflow_full.py` - Original monolithic workflow (857 lines, pre-parameterization)
+- `odd_workflow_full.py.backup` - Golden reference backup
+- `multi_agent_image_adk_workflow.py` - Original loop+summary pattern reference
 
-### Testing Data Pipeline
-
-```bash
-# 1. Generate demo data
-python scripts/generate_demo_data.py
-
-# 2. Validate with mock pipeline
-python scripts/demo_pipeline_local.py
-
-# 3. Run real workflow
-python odd_workflow_full.py
-```
+**Note**: Archived for historical reference. Use current `odd_workflow.py` and the `odd_agents` module instead.
 
 ---
 
@@ -199,19 +185,21 @@ python odd_workflow_full.py
 
 | Task | Script | Key Options |
 |------|--------|-------------|
+| Run ODD analysis | `odd_workflow.py` | None (uses config in script) |
 | Extract from ROS bag | `extract_windows.py` | `--rosbag`, `--output`, `--window-length` |
 | Generate test data | `generate_demo_data.py` | None (uses defaults) |
-| Validate pipeline | `demo_pipeline_local.py` | None (auto-detects demo data) |
 | Debug BEV rendering | `render_bev.py` | Standalone usage with point cloud file |
 
 ---
 
 ## 📚 Related Documentation
 
-- **Data format specs**: See `docs/examples/README.md`
-- **Agent workflow**: See `odd_workflow_full.py` and `agent_tests/`
-- **Interactive analysis**: See `notebooks/odd_workflow_interactive.ipynb`
-- **Complete setup**: See `GETTING_STARTED.md`
+- **Module architecture**: `../docs/MODEL_SELECTION_GUIDE.md`
+- **Module API**: `../odd_agents/README.md`
+- **Agent implementations**: `../odd_agents/agents/`
+- **Workflow orchestration**: `../odd_agents/workflow.py`
+- **Interactive analysis**: `../notebooks/odd_analysis_demo.ipynb`
+- **Getting started**: `../docs/guides/GETTING_STARTED.md`
 
 ---
 
@@ -230,6 +218,8 @@ python odd_workflow_full.py
 - Check point cloud coordinate frames
 - Adjust BEV range parameters
 
-**Issue**: "Demo pipeline fails"
-- **Solution**: Run `python scripts/generate_demo_data.py` first
-- Verify `data/processed/runs/demo_run/` exists
+**Issue**: "Workflow fails"
+- **Solution**: Check .env file: `cat .env` (should have GOOGLE_API_KEY)
+- Or set environment variable: `export GOOGLE_API_KEY="your-key"`
+- Verify scenario data exists: `ls data/processed/runs/sim_run_test/`
+- Check for errors in agent outputs (review terminal output)
