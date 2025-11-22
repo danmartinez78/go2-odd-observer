@@ -110,13 +110,13 @@ graph LR
     E --> F[⚖️ Compliance<br/>Check Violations]
     F --> G[📋 Report<br/>Generate Summary]
     
-    style A fill:#e3f2fd
-    style B fill:#fff9c4
-    style C fill:#fff9c4
-    style D fill:#ffccbc
-    style E fill:#f8bbd0
-    style F fill:#f8bbd0
-    style G fill:#c8e6c9
+    style A fill:#e3f2fd,stroke:#333,stroke-width:2px,color:#000
+    style B fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
+    style C fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
+    style D fill:#ffccbc,stroke:#333,stroke-width:2px,color:#000
+    style E fill:#f8bbd0,stroke:#333,stroke-width:2px,color:#000
+    style F fill:#f8bbd0,stroke:#333,stroke-width:2px,color:#000
+    style G fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### Multi-Modal Sensor Fusion
