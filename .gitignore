@@ -93,6 +93,7 @@ Thumbs.db
 htmlcov/
 *.cover
 .hypothesis/
+toy_test_results*.json
 
 # Logs
 *.log

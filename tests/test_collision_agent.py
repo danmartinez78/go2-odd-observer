@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""Collision Agent test using shared odd_agents module."""
+"""MANUAL TESTING: Collision Agent interactive test.
+
+This script is for MANUAL TESTING and inspection of the CollisionLoopAgent.
+Run it directly to see the agent's output and verify behavior.
+
+For AUTOMATED EVALUATION (when available), see:
+- tests/test_adk_evaluation.py::test_collision_*
+- tests/evaluation/collision/README.md
+
+Usage:
+    python tests/test_collision_agent.py
+    
+Expected: JSON output with collision risk assessment (sim_run_test).
+"""
 
 from odd_agents.agents import create_collision_loop_agent, create_collision_summary_agent
 from odd_agents import extract_json_block
