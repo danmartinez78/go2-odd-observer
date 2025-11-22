@@ -1,0 +1,42 @@
+{
+  "criteria": {
+    "response_quality": {
+      "threshold": 0.7,
+      "rubrics": [
+        {
+          "name": "json_structure",
+          "rubric": "Evaluate if the output is valid JSON with the required structure:\n- Must have 'cod_classification' top-level key\n- 'cod_classification' must have 'categorical' and 'numeric' sub-objects\n- 'categorical' must have: environment_type, lighting_conditions, terrain_type\n- 'numeric' must have: obstacle_density, traversability_score, collision_risk\n- Must have 'cod_summary' string field\n\nScore 10/10 if all required fields present and valid JSON, 0/10 if invalid JSON or missing required fields, proportional scores for partial compliance.",
+          "grading_context": "Check for complete JSON structure matching the specified schema.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "category_identification",
+          "rubric": "Evaluate if categorical values are correctly extracted from input data:\n- environment_type should match perception.environment_classification.primary_class\n- lighting_conditions should reflect majority vote from per_window_perception[*].lighting_class\n- terrain_type should reflect majority vote from per_window_perception[*].terrain_roughness_class\n\nScore 10/10 if all categories correctly identified, 0/10 if all wrong, proportional for partial correctness.",
+          "grading_context": "Verify that categorical axes are derived correctly from the input perception analysis.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "numeric_synthesis",
+          "rubric": "Evaluate if numeric values are properly aggregated from input data:\n- obstacle_density should be average of per_window_perception[*].obstacle_density\n- traversability_score should be average of per_window_perception[*].traversability_score\n- collision_risk should be average of collision_events[*].collision_likelihood_score\n\nScore 10/10 if all averages are correct (within 0.05 tolerance), 0/10 if all wrong, proportional for partial correctness.",
+          "grading_context": "Check that numeric values are calculated as averages from the input data.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "context_synthesis",
+          "rubric": "Evaluate if the agent uses ALL THREE input analyses (perception, motion, collision):\n- Check if categorical values come from perception data\n- Check if numeric aggregations use perception and collision data\n- Verify that motion data is considered (even if not directly in output schema)\n\nScore 10/10 if all three analyses are clearly utilized, 5/10 if only 2 are used, 0/10 if only 1 or none.",
+          "grading_context": "The agent should synthesize information from perception, motion, and collision analyses.",
+          "pass_threshold": 7
+        },
+        {
+          "name": "output_completeness",
+          "rubric": "Evaluate if the output is complete and well-formed:\n- cod_summary should be a brief, coherent description\n- Summary should mention key aspects like environment type, lighting, terrain, and risk levels\n- No missing or null values in required fields\n\nScore 10/10 if output is complete and summary is descriptive, 0/10 if incomplete or summary is missing/nonsensical.",
+          "grading_context": "Check for completeness and quality of the COD classification output.",
+          "pass_threshold": 7
+        }
+      ]
+    },
+    "hallucinations": {
+      "threshold": 1.0
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "eval_set_id": "cod_classifier_evaluation",
+  "description": "Tests COD Classifier Agent on varied mock context data from perception, motion, and collision analyses",
+  "eval_cases": [
+    {
+      "eval_case_id": "indoor_office_scenario",
+      "conversation": [
+        {
+          "invocation_id": "0",
+          "user_content": "Classify the current operating domain based on the following analyses:\n\nPerception Analysis:\n{\n  \"environment_classification\": {\"primary_class\": \"indoor_office\"},\n  \"per_window_perception\": [\n    {\"lighting_class\": \"bright\", \"terrain_roughness_class\": \"smooth\", \"obstacle_density\": 0.15, \"traversability_score\": 0.92},\n    {\"lighting_class\": \"bright\", \"terrain_roughness_class\": \"smooth\", \"obstacle_density\": 0.12, \"traversability_score\": 0.95}\n  ]\n}\n\nMotion Analysis:\n{\n  \"overall_stats\": {\"max_horizontal_accel_mps2\": 0.8}\n}\n\nCollision Analysis:\n{\n  \"collision_events\": [\n    {\"collision_likelihood_score\": 0.05},\n    {\"collision_likelihood_score\": 0.03}\n  ]\n}",
+          "final_response": "{\"cod_classification\": {\"categorical\": {\"environment_type\": \"indoor_office\", \"lighting_conditions\": \"bright\", \"terrain_type\": \"smooth\"}, \"numeric\": {\"obstacle_density\": 0.135, \"traversability_score\": 0.935, \"collision_risk\": 0.04}}, \"cod_summary\": \"Indoor office environment with bright lighting, smooth terrain, low obstacle density, and minimal collision risk.\"}",
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_id": "outdoor_rough_terrain",
+      "conversation": [
+        {
+          "invocation_id": "0",
+          "user_content": "Classify the current operating domain based on the following analyses:\n\nPerception Analysis:\n{\n  \"environment_classification\": {\"primary_class\": \"outdoor_natural\"},\n  \"per_window_perception\": [\n    {\"lighting_class\": \"dim\", \"terrain_roughness_class\": \"rough\", \"obstacle_density\": 0.45, \"traversability_score\": 0.62},\n    {\"lighting_class\": \"medium\", \"terrain_roughness_class\": \"rough\", \"obstacle_density\": 0.52, \"traversability_score\": 0.58},\n    {\"lighting_class\": \"dim\", \"terrain_roughness_class\": \"very_rough\", \"obstacle_density\": 0.48, \"traversability_score\": 0.55}\n  ]\n}\n\nMotion Analysis:\n{\n  \"overall_stats\": {\"max_horizontal_accel_mps2\": 2.3}\n}\n\nCollision Analysis:\n{\n  \"collision_events\": [\n    {\"collision_likelihood_score\": 0.32},\n    {\"collision_likelihood_score\": 0.28},\n    {\"collision_likelihood_score\": 0.35}\n  ]\n}",
+          "final_response": "{\"cod_classification\": {\"categorical\": {\"environment_type\": \"outdoor_natural\", \"lighting_conditions\": \"dim\", \"terrain_type\": \"rough\"}, \"numeric\": {\"obstacle_density\": 0.483, \"traversability_score\": 0.583, \"collision_risk\": 0.317}}, \"cod_summary\": \"Outdoor natural environment with dim lighting, rough terrain, high obstacle density, and elevated collision risk.\"}",
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_case_id": "indoor_warehouse_moderate",
+      "conversation": [
+        {
+          "invocation_id": "0",
+          "user_content": "Classify the current operating domain based on the following analyses:\n\nPerception Analysis:\n{\n  \"environment_classification\": {\"primary_class\": \"indoor_warehouse\"},\n  \"per_window_perception\": [\n    {\"lighting_class\": \"medium\", \"terrain_roughness_class\": \"smooth\", \"obstacle_density\": 0.28, \"traversability_score\": 0.78},\n    {\"lighting_class\": \"bright\", \"terrain_roughness_class\": \"slightly_rough\", \"obstacle_density\": 0.32, \"traversability_score\": 0.75}\n  ]\n}\n\nMotion Analysis:\n{\n  \"overall_stats\": {\"max_horizontal_accel_mps2\": 1.2}\n}\n\nCollision Analysis:\n{\n  \"collision_events\": [\n    {\"collision_likelihood_score\": 0.15},\n    {\"collision_likelihood_score\": 0.18}\n  ]\n}",
+          "final_response": "{\"cod_classification\": {\"categorical\": {\"environment_type\": \"indoor_warehouse\", \"lighting_conditions\": \"medium\", \"terrain_type\": \"smooth\"}, \"numeric\": {\"obstacle_density\": 0.30, \"traversability_score\": 0.765, \"collision_risk\": 0.165}}, \"cod_summary\": \"Indoor warehouse environment with moderate lighting, smooth terrain, moderate obstacle density, and low-to-moderate collision risk.\"}",
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    }
+  ]
+}
