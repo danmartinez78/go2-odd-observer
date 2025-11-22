@@ -17,6 +17,11 @@ from pathlib import Path
 EVAL_DIR = Path(__file__).parent / "evaluation"
 
 
+# =============================================================================
+# PERCEPTION AGENT EVALUATION TESTS
+# =============================================================================
+
+
 @pytest.mark.asyncio
 async def test_perception_tool_trajectory_only():
     """
@@ -107,6 +112,108 @@ async def test_perception_comprehensive():
         await AgentEvaluator.evaluate(
             agent_module="tests.evaluation.perception_agent",
             eval_dataset_file_path_or_dir=str(EVAL_DIR / "perception_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+# =============================================================================
+# MOTION AGENT EVALUATION TESTS
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_motion_tool_trajectory_only():
+    """
+    Fast motion test - tool trajectory only.
+    
+    Validates correct tool usage (list_windows, analyze_motion for each window).
+    Runtime: ~20s
+    """
+    import shutil
+    motion_dir = EVAL_DIR / "motion"
+    config_main = motion_dir / "test_config.json"
+    config_tool = motion_dir / "test_config_tool_only.json"
+    config_backup = motion_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_tool, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.motion.motion_agent",
+            eval_dataset_file_path_or_dir=str(motion_dir / "motion_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_motion_rubric_quality():
+    """
+    Test motion agent with rubric-based LLM judging.
+    
+    Evaluates JSON output quality:
+    - Valid JSON structure (windows_analyzed, overall_stats, per_window_motion)
+    - Motion analysis completeness (all windows, statistics calculated)
+    - Motion metrics validity (physically plausible values)
+    
+    Runtime: ~80s (makes LLM API calls)
+    """
+    import shutil
+    motion_dir = EVAL_DIR / "motion"
+    config_main = motion_dir / "test_config.json"
+    config_rubric = motion_dir / "test_config_rubric_only.json"
+    config_backup = motion_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.motion.motion_agent",
+            eval_dataset_file_path_or_dir=str(motion_dir / "motion_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_motion_comprehensive():
+    """
+    Full motion agent evaluation with all applicable criteria.
+    
+    Tests:
+    - Tool trajectory (IN_ORDER match)
+    - Rubric-based quality (structure, completeness, validity)
+    - Hallucinations (grounding validation)
+    
+    Runtime: ~200s+ (includes LLM API calls)
+    """
+    import shutil
+    motion_dir = EVAL_DIR / "motion"
+    config_main = motion_dir / "test_config.json"
+    config_comprehensive = motion_dir / "test_config_comprehensive.json"
+    config_backup = motion_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.motion.motion_agent",
+            eval_dataset_file_path_or_dir=str(motion_dir / "motion_agent.test.json"),
         )
     finally:
         if config_backup.exists():
