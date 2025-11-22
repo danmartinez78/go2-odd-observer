@@ -102,7 +102,33 @@ python scripts/extract_windows.py \
 
 ---
 
-## 🧪 Testing & Development Scripts
+## 🧪 Manual Testing & Development Scripts
+
+### `generate_demo_results.py` - Manual Workflow Test
+
+**Purpose**: Run complete ODD workflow on `sim_run_new` dataset and generate demonstration results.
+
+**Usage**:
+```bash
+python scripts/generate_demo_results.py
+```
+
+**What it does**:
+- Runs full 10-agent ODD analysis pipeline
+- Uses sim_run_new dataset (13 windows)
+- Generates comprehensive analysis report
+- Saves executive summary
+- Runtime: ~3-5 minutes
+
+**Use cases**:
+- Manual verification of workflow changes
+- Generate demo outputs for documentation
+- Test model configurations
+- Validate end-to-end pipeline
+
+**Note**: This is for MANUAL TESTING. For automated evaluation, see `tests/evaluation/README.md`.
+
+---
 
 ### `generate_demo_data.py` - Synthetic Data Generator
 

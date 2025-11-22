@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""Perception Agent test using shared odd_agents module."""
+"""MANUAL TESTING: Perception Agent interactive test.
+
+This script is for MANUAL TESTING and inspection of the PerceptionLoopAgent.
+Run it directly to see the agent's output and verify behavior.
+
+For AUTOMATED EVALUATION, see:
+- tests/test_adk_evaluation.py::test_perception_*
+- tests/evaluation/perception/README.md
+
+Usage:
+    python tests/test_perception_agent.py
+    
+Expected: JSON output with per-window perception analysis for sim_run_test.
+"""
 
 from odd_agents.agents.perception import create_perception_loop_agent, create_perception_summary_agent
 from odd_agents import extract_json_block

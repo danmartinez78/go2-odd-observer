@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""Motion Agent test using shared odd_agents module."""
+"""MANUAL TESTING: Motion Agent interactive test.
+
+This script is for MANUAL TESTING and inspection of the MotionLoopAgent.
+Run it directly to see the agent's output and verify behavior.
+
+For AUTOMATED EVALUATION, see:
+- tests/test_adk_evaluation.py::test_motion_*
+- tests/evaluation/motion/README.md
+
+Usage:
+    python tests/test_motion_agent.py
+    
+Expected: JSON output with motion statistics from IMU data (sim_run_test).
+"""
 
 from odd_agents.agents import create_motion_loop_agent, create_motion_summary_agent
 from odd_agents import extract_json_block
