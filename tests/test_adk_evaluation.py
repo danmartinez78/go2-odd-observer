@@ -1,26 +1,56 @@
 """
-Agent evaluation tests using ADK's AgentEvaluator.
+Tests for ADK-based agent evaluation.
+Uses Google ADK's evaluation framework for comprehensive agent testing.
 
-This uses ADK's built-in evaluation framework with:
-- tool_trajectory_avg_score: Verify correct tool usage
-- rubric_based_final_response_quality_v1: Custom quality rubrics
-- hallucinations_v1: Grounding check
+Toy tests (learning examples) are segregated in toy_examples/ subdirectory.
 """
 
 import pytest
-from google.adk.evaluation.agent_evaluator import AgentEvaluator
 from pathlib import Path
+from google.adk.evaluation import AgentEvaluator
 
-
-# Path to evaluation test files
+# Evaluation files directory
 EVAL_DIR = Path(__file__).parent / "evaluation"
+TOY_EVAL_DIR = EVAL_DIR / "toy_examples"
+
+
+# ============================================================================
+# PRODUCTION AGENT TESTS
+# ============================================================================
+
+@pytest.mark.asyncio
+async def test_perception_tool_trajectory_only():
+    """
+    Fast test - only check tool trajectory (no expensive LLM judging).
+    Uses simple config with just tool_trajectory_avg_score.
+    """
+    # Temporarily use tool-only config
+    import shutil
+    config_full = EVAL_DIR / "test_config.json"
+    config_tool = EVAL_DIR / "test_config_tool_only.json"
+    config_backup = EVAL_DIR / "test_config_backup.json"
+
+    if config_full.exists():
+        shutil.copy(config_full, config_backup)
+        shutil.copy(config_tool, config_full)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.perception_agent",
+            eval_dataset_file_path_or_dir=str(
+                EVAL_DIR / "perception_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_full)
+            config_backup.unlink()
 
 
 @pytest.mark.asyncio
 @pytest.mark.slow
 async def test_perception_agent_evaluation():
     """
-    Test perception agent using ADK evaluation framework.
+    Full perception agent evaluation with all criteria.
 
     This evaluates:
     - Tool trajectory: Correct sequence of list_windows → analyze_window calls
@@ -36,16 +66,19 @@ async def test_perception_agent_evaluation():
     )
 
 
+# ============================================================================
+# TOY EXAMPLE TESTS (LEARNING & VALIDATION)
+# ============================================================================
+
 @pytest.mark.asyncio
 async def test_toy_agent_simple():
     """
     Minimal toy test to learn how ADK evaluation works.
     Simple greeting agent with one tool call.
     """
-    # Temporarily swap configs
     import shutil
     config_full = EVAL_DIR / "test_config.json"
-    config_toy = EVAL_DIR / "toy_config.json"
+    config_toy = TOY_EVAL_DIR / "toy_config.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
 
     if config_full.exists():
@@ -54,9 +87,9 @@ async def test_toy_agent_simple():
 
     try:
         await AgentEvaluator.evaluate(
-            agent_module="tests.evaluation.toy_agent",
+            agent_module="tests.evaluation.toy_examples.toy_agent",
             eval_dataset_file_path_or_dir=str(
-                EVAL_DIR / "toy_agent.test.json"),
+                TOY_EVAL_DIR / "toy_agent.test.json"),
         )
     finally:
         if config_backup.exists():
@@ -72,7 +105,7 @@ async def test_toy_tool_trajectory():
     """
     import shutil
     config_full = EVAL_DIR / "test_config.json"
-    config_tool = EVAL_DIR / "toy_config_tool_only.json"
+    config_tool = TOY_EVAL_DIR / "toy_config_tool_only.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
 
     if config_full.exists():
@@ -81,9 +114,8 @@ async def test_toy_tool_trajectory():
 
     try:
         await AgentEvaluator.evaluate(
-            agent_module="tests.evaluation.toy_agent",
-            eval_dataset_file_path_or_dir=str(
-                EVAL_DIR / "toy_tests.test.json"),
+            agent_module="tests.evaluation.toy_examples.toy_agent",
+            eval_dataset_file_path_or_dir=str(TOY_EVAL_DIR / "toy_tests.test.json"),
         )
     finally:
         if config_backup.exists():
@@ -99,7 +131,7 @@ async def test_toy_response_match():
     """
     import shutil
     config_full = EVAL_DIR / "test_config.json"
-    config_response = EVAL_DIR / "toy_config_response_only.json"
+    config_response = TOY_EVAL_DIR / "toy_config_response_only.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
 
     if config_full.exists():
@@ -108,9 +140,8 @@ async def test_toy_response_match():
 
     try:
         await AgentEvaluator.evaluate(
-            agent_module="tests.evaluation.toy_agent",
-            eval_dataset_file_path_or_dir=str(
-                EVAL_DIR / "toy_tests.test.json"),
+            agent_module="tests.evaluation.toy_examples.toy_agent",
+            eval_dataset_file_path_or_dir=str(TOY_EVAL_DIR / "toy_tests.test.json"),
         )
     finally:
         if config_backup.exists():
@@ -127,7 +158,7 @@ async def test_toy_rubric_quality():
     """
     import shutil
     config_full = EVAL_DIR / "test_config.json"
-    config_rubric = EVAL_DIR / "toy_config_rubric_only.json"
+    config_rubric = TOY_EVAL_DIR / "toy_config_rubric_only.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
 
     if config_full.exists():
@@ -136,9 +167,8 @@ async def test_toy_rubric_quality():
 
     try:
         await AgentEvaluator.evaluate(
-            agent_module="tests.evaluation.toy_agent",
-            eval_dataset_file_path_or_dir=str(
-                EVAL_DIR / "toy_tests.test.json"),
+            agent_module="tests.evaluation.toy_examples.toy_agent",
+            eval_dataset_file_path_or_dir=str(TOY_EVAL_DIR / "toy_tests.test.json"),
         )
     finally:
         if config_backup.exists():
@@ -155,7 +185,7 @@ async def test_toy_comprehensive():
     """
     import shutil
     config_full = EVAL_DIR / "test_config.json"
-    config_comp = EVAL_DIR / "toy_config_comprehensive.json"
+    config_comp = TOY_EVAL_DIR / "toy_config_comprehensive.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
 
     if config_full.exists():
@@ -164,30 +194,10 @@ async def test_toy_comprehensive():
 
     try:
         await AgentEvaluator.evaluate(
-            agent_module="tests.evaluation.toy_agent",
-            eval_dataset_file_path_or_dir=str(
-                EVAL_DIR / "toy_tests.test.json"),
+            agent_module="tests.evaluation.toy_examples.toy_agent",
+            eval_dataset_file_path_or_dir=str(TOY_EVAL_DIR / "toy_tests.test.json"),
         )
     finally:
         if config_backup.exists():
             shutil.copy(config_backup, config_full)
             config_backup.unlink()
-            shutil.copy(config_backup, config_full)
-            config_backup.unlink()
-
-
-@pytest.mark.asyncio
-@pytest.mark.slow
-async def test_all_evaluation_files():
-    """
-    Run all evaluation test files in the evaluation directory.
-
-    This is a comprehensive test that evaluates all agents
-    against their respective test cases.
-
-    Note: test_config.json in the evaluation directory is automatically used.
-    """
-    # Skip for now - requires wrapper modules for each agent
-    pytest.skip("Requires wrapper modules for all agents - TODO")
-
-    print("\n✅ Evaluation complete!")
