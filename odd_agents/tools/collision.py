@@ -1,42 +1,58 @@
 """
 Collision risk analysis tools.
-Extracted from odd_workflow_full.py (reference implementation).
+Factory functions that create tools with specific configuration.
 """
 
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Union
 from google.adk.tools import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
+from google import genai
 
-from ..config import SCENARIO_PATH, GENAI_CLIENT, GEMINI_MODEL_COLLISION
 from ..utils import build_image_path, ensure_image_bytes, extract_json_block
 
 
-async def analyze_collision_risk_tool(
-    window_id: str,
-    motion_metrics: Dict[str, Any],
-    tool_context: ToolContext
-) -> Dict[str, Any]:
-    """Tool: run a direct multimodal Gemini call to analyze collision risk from motion metrics + camera + BEV."""
-    try:
-        scenario_name = SCENARIO_PATH.name
+def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
+    """
+    Create collision analysis tools for a specific scenario.
 
-        # Build paths
-        cam_path = build_image_path(scenario_name, window_id, "cam")
-        bev_path = build_image_path(scenario_name, window_id, "bev")
+    Args:
+        scenario_path: Path to scenario directory (string or Path object)
+        genai_client: Configured Gemini client
+        model: Model name to use for collision analysis
 
-        # Load images
-        cam_bytes = ensure_image_bytes(cam_path)
-        bev_bytes = ensure_image_bytes(bev_path)
+    Returns:
+        FunctionTool for collision risk analysis
+    """
+    # Ensure scenario_path is a Path object
+    scenario_path = Path(scenario_path) if isinstance(
+        scenario_path, str) else scenario_path
 
-        # Build multimodal prompt
-        motion_status = "MOTION DETECTED" if motion_metrics.get(
-            "motion_detected") else "STATIONARY"
-        motion_type = motion_metrics.get("motion_type", "unknown")
-        peak_accel = motion_metrics.get("peak_horizontal_accel_mps2", 0.0)
-        peak_gyro = motion_metrics.get("peak_angular_velocity_radps", 0.0)
+    async def analyze_collision_risk_tool(
+        window_id: str,
+        motion_metrics: Dict[str, Any],
+        tool_context: ToolContext
+    ) -> Dict[str, Any]:
+        """Tool: run a direct multimodal Gemini call to analyze collision risk from motion metrics + camera + BEV."""
+        try:
+            # Build paths
+            cam_path = build_image_path(scenario_path, "cam", window_id)
+            bev_path = build_image_path(
+                scenario_path, "bev_occupancy", window_id)
 
-        prompt = f"""You are a robot safety analyst for window {window_id}.
+            # Load images
+            cam_bytes = ensure_image_bytes(cam_path)
+            bev_bytes = ensure_image_bytes(bev_path)
+
+            # Build multimodal prompt
+            motion_status = "MOTION DETECTED" if motion_metrics.get(
+                "motion_detected") else "STATIONARY"
+            motion_type = motion_metrics.get("motion_type", "unknown")
+            peak_accel = motion_metrics.get("peak_horizontal_accel_mps2", 0.0)
+            peak_gyro = motion_metrics.get("peak_angular_velocity_radps", 0.0)
+
+            prompt = f"""You are a robot safety analyst for window {window_id}.
 
 MOTION CONTEXT:
 - Status: {motion_status}
@@ -66,24 +82,23 @@ Provide a JSON object with this EXACT schema:
 
 No explanations outside the JSON."""
 
-        response = GENAI_CLIENT.models.generate_content(
-            model=GEMINI_MODEL_COLLISION,
-            contents=[
-                types.Part(text=prompt.strip()),
-                types.Part(inline_data=types.Blob(
-                    mime_type="image/png", data=cam_bytes)),
-                types.Part(inline_data=types.Blob(
-                    mime_type="image/png", data=bev_bytes)),
-            ],
-        )
+            response = genai_client.models.generate_content(
+                model=model,
+                contents=[
+                    types.Part(text=prompt.strip()),
+                    types.Part(inline_data=types.Blob(
+                        mime_type="image/png", data=cam_bytes)),
+                    types.Part(inline_data=types.Blob(
+                        mime_type="image/png", data=bev_bytes)),
+                ],
+            )
 
-        data = extract_json_block(response.text or "")
-        data["window_id"] = window_id
-        return data
+            data = extract_json_block(response.text or "")
+            data["window_id"] = window_id
+            return data
 
-    except Exception as err:
-        return {"status": "error", "window_id": window_id, "message": str(err)}
+        except Exception as err:
+            return {"status": "error", "window_id": window_id, "message": str(err)}
 
-
-# FunctionTool wrapper
-ANALYZE_COLLISION_RISK = FunctionTool(func=analyze_collision_risk_tool)
+    # Return FunctionTool wrapper
+    return FunctionTool(func=analyze_collision_risk_tool)

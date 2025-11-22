@@ -6,14 +6,12 @@ Extracted from odd_workflow_full.py (reference implementation).
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
-from ..config import GEMINI_MODEL_REPORT, GOOGLE_API_KEY
 
-
-def create_report_agent() -> Agent:
+def create_report_agent(api_key: str, model: str) -> Agent:
     """Create a new ReportAgent instance."""
     return Agent(
         name="ReportAgent",
-        model=Gemini(model=GEMINI_MODEL_REPORT, api_key=GOOGLE_API_KEY),
+        model=Gemini(model=model, api_key=api_key),
         instruction="""You are a technical report generator for ODD/COD analysis.
 
 TASK: Produce a comprehensive human-readable report.

@@ -6,14 +6,12 @@ Extracted from odd_workflow_full.py (reference implementation).
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
-from ..config import GEMINI_MODEL_ODD_SPEC, GOOGLE_API_KEY
 
-
-def create_odd_spec_agent() -> Agent:
+def create_odd_spec_agent(api_key: str, model: str) -> Agent:
     """Create a new OddSpecAgent instance."""
     return Agent(
         name="OddSpecAgent",
-        model=Gemini(model=GEMINI_MODEL_ODD_SPEC, api_key=GOOGLE_API_KEY),
+        model=Gemini(model=model, api_key=api_key),
         output_key="temp:odd_spec",
         instruction="""You are an Operational Design Domain (ODD) specification expert.
 

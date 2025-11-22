@@ -6,14 +6,12 @@ Extracted from odd_workflow_full.py (reference implementation).
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
-from ..config import GEMINI_MODEL_COD, GOOGLE_API_KEY
 
-
-def create_cod_classifier_agent() -> Agent:
+def create_cod_classifier_agent(api_key: str, model: str) -> Agent:
     """Create a new CodClassifierAgent instance."""
     return Agent(
         name="CodClassifierAgent",
-        model=Gemini(model=GEMINI_MODEL_COD, api_key=GOOGLE_API_KEY),
+        model=Gemini(model=model, api_key=api_key),
         output_key="temp:cod_classification",
         instruction="""You are a Current Operating Domain (COD) classifier.
 

@@ -1,26 +1,36 @@
 """
 Perception analysis agents.
-Extracted from odd_workflow_full.py (reference implementation).
+Factory functions that create agents with specific configuration.
 """
 
+from pathlib import Path
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
+from google import genai
 
-from ..config import GEMINI_MODEL_PERCEPTION, GOOGLE_API_KEY
-from ..tools import LIST_WINDOWS, ANALYZE_WINDOW_PERCEPTION
+from ..tools.perception import create_perception_tools
 
 
-# TODO: Consider extracting sim vs real classification into a dedicated agent
-# that runs early in the pipeline (after ODD spec, before perception loop).
-# This would provide the data source classification as context to all downstream
-# agents. Current implementation adds it to perception_summary_agent for simplicity.
+def create_perception_loop_agent(scenario_path: Path, genai_client: genai.Client, model: str, api_key: str):
+    """
+    Factory function to create a new PerceptionLoopAgent instance.
 
-def create_perception_loop_agent():
-    """Factory function to create a new PerceptionLoopAgent instance."""
+    Args:
+        scenario_path: Path to scenario directory
+        genai_client: Configured Gemini client
+        model: Model name to use
+        api_key: Google API key
+
+    Returns:
+        Configured PerceptionLoopAgent
+    """
+    list_windows, analyze_window = create_perception_tools(
+        scenario_path, genai_client, model)
+
     return Agent(
         name="PerceptionLoopAgent",
-        model=Gemini(model=GEMINI_MODEL_PERCEPTION, api_key=GOOGLE_API_KEY),
-        tools=[LIST_WINDOWS, ANALYZE_WINDOW_PERCEPTION],
+        model=Gemini(model=model, api_key=api_key),
+        tools=[list_windows, analyze_window],
         output_key="temp:perception_data",
         instruction="""You orchestrate perception analysis across all scenario windows.
 
@@ -37,11 +47,20 @@ Do not add commentary. Ensure valid JSON.""",
     )
 
 
-def create_perception_summary_agent():
-    """Factory function to create a new PerceptionSummaryAgent instance."""
+def create_perception_summary_agent(api_key: str, model: str):
+    """
+    Factory function to create a new PerceptionSummaryAgent instance.
+
+    Args:
+        api_key: Google API key
+        model: Model name to use
+
+    Returns:
+        Configured PerceptionSummaryAgent
+    """
     return Agent(
         name="PerceptionSummaryAgent",
-        model=Gemini(model=GEMINI_MODEL_PERCEPTION, api_key=GOOGLE_API_KEY),
+        model=Gemini(model=model, api_key=api_key),
         output_key="temp:perception_output",
         instruction="""You finalize the ODD perception report.
 

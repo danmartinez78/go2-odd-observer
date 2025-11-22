@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
 """ODD Specification Agent test using shared odd_agents module."""
 
+from odd_agents.agents import create_odd_spec_agent
+from odd_agents import extract_json_block
 import asyncio
 import json
+import os
 from typing import Any, Optional
 
 from google.adk.runners import InMemoryRunner
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import from shared module
-from odd_agents import extract_json_block
-from odd_agents.agents import create_odd_spec_agent
+
+# Configuration
+API_KEY = os.environ.get("GOOGLE_API_KEY")
+if not API_KEY:
+    print("❌ GOOGLE_API_KEY environment variable not set")
+    raise SystemExit(1)
+
+MODEL = "gemini-2.0-flash-lite"
 
 
 async def test_odd_spec_agent() -> Optional[dict[str, Any]]:
@@ -28,7 +41,7 @@ async def test_odd_spec_agent() -> Optional[dict[str, Any]]:
     )
 
     # Create agent instance
-    odd_spec_agent = create_odd_spec_agent()
+    odd_spec_agent = create_odd_spec_agent(API_KEY, MODEL)
     runner = InMemoryRunner(agent=odd_spec_agent, app_name="OddSpecAgentApp")
     events = await runner.run_debug(nl_odd_description)
 

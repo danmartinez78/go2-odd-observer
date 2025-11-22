@@ -5,17 +5,26 @@ Extracted from odd_workflow_full.py (reference implementation).
 
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
+from google.genai import Client
 
-from ..config import GEMINI_MODEL_MOTION, GOOGLE_API_KEY
-from ..tools import LIST_WINDOWS, ANALYZE_MOTION
+from ..tools.motion import create_motion_tools
 
 
-def create_motion_loop_agent() -> Agent:
+def create_motion_loop_agent(
+    scenario_path: str, genai_client: Client, model: str, api_key: str
+) -> Agent:
     """Create a new MotionLoopAgent instance."""
+    from ..tools.perception import create_perception_tools
+
+    list_windows_tool, _ = create_perception_tools(
+        scenario_path, genai_client, model)
+    analyze_motion_tool = create_motion_tools(
+        scenario_path, genai_client, model)
+
     return Agent(
         name="MotionLoopAgent",
-        model=Gemini(model=GEMINI_MODEL_MOTION, api_key=GOOGLE_API_KEY),
-        tools=[LIST_WINDOWS, ANALYZE_MOTION],
+        model=Gemini(model=model, api_key=api_key),
+        tools=[list_windows_tool, analyze_motion_tool],
         output_key="temp:motion_data",
         instruction="""You orchestrate motion analysis across all scenario windows.
 
@@ -32,11 +41,11 @@ Do not add commentary. Ensure valid JSON.""",
     )
 
 
-def create_motion_summary_agent() -> Agent:
+def create_motion_summary_agent(api_key: str, model: str) -> Agent:
     """Create a new MotionSummaryAgent instance."""
     return Agent(
         name="MotionSummaryAgent",
-        model=Gemini(model=GEMINI_MODEL_MOTION, api_key=GOOGLE_API_KEY),
+        model=Gemini(model=model, api_key=api_key),
         output_key="temp:motion_output",
         instruction="""You finalize the motion analysis report.
 
