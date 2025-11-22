@@ -170,28 +170,48 @@ Tested on 26 seconds of robot operation (13 windows):
 
 ## 📊 Example Results
 
-**Scenario:** Robot in cluttered office (furniture, boxes, narrow aisles)
+**Scenario:** `sim_run_new` - Unitree Go2 navigating indoor office environment (13 time windows, simulation)
 
-### Violations Detected
+### ODD Compliance Analysis
 
 ```
-❌ OUT_ODD Violations (4):
-   • obstacle_density: 0.85 (limit: 0.60) - Too cluttered
-   • traversability: 0.25 (minimum: 0.50) - Space too narrow
-   • collision_risk: 0.75 (threshold: 0.30) - High collision likelihood
-   • lighting: "dim" (requires: "bright") - Insufficient visibility
+Overall Status: OUT_ODD
 
-✅ IN_ODD (3):
+❌ VIOLATIONS (1):
+   • traversability_score: 0.38 (minimum: 0.50)
+     → Robot frequently in areas with blocked/narrow paths
+     
+⚠️  WARNINGS (1):
+   • collision_risk: 0.412 (boundary: 0.3-0.5)
+     → Approaching unsafe collision likelihood threshold
+
+✅ IN_ODD (5):
    • environment_type: indoor_office ✓
-   • terrain_type: smooth_floor ✓
-   • speed: 0.0 m/s (within 0-1.5 range) ✓
+   • lighting_conditions: bright ✓
+   • terrain_type: smooth ✓
+   • obstacle_density: 0.53 (limit: 0.60) ✓
+   • platform_stability: stable ✓
 ```
+
+### AI-Generated Executive Summary
+
+> *"The Unitree Go2 robot is operating in a simulated indoor office environment. While the environment generally aligns with the ODD, a low traversability score and high collision risk, coupled with multiple instances of near-collision scenarios, suggest a need for caution and potential adjustments to the operating strategy."*
 
 ### Key Findings
 
-> "Robot remained stationary due to persistent furniture blockage. Collision risk assessed as 'alert' in 8/13 windows (62%). Environment exceeds design obstacle density limits. **Recommendation:** Do not deploy in this configuration."
+1. 🚨 **High Obstacle Proximity**: Robot frequently positioned in close proximity to static obstacles (sofas, tables, furniture)
+2. 📉 **Low Traversability**: Average traversability score of 0.38 indicates constrained navigation space
+3. ⚠️ **Collision Risk**: Mean collision risk of 0.412 approaches safety boundary (threshold: 0.5)
 
-📁 **Full Report:** [`docs/examples/example_report.json`](docs/examples/example_report.json)
+### Recommendations
+
+1. **Path Planning**: Implement improved obstacle avoidance to maintain safe clearance distances
+2. **Traversability Analysis**: Investigate factors contributing to low traversability scores
+3. **Environment Assessment**: Consider pre-deployment site surveys to identify high-risk areas
+
+📁 **Full Reports:** 
+- [`data/examples/demo_analysis_report.json`](data/examples/demo_analysis_report.json) (30KB - complete analysis)
+- [`data/examples/demo_executive_summary.json`](data/examples/demo_executive_summary.json) (1.7KB - key insights)
 
 ---
 
