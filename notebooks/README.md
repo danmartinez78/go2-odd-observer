@@ -1,144 +1,46 @@
-# Notebooks
+# ODD Analysis Notebooks
 
-Interactive Jupyter notebooks for ODD/COD analysis and visualization.
+This directory contains Jupyter notebooks for interactive ODD (Operational Design Domain) compliance analysis.
 
-## Available Notebooks
+## Current Notebooks
 
-### `odd_cod_workflow.ipynb` - **Main Workflow** ⭐
+### `odd_analysis_demo.ipynb` - **RECOMMENDED**
 
-Complete 10-agent ODD/COD analysis workflow with visualizations.
+**Clean, well-documented notebook for running ODD analysis.**
 
-**What it does:**
-- Runs the full 10-agent sequential pipeline
-- Analyzes multi-modal sensor data (camera + LiDAR + IMU)
-- Compares Current Operating Domain (COD) vs Operational Design Domain (ODD)
-- Detects ODD violations and safety boundaries
-- Generates comprehensive compliance reports
+Features:
+- ✅ Uses shared `odd_agents` module (single source of truth)
+- ✅ Clear step-by-step instructions
+- ✅ Customizable ODD specifications
+- ✅ Built-in visualizations
+- ✅ Suitable for learning and experimentation
 
-**Key Features:**
-- ✅ ODD-first architecture (define constraints before analyzing sensors)
-- ✅ IMU-based motion detection (robust to odometry failures)
-- ✅ Sim vs real classification
-- ✅ Interactive visualizations (collision risk timeline, compliance status)
-- ✅ Export to JSON and text formats
-
-**Notebook Structure (10 sections):**
-1. **Title & Overview** - ODD/COD concepts and 10-agent pipeline
-2. **Setup** - Import libraries, configure API
-3. **ODD Definition** - Natural language specification
-4. **Scenario Selection** - Choose dataset
-5. **Run Workflow** - Execute 10-agent pipeline
-6. **Executive Summary** - High-level findings
-7. **ODD Compliance** - Violation analysis
-8. **Collision Risk Timeline** - Visualization
-9. **Motion Detection** - IMU statistics
-10. **Export & Next Steps** - Save results, customization guide
-
-**Usage:**
-```bash
-# 1. Set API key
-export GOOGLE_API_KEY="your-api-key-here"
-
-# 2. Launch Jupyter
-jupyter notebook
-
-# 3. Open odd_cod_workflow.ipynb
-# 4. Update SCENARIO_NAME (cell 6)
-# 5. Run all cells
-```
-
-**Typical runtime:** 2-3 minutes for 13-window scenario
-
----
-
-### Archived Notebooks
-
-- `odd_cod_workflow_ARCHIVED.ipynb` - Previous 9-agent version (archived Nov 21, 2025)
-- `odd_workflow_interactive.ipynb` - Legacy interactive workflow (needs updates)
-
----
-
-## Quick Start
-
-```bash
-# 1. Ensure API key is configured
-export GOOGLE_API_KEY="your-api-key-here"
-
-# 2. Launch Jupyter
-jupyter notebook
-
-# 3. Open odd_cod_workflow.ipynb
-# 4. Run all cells (Cell → Run All)
-```
-
-## Prerequisites
-
-- Python 3.10+
+**What you need:**
 - Google Gemini API key (free at https://aistudio.google.com/app/apikey)
-- Preprocessed scenario data in `../data/processed/runs/`
-- Required packages: `pandas`, `matplotlib`, `seaborn`, `google-genai`
+- Preprocessed scenario data (run `scripts/extract_windows.py`)
 
-## Customization Examples
+**Quick start:**
+1. Open `odd_analysis_demo.ipynb`
+2. Set API key in cell 2
+3. Run all cells
 
-### Outdoor Delivery Robot ODD
+## Archived Notebooks
 
-```python
-nl_odd_description = """
-Outdoor delivery robot designed for sidewalk navigation.
+The `archive/` directory contains older notebooks that have been superseded:
 
-OPERATIONAL CONSTRAINTS:
-1. Environment: outdoor_sidewalk, outdoor_urban
-2. Weather: clear, light_rain (no heavy rain or snow)
-3. Terrain: paved_sidewalk, asphalt
-4. Speed: 0.0 to 2.0 m/s
-5. GPS Quality: HDOP < 2.0
-6. Slope: -5° to +5°
-"""
-```
+- `odd_workflow_minimal.ipynb` - Minimal version (replaced by demo)
+- `odd_workflow_educational.ipynb` - Extended educational version (replaced by demo)
+- `odd_cod_misc.ipynb` - Miscellaneous experiments
+- `odd_cod_workflow_ARCHIVED.ipynb` - Original archived workflow
 
-### Aerial Drone ODD
+**Note:** Archived notebooks are kept for reference but are no longer maintained. Use `odd_analysis_demo.ipynb` instead.
 
-```python
-nl_odd_description = """
-Quadcopter drone for outdoor inspection.
+## For Developers
 
-OPERATIONAL CONSTRAINTS:
-1. Environment: outdoor, open_airspace
-2. Altitude: 10 to 100 meters AGL
-3. Wind Speed: < 10 m/s
-4. GPS Quality: > 8 satellites, HDOP < 1.5
-5. Battery: > 30%
-6. Visibility: > 1 km
-"""
-```
+If you want to understand how the agents work:
+- **Agent implementations**: `../odd_agents/agents/`
+- **Workflow orchestration**: `../odd_agents/workflow.py`
+- **Factory pattern docs**: `../docs/FACTORY_PATTERN.md`
+- **Production script**: `../scripts/odd_workflow.py`
 
-## Output Files
-
-After running the notebook:
-
-```
-data/processed/runs/<scenario>/
-├── odd_analysis_report.json          # Full workflow output (from script)
-├── odd_analysis_report_notebook.json # Notebook-generated output
-└── odd_analysis_summary.txt          # Human-readable summary
-```
-
-## Troubleshooting
-
-**Issue:** `GOOGLE_API_KEY not found`
-- **Solution:** `export GOOGLE_API_KEY='your-key'` or create `.env` file
-
-**Issue:** `Scenario not found`
-- **Solution:** Run `extract_windows.py` first to preprocess ROS2 bags
-
-**Issue:** `Module 'odd_workflow_full' not found`
-- **Solution:** Run from `notebooks/` directory (auto-adds `../scripts` to path)
-
-**Issue:** Rate limit exceeded
-- **Solution:** Wait 60s and retry, or use gemini-2.0-flash-lite
-
-## Learn More
-
-- **Getting Started**: `../docs/guides/GETTING_STARTED.md`
-- **Workflow Updates**: `../IMU_MOTION_DETECTION_UPDATE.md`
-- **Main README**: `../README.md`
+All use the same `odd_agents` module - single source of truth!
