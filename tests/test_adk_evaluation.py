@@ -36,7 +36,7 @@ async def test_perception_agent_evaluation():
     )
 
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 async def test_perception_tool_trajectory_only():
     """
     Fast test - only check tool trajectory (no expensive LLM judging).
@@ -47,15 +47,16 @@ async def test_perception_tool_trajectory_only():
     config_full = EVAL_DIR / "test_config.json"
     config_tool = EVAL_DIR / "test_config_tool_only.json"
     config_backup = EVAL_DIR / "test_config_backup.json"
-    
+
     if config_full.exists():
         shutil.copy(config_full, config_backup)
         shutil.copy(config_tool, config_full)
-    
+
     try:
         await AgentEvaluator.evaluate(
             agent_module="tests.evaluation.perception_agent",
-            eval_dataset_file_path_or_dir=str(EVAL_DIR / "perception_agent.test.json"),
+            eval_dataset_file_path_or_dir=str(
+                EVAL_DIR / "perception_agent.test.json"),
         )
     finally:
         if config_backup.exists():

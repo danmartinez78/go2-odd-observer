@@ -13,7 +13,7 @@ from odd_agents.agents.perception import create_perception_loop_agent
 load_dotenv()
 
 # Setup
-scenario_path = Path("data/processed/runs/demo_run")
+scenario_path = Path("data/processed/runs/sim_run_test")
 api_key = os.getenv("GOOGLE_API_KEY")
 
 if not api_key:
