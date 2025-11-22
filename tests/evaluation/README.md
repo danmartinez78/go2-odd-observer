@@ -22,21 +22,28 @@ tests/evaluation/
 ├── README.md                    # This file
 ├── TEST_DATA.md                 # Test data documentation (windows 006, 007)
 ├── test_config_simple.json      # Simple config example
-├── perception/                  # Perception agent evaluation
+├── perception/                  # Perception agent evaluation (LOOP AGENT)
 │   ├── README.md                # Perception-specific docs
 │   ├── perception_agent.py      # Agent export for ADK
 │   ├── perception_agent.test.json  # EvalSet test cases
 │   ├── test_config.json         # Main config (tool + rubric)
-│   ├── test_config_tool_only.json
+│   ├── test_config_tool_traj.json
 │   ├── test_config_rubric_only.json
 │   ├── test_config_comprehensive.json
 │   └── test_config_response_only.json
-├── motion/                      # Motion agent evaluation
+├── motion/                      # Motion agent evaluation (LOOP AGENT)
 │   ├── README.md                # Motion-specific docs
 │   ├── motion_agent.py
 │   ├── motion_agent.test.json
 │   ├── test_config.json
-│   ├── test_config_tool_only.json
+│   ├── test_config_tool_traj.json
+│   ├── test_config_rubric_only.json
+│   └── test_config_comprehensive.json
+├── odd_spec/                    # ODD Spec agent evaluation (NON-LOOP AGENT)
+│   ├── README.md                # Non-loop agent pattern docs
+│   ├── odd_spec_agent.py
+│   ├── odd_spec_agent.test.json
+│   ├── test_config.json
 │   ├── test_config_rubric_only.json
 │   └── test_config_comprehensive.json
 ├── toy_examples/                # Reference implementations
@@ -146,10 +153,22 @@ def test_motion_rubric_quality():
 
 ### Agent Types
 
-**Loop Agents** (Orchestrators):
+**Loop Agents** (Orchestrators WITH TOOLS):
 - `PerceptionLoopAgent` - Iterate windows, call perception tool, aggregate
 - `MotionLoopAgent` - Iterate windows, call motion tool, aggregate
 - `CollisionLoopAgent` - Iterate windows, call collision tool, aggregate
+- **Pattern**: list_windows → analyze_* (x N) → aggregate JSON
+- **Test Pattern**: Tool trajectory + rubrics
+- **Test Data**: Windows 006/007 from sim_run_test
+
+**Non-Loop Agents** (Single Inference WITHOUT TOOLS):
+- `OddSpecAgent` - NL description → JSON specification (single LLM call)
+- `CodClassifierAgent` - Synthesizes from {temp:perception/motion/collision}
+- `ComplianceAgent` - Compares {temp:odd_spec} vs {temp:cod}
+- `ReportAgent` - Aggregates all {temp:*} outputs
+- **Pattern**: Single inference, no tool calls
+- **Test Pattern**: Rubrics only (no tool trajectory)
+- **Test Data**: Varied text inputs or mock context
 
 **Tools** (Inference Engines):
 - `analyze_window_perception_tool()` - Multimodal LLM call (vision)
@@ -278,29 +297,53 @@ load_dotenv()
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 GENAI_CLIENT = Client(api_key=API_KEY)
 MODEL = "gemini-2.0-flash-lite"
+---
+
+## 🔧 Adding a New Agent Evaluation
+
+### Loop Agent Pattern (has tools)
+
+Use this for agents that call tools (perception, motion, collision):
+
+#### 1. Create Directory
+```bash
+mkdir -p tests/evaluation/{agent}/
+```
+
+#### 2. Export Agent (`{agent}_agent.py`)
+```python
+import os
+from pathlib import Path
+from odd_agents.agents.{agent} import create_{agent}_loop_agent
+from google.genai import Client
+
+# Config
+API_KEY = os.getenv("GOOGLE_API_KEY")
+MODEL = "gemini-2.0-flash-exp"
+GENAI_CLIENT = Client(api_key=API_KEY)
 SCENARIO_PATH = str(Path("data/processed/runs/sim_run_test").absolute())
 
-# Export agent instance
-{agent}_loop_agent = create_{agent}_loop_agent(
+# Export agent instance (ADK requires it to be named 'agent')
+agent = create_{agent}_loop_agent(
     SCENARIO_PATH, GENAI_CLIENT, MODEL, API_KEY
 )
 ```
 
-### 3. Create Test Cases (`{agent}_agent.test.json`)
-See `perception/perception_agent.test.json` as reference. Must include:
-- Test case names
-- User requests
-- Expected tool uses (with `"args": {}`)
-- Expected responses with rubrics
+#### 3. Create Test Cases (`{agent}_agent.test.json`)
+See `perception/perception_agent.test.json` as reference. Use EvalSet schema with:
+- `eval_set_id` and `description`
+- `eval_cases` array with conversation structure
+- `expected_tool_uses` with tool names and args
+- Test with windows 006/007 from sim_run_test
 
-### 4. Create Test Configs
-Create 4 config files (see `perception/` for examples):
+#### 4. Create Test Configs
+Create 3-4 config files (see `perception/` for examples):
 - `test_config.json` - Main (tool + rubric)
-- `test_config_tool_traj.json` - Fast validation
-- `test_config_rubric_only.json` - Quality only
-- `test_config_comprehensive.json` - All criteria
+- `test_config_tool_traj.json` - Fast validation (~20s)
+- `test_config_rubric_only.json` - Quality only (~70s)
+- `test_config_comprehensive.json` - All criteria (~120s)
 
-### 5. Design Rubrics
+#### 5. Design Rubrics
 Create 3-5 rubrics evaluating:
 - JSON structure validity
 - Completeness (all windows analyzed)
@@ -309,7 +352,7 @@ Create 3-5 rubrics evaluating:
 
 **Reference TEST_DATA.md** for expected data ranges!
 
-### 6. Add Tests to `test_adk_evaluation.py`
+#### 6. Add Tests to `test_adk_evaluation.py`
 ```python
 def test_{agent}_tool_trajectory_only():
     """Fast test - validates tool calling sequence only (~20s)."""
@@ -342,10 +385,10 @@ def test_{agent}_comprehensive():
     assert result.overall_score >= 0.7
 ```
 
-### 7. Create Agent README
-Document agent-specific details (see template in next section)
+#### 7. Create Agent README
+Document agent-specific details (see perception/README.md template)
 
-### 8. Run Tests
+#### 8. Run Tests
 ```bash
 # Fast validation
 pytest tests/test_adk_evaluation.py::test_{agent}_tool_trajectory_only -v
@@ -354,6 +397,93 @@ pytest tests/test_adk_evaluation.py::test_{agent}_tool_trajectory_only -v
 pytest tests/test_adk_evaluation.py::test_{agent}_rubric_quality -v
 
 # Full certification
+pytest tests/test_adk_evaluation.py::test_{agent}_comprehensive -v
+```
+
+---
+
+### Non-Loop Agent Pattern (no tools)
+
+Use this for agents that make single inferences without tools (ODD Spec, COD, Compliance, Report):
+
+#### 1. Create Directory
+```bash
+mkdir -p tests/evaluation/{agent}/
+```
+
+#### 2. Export Agent (`{agent}_agent.py`)
+```python
+import os
+from odd_agents.agents.{agent} import create_{agent}_agent
+from google.genai import Client
+
+# Config
+API_KEY = os.getenv("GOOGLE_API_KEY")
+MODEL = "gemini-2.0-flash-exp"
+GENAI_CLIENT = Client(api_key=API_KEY)
+
+# Export agent instance (ADK requires it to be named 'agent')
+agent = create_{agent}_agent(API_KEY, MODEL)
+```
+
+**Note**: No SCENARIO_PATH needed (no file-based data)
+
+#### 3. Create Test Cases (`{agent}_agent.test.json`)
+See `odd_spec/odd_spec_agent.test.json` as reference. Use EvalSet schema with:
+- `eval_set_id` and `description`
+- `eval_cases` array with conversation structure
+- **Empty** `tool_uses` arrays: `"tool_uses": []`
+- Test with varied text inputs (not windows 006/007)
+
+#### 4. Create Test Configs
+Create 2 config files (see `odd_spec/` for examples):
+- `test_config_rubric_only.json` - Quality only (~100-120s)
+- `test_config_comprehensive.json` - All criteria (~120-180s)
+
+**No tool_traj config** - these agents have no tools!
+
+#### 5. Design Rubrics
+Create 3-5 rubrics evaluating:
+- Response format/structure
+- Information extraction accuracy
+- Inference quality (e.g., reasonable defaults)
+- Domain-specific requirements
+
+#### 6. Add Tests to `test_adk_evaluation.py`
+```python
+def test_{agent}_rubric_quality():
+    """Rubric-based quality test (~100-120s).
+    
+    Note: No tool trajectory test (this agent has no tools).
+    """
+    result = evaluate_agent(
+        agent={agent}_agent,
+        config_path="tests/evaluation/{agent}/test_config_rubric_only.json",
+        test_json_path="tests/evaluation/{agent}/{agent}_agent.test.json"
+    )
+    assert result.overall_score >= 0.7
+
+def test_{agent}_comprehensive():
+    """Comprehensive evaluation (~120-180s)."""
+    result = evaluate_agent(
+        agent={agent}_agent,
+        config_path="tests/evaluation/{agent}/test_config_comprehensive.json",
+        test_json_path="tests/evaluation/{agent}/{agent}_agent.test.json"
+    )
+    assert result.overall_score >= 0.7
+```
+
+**Only 2 tests** (no tool_trajectory test)
+
+#### 7. Create Agent README
+Document agent-specific details (see odd_spec/README.md template)
+
+#### 8. Run Tests
+```bash
+# Rubric-based quality
+pytest tests/test_adk_evaluation.py::test_{agent}_rubric_quality -v
+
+# Comprehensive
 pytest tests/test_adk_evaluation.py::test_{agent}_comprehensive -v
 ```
 
