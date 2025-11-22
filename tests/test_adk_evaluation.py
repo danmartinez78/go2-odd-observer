@@ -316,3 +316,89 @@ async def test_odd_spec_comprehensive():
         if config_backup.exists():
             shutil.copy(config_backup, config_main)
             config_backup.unlink()
+
+
+# =============================================================================
+# COD CLASSIFIER AGENT EVALUATION TESTS
+# Tests single-inference agent (NO TOOLS) - Context synthesis → COD classification
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_cod_classifier_rubric_quality():
+    """
+    Test COD Classifier agent with rubric-based LLM judging.
+    
+    NOTE: This agent has NO TOOLS - it's a single inference agent.
+    Input: Mock context data from perception, motion, and collision analyses
+    Output: Structured JSON with categorical ODD classification
+    
+    Evaluates:
+    - JSON structure validity (required keys, correct nesting)
+    - Category identification (environment, lighting, terrain from perception)
+    - Numeric synthesis (averaging obstacle density, traversability, collision risk)
+    - Context synthesis (uses all 3 input analyses)
+    - Output completeness (descriptive summary, no missing values)
+    
+    Pattern difference from loop agents:
+    - No expected_tool_uses (this agent doesn't call tools)
+    - Test cases use mock context data, not window IDs
+    - Rubrics focus on synthesis quality and aggregation accuracy
+    
+    Runtime: ~100-120s (3 test cases × LLM inference + judging)
+    """
+    import shutil
+    cod_classifier_dir = EVAL_DIR / "cod_classifier"
+    config_main = cod_classifier_dir / "test_config.json"
+    config_rubric = cod_classifier_dir / "test_config_rubric_only.json"
+    config_backup = cod_classifier_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.cod_classifier.cod_classifier_agent",
+            eval_dataset_file_path_or_dir=str(cod_classifier_dir / "cod_classifier_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_cod_classifier_comprehensive():
+    """
+    Full COD Classifier agent evaluation.
+    
+    Tests:
+    - Rubric-based quality (structure, identification, synthesis, completeness)
+    - Hallucinations (no fabricated classifications)
+    
+    Note: No tool_trajectory criterion (this agent has no tools!)
+    
+    Runtime: ~120-180s (includes inference + judging + hallucination detection)
+    """
+    import shutil
+    cod_classifier_dir = EVAL_DIR / "cod_classifier"
+    config_main = cod_classifier_dir / "test_config.json"
+    config_comprehensive = cod_classifier_dir / "test_config_comprehensive.json"
+    config_backup = cod_classifier_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.cod_classifier.cod_classifier_agent",
+            eval_dataset_file_path_or_dir=str(cod_classifier_dir / "cod_classifier_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
