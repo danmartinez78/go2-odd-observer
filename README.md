@@ -2,14 +2,16 @@
 
 <div align="center">
 
-**Multi-Agent AI System for Operational Design Domain Analysis**
+**Multi-Agent AI System for Autonomous Robot Safety Assessment**
 
-*Autonomous assessment of robot safety constraints using vision, motion, and LiDAR fusion*
+*Automatically validate if robots are operating within their design limits using vision, motion, and LiDAR fusion*
 
 [![Kaggle Agents Intensive](https://img.shields.io/badge/Kaggle-5--Day_Agents-20BEFF?style=for-the-badge&logo=kaggle)](https://www.kaggle.com/learn-guide/5-day-agents)
 [![Google ADK](https://img.shields.io/badge/Google-ADK_v1.18-4285F4?style=for-the-badge&logo=google)](https://github.com/google/generative-ai-python)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org)
 [![ROS2 Humble](https://img.shields.io/badge/ROS2-Humble-22314E?style=for-the-badge&logo=ros)](https://docs.ros.org/en/humble/)
+
+[**Quick Start**](#-quick-start) • [**Documentation**](docs/guides/GETTING_STARTED.md) • [**Features**](#-key-features) • [**Examples**](#-example-results)
 
 </div>
 
@@ -17,321 +19,179 @@
 
 ## 🎯 What This Does
 
-Imagine deploying a quadruped robot in an office building. **How do you know if the environment is safe?** This system uses **10 specialized AI agents** with a parameterized architecture to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically determine:
+**Deploying autonomous robots? Need to know if they're operating safely?**
 
-✅ Is the robot operating within its **Operational Design Domain (ODD)**?  
-⚠️ Are conditions approaching **safety boundaries**?  
-❌ Has the robot **exceeded design limits**?  
+This system uses **10 specialized AI agents** to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically answer:
 
-**Key Innovations**: 
-- **Parameterized Factory Pattern**: No global state, fully isolated workflow execution
-- **ODD-First Architecture**: Separates design constraints (ODD) from measured conditions (COD)
-- **Continuous Distance Metrics**: Quantifies *how far* actual conditions deviate from specifications
-- **IMU-Based Motion Detection**: Robust motion analysis using accelerometer/gyroscope when odometry fails
-- **Per-Agent Model Selection**: Optimize costs by choosing models per agent type
+✅ **Is the robot within its design limits?** (Operational Design Domain compliance)  
+⚠️ **Are conditions approaching safety boundaries?** (Warning detection)  
+❌ **Has the robot exceeded safe operating conditions?** (Violation detection)
+
+### Key Concepts
+
+**🎯 ODD (Operational Design Domain)**
+> The specific conditions and environments a robot is **designed** to operate in. Think of it as the robot's "safe operating zone" - like speed limits, terrain types, and obstacle densities it was built to handle.
+
+**📊 COD (Current Operating Domain)**  
+> The actual conditions the robot is **currently experiencing**, measured from its sensors. This is "where the robot actually is" at any moment.
+
+**⚖️ ODD Compliance**
+> Comparing COD vs ODD to detect when actual conditions exceed design specifications. Like a safety check: "Are we still within safe operating limits?"
+
+**Example:** A delivery robot designed for smooth indoor floors (ODD) suddenly encounters gravel parking lot (COD) → System flags `OUT_ODD` violation.
 
 ---
 
-## 🌟 Highlights
+## 🌟 Why This Matters
 
-### 🏆 Built with Google ADK & Gemini 2.5 Pro
+**For Autonomous Systems:**
+- 🚨 **Safety Validation**: Automatically detect when robots enter unsafe conditions
+- 📋 **Compliance Documentation**: Generate audit trails for regulatory requirements  
+- 🔍 **Post-Incident Analysis**: Understand what went wrong after failures
+- 🎯 **Deployment Validation**: Verify new environments before go-live
 
-Leverages the latest **Agent Development Kit (ADK)** patterns from Google's AI platform:
-- **Sequential Agent Orchestration**: 10-stage pipeline with automatic state management
-- **ODD-First Architecture**: Specifies design constraints before analyzing sensor data
-- **Loop + Summary Pattern**: Proven architecture that avoids vision hallucinations
-- **Direct Multimodal Calls**: Tools invoke Gemini with `types.Part.from_bytes` for images
-- **Cost-Optimized Model Selection**: Defaults to flash-lite, selective 2.5-pro upgrades (~baseline cost)
-
-### 📊 Real-World Performance
-
-Tested on **13-window simulation dataset** (26 seconds of robot operation):
-- ✅ **100% motion detection rate** using IMU accelerometer/gyroscope
-- ⚠️ Detected **8 alert-level collision risks** from multimodal fusion
-- ❌ Flagged **4 ODD violations**: lighting, obstacle density, traversability, collision risk
-- 📏 Computed continuous compliance: `OUT_ODD` with quantified distance metrics
-- 🔍 **Classified data source**: simulation (95% confidence) based on image characterist, collision risk
-- 📏 Computed continuous compliance: `OUT_ODD` with quantified distance metrics
-
-### 🔬 Technical Innovations, sim vs real classification
-- 📡 **LiDAR Processing**: Terrain roughness, obstacle density, traversability scoring
-- 🎯 **Motion Metrics**: IMU-based motion detection (accelerometer/gyroscope), platform stability assessment
-- 📹 **Camera Analysis**: Environment classification, lighting assessment, human detection
-- 📡 **LiDAR Processing**: Terrain roughness, obstacle density, traversability scoring
-- 🎯 **Motion Metrics**: Speed profiling, IMU analysis, trajectory classification
-- � **ODD Spec Agent**: Converts natural language description to formal ODD specification (runs FIRST)
-- 🔄 **Loop Agents**: Process time-series windows individually (perception, motion, collision)
-- 📝 **Summary Agents**: Aggregate results with complete data preservation
-- 🎯 **Synthesis Agents**: COD classification, ODD compliance, report generation
-- 🛠️ **Tool Functions**: Python utilities for direct Gemini API calls with multimodal datamotion, collision)
-- 📝 **Summary Agents**: Aggregate results with complete data preservation
-- 🎯 **Synthesis Agents**: Domain classification, COD compliance, report generation
-- 🛠️ **Tool Functions**: Python utilities for computation and visualization
-
----10-Agent Sequential Pipeline
-
-```mermaid
-graph TD
-    A[📝 Natural Language ODD] --> B[🎯 ODD Spec Agent]
-    B --> C[📄 Multi-Modal Data<br/>Camera + LiDAR + IMU]
-    C --> D[🔄 Perception Loop Agent]
-    D --> E[📝 Perception Summary Agent]
-    E --> F[🔄 Motion Loop Agent]
-    F --> G[📝 Motion Summary Agent]
-    G --> H[🔄 Collision Loop Agent]
-    H --> I[📝 Collision Summary Agent]
-    I --> J[🏷️ COD Classifier Agent]
-    J --> K[⚖️ ODD Compliance Agent]
-    K --> L[📋 Report Generation Agent]
-    L --> M[📈 Final Analysis Report]
-    
-    style A fill:#e1f5ff
-    style C fill:#e1f5ff
-    style M fill:#c8e6c9
-    style D fill:#fff9c4
-    style F fill:#fff9c4
-    style H fill:#fff9c4
-    style E fill:#ffe0b2
-    style G fill:#ffe0b2
-    style I fill:#ffe0b2
-    style B fill:#f8bbd0
-    style J fill:#f8bbd0
-    style K fill:#f8bbd0
-    style L fill:#ffe0b2
-    style G fill:#ffe0b2
-    style H fill:#f8bbd0
-    ODD Spec** | flash-lite | Natural language description | Formal ODD specification | Define allowed/prohibited values, thresholds |
-| **Perception Loop** | 2.5-pro | Camera + BEV images | Per-window environment data | Classify lighting, terrain, obstacles |
-| **Perception Summary** | 2.5-pro | Loop results | Aggregated classification + sim/real | Synthesize environment, classify data source |
-| **Motion Loop** | 2.5-pro | Motion JSON (IMU data) | Per-window motion metrics | Analyze IMU accelerometer/gyroscope |
-| **Motion Summary** | 2.5-pro | Loop results | Overall motion statistics | Motion detection rate, stability assessment |
-| **Collision Loop** | 2.5-pro | Motion + Camera + LiDAR | Per-window risk assessment | Multimodal fusion for collision detection |
-| **Collision Summary** | 2.5-pro | Loop results | Risk statistics | Count alert/caution/safe events |
-| **COD Classifier** | flash-lite | Aggregated sensor data | Current operating domain | Synthesize what environment robot is in |
-| **ODD Compliance** | flash-lite | ODD spec + COD | Violation analysis | Compare COD vs ODD, detect violation
-| **Perception Loop** | 2.5-pro | Camera + BEV images | Per-window environment data | Classify lighting, terrain, obstacles |
-| **Perception Summary** | 2.5-pro | Loop results | Aggregated classification | Synthesize environment type with confidence |
-| **Motion Loop** | 2.5-pro | Motion JSON files | Per-window motion metrics | Extract speed, orientation, smoothness |
-| **Motion Summary** | 2.5-pro | Loop results | Overall motion statistics | Preserve complete data arrays |
-| **Collision Loop** | 2.5-pro | Motion + Camera + LiDAR | Per-window risk assessment | Multimodal fusion for collision detection |
-| **Collision Summary** | 2.5-pro | Loop results | Risk statistics | Count alert/caution/safe events |
-| **ODD Spec** | flash-lite | Aggregated features | Domain classification | Categorize operational axes |
-| **COD Compliance** | flash-lite | ODD spec + observations | Violation analysis | Compare actual vs design limits |
-| **Report** | 2.5-pro | All agent outputs | Markdown report + JSON | Generate human-readable findings |
-
-### Key Design Principles
-
-**� ODD-First Architecture** (Correct Workflow Order)
-```python
-# WRONG: Analyze sensors before defining constraints
-analyze_sensors() → classify_odd()  # ❌ Can't validate without specification
-
-# RIGHT: Define ODD specification first, then measure COD
-odd_spec_agent()         # Define allowed environments and thresholds
-↓
-analyze_sensors()        # Measure current conditions (COD)
-↓
-cod_classifier_agent()   # Classify what environment we're in
-↓
-odd_compliance_agent()   # Compare COD vs ODD for violations
-```
-
-**🔄 Loop + Summary Pattern** (Avoids Hallucinations)
-```python
-# WRONG: ADK tools returning image Part objects cause hallucinations
-def bad_tool():
-    return types.Part.from_bytes(image_data, mime_type="image/png")  # ❌
-
-# RIGHT: Tools call Gemini directly, return text/JSON
-async def good_tool(window_id: str, tool_context: ToolContext):
-    response = GENAI_CLIENT.models.generate_content(
-        model="gemini-2.5-pro",
-        contents=[
-            types.Part(text=prompt),
-            types.Part.from_bytes(data=camera_bytes, mime_type="image/png"),  # ✅
-        ]
-    )
-    return json.loads(response.text)  # Return structured data, not Part objects
-```
-
-**🎯 IMU-Based Motion Detection** (Robust to Sensor Failures)
-```python
-# WRONG: Rely on odometry (broken in simulation)
-velocity = motion_data["linear_velocity"]  # ❌ All zeros
-
-# RIGHT: Use IMU accelerometer/gyroscope
-horizontal_accel = sqrt(accel_x² + accel_y²)  # ✅ Real motion signature
-motion_detected = horizontal_accel > 0.05  # m/s² threshold
-```
-
-**🎯 Strategic Model Selection**
-- **Vision/Aggregation**: `gemini-2.5-pro` for accuracy and data preservation
-- **Simple Synthesis**: `gemini-2.0-flash-lite` for cost efficiency
-- **Result**: ~30% cost savings while maintaining quality
-
-**🔗 Sequential Orchestration**
-```python
-workflow = SequentialAgent(
-    name="OddWorkflow",
-    sub_agents=[
-        odd_spec_agent,           # 1. Define ODD constraints (no sensors)
-        perception_loop_agent,    # 2. Analyze camera+LiDAR (per window)
-        perception_summary_agent, # 3. Aggregate + classify sim/real
-        motion_loop_agent,        # 4. Analyze IMU (per window)
-        motion_summary_agent,     # 5. Motion detection statistics
-        collision_loop_agent,     # 6. Multimodal fusion (per window)
-        collision_summary_agent,  # 7. Risk statistics
-        cod_classifier_agent,     # 8. Classify current environment (COD)
-        odd_compliance_agent,     # 9. Compare COD vs ODD
-        report_agent,             # 10. Generate report
-    ]
-)
-```
+**Technical Innovation:**
+- **ODD-First Architecture**: Define safety constraints before analyzing data (not after)
+- **Parameterized Design**: No global state → fully isolated, parallel-safe execution
+- **IMU-Based Motion**: Robust motion detection using accelerometers (works when odometry fails)
+- **Cost-Optimized AI**: Smart model selection defaults to flash-lite (~70% cheaper than pro models)
 
 ---
 
 ## ⚡ Quick Start
 
-### 1️⃣ Install & Configure
+### 1️⃣ Install
 
 ```bash
 git clone https://github.com/danmartinez78/go2-odd-observer.git
 cd go2-odd-observer
 pip install -r requirements.txt
-
-# Create .env file with API key
-echo "GOOGLE_API_KEY=your-api-key-from-google-ai-studio" > .env
+echo "GOOGLE_API_KEY=your-api-key-here" > .env  # Get free key: https://aistudio.google.com
 ```
 
 ### 2️⃣ Run Analysis
 
 ```bash
-# Run full 10-agent workflow on test dataset (2 windows, ~1 minute)
+# Analyze test dataset (2 windows, ~1 minute)
 python scripts/odd_workflow.py
-
-# Output saved to: data/processed/runs/sim_run_test/odd_analysis_report.json
 ```
 
 ### 3️⃣ View Results
 
 ```bash
-# Quick summary
-jq '.report.executive_summary, .report.key_findings' \
-   data/processed/runs/sim_run_test/odd_analysis_report.json
-
-# Detailed compliance
+# See compliance status
 jq '.full_analysis.odd_compliance.odd_compliance' \
    data/processed/runs/sim_run_test/odd_analysis_report.json
 ```
 
-**Example output:**
+**Output:**
 ```json
 {
   "overall_compliance": "OUT_ODD",
-  "violations": [
-    "lighting_conditions",
-    "obstacle_density", 
-    "traversability",
-    "collision_risk"
-  ],
-  "categorical_compliance": {
-    "environment_type": "IN_ODD",
-    "lighting_conditions": "OUT_ODD",
-    "terrain_type": "IN_ODD"
-  },
-  "numeric_compliance": {
-    "speed_range": "IN_ODD",
-    "obstacle_density": "OUT_ODD",
-    "traversability": "OUT_ODD",
-    "collision_risk": "OUT_ODD"
-  }
+  "violations": ["obstacle_density", "collision_risk"],
+  "warnings": ["lighting_conditions"]
 }
 ```
 
-📚 **Detailed guide:** See [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md) for complete walkthrough.
+📚 **Full Setup Guide:** [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)
 
 ---
 
-## 📊 Example Analysis Results
+## 🤖 How It Works
 
-**Scenario:** Robot navigating cluttered indoor office (13 windows, 26 seconds)
+### 10-Agent Pipeline
 
-**Environment Classification:**
-- Collision Risk:**
-- Total windows: 13
-- Alert level: 8 windows (62%)
-- Caution level: 3 windows (23%)
-- Safe: 2 windows (15%)
+```mermaid
+graph LR
+    A[📝 ODD Spec<br/>Define Limits] --> B[👁️ Perception<br/>Camera+LiDAR]
+    B --> C[🎯 Motion<br/>IMU Analysis]
+    C --> D[⚠️ Collision<br/>Risk Fusion]
+    D --> E[🏷️ COD<br/>Classify Domain]
+    E --> F[⚖️ Compliance<br/>Check Violations]
+    F --> G[📋 Report<br/>Generate Summary]
+    
+    style A fill:#e3f2fd
+    style B fill:#fff9c4
+    style C fill:#fff9c4
+    style D fill:#ffccbc
+    style E fill:#f8bbd0
+    style F fill:#f8bbd0
+    style G fill:#c8e6c9
+```
 
-**Motion Analysis:**
-- Motion detected: 13/13 windows (100%)
-- Overall assessment: `high_activity`
-- Max horizontal acceleration: 0.98 m/s²
-- Max angular velocity: 0.86 rad/s
-- Alert level: 8 windows (62%)
-- Caution level: 3 windows (23%)
-- Safe: 2 windows (15%)
+### Multi-Modal Sensor Fusion
 
-**ODD Compliance:** `OUT_ODD`
-- ✅ Environment type: `IN_ODD`
-- ❌ Lighting conditions: `OUT_ODD` 
-- ✅ Terrain type: `IN_ODD`
-- ✅ Speed range: `IN_ODD`
-- ❌ Obstacle density: `OUT_ODD` (0.9 > 0.6 limit)
-- ❌ Traversability: `OUT_ODD` (0.2 < 0.5 minimum)
-- ❌ Collision risk: `OUT_ODD` (0.75 > 0.3 threshold)
+| Sensor | What We Extract | Why It Matters |
+|--------|----------------|----------------|
+| 📷 **Camera** | Environment type, lighting, obstacles | "Is this the indoor office we designed for?" |
+| 📡 **LiDAR** | Terrain roughness, traversability, density | "Can the robot physically navigate this space?" |
+| 🎯 **IMU** | Acceleration, rotation, platform stability | "Is the robot actually moving? Is it stable?" |
 
-**Key Findings:**
-> "The robot remained stationary for the entire duration due to being persistently blocked by furniture. Collision risk was assessed as 'alert' in over half of the windows, indicating high potential for collision if motion was commanded."
+**Smart Fusion:** AI agents combine all three to make holistic safety judgments.
 
-📁 **Full report:** [`docs/examples/example_report.json`](docs/examples/example_report.json)
+---
+
+## 🔬 Key Features
+
+### 1. Natural Language ODD Specification
+
+Define safety constraints in plain English - AI converts to formal specification:
+
+```python
+odd_description = """
+Quadruped robot designed for indoor office navigation.
+- Designed for: smooth floors, bright/dim lighting, low obstacles
+- Prohibited: outdoor, stairs, dark environments, dense clutter
+- Speed limit: 0-1.5 m/s
+- Collision risk threshold: <0.3 (low risk only)
+"""
+```
+
+### 2. Real-World Performance
+
+Tested on 26 seconds of robot operation (13 windows):
+- ✅ **100% motion detection** using IMU (even when odometry broken)
+- ⚠️ **8 collision warnings** detected from multimodal fusion
+- ❌ **4 ODD violations** flagged: lighting, obstacles, traversability, collision risk
+- 🎯 **95% confidence** environment classification (indoor office vs outdoor, etc.)
+
+### 3. Cost-Optimized Execution
+
+| Agent Type | Model | Cost |
+|------------|-------|------|
+| Vision Analysis | gemini-2.5-pro | Baseline |
+| Simple Synthesis | gemini-2.0-flash-lite | **70% cheaper** |
+
+**Result:** ~$0.01 per analysis (2 windows) or ~$0.05 per full run (13 windows)
+
+📊 **Details:** [docs/MODEL_SELECTION_GUIDE.md](docs/MODEL_SELECTION_GUIDE.md)
+
+---
+
+## 📊 Example Results
+
+**Scenario:** Robot in cluttered office (furniture, boxes, narrow aisles)
+
+### Violations Detected
 
 ```
-go2-odd-observer/
-├── .devcontainer/             # ROS2 Humble dev container config
-│   ├── devcontainer.json
-│   ├── Dockerfile
-│   ├── post-create.sh
-│   └── README.md
-├── data/
-│   ├── raw_rosbags/           # ROS2 bag files (gitignored)
-│   └── processed/
-│       ├── runs/              # Per-run window data
-│       │   ├── run_001/
-│       │   │   ├── motion_run_001_w000.json
-│       │   │   ├── cam_run_001_w000.png
-│       │   │   ├── bev_occupancy_run_001_w000.png
-│       │   │   ├── bev_height_run_001_w000.png
-│       │   │   ├── bev_density_run_001_w000.png
-│       │   │   ├── bev_roughness_run_001_w000.png
-│       │   │   └── index_run_001.csv
-│       │   └── run_002/
-│       └── manifest.csv       # Run metadata (sim/real tags)
-├── docs/
-│   └── images/                # Example outputs for documentation
-├── scripts/
-│   ├── extract_windows.py     # ROS2 bag → multi-modal time windows
-│   ├── generate_demo_data.py  # Generate synthetic demo data
-│   ├── demo_pipeline_local.py # Local testing with fake agents
-│   ├── render_bev.py          # Standalone BEV renderer (deprecated)
-│   └── utils_ros.py           # ROS2 utilities
-├── notebooks/
-│   ├── odd_cod_workflow.ipynb # Complete analysis workflow notebook
-│   └── README.md              # Notebook documentation
-├── odd_cod/
-│   ├── __init__.py
-│   ├── odd_spec_schema.py     # ODD schema definitions
-│   ├── cod_features.py        # COD numeric mappings
-│   ├── distance_metrics.py    # Distance computation
-│   └── config_example.py      # Example ODD specifications
-├── tests/
-│   └── test_distance_metrics.py
-├── LICENSE
-├── README.md
-├── requirements.txt
-├── project_plan.md
-└── .gitignore
+❌ OUT_ODD Violations (4):
+   • obstacle_density: 0.85 (limit: 0.60) - Too cluttered
+   • traversability: 0.25 (minimum: 0.50) - Space too narrow
+   • collision_risk: 0.75 (threshold: 0.30) - High collision likelihood
+   • lighting: "dim" (requires: "bright") - Insufficient visibility
+
+✅ IN_ODD (3):
+   • environment_type: indoor_office ✓
+   • terrain_type: smooth_floor ✓
+   • speed: 0.0 m/s (within 0-1.5 range) ✓
 ```
+
+### Key Findings
+
+> "Robot remained stationary due to persistent furniture blockage. Collision risk assessed as 'alert' in 8/13 windows (62%). Environment exceeds design obstacle density limits. **Recommendation:** Do not deploy in this configuration."
+
+📁 **Full Report:** [`docs/examples/example_report.json`](docs/examples/example_report.json)
 
 ---
 
@@ -339,437 +199,146 @@ go2-odd-observer/
 
 ```
 go2-odd-observer/
-├── �️ scripts/                      # All executable scripts
-│   ├── odd_workflow_full.py        # Main 9-agent sequential pipeline
-│   ├── multi_agent_image_adk_workflow.py  # Reference pattern
-│   ├── extract_windows.py          # ROS2 bag → time windows
-│   ├── render_bev.py               # LiDAR → bird's eye view
-│   ├── generate_demo_data.py       # Synthetic data generator
-│   ├── demo_pipeline_local.py      # Mock agent testing
-│   └── README.md                   # Scripts documentation
-├── 📓 notebooks/
-│   ├── odd_workflow_interactive.ipynb  # Interactive analysis (14 cells)
-│   └── README.md
-├── 🧪 agent_tests/                  # Individual agent prototypes
-│   ├── test_perception_agent.py
-│   ├── test_motion_agent.py
-│   ├── test_collision_agent.py
-│   └── test_odd_spec_agent.py
-├── 📦 odd_cod/                      # Core Python library
-│   ├── odd_spec_schema.py          # ODD definitions
-│   ├── cod_features.py             # Feature mappings
-│   └── distance_metrics.py         # Compliance computation
-├── 📁 data/                        # Organized data storage
-│   ├── raw_rosbags/                # ROS2 bag files (gitignored)
-│   │   ├── real/                   # Physical robot data
-│   │   └── sim/                    # Simulation data
-│   ├── processed/                  # Extracted windows
-│   │   ├── manifest.csv            # Scenario metadata
-│   │   └── runs/                   # Per-scenario results
-│   │       └── sim_run_new/        # Example: 13 windows
-│   │           ├── index_*.csv
-│   │           ├── motion_*.json
-│   │           ├── cam_*.png
-│   │           └── bev_occupancy_*.png
-│   ├── test/                       # Test fixtures
-│   │   ├── images/                 # Test images
-│   │   └── unit_test_data/         # Test JSON/CSV
-│   ├── development/                # Debug artifacts (gitignored)
-│   │   └── debug_frames/           # Debug images
-│   └── README.md                   # Data organization guide
-├── 📚 docs/
-│   ├── guides/                     # Project documentation
-│   │   ├── GETTING_STARTED.md      # Comprehensive setup guide
-│   │   ├── REFERENCE_multi_agent_pattern.md  # ADK pattern guide
-│   │   └── project_plan.md         # Development roadmap
-│   ├── examples/                   # Real output samples
-│   │   ├── example_report.json
-│   │   └── example_motion_window.json
-│   ├── MODEL_SELECTION_GUIDE.md    # Cost optimization
-│   └── images/
-├── 🧬 go2_ros2_sdk/                # ROS2 robot SDK (submodule)
-├── README.md                       # This file
-├── requirements.txt                # Python dependencies
-└── LICENSE                         # MIT License
+├── odd_agents/              # Core AI agent module (parameterized, no global state)
+│   ├── agents/              # 10 agent implementations (perception, motion, etc.)
+│   ├── tools/               # Agent tool functions (Gemini API wrappers)
+│   └── workflow.py          # Pipeline orchestration
+├── scripts/
+│   ├── odd_workflow.py      # Main production script (50 lines)
+│   └── extract_windows.py   # ROS2 bag → time windows converter
+├── notebooks/
+│   └── odd_analysis_demo.ipynb  # Interactive analysis with visualizations
+├── tests/                   # Unit tests for each agent
+├── data/
+│   └── processed/runs/      # Scenario datasets (sim_run_test, sim_run_new)
+└── docs/
+    ├── guides/              # Setup, usage, patterns
+    ├── examples/            # Sample reports
+    └── MODEL_SELECTION_GUIDE.md
 ```
-
----
-
-## 🔬 How It Works
-
-### Data Pipeline
-
-```mermaid
-graph LR
-    A[🤖 Go2 Robot] -->|ROS2 Topics| B[📦 Rosbag]
-    B -->|extract_windows.py| C[⏱️ Time Windows]
-    C --> D[📊 Motion JSON]
-    C --> E[📷 Camera PNG]
-    C --> F[📡 LiDAR BEV]
-    D --> G[🧠 AI Agents]
-    E --> G
-    F --> G
-    G --> H[📋 Analysis Report]
-```
-
-### Agent Workflow
-
-**Loop + Summary Pattern** (prevents hallucinations):
-
-1. **Loop Agent**: Process each window individually
-   ```python
-   for window_id in windows:
-       result = analyze_window_tool(window_id)
-       results.append(result)
-   ```
-
-2. **Summary Agent**: Aggregate with structure preservation
-   ```python
-   summary = {
-       "windows_analyzed": window_ids,
-       "overall_stats": compute_statistics(results),
-       "per_window_data": results  # Complete array preserved
-   }
-   ```
-
-### Multi-Modal Fusion Example
-
-**Collision Detection** combines three modalities:
-
-```python
-# Motion analysis
-motion_risk = assess_velocity_changes(motion_json)
-
-# Visual analysis  
-visual_risk = detect_obstacles_in_path(camera_image)
-
-# Geometric analysis
-lidar_risk = compute_clearance_from_bev(bev_image)
-
-# Fusion
-final_risk = multimodal_fusion(motion_risk, visual_risk, lidar_risk)
-```
-
----
-
-## 🎯 Key Features Deep Dive
-
-### 1. Multi-Modal Sensor Processing
-
-**Camera Analysis** (Gemini 2.5 Pro vision)
-- Environment classification (indoor_office, outdoor_urban, etc.)
-- Lighting assessment (bright/dim/dark)
-- Human detection and proximity
-- Obstacle identification
-- **Sim vs real classification** based on texture/lighting/noise characteristics
-
-**LiDAR Processing** (Bird's Eye View)
-- Terrain roughness classification
-- Obstacle density mapping  
-- Traversability scoring
-- Occupancy grid generation
-
-**IMU-Based Motion Analysis** (Accelerometer/Gyroscope)
-- Horizontal acceleration magnitude (√(accel_x² + accel_y²))
-- Angular velocity (gyroscope yaw rotation)
-- Platform stability (roll/pitch orientation)
-- Motion type classification (stationary/rotation/translation/complex)
-- **Thresholds**: >0.05 m/s² motion detected, >0.1 rad/s rotation, >15° unstable
-
-### 2. ODD/COD Compliance Framework
-
-**Key Terminology:**
-- **ODD (Operational Design Domain)**: Environment the robot is **designed** for (specification)
-- **COD (Current Operating Domain)**: Environment the robot is **actually** in (measured from sensors)
-- **ODD Compliance**: Comparison of COD against ODD to detect violations
-
-**Workflow Order:**
-1. **ODD Specification**: Define allowed environments, thresholds (from natural language description)
-2. **COD Measurement**: Analyze sensors to determine current conditions
-3. **Compliance Check**: Compare COD vs ODD for violations
-
-**Categorical Axes:**
-- Environment type: indoor_office, outdoor_urban, etc.
-- Lighting: bright, dim, dark
-- Terrain: smooth, moderate, rough, very_rough
-
-**Numeric Axes:**
-- Speed range: [0.0, 1.5] m/s (design limits)
-- Obstacle density: [0.0, 0.6] (normalized)
-- Traversability: [0.5, 1.0] (0=impassable, 1=clear)
-- Collision risk: [0.0, 0.3] (likelihood score)
-
-**IMU motion detection | 2.5-pro | Interpret raw sensor arrays | Base cost |
-| Data aggregation | 2.5-pro | Preserves complex structures | Base cost |
-| Multimodal fusion | 2.5-pro | Sophisticated reasoning | Base cost |
-| ODD specification | flash-lite | Convert NL to structured spec | **70% cheaper** |
-| COD classification | flash-lite | Synthesize sensor summaries | **70% cheaper** |
-| ODD compliance | flash-lite | Compare COD vs ODD
-- `OUT_ODD`: Exceeds operational envelope (violation)
-
-### 3. Cost-Optimized Model Selection
-
-| Task | Model | Rationale | Cost Impact |
-|------|-------|-----------|-------------|
-| Vision analysis | 2.5-pro | Accurate scene understanding | Base cost |
-| Data aggregation | 2.5-pro | Preserves complex structures | Base cost |
-| Multimodal fusion | 2.5-pro | Sophisticated reasoning | Base cost |
-| Simple synthesis | flash-lite | JSON-to-JSON transformation | **70% cheaper** |
-
-**Result:** ~30% overall cost savings while maintaining quality
-Provide natural language description as parameter:
-
-```python
-custom_odd = """
-A quadruped robot designed for outdoor rugged terrain navigation.
-The robot can operate in:
-- Environment: outdoor trails, rocky terrain, forests
-- Lighting: bright daylight or dim conditions (not complete darkness)
-- Terrain: rough, very rough, moderate slopes
-- Speed: 0 to 2.0 m/s
-- Obstacles: high density acceptable, designed for cluttered environments
-- Collision risk: up to 0.5 acceptable (robust design)
-"""
-
-result = await run_odd_workflow(
-    scenario_name="outdoor_trail_test",
-    nl_odd_description=custom_odd
-)
-```
-
-**Default ODD** (used if not provided):
-```python
-# Indoor office quadruped robot
-- Environment: indoor_office, indoor_corridor
-- Lighting: bright, dim (requires adequate lighting)
-- Terrain: smooth_floor (designed for smooth surfaces)
-- Speed: [0.0, 1.5] m/s
-- Obstacle density: [0.0, 0.6] (moderate)
-- Traversability: [0.5, 1.0] (navigable space required)
-- Collision DD Specification
-
-Edit agent instructions in `scripts/odd_workflow_full.py`:
-
-```python
-# COD Agent instruction (lines 512-567)
-DESIGN_PARAMETERS (expected ODD):
-- environment_type: indoor_office, indoor_corridor (designed for indoor only)
-- lighting_conditions: bright, dim (requires adequate lighting)
-- terrain_type: smooth_floor (designed for smooth surfaces only)
-- speed_range: [0.0, 1.5] m/s (max design speed)
-- obstacle_density: [0.0, 0.6] (moderate obstacles)
-- traversability: [0.5, 1.0] (requires navigable space)
-- collision_risk: [0.0, 0.3] (low risk threshold)
-```
-
-### Process Your Own ROS2 Data
-
-```bash
-# Extract windows from your rosbag
-python scripts/extract_windows.py \
-  --rosbag data/raw_rosbags/real/my_deployment.db3 \
-  --output data/processed/runs/my_scenario \
-  --run-id my_scenario \
-  --window-length 2.0 \
-  --stride 1.0
-
-# Update scenario path in scripts/odd_workflow_full.py
-SCENARIO_PATH = DATA_DIR / "my_scenario"
-
-# Run analysis
-python scripts/odd_workflow_full.py
-```
-
-### Interactive Notebook Analysis
-
-```bash
-jupyter notebook notebooks/odd_workflow_interactive.ipynb
-```
-
-**Notebook features:**
-- 📊 Collision risk timeline visualization
-- 📈 Perception metrics distribution
-- 🎯 COD compliance dashboard
-- 💾 Export to PDF/HTML
-
-### Batch Processing
-
-```python
-# Process multiple scenarios
-scenarios = ["office_morning", "office_afternoon", "warehouse_test"]
-
-for scenario in scenarios:
-    SCENARIO_PATH = DATA_DIR / scenario
-    result = asyncio.run(run_odd_workflow(scenario))
-    
-    # Compare results
-    compare_compliance(results)
-```
-
----
-
-## 🧪 Testing & Validation
-
-### Run Unit Tests
-
-```bash
-# Core distance metrics
-pytest tests/test_distance_metrics.py -v
-
-# Motion detection (IMU-based)
-python tests/test_motion_agent.py
-
-# Expected: 100% motion detection rate
-```
-
-### Test Individual Agents + sim/real classification)
-python tests/test_perception_agent.py
-
-# Motion agent (IMU accelerometer/gyroscope)
-python tests/test_motion_agent.py
-
-# Collision agent (multimodal fusion)
-python tests/test_collision_agent.py
-
-# ODD spec agent (NL to formal specification)
-python tests/test_collision_agent.py
-
-# ODD spec agent (domain classification)
-python agent_tests/test_odd_spec_agent.py
-```
-
-### Validate Data Pipeline
-
-```bash
-# Check window extraction
-python scripts/extract_windows.py --help
-
-# Verify output structure
-ls -lh data/processed/runs/sim_run_new/
-```
-
----
-
-## 📈 Performance Metest` (2 windows for quick testing) or `sim_run_new` (13 windows, 26 seconds)
-- Total API calls: ~140 per 13-window run (14 calls per window × 10 agents)
-- Execution time: 2-3 minutes for 13 windows
-- Cost per run: ~$0.05 (with 30% optimization)
-
-**Accuracy Validation:**
-- Environment classification: 95% confidence (indoor_office)
-- Data source classification: 95% confidence (simulation)
-- Motion detection: 100% rate (IMU-based)
-- Collision detection: 8/13 windows correctly identified as high-risk
-- Motion analysis: IMU shows 0.93-0.98 m/s² acceleration (odometry broken)
-- Environment classification: 95% confidence (indoor_office)
-- Collision detection: 8/13 windows correctly identified as high-risk
-- Motion analysis: Sub-0.1 m/s error vs ground truth
-- Traversability scoring: Aligned with manual assessment
-
-**Scalability:**
-- Max tested: 50 windows (100 seconds)
-- Memory usage: <500 MB
-- Suitable for: Real-time post-mission analysis
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how to get started:
-
-### Development Setup
-
-```bash
-# Fork and clone
-git clone https://github.com/YOUR_USERNAME/go2-odd-observer.git
-cd go2-odd-observer
-
-# Create feature branch
-git checkout -b feature/my-improvement
-
-# Install dev dependencies
-pip install -r requirements.txt
-pip install pytest black flake8
-
-# Make changes and test
-pytest tests/
-black odd_cod/ scripts/
-flake8 odd_cod/ --max-line-length=100
-
-# Commit and push
-git add .
-git commit -m "Add feature: description"
-git push origin feature/my-improvement
-``` (GPS, ultrasonic, etc.)
-- 📊 Implement automated benchmarking and LLM-as-judge evaluation
-- 📝 Improve documentation with more examples (outdoor, aerial, warehouse)
-- 🧪 Add integration tests for full 10-agent workflow
-- 🔧 Optimize prompt engineering for better IMU interpretation
-- 🌍 Add generalization guide for other robot platform
-- 🤖 Extend agents for additional sensor modalities
-- 📊 Implement automated benchmarking
-- 📝 Improve documentation with more examples
-- 🧪 Add integration tests for full workflow
-- 🔧 Optimize prompt engineering for better results
 
 ---
 
 ## 📚 Documentation
 
-- **[docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)** - Complete setup and usage guide
-- **[docs/guides/REFERENCE_multi_agent_pattern.md](docs/guides/REFERENCE_multi_agent_pattern.md)** - ADK pattern reference
-- **[docs/guides/project_plan.md](docs/guides/project_plan.md)** - Development roadmap
-- **[docs/MODEL_SELECTION_GUIDE.md](docs/MODEL_SELECTION_GUIDE.md)** - Cost optimization strategies
-- **[docs/examples/](docs/examples/)** - Real output samples and schemas
-- **[scripts/README.md](scripts/README.md)** - Scripts documentation
-- **[notebooks/README.md](notebooks/README.md)** - Interactive notebook guide
+| Document | Description |
+|----------|-------------|
+| [**Getting Started**](docs/guides/GETTING_STARTED.md) | Complete setup, usage examples, troubleshooting |
+| [**Model Selection**](docs/MODEL_SELECTION_GUIDE.md) | Cost optimization, when to use flash-lite vs 2.5-pro |
+| [**Scripts Guide**](scripts/README.md) | Extract windows, render visualizations, generate data |
+| [**Notebooks Guide**](notebooks/README.md) | Interactive analysis, visualizations, exports |
+| [**Module API**](odd_agents/README.md) | Parameterized workflow API reference |
+
+---
+
+## 🛠️ Use Cases
+
+### Validate New Deployment Site
+
+```bash
+# Extract windows from deployment test run
+python scripts/extract_windows.py --rosbag my_site_test.db3 --output data/processed/runs/site_test
+
+# Analyze (edit scripts/odd_workflow.py: SCENARIO_PATH = "site_test")
+python scripts/odd_workflow.py
+
+# Check compliance
+jq '.full_analysis.odd_compliance.odd_compliance.overall_compliance' \
+   data/processed/runs/site_test/odd_analysis_report.json
+# Output: "IN_ODD" ✅ or "OUT_ODD" ❌
+```
+
+### Post-Incident Analysis
+
+```bash
+# Extract windows around incident timestamp
+python scripts/extract_windows.py --rosbag incident_2025_11_21.db3 --output data/processed/runs/incident
+
+# Run analysis
+python scripts/odd_workflow.py
+
+# Find what went wrong
+jq '.full_analysis.odd_compliance.odd_compliance.violations' \
+   data/processed/runs/incident/odd_analysis_report.json
+```
+
+### Custom ODD for Different Robots
+
+```python
+# Outdoor delivery robot ODD
+outdoor_odd = """
+Delivery robot for outdoor sidewalk navigation.
+- Designed for: outdoor_urban, concrete/asphalt, moderate slopes
+- Lighting: bright daylight to dusk (requires daylight)
+- Speed: 0-3.0 m/s
+- Obstacles: moderate density OK (designed for pedestrians)
+- Weather: dry conditions only
+"""
+
+result = await run_odd_workflow(
+    scenario_path="outdoor_test",
+    nl_odd_description=outdoor_odd
+)
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Test individual agents
+python tests/test_perception_agent.py
+python tests/test_motion_agent.py
+python tests/test_collision_agent.py
+
+# Run unit tests
+pytest tests/ -v
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**Ideas for contributions:**
+- 📡 Add support for new sensor modalities (GPS, ultrasonic, radar)
+- 🤖 Generalize for other robot platforms (drones, warehouse AMRs, cars)
+- 📊 Implement LLM-as-judge evaluation benchmarks
+- 📝 Improve documentation with domain-specific examples
 
 ---
 
 ## 🏆 Acknowledgments
 
-This project was developed as a capstone for the **[Kaggle 5-Day Agents Intensive](https://www.kaggle.com/learn-guide/5-day-agents)** program.
+Built for the **[Kaggle 5-Day Agents Intensive](https://www.kaggle.com/learn-guide/5-day-agents)** program.
 
-**Special thanks to:**
-- **Google Gemini Team** - For the powerful multimodal AI models
-- **Kaggle Community** - For the excellent agents course content
-- **Unitree Robotics** - For the Go2 platform
-- **ROS2 Community** - For the robust robotics middleware
+**Powered by:**
+- 🧠 **Google Gemini 2.5 Pro & 2.0 Flash** - Multimodal AI models
+- 🔧 **Google ADK (Agent Development Kit)** - Agent orchestration framework
+- 🤖 **Unitree Go2** - Quadruped robot platform
+- 🔗 **ROS2 Humble** - Robotics middleware
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
-## 📧 Contact & Support
+## 📧 Contact
 
 **Author:** Dan Martinez  
-**GitHub:** [@danmartinez78](https://github.com/danmartinez78)
-
-**Questions or Issues?**
-- 🐛 Bug reports: [Open an issue](https://github.com/danmartinez78/go2-odd-observer/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/danmartinez78/go2-odd-observer/discussions)
-- 📧 Email: See GitHub profile
-
----
-
-## ⭐ Show Your Support
-
-If you find this project useful:
-- ⭐ Star the repository
-- 🐦 Share on social media
-- 📝 Write a blog post about your experience
-- 🤝 Contribute improvements
+**GitHub:** [@danmartinez78](https://github.com/danmartinez78)  
+**Issues:** [github.com/danmartinez78/go2-odd-observer/issues](https://github.com/danmartinez78/go2-odd-observer/issues)
 
 ---
 
 <div align="center">
 
-**Built with ❤️ using Google ADK and Gemini 2.5 Pro**
+**⭐ Star this repo if you find it useful!**
 
-[🏠 Home](https://github.com/danmartinez78/go2-odd-observer) • [📚 Docs](docs/guides/GETTING_STARTED.md) • [🐛 Issues](https://github.com/danmartinez78/go2-odd-observer/issues) • [💬 Discussions](https://github.com/danmartinez78/go2-odd-observer/discussions)
+[🏠 Home](https://github.com/danmartinez78/go2-odd-observer) • [📚 Docs](docs/guides/GETTING_STARTED.md) • [🐛 Issues](https://github.com/danmartinez78/go2-odd-observer/issues)
 
 </div>
