@@ -162,7 +162,7 @@ perception/
 ├── perception_agent.py                 # Agent export for ADK
 ├── perception_agent.test.json          # EvalSet test cases
 ├── test_config.json                    # Main config (tool + rubric)
-├── test_config_tool_only.json          # Fast validation config
+├── test_config_tool_traj.json          # Fast validation config
 ├── test_config_rubric_only.json        # Quality-only config
 ├── test_config_comprehensive.json      # Full validation config
 └── test_config_response_only.json      # Legacy config
@@ -248,7 +248,7 @@ perception/
 ```
 Runtime: ~80-90s, Validates: Orchestration + quality
 
-**test_config_tool_only.json**:
+**test_config_tool_traj.json**:
 ```json
 {
   "criteria": [
