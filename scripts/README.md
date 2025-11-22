@@ -8,20 +8,42 @@ Executable scripts for the Go2 ODD Observer project.
 
 ### `odd_workflow.py` - **CURRENT** Production Script
 
-**Purpose**: Run complete ODD/COD analysis using the shared `odd_agents` module.
+**Purpose**: Run complete ODD/COD analysis using the parameterized `odd_agents` module.
 
 **Usage**:
 ```bash
+# Set up API key in .env file (one time)
+echo "GOOGLE_API_KEY=your-key-here" > .env
+
+# Run analysis
 python scripts/odd_workflow.py
 ```
 
 **What it does**:
 - Analyzes multi-modal sensor data (camera, LiDAR, IMU)
-- Runs 10-agent sequential pipeline
+- Runs 10-agent sequential pipeline with parameterized workflow
+- No global state - fully isolated execution
+- Defaults to `gemini-2.0-flash-lite` for all agents
 - Generates comprehensive ODD compliance report
 - Outputs to: `data/processed/runs/{scenario}/odd_analysis_report.json`
 
-**Source code**: Only 40 lines - imports from `odd_agents` module (single source of truth)
+**Source code**: Clean ~50 lines - imports from `odd_agents` module (single source of truth)
+
+**Configuration**:
+```python
+# Edit odd_workflow.py to customize:
+SCENARIO_PATH = DATA_DIR / "sim_run_test"  # Change scenario
+nl_odd_description = "..."  # Custom ODD specification
+
+# Use default models (flash-lite) or override:
+result = await run_odd_workflow(
+    scenario_path=SCENARIO_PATH,
+    genai_client=client,
+    api_key=api_key,
+    model_perception="gemini-2.5-pro",  # Override specific agents
+    # ... other model_* parameters
+)
+```
 
 **Agents**: ODD Spec → Perception Loop/Summary → Motion Loop/Summary → Collision Loop/Summary → COD Classifier → ODD Compliance → Report
 
@@ -147,15 +169,15 @@ To extract additional sensor data:
 2. Add deserialization logic in `utils_ros.py`
 ---
 
-## 📦 Archived Scripts
+## � Archived Scripts
 
-The `archive/` directory contains superseded implementations:
+Superseded implementations moved to [`../.archive/scripts/`](../.archive/scripts/):
 
-- `odd_workflow_full.py` - Original monolithic workflow (857 lines)
+- `odd_workflow_full.py` - Original monolithic workflow (857 lines, pre-parameterization)
 - `odd_workflow_full.py.backup` - Golden reference backup
 - `multi_agent_image_adk_workflow.py` - Original loop+summary pattern reference
 
-**Note**: Archived for reference only. Use `odd_workflow.py` and the `odd_agents` module instead.
+**Note**: Archived for historical reference. Use current `odd_workflow.py` and the `odd_agents` module instead.
 
 ---
 
@@ -172,23 +194,12 @@ The `archive/` directory contains superseded implementations:
 
 ## 📚 Related Documentation
 
-- **Module architecture**: `../docs/FACTORY_PATTERN.md`
+- **Module architecture**: `../docs/MODEL_SELECTION_GUIDE.md`
+- **Module API**: `../odd_agents/README.md`
 - **Agent implementations**: `../odd_agents/agents/`
 - **Workflow orchestration**: `../odd_agents/workflow.py`
 - **Interactive analysis**: `../notebooks/odd_analysis_demo.ipynb`
-- **Getting started**: `../docs/guides/xtract_windows.py` | `--rosbag`, `--output`, `--window-length` |
-| Generate test data | `generate_demo_data.py` | None (uses defaults) |
-| Validate pipeline | `demo_pipeline_local.py` | None (auto-detects demo data) |
-| Debug BEV rendering | `render_bev.py` | Standalone usage with point cloud file |
-
----
-
-## 📚 Related Documentation
-
-- **Data format specs**: See `docs/examples/README.md`
-- **Agent workflow**: See `odd_workflow_full.py` and `agent_tests/`
-- **Interactive analysis**: See `notebooks/odd_workflow_interactive.ipynb`
-- **Complete setup**: See `GETTING_STARTED.md`
+- **Getting started**: `../docs/guides/GETTING_STARTED.md`
 
 ---
 
@@ -208,6 +219,7 @@ The `archive/` directory contains superseded implementations:
 - Adjust BEV range parameters
 
 **Issue**: "Workflow fails"
-- **Solution**: Check API key: `echo $GOOGLE_API_KEY`
-- Verify scenario data exists: `ls data/processed/runs/`
-- Check for errors in agent outputs
+- **Solution**: Check .env file: `cat .env` (should have GOOGLE_API_KEY)
+- Or set environment variable: `export GOOGLE_API_KEY="your-key"`
+- Verify scenario data exists: `ls data/processed/runs/sim_run_test/`
+- Check for errors in agent outputs (review terminal output)

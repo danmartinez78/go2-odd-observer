@@ -17,16 +17,18 @@
 
 ## 🎯 What This Does
 
-Imagine deploying a quadruped robot in an office building. **How do you know if the environment is safe?** This system uses **10 specialized AI agents** to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically determine:
+Imagine deploying a quadruped robot in an office building. **How do you know if the environment is safe?** This system uses **10 specialized AI agents** with a parameterized architecture to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically determine:
 
 ✅ Is the robot operating within its **Operational Design Domain (ODD)**?  
 ⚠️ Are conditions approaching **safety boundaries**?  
 ❌ Has the robot **exceeded design limits**?  
 
-**Key Innovation**: 
-- **ODD vs COD Framework**: Separates design constraints (ODD) from measured conditions (COD) for rigorous compliance checking
+**Key Innovations**: 
+- **Parameterized Factory Pattern**: No global state, fully isolated workflow execution
+- **ODD-First Architecture**: Separates design constraints (ODD) from measured conditions (COD)
 - **Continuous Distance Metrics**: Quantifies *how far* actual conditions deviate from specifications
 - **IMU-Based Motion Detection**: Robust motion analysis using accelerometer/gyroscope when odometry fails
+- **Per-Agent Model Selection**: Optimize costs by choosing models per agent type
 
 ---
 
@@ -39,7 +41,7 @@ Leverages the latest **Agent Development Kit (ADK)** patterns from Google's AI p
 - **ODD-First Architecture**: Specifies design constraints before analyzing sensor data
 - **Loop + Summary Pattern**: Proven architecture that avoids vision hallucinations
 - **Direct Multimodal Calls**: Tools invoke Gemini with `types.Part.from_bytes` for images
-- **Cost-Optimized Model Selection**: Strategic use of 2.5-pro vs flash-lite (~30% savings)
+- **Cost-Optimized Model Selection**: Defaults to flash-lite, selective 2.5-pro upgrades (~baseline cost)
 
 ### 📊 Real-World Performance
 
@@ -196,16 +198,18 @@ workflow = SequentialAgent(
 git clone https://github.com/danmartinez78/go2-odd-observer.git
 cd go2-odd-observer
 pip install -r requirements.txt
-export GOOGLE_API_KEY="your-api-key-from-google-ai-studio"
+
+# Create .env file with API key
+echo "GOOGLE_API_KEY=your-api-key-from-google-ai-studio" > .env
 ```
 
 ### 2️⃣ Run Analysis
 
-```bash10
-# Run full 9-agent workflow on example dataset (13 windows, ~2 minutes)
-python scripts/odd_workflow_full.py
+```bash
+# Run full 10-agent workflow on test dataset (2 windows, ~1 minute)
+python scripts/odd_workflow.py
 
-# Output saved to: data/processed/runs/sim_run_new/odd_analysis_report.json
+# Output saved to: data/processed/runs/sim_run_test/odd_analysis_report.json
 ```
 
 ### 3️⃣ View Results
@@ -213,18 +217,16 @@ python scripts/odd_workflow_full.py
 ```bash
 # Quick summary
 jq '.report.executive_summary, .report.key_findings' \
-   data/processed/runs/sim_run_new/odd_analysis_report.json
+   data/processed/runs/sim_run_test/odd_analysis_report.json
 
 # Detailed compliance
-jq '.full_analysis.cod.cod_analysis' \
-   data/processed/runs/sim_run_new/odd_analysis_report.json
+jq '.full_analysis.odd_compliance.odd_compliance' \
+   data/processed/runs/sim_run_test/odd_analysis_report.json
 ```
 
 **Example output:**
 ```json
 {
-  "data_source": "simulation",
-  "data_source_confidence": 0.95,
   "overall_compliance": "OUT_ODD",
   "violations": [
     "lighting_conditions",
@@ -236,6 +238,12 @@ jq '.full_analysis.cod.cod_analysis' \
     "environment_type": "IN_ODD",
     "lighting_conditions": "OUT_ODD",
     "terrain_type": "IN_ODD"
+  },
+  "numeric_compliance": {
+    "speed_range": "IN_ODD",
+    "obstacle_density": "OUT_ODD",
+    "traversability": "OUT_ODD",
+    "collision_risk": "OUT_ODD"
   }
 }
 ```
