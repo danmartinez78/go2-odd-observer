@@ -4,11 +4,12 @@ Extracted from odd_workflow_full.py (reference implementation).
 """
 
 import json
+from pathlib import Path
 from typing import Optional, Dict, Any
 from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
+from google.genai import Client
 
-from .config import DATA_DIR, set_scenario
 from .utils import extract_json_block
 from .agents import (
     create_odd_spec_agent,
@@ -28,21 +29,44 @@ from .agents import (
 # FULL WORKFLOW
 # =============================================================================
 
-def create_odd_workflow() -> SequentialAgent:
-    """Create a new ODD workflow instance with fresh agent instances."""
+def create_odd_workflow(
+    scenario_path: str,
+    genai_client: Client,
+    api_key: str,
+    model_perception: str = "gemini-2.5-pro",
+    model_motion: str = "gemini-2.0-flash-lite",
+    model_collision: str = "gemini-2.0-flash-lite",
+    model_odd_spec: str = "gemini-2.0-flash-lite",
+    model_cod: str = "gemini-2.0-flash-lite",
+    model_report: str = "gemini-2.0-flash-lite",
+) -> SequentialAgent:
+    """Create a new ODD workflow instance with fresh agent instances.
+
+    Args:
+        scenario_path: Path to the scenario directory
+        genai_client: Google GenAI client instance
+        api_key: Google API key
+        model_*: Model names for each agent (defaults to gemini-2.0-flash-exp)
+
+    Returns:
+        SequentialAgent workflow instance
+    """
     return SequentialAgent(
         name="OddWorkflow",
         sub_agents=[
-            create_odd_spec_agent(),            # 1. Define ODD specification from NL
-            create_perception_loop_agent(),     # 2. Analyze perception (current conditions)
-            create_perception_summary_agent(),
-            create_motion_loop_agent(),         # 3. Analyze motion (current conditions)
-            create_motion_summary_agent(),
-            create_collision_loop_agent(),      # 4. Analyze collision (current conditions)
-            create_collision_summary_agent(),
-            create_cod_classifier_agent(),      # 5. Classify current operating domain (COD)
-            create_odd_compliance_agent(),      # 6. Compare COD vs ODD (violations)
-            create_report_agent(),              # 7. Generate final report
+            create_odd_spec_agent(api_key, model_odd_spec),
+            create_perception_loop_agent(
+                scenario_path, genai_client, model_perception, api_key),
+            create_perception_summary_agent(api_key, model_perception),
+            create_motion_loop_agent(
+                scenario_path, genai_client, model_motion, api_key),
+            create_motion_summary_agent(api_key, model_motion),
+            create_collision_loop_agent(
+                scenario_path, genai_client, model_collision, api_key),
+            create_collision_summary_agent(api_key, model_collision),
+            create_cod_classifier_agent(api_key, model_cod),
+            create_odd_compliance_agent(api_key, model_cod),
+            create_report_agent(api_key, model_report),
         ],
     )
 
@@ -61,23 +85,34 @@ def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
 
 
 async def run_odd_workflow(
-    scenario_name: str = "sim_run_new",
-    nl_odd_description: Optional[str] = None
+    scenario_path: str,
+    genai_client: Client,
+    api_key: str,
+    nl_odd_description: Optional[str] = None,
+    model_perception: str = "gemini-2.0-flash-lite",
+    model_motion: str = "gemini-2.0-flash-lite",
+    model_collision: str = "gemini-2.0-flash-lite",
+    model_odd_spec: str = "gemini-2.0-flash-lite",
+    model_cod: str = "gemini-2.0-flash-lite",
+    model_report: str = "gemini-2.0-flash-lite",
 ) -> Optional[Dict[str, Any]]:
     """Run the complete ODD analysis workflow.
 
     Args:
-        scenario_name: Name of the scenario to analyze
+        scenario_path: Path to the scenario directory (e.g., "data/processed/runs/sim_run_new")
+        genai_client: Google GenAI client instance
+        api_key: Google API key
         nl_odd_description: Natural language ODD description. If None, uses default.
+        model_*: Model names for each agent (defaults to gemini-2.0-flash-exp)
 
     Returns:
         Dictionary containing the final analysis report, or None if failed.
     """
-    # Set the scenario path (updates global config)
-    scenario_path = set_scenario(scenario_name)
+    scenario_path_obj = Path(scenario_path)
+    scenario_name = scenario_path_obj.name
 
-    if not scenario_path.exists():
-        print(f"❌ Scenario not found: {scenario_name}")
+    if not scenario_path_obj.exists():
+        print(f"❌ Scenario not found: {scenario_path}")
         return None
 
     # Default ODD description
@@ -103,7 +138,17 @@ async def run_odd_workflow(
     )
 
     # Create fresh workflow instance
-    odd_workflow = create_odd_workflow()
+    odd_workflow = create_odd_workflow(
+        scenario_path=scenario_path,
+        genai_client=genai_client,
+        api_key=api_key,
+        model_perception=model_perception,
+        model_motion=model_motion,
+        model_collision=model_collision,
+        model_odd_spec=model_odd_spec,
+        model_cod=model_cod,
+        model_report=model_report,
+    )
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
     events = await runner.run_debug(user_query)
 
@@ -114,7 +159,7 @@ async def run_odd_workflow(
         print(json.dumps(report, indent=2))
 
         # Save report to file
-        output_file = scenario_path / "odd_analysis_report.json"
+        output_file = scenario_path_obj / "odd_analysis_report.json"
         with open(output_file, 'w') as f:
             json.dump(report, f, indent=2)
         print(f"\n📄 Report saved to: {output_file}")

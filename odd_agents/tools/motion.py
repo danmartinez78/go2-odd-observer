@@ -1,56 +1,73 @@
 """
 Motion analysis tools.
-Extracted from odd_workflow_full.py (reference implementation).
+Factory functions that create tools with specific configuration.
 """
 
 import json
 import math
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Union
 from google.adk.tools import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
+from google import genai
 
-from ..config import SCENARIO_PATH, GENAI_CLIENT, GEMINI_MODEL_MOTION
 from ..utils import extract_json_block
 
 
-async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
-    """Tool: run a direct Gemini call to analyze raw IMU motion sensor data."""
-    try:
-        scenario_name = SCENARIO_PATH.name
-        motion_file = SCENARIO_PATH / \
-            f"motion_{scenario_name}_w{window_id}.json"
+def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
+    """
+    Create motion analysis tools for a specific scenario.
 
-        if not motion_file.exists():
-            return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
+    Args:
+        scenario_path: Path to scenario directory (string or Path object)
+        genai_client: Configured Gemini client
+        model: Model name to use for motion analysis
 
-        with open(motion_file, 'r') as f:
-            motion_data = json.load(f)
+    Returns:
+        FunctionTool for motion analysis
+    """
+    # Ensure scenario_path is a Path object
+    scenario_path = Path(scenario_path) if isinstance(
+        scenario_path, str) else scenario_path
 
-        # Calculate summary statistics for the prompt
-        accel_x = motion_data["accel_x"]
-        accel_y = motion_data["accel_y"]
-        gyro_z = motion_data["gyro_z"]
-        roll = motion_data["roll"]
-        pitch = motion_data["pitch"]
+    async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
+        """Tool: run a direct Gemini call to analyze raw IMU motion sensor data."""
+        try:
+            scenario_name = scenario_path.name
+            motion_file = scenario_path / \
+                f"motion_{scenario_name}_w{window_id}.json"
 
-        # Calculate horizontal acceleration magnitude
-        horiz_accel = [math.sqrt(ax**2 + ay**2)
-                       for ax, ay in zip(accel_x, accel_y)]
-        peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
-        avg_horiz_accel = sum(horiz_accel) / \
-            len(horiz_accel) if horiz_accel else 0.0
+            if not motion_file.exists():
+                return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
 
-        # Calculate angular velocity stats
-        peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
-        avg_gyro_z = sum(abs(gz) for gz in gyro_z) / \
-            len(gyro_z) if gyro_z else 0.0
+            with open(motion_file, 'r') as f:
+                motion_data = json.load(f)
 
-        # Platform tilt stats
-        max_roll = max(abs(r) for r in roll) if roll else 0.0
-        max_pitch = max(abs(p) for p in pitch) if pitch else 0.0
+            # Calculate summary statistics for the prompt
+            accel_x = motion_data["accel_x"]
+            accel_y = motion_data["accel_y"]
+            gyro_z = motion_data["gyro_z"]
+            roll = motion_data["roll"]
+            pitch = motion_data["pitch"]
 
-        prompt = f"""You are a robotics motion analyst for window {window_id}.
+            # Calculate horizontal acceleration magnitude
+            horiz_accel = [math.sqrt(ax**2 + ay**2)
+                           for ax, ay in zip(accel_x, accel_y)]
+            peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
+            avg_horiz_accel = sum(horiz_accel) / \
+                len(horiz_accel) if horiz_accel else 0.0
+
+            # Calculate angular velocity stats
+            peak_gyro_z = max(abs(gz) for gz in gyro_z) if gyro_z else 0.0
+            avg_gyro_z = sum(abs(gz) for gz in gyro_z) / \
+                len(gyro_z) if gyro_z else 0.0
+
+            # Platform tilt stats
+            max_roll = max(abs(r) for r in roll) if roll else 0.0
+            max_pitch = max(abs(p) for p in pitch) if pitch else 0.0
+
+            prompt = f"""You are a robotics motion analyst for window {window_id}.
 
 IMU ACCELEROMETER DATA (gravity-compensated, body frame):
 - Horizontal acceleration samples (sqrt(accel_x² + accel_y²)): {len(horiz_accel)} samples
@@ -88,18 +105,17 @@ TASK: Analyze this sensor data and provide a JSON object with this EXACT schema:
 
 No explanations outside the JSON."""
 
-        response = GENAI_CLIENT.models.generate_content(
-            model=GEMINI_MODEL_MOTION,
-            contents=[types.Part(text=prompt.strip())],
-        )
+            response = genai_client.models.generate_content(
+                model=model,
+                contents=[types.Part(text=prompt.strip())],
+            )
 
-        data = extract_json_block(response.text or "")
-        data["window_id"] = window_id
-        return data
+            data = extract_json_block(response.text or "")
+            data["window_id"] = window_id
+            return data
 
-    except Exception as err:
-        return {"status": "error", "window_id": window_id, "message": str(err)}
+        except Exception as err:
+            return {"status": "error", "window_id": window_id, "message": str(err)}
 
-
-# FunctionTool wrapper
-ANALYZE_MOTION = FunctionTool(func=analyze_motion_tool)
+    # Return FunctionTool wrapper
+    return FunctionTool(func=analyze_motion_tool)

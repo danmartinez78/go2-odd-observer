@@ -5,17 +5,26 @@ Extracted from odd_workflow_full.py (reference implementation).
 
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
+from google.genai import Client
 
-from ..config import GEMINI_MODEL_COLLISION, GOOGLE_API_KEY
-from ..tools import LIST_WINDOWS, ANALYZE_COLLISION_RISK
+from ..tools.collision import create_collision_tools
 
 
-def create_collision_loop_agent() -> Agent:
+def create_collision_loop_agent(
+    scenario_path: str, genai_client: Client, model: str, api_key: str
+) -> Agent:
     """Create a new CollisionLoopAgent instance."""
+    from ..tools.perception import create_perception_tools
+
+    list_windows_tool, _ = create_perception_tools(
+        scenario_path, genai_client, model)
+    analyze_collision_risk_tool = create_collision_tools(
+        scenario_path, genai_client, model)
+
     return Agent(
         name="CollisionLoopAgent",
-        model=Gemini(model=GEMINI_MODEL_COLLISION, api_key=GOOGLE_API_KEY),
-        tools=[LIST_WINDOWS, ANALYZE_COLLISION_RISK],
+        model=Gemini(model=model, api_key=api_key),
+        tools=[list_windows_tool, analyze_collision_risk_tool],
         output_key="temp:collision_data",
         instruction="""You orchestrate collision risk analysis across all scenario windows.
 
@@ -32,11 +41,11 @@ Do not add commentary. Ensure valid JSON.""",
     )
 
 
-def create_collision_summary_agent() -> Agent:
+def create_collision_summary_agent(api_key: str, model: str) -> Agent:
     """Create a new CollisionSummaryAgent instance."""
     return Agent(
         name="CollisionSummaryAgent",
-        model=Gemini(model=GEMINI_MODEL_COLLISION, api_key=GOOGLE_API_KEY),
+        model=Gemini(model=model, api_key=api_key),
         output_key="temp:collision_output",
         instruction="""You finalize the collision risk report.
 

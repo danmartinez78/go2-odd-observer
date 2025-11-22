@@ -1,29 +1,28 @@
 """
 Utility functions for ODD Agents.
-Extracted from odd_workflow_full.py (reference implementation).
+Pure utility functions with no dependencies on config or global state.
 """
 
 import json
 from pathlib import Path
 from typing import Any, Dict
 
-from .config import SCENARIO_PATH
 
-
-def build_image_path(prefix: str, window_id: str) -> Path:
+def build_image_path(scenario_path: Path, prefix: str, window_id: str) -> Path:
     """
     Build path to image file for a specific window.
 
     Args:
+        scenario_path: Path to scenario directory
         prefix: Image type prefix (e.g., "cam", "bev_occupancy")
         window_id: Window identifier (e.g., "001", "002")
 
     Returns:
         Path to the image file
     """
-    scenario_name = SCENARIO_PATH.name
+    scenario_name = scenario_path.name
     filename = f"{prefix}_{scenario_name}_w{window_id}.png"
-    return SCENARIO_PATH / filename
+    return scenario_path / filename
 
 
 def ensure_image_bytes(path: Path) -> bytes:
@@ -79,5 +78,13 @@ def extract_json_block(text: str) -> Dict[str, Any]:
     if start == -1 or end == -1:
         raise ValueError(f"No JSON object found in response: {text}")
 
+    json_text = cleaned[start:end + 1]
+
+    # Replace Python boolean literals with JSON boolean literals
+    json_text = json_text.replace(": True", ": true")
+    json_text = json_text.replace(": False", ": false")
+    json_text = json_text.replace(":True", ":true")
+    json_text = json_text.replace(":False", ":false")
+
     # Parse and return
-    return json.loads(cleaned[start:end + 1])
+    return json.loads(json_text)
