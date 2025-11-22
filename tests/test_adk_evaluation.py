@@ -231,3 +231,88 @@ async def test_motion_comprehensive():
         if config_backup.exists():
             shutil.copy(config_backup, config_main)
             config_backup.unlink()
+
+
+# =============================================================================
+# ODD SPEC AGENT EVALUATION TESTS
+# Tests single-inference agent (NO TOOLS) - NL text → structured JSON
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_odd_spec_rubric_quality():
+    """
+    Test ODD Spec agent with rubric-based LLM judging.
+    
+    NOTE: This agent has NO TOOLS - it's a single inference agent.
+    Input: Natural language ODD description (user request string)
+    Output: Structured JSON specification
+    
+    Evaluates:
+    - JSON structure validity (required keys, correct nesting)
+    - Categorical constraint extraction (allowed vs prohibited)
+    - Numeric constraint inference (vague terms → precise ranges)
+    - Default inference (conservative assumptions when info sparse)
+    
+    Pattern difference from loop agents:
+    - No expected_tool_uses (this agent doesn't call tools)
+    - Test cases are different NL descriptions, not window IDs
+    - Rubrics focus on NL→JSON conversion quality
+    
+    Runtime: ~40-50s (2 test cases × LLM inference + judging)
+    """
+    import shutil
+    odd_spec_dir = EVAL_DIR / "odd_spec"
+    config_main = odd_spec_dir / "test_config.json"
+    config_rubric = odd_spec_dir / "test_config_rubric_only.json"
+    config_backup = odd_spec_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.odd_spec.odd_spec_agent",
+            eval_dataset_file_path_or_dir=str(odd_spec_dir / "odd_spec_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_odd_spec_comprehensive():
+    """
+    Full ODD Spec agent evaluation.
+    
+    Tests:
+    - Rubric-based quality (structure, extraction, inference)
+    - Hallucinations (no fabricated constraints)
+    
+    Note: No tool_trajectory criterion (this agent has no tools!)
+    
+    Runtime: ~60-80s (includes inference + judging + hallucination detection)
+    """
+    import shutil
+    odd_spec_dir = EVAL_DIR / "odd_spec"
+    config_main = odd_spec_dir / "test_config.json"
+    config_comprehensive = odd_spec_dir / "test_config_comprehensive.json"
+    config_backup = odd_spec_dir / "test_config_backup.json"
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.odd_spec.odd_spec_agent",
+            eval_dataset_file_path_or_dir=str(odd_spec_dir / "odd_spec_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
