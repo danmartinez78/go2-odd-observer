@@ -104,3 +104,4 @@ logs/
 *.temp
 *.bak
 .env
+go2_ros2_sdk/
