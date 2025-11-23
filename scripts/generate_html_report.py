@@ -571,10 +571,13 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 <!-- Hero Section -->
 <div class="hero-section">
     <div class="container">
+        <div class="mb-3">
+            <a href="../index.html" class="btn btn-outline-light">← Back to Home</a>
+        </div>
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1 class="display-4">🤖 ODD Analysis Report</h1>
-                <h2 class="h3">{scenario_name}</h2>
+                <h2 class="h3">Data Set: {scenario_name}</h2>
                 <p class="lead mb-0">Generated {timestamp}</p>
             </div>
             <div class="col-md-4 text-end">
