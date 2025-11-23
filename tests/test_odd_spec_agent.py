@@ -10,51 +10,66 @@ For AUTOMATED EVALUATION (when available), see:
 
 Usage:
     python tests/test_odd_spec_agent.py
+    python tests/test_odd_spec_agent.py --model gemini-1.5-flash
     
 Expected: Structured ODD specification parsed from natural language.
 """
 
 from odd_agents.agents import create_odd_spec_agent
 from odd_agents import extract_json_block
+import argparse
 import asyncio
 import json
 import os
+import warnings
 from typing import Any, Optional
 
 from google.adk.runners import InMemoryRunner
 from dotenv import load_dotenv
 
+# Suppress SSL and asyncio warnings that clutter output
+warnings.filterwarnings(
+    'ignore', category=ResourceWarning, message='.*unclosed.*')
+warnings.filterwarnings('ignore', message='.*SSL.*')
+warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
+
 # Load environment variables from .env file
 load_dotenv()
 
-# Import from shared module
 
-# Configuration
-API_KEY = os.environ.get("GOOGLE_API_KEY")
-if not API_KEY:
-    print("❌ GOOGLE_API_KEY environment variable not set")
-    raise SystemExit(1)
+async def test_odd_spec_agent(
+    model: str = "gemini-2.5-flash",
+    api_key: Optional[str] = None,
+    nl_odd_description: Optional[str] = None
+) -> Optional[dict[str, Any]]:
+    """Run ODD spec agent test with specified parameters."""
 
-MODEL = "gemini-2.0-flash-lite"
+    # Use provided API key or get from environment
+    if api_key is None:
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            print("❌ GOOGLE_API_KEY environment variable not set")
+            raise SystemExit(1)
 
-
-async def test_odd_spec_agent() -> Optional[dict[str, Any]]:
     print("\n" + "=" * 80)
     print("ODD SPECIFICATION AGENT TEST")
     print("=" * 80)
+    print(f"Model: {model}")
+    print("=" * 80)
 
-    # Test natural language ODD description
-    nl_odd_description = (
-        "A quadruped robot designed for indoor office environments. "
-        "Operates on smooth, flat floors with adequate lighting (bright or dim). "
-        "Maximum speed 1.5 m/s. Designed for environments with moderate obstacle "
-        "density and good traversability. Requires low collision risk conditions. "
-        "Not designed for: outdoor environments, stairs, rough terrain, "
-        "dark/low-light areas, or high-density obstacle fields."
-    )
+    # Use default ODD description if none provided
+    if nl_odd_description is None:
+        nl_odd_description = (
+            "A quadruped robot designed for indoor office environments. "
+            "Operates on smooth, flat floors with adequate lighting (bright or dim). "
+            "Maximum speed 1.5 m/s. Designed for environments with moderate obstacle "
+            "density and good traversability. Requires low collision risk conditions. "
+            "Not designed for: outdoor environments, stairs, rough terrain, "
+            "dark/low-light areas, or high-density obstacle fields."
+        )
 
     # Create agent instance
-    odd_spec_agent = create_odd_spec_agent(API_KEY, MODEL)
+    odd_spec_agent = create_odd_spec_agent(api_key, model)
     runner = InMemoryRunner(agent=odd_spec_agent, app_name="OddSpecAgentApp")
     events = await runner.run_debug(nl_odd_description)
 
@@ -80,8 +95,35 @@ async def test_odd_spec_agent() -> Optional[dict[str, Any]]:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Test ODD Specification Agent")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="gemini-2.5-flash",
+        help="Model to use for testing"
+    )
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="Google API key (defaults to GOOGLE_API_KEY env var)"
+    )
+    parser.add_argument(
+        "--odd-description",
+        type=str,
+        default=None,
+        help="Natural language ODD description (uses default if not provided)"
+    )
+
+    args = parser.parse_args()
+
     try:
-        spec = asyncio.run(test_odd_spec_agent())
+        spec = asyncio.run(test_odd_spec_agent(
+            model=args.model,
+            api_key=args.api_key,
+            nl_odd_description=args.odd_description
+        ))
         if spec is None:
             raise SystemExit(1)
         print("\n" + "=" * 80)
@@ -90,3 +132,7 @@ if __name__ == "__main__":
     except Exception as exc:
         print(f"\n❌ Fatal error: {exc}")
         raise
+    finally:
+        # Suppress aiohttp cleanup warnings on exit
+        import sys
+        sys.stderr = open(os.devnull, 'w')

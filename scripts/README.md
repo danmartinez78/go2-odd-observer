@@ -4,86 +4,192 @@ Executable scripts for the Go2 ODD Observer project.
 
 ---
 
-## 🚀 Main Workflow
+## 🎯 Core Production Scripts
 
-### `odd_workflow.py` - **CURRENT** Production Script
+### `run_odd_analysis.py` - **Manual Interactive Runner**
 
-**Purpose**: Run complete ODD/COD analysis using the parameterized `odd_agents` module.
+**Purpose**: Interactive single-scenario ODD analysis with scenario selection.
 
 **Usage**:
 ```bash
-# Set up API key in .env file (one time)
-echo "GOOGLE_API_KEY=your-key-here" > .env
-
-# Run analysis
-python scripts/odd_workflow.py
+python scripts/run_odd_analysis.py
 ```
 
 **What it does**:
-- Analyzes multi-modal sensor data (camera, LiDAR, IMU)
-- Runs 10-agent sequential pipeline with parameterized workflow
-- No global state - fully isolated execution
-- Defaults to `gemini-2.0-flash-lite` for all agents
-- Generates comprehensive ODD compliance report
-- Outputs to: `data/processed/runs/{scenario}/odd_analysis_report.json`
+- Scans production/ and test_data/ for available scenarios
+- Interactive scenario selection with window counts
+- Runs complete 10-agent ODD workflow
+- Displays executive summary and compliance status
+- Saves results to `data/analysis_results/manual/<timestamp>/<scenario>/`
+  - `full_result.json` - Complete analysis data
+  - `executive_summary.json` - Key findings and recommendations
 
-**Source code**: Clean ~50 lines - imports from `odd_agents` module (single source of truth)
-
-**Configuration**:
+**Model Configuration** (edit at top of script):
 ```python
-# Edit odd_workflow.py to customize:
-SCENARIO_PATH = DATA_DIR / "sim_run_test"  # Change scenario
-nl_odd_description = "..."  # Custom ODD specification
-
-# Use default models (flash-lite) or override:
-result = await run_odd_workflow(
-    scenario_path=SCENARIO_PATH,
-    genai_client=client,
-    api_key=api_key,
-    model_perception="gemini-2.5-pro",  # Override specific agents
-    # ... other model_* parameters
-)
+MODEL_PERCEPTION = "gemini-2.5-pro"       # Camera + LiDAR analysis
+MODEL_MOTION = "gemini-2.5-flash"         # IMU motion detection
+MODEL_COLLISION = "gemini-2.5-pro"        # Collision risk assessment
+MODEL_ODD_SPEC = "gemini-2.5-pro"         # ODD specification parsing
+MODEL_COD = "gemini-2.5-flash"            # COD classification
+MODEL_REPORT = "gemini-2.5-flash"         # Report generation
 ```
 
-**Agents**: ODD Spec → Perception Loop/Summary → Motion Loop/Summary → Collision Loop/Summary → COD Classifier → ODD Compliance → Report
+**Output Example**:
+```
+SCENARIO METADATA
+  • Windows analyzed: 2
+  • Data source: simulation (confidence: 0.98)
+  • Environment: indoor_office
+
+ODD COMPLIANCE
+  • Overall: ODD_BOUNDARY
+  • Violations: 0
+  • Warnings: 1
+
+⚠️  WARNINGS:
+    • collision_risk (0.3) is at the ODD boundary
+```
+
+---
+
+### `run_odd_batch_analysis.py` - **Automated Batch Processor**
+
+**Purpose**: Process all production scenarios and generate aggregate report.
+
+**Usage**:
+```bash
+python scripts/run_odd_batch_analysis.py
+```
+
+**What it does**:
+- Auto-discovers all scenarios in `data/processed/production/`
+- Processes each sequentially with progress bars
+- Exits on first error (saves API costs)
+- Saves individual results to `data/analysis_results/automated/<timestamp>/<scenario>/`
+- Generates aggregate report combining all scenarios
+
+**Features**:
+- 📊 Progress tracking with tqdm
+- 🛑 Fail-fast on errors
+- 📈 Aggregate statistics across all scenarios
+- 💾 Individual + combined reports
+
+**Output Structure**:
+```
+data/analysis_results/automated/20251123_150000/
+├── sim_run_new/
+│   ├── full_result.json
+│   └── executive_summary.json
+├── real_01_173442/
+│   ├── full_result.json
+│   └── executive_summary.json
+├── ...
+└── aggregate_report.json              # Combined analysis
+```
+
+**Aggregate Report Includes**:
+- Batch metadata (timestamp, scenario counts)
+- Compliance distribution (IN_ODD, BOUNDARY, VIOLATION)
+- Violation type frequencies
+- Environment distribution
+- Data source distribution
+- Per-scenario summaries
 
 ---
 
 ## 📊 Data Processing Scripts
 
-### `extract_windows.py` - ROS2 Bag Window Extractor
+### `extract_windows.py` - **ROS2 Bag Window Extractor**
 
 **Purpose**: Extract time-windowed multi-modal snapshots from ROS2 bag files.
 
 **Usage**:
 ```bash
 python scripts/extract_windows.py \
-  --rosbag data/raw_rosbags/real/my_bag.db3 \
-  --output data/processed/runs/my_scenario \
+  --rosbag data/raw_rosbags/real/my_collection.db3 \
+  --output data/processed/production \
   --run-id my_scenario \
   --window-length 2.0 \
   --stride 1.0
 ```
 
+**⚠️ CRITICAL NAMING REQUIREMENT**:
+- Output directory name MUST match run-id
+- Files are created as `motion_{run_id}_w000.json`
+- Workflow tools use directory name to find files
+- Script automatically creates `output/run_id/` directory
+
 **Outputs per window**:
-- `motion_<scenario>_w<NNN>.json` - Velocity, IMU, odometry time series
+- `motion_<scenario>_w<NNN>.json` - Velocity, IMU, odometry
 - `cam_<scenario>_w<NNN>.png` - RGB camera frame
 - `bev_occupancy_<scenario>_w<NNN>.png` - LiDAR BEV (occupancy)
-- `bev_height_<scenario>_w<NNN>.png` - LiDAR BEV (height map)
-- `bev_density_<scenario>_w<NNN>.png` - LiDAR BEV (point density)
-- `bev_roughness_<scenario>_w<NNN>.png` - LiDAR BEV (surface roughness)
+- `bev_height_<scenario>_w<NNN>.png` - LiDAR BEV (height)
+- `bev_density_<scenario>_w<NNN>.png` - LiDAR BEV (density)
+- `bev_roughness_<scenario>_w<NNN>.png` - LiDAR BEV (roughness)
 - `index_<scenario>.csv` - Window metadata
 
 **Dependencies**: ROS2 Humble, sensor_msgs, nav_msgs
 
 ---
 
-### `render_bev.py` - LiDAR BEV Renderer
+### `validate_data_structure.py` - **Data Structure Validator**
 
-**Multi-channel BEV rendering (occupancy, height, density, roughness)
+**Purpose**: Validate directory/file naming consistency (required for workflow).
+
+**Usage**:
+```bash
+# Validate all processed data
+python scripts/validate_data_structure.py
+
+# Validate specific directory
+python scripts/validate_data_structure.py data/processed/production
+```
+
+**What it checks**:
+- ✅ Directory name matches index file name
+- ✅ Directory name matches scenario name in filenames
+- ✅ Index file exists
+- ⚠️ Motion, camera, and BEV files present
+
+**Why needed**: Workflow tools use `directory.name` to construct filenames. Mismatches cause silent failures.
+
+**Example output**:
+```
+✅ real_01_173442
+✅ sim_run_test
+❌ office_navigation
+   ❌ Directory 'office_navigation' but files use 'sim_run_new'
+```
+
+---
+
+### `create_real_test_sets.py` - **Test Set Creator**
+
+**Purpose**: Create curated test sets from production data for validation.
+
+**Usage**:
+```bash
+python scripts/create_real_test_sets.py
+```
+
+**What it does**:
+- Scans production data for diverse scenarios
+- Creates small test sets (2 windows each)
+- Copies to `data/processed/test_data/real/`
+- Renames files to match test set directory names
+- Generates summary JSON with metadata
+
+---
+
+### `render_bev.py` - **LiDAR BEV Renderer**
+
+**Purpose**: Generate multi-channel bird's-eye view images from LiDAR point clouds.
+
 **Features**:
 - Occupancy grid generation
 - Height mapping
+- Point density visualization
+- Surface roughness estimation
 - Configurable resolution (default: 5cm/pixel)
 - Customizable range (default: ±10m)
 
@@ -91,7 +197,7 @@ python scripts/extract_windows.py \
 
 ---
 
-### `utils_ros.py` - ROS2 Utilities
+### `utils_ros.py` - **ROS2 Utilities**
 
 **Purpose**: Helper functions for ROS2 message parsing and time synchronization.
 
@@ -102,150 +208,91 @@ python scripts/extract_windows.py \
 
 ---
 
-## 🧪 Manual Testing & Development Scripts
-
-### `generate_demo_results.py` - Manual Workflow Test
-
-**Purpose**: Run complete ODD workflow on `sim_run_new` dataset and generate demonstration results.
-
-**Usage**:
-```bash
-python scripts/generate_demo_results.py
-```
-
-**What it does**:
-- Runs full 10-agent ODD analysis pipeline
-- Uses sim_run_new dataset (13 windows)
-- Generates comprehensive analysis report
-- Saves executive summary
-- Runtime: ~3-5 minutes
-
-**Use cases**:
-- Manual verification of workflow changes
-- Generate demo outputs for documentation
-- Test model configurations
-- Validate end-to-end pipeline
-
-**Note**: This is for MANUAL TESTING. For automated evaluation, see `tests/evaluation/README.md`.
-
----
-
-### `generate_demo_data.py` - Synthetic Data Generator
-
-**Purpose**: Create synthetic window data for testing without ROS2 bags.
-
-**Usage**:
-```bash
-python scripts/generate_demo_data.py
-```
-
-**Generates**:
-- Synthetic time windows with realistic motion profiles
-- Synthetic camera images (640x480)
-- Synthetic LiDAR BEV images (all 4 channels)
-- Complete index CSV
-- Intentional ODD violations for demo
-
-**Use cases**:
-- Test workflow without real robot data
-- Validate agent pipeline changes
-- Demonstrate ODD violations
-- CI/CD testing
-
----
-
-## 📁 Directory Structure After Processing
+## 📁 Directory Structure
 
 ```
-data/processed/runs/
-└── my_scenario/
-    ├── index_my_scenario.csv
-    ├── motion_my_scenario_w000.json
-    ├── motion_my_scenario_w001.json
-    ├── ...
-    ├── cam_my_scenario_w000.png
-    ├── cam_my_scenario_w001.png
-    ├── ...
-    ├── bev_occupancy_my_scenario_w000.png
-    ├── bev_occupancy_my_scenario_w001.png
-    └── ...
+data/
+├── processed/
+│   ├── production/                    # Production datasets (270 windows)
+│   │   ├── real_01_173442/
+│   │   ├── real_02_173813/
+│   │   └── ...
+│   └── test_data/                     # Curated test sets
+│       ├── real/                      # Real robot (6 scenarios, 12 windows)
+│       │   ├── real_01_173442/
+│       │   └── ...
+│       └── sim/                       # Simulation (1 scenario, 2 windows)
+│           └── sim_run_test/
+│
+├── analysis_results/
+│   ├── manual/                        # From run_odd_analysis.py
+│   │   └── 20251123_174240/
+│   │       └── sim_run_test/
+│   │           ├── full_result.json
+│   │           └── executive_summary.json
+│   └── automated/                     # From run_odd_batch_analysis.py
+│       └── 20251123_150000/
+│           ├── sim_run_new/
+│           ├── real_01_173442/
+│           ├── ...
+│           └── aggregate_report.json
+│
+└── raw_rosbags/
+    ├── real/                          # Real robot bags
+    └── sim/                           # Simulation bags
 ```
-
----
-
-## 🔧 Development Notes
-
-### Adding New Sensors
-rchitecture
-
-The current architecture uses a **shared module pattern**:
-
-- **`odd_agents/`** - Source of truth for all agent definitions and workflow
-- **`scripts/odd_workflow.py`** - Production entry point (imports from module)
-- **`notebooks/odd_analysis_demo.ipynb`** - Interactive analysis (imports from module)
-- **`tests/test_*.py`** - Individual agent tests (imports from module)
-
-**No code duplication** - everything imports from `odd_agents` module.
-
-### Adding New Sensors
-
-To extract additional sensor data:
-
-1. Add topic name to `extract_windows.py` configuration
-2. Add deserialization logic in `utils_ros.py`
----
-
-## � Archived Scripts
-
-Superseded implementations moved to [`../.archive/scripts/`](../.archive/scripts/):
-
-- `odd_workflow_full.py` - Original monolithic workflow (857 lines, pre-parameterization)
-- `odd_workflow_full.py.backup` - Golden reference backup
-- `multi_agent_image_adk_workflow.py` - Original loop+summary pattern reference
-
-**Note**: Archived for historical reference. Use current `odd_workflow.py` and the `odd_agents` module instead.
 
 ---
 
 ## 🚀 Quick Reference
 
-| Task | Script | Key Options |
-|------|--------|-------------|
-| Run ODD analysis | `odd_workflow.py` | None (uses config in script) |
-| Extract from ROS bag | `extract_windows.py` | `--rosbag`, `--output`, `--window-length` |
-| Generate test data | `generate_demo_data.py` | None (uses defaults) |
-| Debug BEV rendering | `render_bev.py` | Standalone usage with point cloud file |
+| Task | Script | Notes |
+|------|--------|-------|
+| Analyze single scenario | `run_odd_analysis.py` | Interactive, test + production data |
+| Batch process all data | `run_odd_batch_analysis.py` | Automated, production only |
+| Extract from ROS bag | `extract_windows.py` | Creates time-windowed snapshots |
+| Validate data naming | `validate_data_structure.py` | Prevents workflow failures |
+| Create test sets | `create_real_test_sets.py` | Curate validation data |
 
 ---
 
 ## 📚 Related Documentation
 
-- **Module architecture**: `../docs/MODEL_SELECTION_GUIDE.md`
-- **Module API**: `../odd_agents/README.md`
-- **Agent implementations**: `../odd_agents/agents/`
-- **Workflow orchestration**: `../odd_agents/workflow.py`
-- **Interactive analysis**: `../notebooks/odd_analysis_demo.ipynb`
+- **Workflow module**: `../odd_agents/README.md`
+- **Model selection**: `../docs/MODEL_SELECTION_GUIDE.md`
 - **Getting started**: `../docs/guides/GETTING_STARTED.md`
+- **Data naming**: `../docs/DATA_NAMING_CONVENTION.md`
+- **Interactive demo**: `../notebooks/odd_analysis_demo.ipynb`
+
+---
+
+## 📦 Archived Scripts
+
+Superseded scripts moved to [`.archive/scripts/`](../.archive/scripts/):
+- `odd_workflow.py` - Old single-run script (replaced by `run_odd_analysis.py`)
+- `analyze_real_data.py` - Old batch script (replaced by `run_odd_batch_analysis.py`)
+- `generate_demo_results.py` - Old demo script (replaced by new runners)
+- `generate_demo_data.py` - Synthetic data generator (replaced by real test sets)
 
 ---
 
 ## 🐛 Troubleshooting
 
-**Issue**: "ROS2 topics not found"
-- **Solution**: Check topic names with `ros2 bag info your_bag.db3`
-- Update topic names in `extract_windows.py` if needed
+**Issue**: "No scenarios found"
+- **Solution**: Run `extract_windows.py` to process ROS bags first
 
-**Issue**: "Window extraction incomplete"
-- **Solution**: Verify bag duration > window_length
-- Check for missing messages in problematic topics
+**Issue**: "Directory/file naming mismatch"
+- **Solution**: Run `validate_data_structure.py` to identify issues
+- See `../docs/DATA_NAMING_CONVENTION.md` for naming rules
 
-**Issue**: "BEV images blank"
-- **Solution**: Verify LiDAR data exists in bag
-- Check point cloud coordinate frames
-- Adjust BEV range parameters
+**Issue**: "Workflow fails to find windows"
+- **Solution**: Ensure directory name matches scenario name in filenames
+- Script automatically creates correct structure now
 
-**Issue**: "Workflow fails"
-- **Solution**: Check .env file: `cat .env` (should have GOOGLE_API_KEY)
-- Or set environment variable: `export GOOGLE_API_KEY="your-key"`
-- Verify scenario data exists: `ls data/processed/runs/sim_run_test/`
-- Check for errors in agent outputs (review terminal output)
+**Issue**: "GOOGLE_API_KEY not set"
+- **Solution**: Create `.env` file with `GOOGLE_API_KEY=your-key`
+- Or: `export GOOGLE_API_KEY="your-key"`
+
+**Issue**: "Rate limit errors"
+- **Solution**: Switch to `gemini-2.5-flash` (more quota)
+- Edit model configuration at top of script
