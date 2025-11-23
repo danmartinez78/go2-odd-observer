@@ -13,7 +13,7 @@
   - ✅ ODD violations identified (terrain, obstacles, environment)
   - ✅ Production scripts created for batch processing
 
-### 1. Agent Evaluation & Testing
+### 1. Agent Evaluation & Testing ⚠️ HIGH PRIORITY - KAGGLE COMPETITION
 - [x] Implement LLM-as-judge evaluation pattern ✅ COMPLETED
   - ✅ Use gemini-2.5-pro as judge to avoid model similarity bias
   - ✅ Majority voting (num_samples=5) for robustness
@@ -21,11 +21,17 @@
   - ✅ Comprehensive evaluation framework in `odd_agents/evaluation/`
   - ✅ Demo script and test fixtures
   - See `odd_agents/evaluation/README.md` for details
-- [ ] Review and merge agent evaluation PRs ⚠️ IN PROGRESS
-  - [ ] ADK evaluation migration PR (separate branch)
-  - [ ] Multi-agent evaluation implementation (separate branch)
-  - [ ] Review evaluation results and metrics
-  - [ ] Merge approved evaluation code
+- [ ] **URGENT: Review and fix ADK evaluation tests** ⚠️ CRITICAL FOR KAGGLE
+  - [ ] Verify existing eval tests still pass after perception prompt changes
+  - [ ] Update test expectations for terrain classification (now correctly classifies rugs as "smooth")
+  - [ ] Review and merge agent evaluation PRs (separate branches)
+  - [ ] Fix any broken evaluation workflows
+  - [ ] Update evaluation datasets for new prompt behavior
+  - [ ] Validate rubrics align with updated agent outputs
+  - [ ] Run full test suite: `pytest tests/test_adk_evaluation.py -v`
+  - **Impact**: Required for Kaggle competition scoring and validation
+  - **Notes**: Perception prompt improvements (terrain vs obstacles) may have changed expected outputs
+  - **Branch**: `feature/perception-improvements` - ready for testing
 - [x] Expand test coverage ✅ COMPLETED
   - ✅ Test scripts for all agents (perception, motion, collision, ODD spec)
   - ✅ Production runners for manual and batch analysis
