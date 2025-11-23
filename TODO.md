@@ -149,6 +149,15 @@
 
 ## Backlog / Nice-to-Have
 
+- [ ] **Debug Plotly Charts in HTML Reports** 🔧 DEFERRED
+  - Charts not rendering despite data being present in HTML
+  - Tried: min-height CSS, DOMContentLoaded wrapper
+  - Data verified: accelData, riskData, accelTimeseriesData, gyroTimeseriesData all populated
+  - Plotly.newPlot calls present for all 4 chart divs
+  - **Next steps**: Test in local browser with dev tools, check console errors, try iframe embedding
+  - **Workaround**: Charts section removed from reports for now
+  - **Files**: `scripts/generate_html_report.py` (template has chart code commented out)
+
 - [ ] **BEV Ground Filtering Validation** ⚠️ NEXT STEP
   - [x] Implemented 10cm height threshold for ground filtering ✅ MERGED TO DEV
   - [ ] Reprocess production data with filtered BEV occupancy
