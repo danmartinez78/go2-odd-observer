@@ -534,6 +534,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             border-radius: 8px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+            min-height: 400px;
         }}
         
         .dark-mode-toggle {{
