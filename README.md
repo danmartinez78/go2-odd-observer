@@ -11,7 +11,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org)
 [![ROS2 Humble](https://img.shields.io/badge/ROS2-Humble-22314E?style=for-the-badge&logo=ros)](https://docs.ros.org/en/humble/)
 
-[**Quick Start**](#-quick-start) • [**Documentation**](docs/guides/GETTING_STARTED.md) • [**Features**](#-key-features) • [**Examples**](#-example-results)
+[**Quick Start**](#-quick-start) • [**Live Demo**](https://danmartinez78.github.io/go2-odd-observer/) • [**Documentation**](docs/guides/GETTING_STARTED.md) • [**Features**](#-key-features)
 
 </div>
 
@@ -78,21 +78,26 @@ python scripts/odd_workflow.py
 
 ### 3️⃣ View Results
 
+**Option A: Interactive HTML Report (Recommended)**
 ```bash
-# See compliance status
-jq '.full_analysis.odd_compliance.odd_compliance' \
-   data/processed/runs/sim_run_test/odd_analysis_report.json
+python scripts/generate_html_report.py \
+  --input data/analysis_results/automated/latest/full_result.json \
+  --scenario-dir data/processed/test_data/real/real_03_174232 \
+  --output report.html
+
+open report.html  # or: $BROWSER report.html
 ```
 
-**Output:**
-```json
-{
-  "overall_compliance": "OUT_ODD",
-  "violations": ["obstacle_density", "collision_risk"],
-  "warnings": ["lighting_conditions"]
-}
+**Option B: JSON Analysis**
+```bash
+jq '.odd_compliance.overall_status' data/analysis_results/automated/latest/full_result.json
+# Output: "OUT_ODD"
+
+jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/latest/full_result.json
+# Output: "motion_smoothness", "max_accel_mps2", "collision_risk"
 ```
 
+🌐 **Live Examples:** [https://danmartinez78.github.io/go2-odd-observer/](https://danmartinez78.github.io/go2-odd-observer/)  
 📚 **Full Setup Guide:** [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)
 
 ---
@@ -149,20 +154,46 @@ Quadruped robot designed for indoor office navigation.
 
 ### 2. Real-World Performance
 
-Tested on 26 seconds of robot operation (13 windows):
-- ✅ **100% motion detection** using IMU (even when odometry broken)
-- ⚠️ **8 collision warnings** detected from multimodal fusion
-- ❌ **4 ODD violations** flagged: lighting, obstacles, traversability, collision risk
-- 🎯 **95% confidence** environment classification (indoor office vs outdoor, etc.)
+**Production Data Analysis:**
+- 📊 **332 windows** across 19 production scenarios (living room navigation)
+- 🏭 **25-window chunks** - full scenario analysis with all sensor data
+- ✅ **Sensor fusion** - BEV LiDAR + camera + IMU integration
+- 🎯 **Collision detection** - 25 events detected (6 critical, 12 high risk)
+- ⚠️ **Motion analysis** - Peak acceleration 8.81 m/s² detected (exceeds 5.0 limit)
+- 🔍 **Sensor discrepancies** - Camera detects low obstacles BEV misses
 
-### 3. Cost-Optimized Execution
+**Test Data Validation:**
+- 📝 **7 test scenarios** (6 real robot + 1 simulation)
+- ⚡ **2-window analysis** - quick validation for each scenario
+- 🤖 **Emergency stop** - Abrupt motion detection and compliance checking
+- 📈 **Batch processing** - Automated report generation for all scenarios
+
+### 3. Interactive HTML Reports
+
+**Professional Analysis Reports** with:
+- 📊 **Visual summaries** - ODD status, violation counts, key metrics
+- 🖼️ **Embedded images** - All BEV LiDAR and camera frames
+- 📥 **JSON downloads** - Raw analysis data for custom processing
+- 🔗 **GitHub Pages** - Deployed reports at [danmartinez78.github.io/go2-odd-observer](https://danmartinez78.github.io/go2-odd-observer/)
+- 📱 **Responsive design** - View on desktop, tablet, or mobile
+
+**Batch Generation:**
+```bash
+python scripts/generate_all_test_reports.py  # All 7 test scenarios
+python scripts/generate_html_report.py --input ... --output ...  # Single report
+```
+
+### 4. Cost-Optimized Execution
 
 | Agent Type | Model | Cost |
 |------------|-------|------|
-| Vision Analysis | gemini-2.5-pro | Baseline |
-| Simple Synthesis | gemini-2.0-flash-lite | **70% cheaper** |
+| Vision Analysis (Perception, Collision) | gemini-2.5-pro | Baseline |
+| Motion & Synthesis | gemini-2.5-flash | **~50% cheaper** |
 
-**Result:** ~$0.01 per analysis (2 windows) or ~$0.05 per full run (13 windows)
+**Scalable Analysis:**
+- 2-window test: ~$0.02 per scenario
+- 25-window production: ~$0.15 per chunk
+- 332-window full dataset: ~$2.00 total
 
 📊 **Details:** [docs/MODEL_SELECTION_GUIDE.md](docs/MODEL_SELECTION_GUIDE.md)
 
@@ -170,48 +201,62 @@ Tested on 26 seconds of robot operation (13 windows):
 
 ## 📊 Example Results
 
-**Scenario:** `sim_run_new` - Unitree Go2 navigating indoor office environment (13 time windows, simulation)
+🌐 **Live Interactive Reports:** [https://danmartinez78.github.io/go2-odd-observer/](https://danmartinez78.github.io/go2-odd-observer/)
+
+### Production Scenario: Living Room Navigation (25 Windows)
+
+**Dataset:** `collection_20251122_173442_chunk_01` - Real Unitree Go2 in indoor living room
 
 ### ODD Compliance Analysis
 
 ```
 Overall Status: OUT_ODD
+Windows Analyzed: 25
+Violations: 3
 
-❌ VIOLATIONS (1):
-   • traversability_score: 0.38 (minimum: 0.50)
-     → Robot frequently in areas with blocked/narrow paths
-     
-⚠️  WARNINGS (1):
-   • collision_risk: 0.412 (boundary: 0.3-0.5)
-     → Approaching unsafe collision likelihood threshold
+❌ VIOLATIONS:
+   • motion_smoothness: "abrupt" (all 25 windows)
+     → Consistent jerky motion patterns across entire scenario
+   
+   • max_accel_mps2: 8.81 m/s² (limit: 5.0)
+     → Extreme acceleration detected, exceeds safe threshold
+   
+   • collision_risk: 0.652 average (threshold: 0.5)
+     → 18 high/critical collision events detected
 
-✅ IN_ODD (5):
-   • environment_type: indoor_office ✓
-   • lighting_conditions: bright ✓
-   • terrain_type: smooth ✓
-   • obstacle_density: 0.53 (limit: 0.60) ✓
-   • platform_stability: stable ✓
+🔍 SENSOR DISCREPANCY:
+   • Camera detects low-lying obstacles (furniture legs, tables)
+   • BEV LiDAR fails to detect same obstacles (ground filtering)
+   • Risk: Undetected collision hazards in navigation path
+
+✅ IN_ODD:
+   • environment_type: indoor_living_room ✓
+   • lighting_conditions: adequate ✓
+   • terrain_type: smooth_floor ✓
 ```
 
 ### AI-Generated Executive Summary
 
-> *"The Unitree Go2 robot is operating in a simulated indoor office environment. While the environment generally aligns with the ODD, a low traversability score and high collision risk, coupled with multiple instances of near-collision scenarios, suggest a need for caution and potential adjustments to the operating strategy."*
+> *"The Unitree Go2 demonstrates consistent OUT_ODD status across all 25 analysis windows due to abrupt motion patterns and high collision risk. While the indoor living room environment generally aligns with the intended operational domain, the robot exhibits motion characteristics (8.81 m/s² peak acceleration) that significantly exceed design specifications. A critical sensor fusion issue exists: the camera detects low obstacles that the BEV LiDAR system fails to identify due to ground filtering, creating undetected collision hazards."*
 
 ### Key Findings
 
-1. 🚨 **High Obstacle Proximity**: Robot frequently positioned in close proximity to static obstacles (sofas, tables, furniture)
-2. 📉 **Low Traversability**: Average traversability score of 0.38 indicates constrained navigation space
-3. ⚠️ **Collision Risk**: Mean collision risk of 0.412 approaches safety boundary (threshold: 0.5)
+1. 🚨 **Abrupt Motion Patterns**: All 25 windows show "abrupt" motion smoothness classification
+2. ⚡ **Extreme Acceleration**: Peak of 8.81 m/s² exceeds 5.0 m/s² safety limit by 76%
+3. ⚠️ **High Collision Risk**: 25 collision events detected (6 critical, 12 high, 6 medium, 1 low)
+4. 🔍 **Sensor Fusion Gap**: BEV ground filtering (10cm threshold) misses low obstacles visible in camera
 
 ### Recommendations
 
-1. **Path Planning**: Implement improved obstacle avoidance to maintain safe clearance distances
-2. **Traversability Analysis**: Investigate factors contributing to low traversability scores
-3. **Environment Assessment**: Consider pre-deployment site surveys to identify high-risk areas
+1. **Motion Control Tuning**: Review acceleration limits and motion smoothing parameters
+2. **BEV Configuration**: Adjust ground filtering threshold or add camera-based validation
+3. **Collision Avoidance**: Implement sensor fusion to reconcile camera vs LiDAR obstacle detection
+4. **Path Planning**: Reduce aggressive maneuvers in cluttered indoor environments
 
-📁 **Full Reports:** 
-- [`data/examples/demo_analysis_report.json`](data/examples/demo_analysis_report.json) (30KB - complete analysis)
-- [`data/examples/demo_executive_summary.json`](data/examples/demo_executive_summary.json) (1.7KB - key insights)
+📁 **View Full Reports:**
+- 🌐 [**Interactive HTML Report**](https://danmartinez78.github.io/go2-odd-observer/reports/collection_20251122_173442_chunk_01_report.html) (51MB with all images)
+- 📥 [**JSON Data**](https://danmartinez78.github.io/go2-odd-observer/reports/collection_20251122_173442_chunk_01_full_result.json) (18KB raw analysis)
+- 📊 [**Test Scenarios**](https://danmartinez78.github.io/go2-odd-observer/) (7 additional reports)
 
 ---
 
@@ -224,17 +269,24 @@ go2-odd-observer/
 │   ├── tools/               # Agent tool functions (Gemini API wrappers)
 │   └── workflow.py          # Pipeline orchestration
 ├── scripts/
-│   ├── odd_workflow.py      # Main production script (50 lines)
-│   └── extract_windows.py   # ROS2 bag → time windows converter
+│   ├── run_odd_analysis.py         # Interactive analysis CLI
+│   ├── generate_html_report.py     # HTML report generator
+│   ├── generate_all_test_reports.py # Batch processing for test scenarios
+│   ├── extract_windows.py          # ROS2 bag → time windows converter
+│   └── render_bev.py               # BEV LiDAR visualization
 ├── notebooks/
 │   └── odd_analysis_demo.ipynb  # Interactive analysis with visualizations
 ├── tests/                   # Unit tests for each agent
 ├── data/
-│   └── processed/runs/      # Scenario datasets (sim_run_test, sim_run_new)
+│   ├── processed/
+│   │   ├── production/      # 19 production scenarios (332 windows total)
+│   │   └── test_data/       # 7 test scenarios (real + sim)
+│   └── analysis_results/    # JSON outputs from pipeline runs
 └── docs/
     ├── guides/              # Setup, usage, patterns
+    ├── reports/             # GitHub Pages HTML reports + JSON downloads
     ├── examples/            # Sample reports
-    └── MODEL_SELECTION_GUIDE.md
+    └── index.html           # GitHub Pages landing page
 ```
 
 ---
@@ -243,10 +295,11 @@ go2-odd-observer/
 
 | Document | Description |
 |----------|-------------|
+| [**Live Demo**](https://danmartinez78.github.io/go2-odd-observer/) | Interactive HTML reports deployed on GitHub Pages |
 | [**Getting Started**](docs/guides/GETTING_STARTED.md) | Complete setup, usage examples, troubleshooting |
 | [**Agent Architecture**](docs/agents/README.md) | Comprehensive documentation for all 10 agents in the pipeline |
-| [**Model Selection**](docs/MODEL_SELECTION_GUIDE.md) | Cost optimization, when to use flash-lite vs 2.5-pro |
-| [**Scripts Guide**](scripts/README.md) | Extract windows, render visualizations, generate data |
+| [**Model Selection**](docs/MODEL_SELECTION_GUIDE.md) | Cost optimization, when to use flash vs 2.5-pro |
+| [**Scripts Guide**](scripts/README.md) | Extract windows, render visualizations, generate reports |
 | [**Notebooks Guide**](notebooks/README.md) | Interactive analysis, visualizations, exports |
 | [**Module API**](odd_agents/README.md) | Parameterized workflow API reference |
 
@@ -254,33 +307,51 @@ go2-odd-observer/
 
 ## 🛠️ Use Cases
 
-### Validate New Deployment Site
+### Batch Analysis of Test Scenarios
 
 ```bash
-# Extract windows from deployment test run
-python scripts/extract_windows.py --rosbag my_site_test.db3 --output data/processed/runs/site_test
+# Generate HTML reports for all test scenarios (6 real + 1 sim)
+python scripts/generate_all_test_reports.py
 
-# Analyze (edit scripts/odd_workflow.py: SCENARIO_PATH = "site_test")
-python scripts/odd_workflow.py
+# Reports automatically saved to:
+# - JSON: data/analysis_results/automated/test_reports_TIMESTAMP/
+# - HTML: docs/reports/{scenario_name}_report.html
+```
 
-# Check compliance
-jq '.full_analysis.odd_compliance.odd_compliance.overall_compliance' \
-   data/processed/runs/site_test/odd_analysis_report.json
-# Output: "IN_ODD" ✅ or "OUT_ODD" ❌
+### Production Data Analysis
+
+```bash
+# Run interactive CLI for scenario selection
+python scripts/run_odd_analysis.py
+
+# Or specify production scenario directly
+python scripts/run_odd_analysis.py --scenario collection_20251122_173442_chunk_01
+
+# Generate HTML report with all embedded images
+python scripts/generate_html_report.py \
+  --input data/analysis_results/manual/latest/full_result.json \
+  --scenario-dir data/processed/production/collection_20251122_173442_chunk_01 \
+  --output docs/reports/production_report.html
 ```
 
 ### Post-Incident Analysis
 
 ```bash
-# Extract windows around incident timestamp
-python scripts/extract_windows.py --rosbag incident_2025_11_21.db3 --output data/processed/runs/incident
+# Extract windows from incident rosbag
+python scripts/extract_windows.py \
+  --rosbag incident_2025_11_21.db3 \
+  --output data/processed/incident_analysis
 
 # Run analysis
-python scripts/odd_workflow.py
+python scripts/run_odd_analysis.py --scenario incident_analysis
 
-# Find what went wrong
-jq '.full_analysis.odd_compliance.odd_compliance.violations' \
-   data/processed/runs/incident/odd_analysis_report.json
+# Generate report and check violations
+python scripts/generate_html_report.py \
+  --input data/analysis_results/manual/latest/full_result.json \
+  --scenario-dir data/processed/incident_analysis \
+  --output incident_report.html
+
+open incident_report.html
 ```
 
 ### Custom ODD for Different Robots
@@ -323,10 +394,12 @@ pytest tests/ -v
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 **Ideas for contributions:**
+- � Fix Plotly chart rendering in HTML reports (currently deferred)
 - 📡 Add support for new sensor modalities (GPS, ultrasonic, radar)
 - 🤖 Generalize for other robot platforms (drones, warehouse AMRs, cars)
-- 📊 Implement LLM-as-judge evaluation benchmarks
-- 📝 Improve documentation with domain-specific examples
+- 🎨 Interactive dashboard for batch analysis visualization
+- 📈 Time-series trend analysis across multiple scenarios
+- 🧪 LLM-as-judge evaluation benchmarks for agent quality
 
 ---
 
