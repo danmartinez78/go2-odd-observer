@@ -4,7 +4,7 @@
 
 **Multi-Agent AI System for Autonomous Robot Safety Assessment**
 
-*Automatically validate if robots are operating within their design limits using vision, motion, and LiDAR fusion*
+*Automatically assess if robots are operating within their design limits using vision, motion, and LiDAR fusion*
 
 [![Kaggle Agents Intensive](https://img.shields.io/badge/Kaggle-5--Day_Agents-20BEFF?style=for-the-badge&logo=kaggle)](https://www.kaggle.com/learn-guide/5-day-agents)
 [![Google ADK](https://img.shields.io/badge/Google-ADK_v1.18-4285F4?style=for-the-badge&logo=google)](https://github.com/google/generative-ai-python)
@@ -45,10 +45,10 @@ This system uses **7 specialized AI agents** to analyze multi-modal sensor data 
 ## 🌟 Why This Matters
 
 **For Autonomous Systems:**
-- 🚨 **Safety Validation**: Automatically detect when robots enter unsafe conditions
+- 🚨 **Safety Assessment**: Automatically detect when robots enter unsafe conditions
 - 📋 **Compliance Documentation**: Generate audit trails for regulatory requirements  
 - 🔍 **Post-Incident Analysis**: Understand what went wrong after failures
-- 🎯 **Deployment Validation**: Verify new environments before go-live
+- 🎯 **Deployment Screening**: Assess new environments before go-live
 
 **Technical Innovation:**
 - **ODD-First Architecture**: Define safety constraints before analyzing data (not after)
@@ -162,9 +162,9 @@ Quadruped robot designed for indoor office navigation.
 - ⚠️ **Motion analysis** - Peak acceleration 8.81 m/s² detected (exceeds 5.0 limit)
 - 🔍 **Sensor discrepancies** - Camera detects low obstacles BEV misses
 
-**Test Data Validation:**
+**Test Data Analysis:**
 - 📝 **7 test scenarios** (6 real robot + 1 simulation)
-- ⚡ **2-window analysis** - quick validation for each scenario
+- ⚡ **2-window analysis** - quick assessment for each scenario
 - 🤖 **Emergency stop** - Abrupt motion detection and compliance checking
 - 📈 **Batch processing** - Automated report generation for all scenarios
 
@@ -249,7 +249,7 @@ Violations: 3
 ### Recommendations
 
 1. **Motion Control Tuning**: Review acceleration limits and motion smoothing parameters
-2. **BEV Configuration**: Adjust ground filtering threshold or add camera-based validation
+2. **BEV Configuration**: Adjust ground filtering threshold or cross-check with camera data
 3. **Collision Avoidance**: Implement sensor fusion to reconcile camera vs LiDAR obstacle detection
 4. **Path Planning**: Reduce aggressive maneuvers in cluttered indoor environments
 
