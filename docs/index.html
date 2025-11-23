@@ -121,29 +121,41 @@
                 <div class="report-card">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h3>Real Robot Analysis - Living Room Scenario</h3>
-                            <p class="text-muted mb-2"><strong>Scenario:</strong> real_03_174232</p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Living Room (Real World
-                                Data)</p>
-                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 2 | <strong>Peak
-                                    Acceleration:</strong> 5.69 m/s²</p>
+                            <h3>Real Robot Analysis - Emergency Stop Scenario</h3>
+                            <p class="text-muted mb-2"><strong>Scenario:</strong> real_03_174232 (Living Room)</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Real Go2 Robot Data</p>
+                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 2 | <strong>Peak Accel:</strong> 5.69 m/s² | <strong>Motion:</strong> Abrupt</p>
 
                             <div class="mb-3">
                                 <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">5 Violations</span>
+                                <span class="badge bg-secondary badge-status">4 Violations Detected</span>
                             </div>
 
-                            <ul class="feature-list mb-0">
-                                <li>Interactive Plotly charts with acceleration & risk analysis</li>
-                                <li>Side-by-side camera & BEV occupancy images</li>
-                                <li>Critical event spotlight with violation details</li>
-                                <li>Dark mode support & mobile responsive</li>
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
+                                <li>Abrupt motion detected (emergency stop maneuver)</li>
+                                <li>Path blocked by obstacle (traversability: 0.0)</li>
+                                <li>Critical collision risk (0.9/1.0)</li>
+                                <li>Acceleration spike: 5.69 m/s² (exceeds 5.0 limit)</li>
+                            </ul>
+
+                            <p class="mb-2"><strong>Analysis Features:</strong></p>
+                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
+                                <li>IMU-based motion analysis with jerk detection</li>
+                                <li>Multimodal perception (camera + LiDAR BEV)</li>
+                                <li>Interactive Plotly charts & dark mode</li>
+                                <li>COD classification with smoothness assessment</li>
                             </ul>
                         </div>
                         <div class="col-md-4 text-center">
-                            <a href="reports/demo_report.html" class="btn btn-primary btn-view-report w-100">
-                                View Report →
+                            <a href="reports/demo_report.html" class="btn btn-primary btn-view-report w-100 mb-3">
+                                View Full Report →
                             </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>📸 Camera + LiDAR BEV</div>
+                                <div>📊 Motion & Collision Charts</div>
+                                <div>🎯 ODD Compliance Analysis</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -199,32 +211,61 @@
         <div class="row mt-5">
             <div class="col-md-8 offset-md-2">
                 <div class="hero">
-                    <h2 class="mb-4">About This Project</h2>
+                    <h2 class="mb-4">🚀 About This Project</h2>
                     <p class="mb-3">
-                        The <strong>ODD Observer</strong> is an AI-powered analysis pipeline that monitors whether a
-                        robot
-                        is operating within its Operational Design Domain (ODD). Using a multi-agent system with
-                        Google Gemini models, it analyzes sensor data to detect violations and assess safety.
+                        The <strong>ODD Observer</strong> is an AI-powered multi-agent system that monitors whether a
+                        quadruped robot operates within its Operational Design Domain (ODD). Built with Google's 
+                        Agentic Development Kit (ADK) and Gemini models, it provides real-time safety analysis 
+                        from multimodal sensor data.
                     </p>
 
-                    <h4 class="mt-4 mb-3">Key Features:</h4>
+                    <h4 class="mt-4 mb-3">🔬 Technical Innovation:</h4>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Sensor Fusion</h5>
+                            <ul class="feature-list">
+                                <li>Camera + LiDAR BEV analysis (gemini-2.5-pro)</li>
+                                <li>IMU-based motion with jerk detection</li>
+                                <li>Visual odometry for velocity estimation</li>
+                                <li>Odometry-independent (works with real robots)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Multi-Agent Pipeline</h5>
+                            <ul class="feature-list">
+                                <li>8 specialized agents (perception, motion, collision, etc.)</li>
+                                <li>Natural language ODD specification</li>
+                                <li>Automated COD classification</li>
+                                <li>ODD compliance with violation detection</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4 mb-3">✨ Key Features:</h4>
                     <div class="row">
                         <div class="col-md-6">
                             <ul class="feature-list">
-                                <li>Multi-modal sensor fusion (camera, LiDAR, IMU)</li>
-                                <li>Natural language ODD specification</li>
-                                <li>Automated violation detection</li>
-                                <li>Real-time risk assessment</li>
+                                <li><strong>Motion Smoothness Analysis</strong> - Jerk-based abrupt motion detection</li>
+                                <li><strong>Terrain Classification</strong> - Distinguishes surface vs elevation</li>
+                                <li><strong>Real Robot Validation</strong> - Tested on Unitree Go2</li>
+                                <li><strong>Data-Driven Thresholds</strong> - 5.0 m/s² from 100 production windows</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
                             <ul class="feature-list">
-                                <li>Interactive HTML reports</li>
-                                <li>Professional visualizations</li>
-                                <li>Kaggle ADK Agent Capstone Project</li>
-                                <li>Open source & extensible</li>
+                                <li><strong>Interactive Reports</strong> - Plotly charts & dark mode</li>
+                                <li><strong>Aggregate Dashboard</strong> - Batch analysis visualization</li>
+                                <li><strong>Professional Documentation</strong> - Comprehensive guides</li>
+                                <li><strong>Kaggle ADK Capstone</strong> - Competition submission</li>
                             </ul>
                         </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <strong>🎯 Real-World Impact:</strong> This system detected 4 critical violations in the demo 
+                        scenario: abrupt emergency stop motion (jerk-based), blocked path (traversability: 0.0), 
+                        critical collision risk (0.9), and acceleration spike (5.69 m/s²). The robot correctly 
+                        identified unsafe operating conditions.
                     </div>
 
                     <div class="text-center mt-4">
