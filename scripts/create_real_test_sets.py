@@ -91,10 +91,10 @@ def create_test_set(
                 if original_filename.startswith('bev_'):
                     # Handle bev_occupancy, bev_height, etc.
                     file_type = '_'.join(original_filename.split('_')[:2])
-                
+
                 # Get file extension
                 ext = src.suffix
-                
+
                 # New filename with test set name and sequential window ID
                 new_filename = f"{file_type}_{test_name}_w{idx:03d}{ext}"
                 dst = output_path / new_filename
