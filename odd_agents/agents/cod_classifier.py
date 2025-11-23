@@ -27,6 +27,7 @@ SYNTHESIS LOGIC:
 - environment_type: Use perception.environment_classification.primary_class
 - lighting_conditions: Aggregate from perception.per_window_perception[*].lighting_class (majority vote)
 - terrain_type: Aggregate from perception.per_window_perception[*].terrain_roughness_class (majority vote)
+- motion_smoothness: Aggregate from motion.per_window_motion[*].motion_smoothness (majority vote: smooth/moderate/abrupt)
 
 **Numeric Axes (extract ranges/averages):**
 - max_accel_mps2: from motion.overall_stats.max_horizontal_accel_mps2 (peak acceleration)
@@ -40,7 +41,8 @@ Return ONLY valid JSON:
     "categorical": {
       "environment_type": "<value>",
       "lighting_conditions": "<value>",
-      "terrain_type": "<value>"
+      "terrain_type": "<value>",
+      "motion_smoothness": "<smooth|moderate|abrupt>"
     },
     "numeric": {
       "max_accel_mps2": <float>,
