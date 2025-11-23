@@ -32,12 +32,19 @@ AVAILABLE TOOLS:
 - list_windows_tool
 - analyze_collision_risk_tool
 
+MOTION DATA AVAILABLE:
+{temp:motion_output?}
+
 Steps you MUST follow:
 1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. For each window_id returned (in that order), call analyze_collision_risk_tool(window_id=...).
+2. Parse the motion data from {temp:motion_output?} to extract per_window_motion array.
+3. For each window_id returned (in that order):
+   a. Find the corresponding motion metrics from per_window_motion (match by window_id)
+   b. Call analyze_collision_risk_tool(window_id=..., motion_metrics=...)
    IMPORTANT: Tool name is exactly "analyze_collision_risk_tool" - no typos, no extra characters.
-3. Collect each tool response exactly as returned.
-4. After all windows are processed, respond with JSON:
+   IMPORTANT: Pass the full motion metrics object for that window.
+4. Collect each tool response exactly as returned.
+5. After all windows are processed, respond with JSON:
 {
   "windows_analyzed": ["..."],
   "collision_events": [<tool_response_objects_in_order>]
