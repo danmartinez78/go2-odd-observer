@@ -164,3 +164,70 @@ Replace `DEFAULT_ODD_DESCRIPTION` in these files:
 - Intentional collision: **OUT_ODD** (actual contact = violation) ✅
 
 This creates more realistic, data-driven ODD boundaries while still catching true safety violations.
+
+---
+
+## Testing Plan
+
+### Test Scenario: real_06_174604
+
+**Why This Scenario:**
+- Lowest violation count (2 violations) among all test scenarios
+- From first production bag (collection_20251122_173442) - just walking robot in living room
+- Only 2 windows, quick to re-run (~1 minute analysis time)
+- Benign conditions that should clearly be IN_ODD with updated definition
+
+**Current Results (Old ODD):**
+```json
+{
+  "status": "OUT_ODD",
+  "violations": [
+    "motion_smoothness: abrupt",
+    "collision_risk: 0.8"
+  ]
+}
+```
+
+**Expected Results (New ODD):**
+```json
+{
+  "status": "IN_ODD",
+  "violations": []
+}
+```
+
+**Reasoning:**
+1. **Motion Smoothness Violation → RESOLVED**
+   - Old ODD: "smooth to moderate acceleration" only
+   - New ODD: Explicitly allows "abrupt" motion during obstacle avoidance
+   - Expected: Agent classifies abrupt motion as acceptable reactive behavior ✅
+
+2. **Collision Risk 0.8 → SHOULD DECREASE**
+   - Old ODD: "needs space to maneuver safely" → furniture proximity = high risk
+   - New ODD: "designed for furniture-dense spaces, proximity up to 0.75 acceptable"
+   - Expected: **Collision Agent re-assesses same sensor data** with new context
+   - Same furniture at 0.5m away → risk score drops from 0.8 to ~0.3-0.5
+   - Agent recognizes: "close to furniture = normal, not high risk" ✅
+
+**Key Insight:**
+The ODD definition directly influences AI agent assessments. Same sensor data + different ODD context = different risk evaluations. This is by design - the agents should interpret proximity to obstacles differently depending on whether the robot is designed for open warehouses vs furniture-dense homes.
+
+**Test Command:**
+```bash
+# After applying new ODD to scripts
+python scripts/run_odd_analysis.py --scenario real_06_174604
+
+# Generate comparison report
+python scripts/generate_html_report.py \
+  --input data/analysis_results/manual/latest/real_06_174604/full_result.json \
+  --scenario-dir data/processed/test_data/real/real_06_174604 \
+  --output docs/reports/real_06_174604_new_odd_report.html
+```
+
+**Success Criteria:**
+- ✅ Status changes from OUT_ODD → IN_ODD
+- ✅ Motion smoothness no longer flagged as violation
+- ✅ Collision risk score decreases (agent reassesses with new context)
+- ✅ No new violations introduced
+
+If successful, this demonstrates the ODD tuning process working correctly: tightening or loosening operational boundaries based on empirical data analysis.
