@@ -281,6 +281,16 @@ class RealDataAnalyzer:
 async def main():
     """Main entry point."""
     import os
+    import argparse
+
+    # Parse arguments
+    parser = argparse.ArgumentParser(
+        description='Analyze real robot data with ODD workflow')
+    parser.add_argument('paths', nargs='*',
+                        help='Specific collection paths to analyze (optional)')
+    parser.add_argument('--all', action='store_true',
+                        help='Analyze all collections in processed/runs')
+    args = parser.parse_args()
 
     # Get API key
     api_key = os.getenv('GOOGLE_API_KEY')
@@ -288,11 +298,27 @@ async def main():
         print("Error: GOOGLE_API_KEY environment variable not set")
         sys.exit(1)
 
-    # Paths
+    # Determine what to analyze
     project_root = Path(__file__).parent.parent
-    data_dir = project_root / "data" / "processed" / "runs"
     output_base = project_root / "data" / "analysis_results" / \
         "real_robot" / datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if args.paths:
+        # Analyze specific paths provided as arguments
+        collections = [Path(p).absolute() for p in args.paths]
+        print(f"Analyzing {len(collections)} specified collection(s)...")
+    elif args.all:
+        # Analyze all collections
+        data_dir = project_root / "data" / "processed" / "runs"
+        analyzer = RealDataAnalyzer(api_key, output_base)
+        collections = analyzer.find_collections(data_dir)
+    else:
+        print("Usage: python analyze_real_data.py [paths...] or --all")
+        print("Examples:")
+        print("  python analyze_real_data.py data/test/real_01_173442")
+        print("  python analyze_real_data.py data/test/real_01_* data/test/real_02_*")
+        print("  python analyze_real_data.py --all")
+        sys.exit(1)
 
     # ODD description
     odd_description = """
@@ -308,7 +334,12 @@ async def main():
 
     # Run analysis
     analyzer = RealDataAnalyzer(api_key, output_base)
-    await analyzer.analyze_all(data_dir, odd_description)
+
+    for collection_path in collections:
+        await analyzer.analyze_collection(collection_path, odd_description)
+
+    # Generate summary
+    analyzer._generate_summary()
 
     print("\n✅ All analyses complete!")
     print(f"\nResults location: {output_base}")
