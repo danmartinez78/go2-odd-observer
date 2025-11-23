@@ -82,6 +82,8 @@ data/examples/**
 # Re-exclude data CSVs specifically
 data/**/*.csv
 !data/processed/manifest.csv
+# Allow JSON results in docs/reports for GitHub Pages
+!docs/reports/*.json
 
 # OS
 .DS_Store
