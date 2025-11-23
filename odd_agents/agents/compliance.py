@@ -33,7 +33,8 @@ Return ONLY valid JSON:
     "categorical_compliance": {
       "environment_type": "IN_ODD|OUT_ODD",
       "lighting_conditions": "IN_ODD|OUT_ODD",
-      "terrain_type": "IN_ODD|OUT_ODD"
+      "terrain_type": "IN_ODD|OUT_ODD",
+      "motion_smoothness": "IN_ODD|OUT_ODD"
     },
     "numeric_compliance": {
       "obstacle_density": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
