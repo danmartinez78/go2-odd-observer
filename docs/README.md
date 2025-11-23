@@ -11,6 +11,15 @@ docs/
 ├── reports/                # Individual scenario reports
 │   ├── demo_report.html
 │   └── [more reports...]
+├── agents/                 # Agent architecture documentation
+│   ├── README.md           # Overview and workflow
+│   ├── PERCEPTION.md       # Perception agents
+│   ├── MOTION.md           # Motion agents
+│   ├── COLLISION.md        # Collision agents
+│   ├── ODD_SPEC.md         # ODD specification agent
+│   ├── COD_CLASSIFIER.md   # COD classification agent
+│   ├── COMPLIANCE.md       # Compliance checking agent
+│   └── REPORT.md           # Report generation agent
 ├── guides/                 # User documentation
 ├── examples/               # Example data and demos
 └── images/                 # Documentation images
@@ -21,6 +30,17 @@ docs/
 Visit: **https://danmartinez78.github.io/go2-odd-observer/**
 
 ## Pages Overview
+
+### 🤖 Agent Architecture (`agents/`)
+Comprehensive documentation for the 10-agent pipeline:
+- **Overview:** Workflow diagram and agent categories
+- **Per-agent docs:** Purpose, inputs, outputs, prompting strategies
+- **Tool dependencies:** What each agent uses
+- **Model selection:** Cost optimization strategies
+- **Example outputs:** Sample JSON responses
+- **Common issues:** Known edge cases and solutions
+
+See [Agent Architecture Documentation](agents/README.md)
 
 ### 🏠 Landing Page (`index.html`)
 Portfolio-quality showcase with:
