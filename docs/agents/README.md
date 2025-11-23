@@ -65,6 +65,9 @@ graph TD
 ### Input Data
 - **Natural Language ODD**: User-provided description of robot's design parameters
 - **Sensor Data**: Time-windowed camera images, LiDAR BEV maps, IMU readings
+  - **Camera**: RGB images from forward-facing camera (egocentric view)
+  - **LiDAR BEV**: Bird's-eye occupancy maps with 10cm ground filtering (obstacles only)
+  - **IMU**: Acceleration and angular velocity from go2_interfaces custom message type
 
 ### Intermediate Outputs
 Each agent passes data to downstream agents via Google ADK's `output_key` mechanism:
@@ -137,7 +140,7 @@ This separation enables:
 ### Multimodal Fusion
 Vision-capable agents (Perception, Collision) receive:
 - Camera image (RGB, egocentric view)
-- LiDAR BEV occupancy map (top-down, obstacle detection)
+- LiDAR BEV occupancy map (top-down, obstacle detection with 10cm ground filtering)
 - Motion context (from previous stages)
 
 The LLM performs implicit sensor fusion, combining:
