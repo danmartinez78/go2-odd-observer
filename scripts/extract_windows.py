@@ -31,10 +31,23 @@ try:
     from cv_bridge import CvBridge
     import sensor_msgs_py.point_cloud2 as pc2
     ROS2_AVAILABLE = True
+    # Try to import Go2 custom IMU message (optional)
+    try:
+        from go2_interfaces.msg import IMU as Go2IMU
+        GO2_IMU_AVAILABLE = True
+    except ImportError:
+        GO2_IMU_AVAILABLE = False
+        Go2IMU = None
+        print(
+            "Note: go2_interfaces not available. IMU data from real robot will be skipped.")
 except ImportError as e:
     print(f"Warning: ROS2 libraries not fully available: {e}")
     print("Please source ROS2 workspace: source /opt/ros/humble/setup.bash")
     ROS2_AVAILABLE = False
+    GO2_IMU_AVAILABLE = False
+    # Define dummy types to prevent NameError in type hints
+    PointCloud2 = None
+    Go2IMU = None
 
 try:
     import cv2
@@ -48,6 +61,24 @@ except ImportError:
 class WindowExtractor:
     """Extract time-windowed multi-modal data from ROS2 bags."""
 
+    # Topic mapping for different data sources
+    TOPIC_MAPS = {
+        'sim': {
+            "odom": "/robot0/odom",
+            "imu": "/robot0/imu",
+            "joints": "/robot0/joint_states",
+            "camera": "/robot0/front_cam/rgb",
+            "lidar": "/robot0/point_cloud2_L1",
+        },
+        'real': {
+            "odom": "/odom",
+            "imu": "/imu",
+            "joints": "/joint_states",
+            "camera": "/camera/image_raw",
+            "lidar": "/point_cloud2",
+        },
+    }
+
     def __init__(
         self,
         rosbag_path: str,
@@ -55,6 +86,7 @@ class WindowExtractor:
         window_length: float = 2.0,
         stride: float = 1.0,
         run_id: Optional[str] = None,
+        data_source: Optional[str] = None,
     ):
         """
         Initialize window extractor.
@@ -65,6 +97,7 @@ class WindowExtractor:
             window_length: Length of each window in seconds
             stride: Stride between window starts in seconds
             run_id: Optional run identifier (auto-generated if None)
+            data_source: 'real' or 'sim' (auto-detected if None)
         """
         self.rosbag_path = Path(rosbag_path)
         self.output_dir = Path(output_dir)
@@ -79,14 +112,16 @@ class WindowExtractor:
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Topic names
-        self.topics = {
-            "odom": "/robot0/odom",
-            "imu": "/robot0/imu",
-            "joints": "/robot0/joint_states",
-            "camera": "/robot0/front_cam/rgb",
-            "lidar": "/robot0/point_cloud2_L1",
-        }
+        # Auto-detect data source if not specified
+        if data_source is None:
+            self.data_source = self._detect_data_source()
+        else:
+            self.data_source = data_source
+
+        # Set topic names based on data source
+        self.topics = self.TOPIC_MAPS.get(
+            self.data_source, self.TOPIC_MAPS['sim'])
+        print(f"Using topic mapping for data source: {self.data_source}")
 
         # Data buffers - dict of lists indexed by topic
         self.messages = defaultdict(list)
@@ -94,6 +129,25 @@ class WindowExtractor:
         # CV Bridge for image conversion
         if ROS2_AVAILABLE:
             self.bridge = CvBridge()
+
+    def _detect_data_source(self) -> str:
+        """
+        Auto-detect whether data is from real robot or simulator.
+
+        Returns:
+            'real' or 'sim'
+        """
+        # Check if bag path contains 'real' or 'sim'
+        path_str = str(self.rosbag_path).lower()
+        if 'real' in path_str:
+            return 'real'
+        elif 'sim' in path_str:
+            return 'sim'
+
+        # Default to sim if unclear
+        print("Warning: Could not auto-detect data source from path. Defaulting to 'sim'.")
+        print("         Use --data-source flag to specify 'real' or 'sim' explicitly.")
+        return 'sim'
 
     def _get_closest_message(self, topic: str, target_time: float) -> Optional[Tuple[float, any]]:
         """Find the message closest to target time for a given topic."""
@@ -257,13 +311,24 @@ class WindowExtractor:
                 motion_data["gyro_z"].append(0.0)
 
             # Update IMU values at closest index
+            # Handle both sensor_msgs/Imu and go2_interfaces/IMU
             if closest_idx < len(motion_data["accel_x"]):
-                motion_data["accel_x"][closest_idx] = imu_msg.linear_acceleration.x
-                motion_data["accel_y"][closest_idx] = imu_msg.linear_acceleration.y
-                motion_data["accel_z"][closest_idx] = imu_msg.linear_acceleration.z
-                motion_data["gyro_x"][closest_idx] = imu_msg.angular_velocity.x
-                motion_data["gyro_y"][closest_idx] = imu_msg.angular_velocity.y
-                motion_data["gyro_z"][closest_idx] = imu_msg.angular_velocity.z
+                if hasattr(imu_msg, 'linear_acceleration'):
+                    # Standard sensor_msgs/Imu
+                    motion_data["accel_x"][closest_idx] = imu_msg.linear_acceleration.x
+                    motion_data["accel_y"][closest_idx] = imu_msg.linear_acceleration.y
+                    motion_data["accel_z"][closest_idx] = imu_msg.linear_acceleration.z
+                    motion_data["gyro_x"][closest_idx] = imu_msg.angular_velocity.x
+                    motion_data["gyro_y"][closest_idx] = imu_msg.angular_velocity.y
+                    motion_data["gyro_z"][closest_idx] = imu_msg.angular_velocity.z
+                elif hasattr(imu_msg, 'accelerometer'):
+                    # Go2 custom IMU message (convert numpy float32 to Python float)
+                    motion_data["accel_x"][closest_idx] = float(imu_msg.accelerometer[0])
+                    motion_data["accel_y"][closest_idx] = float(imu_msg.accelerometer[1])
+                    motion_data["accel_z"][closest_idx] = float(imu_msg.accelerometer[2])
+                    motion_data["gyro_x"][closest_idx] = float(imu_msg.gyroscope[0])
+                    motion_data["gyro_y"][closest_idx] = float(imu_msg.gyroscope[1])
+                    motion_data["gyro_z"][closest_idx] = float(imu_msg.gyroscope[2])
 
         # Ensure all arrays have same length
         target_len = len(motion_data["timestamps"])
@@ -475,9 +540,9 @@ class WindowExtractor:
 
         print("Reading rosbag messages...")
 
-        # Set up storage options
+        # Set up storage options - rosbag_path should be the bag directory
         storage_options = StorageOptions(
-            uri=str(self.rosbag_path.parent),
+            uri=str(self.rosbag_path),
             storage_id='sqlite3'
         )
         converter_options = ConverterOptions(
@@ -502,6 +567,10 @@ class WindowExtractor:
             'nav_msgs/msg/Odometry': Odometry,
             'geometry_msgs/msg/Twist': Twist,
         }
+
+        # Add Go2 IMU if available
+        if GO2_IMU_AVAILABLE:
+            msg_type_dict['go2_interfaces/msg/IMU'] = Go2IMU
 
         # Read all messages
         msg_count = 0
@@ -574,6 +643,13 @@ def main():
         default=None,
         help="Run identifier (default: auto-generate from bag filename)"
     )
+    parser.add_argument(
+        "--data-source",
+        type=str,
+        choices=['real', 'sim'],
+        default=None,
+        help="Data source: 'real' for real robot, 'sim' for simulator (default: auto-detect from path)"
+    )
 
     args = parser.parse_args()
 
@@ -584,6 +660,7 @@ def main():
         window_length=args.window_length,
         stride=args.stride,
         run_id=args.run_id,
+        data_source=args.data_source,
     )
 
     # Extract windows
