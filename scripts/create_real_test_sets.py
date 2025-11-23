@@ -132,8 +132,8 @@ def main():
     """Create test sets from all collections."""
 
     project_root = Path(__file__).parent.parent
-    data_dir = project_root / "data" / "processed" / "runs"
-    test_dir = project_root / "data" / "test"
+    data_dir = project_root / "data" / "processed" / "production"
+    test_dir = project_root / "data" / "processed" / "test_data" / "real"
 
     # Find all collections
     collections = sorted(data_dir.glob("collection_*"))

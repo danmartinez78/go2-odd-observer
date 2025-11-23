@@ -4,9 +4,114 @@ Executable scripts for the Go2 ODD Observer project.
 
 ---
 
-## 🚀 Main Workflow
+## 🎯 Core Production Scripts
 
-### `odd_workflow.py` - **CURRENT** Production Script
+### `run_analysis.py` - **Interactive Analysis Runner**
+
+**Purpose**: User-friendly interface to select and analyze a single production dataset.
+
+**Usage**:
+```bash
+# Interactive mode (prompts for dataset selection)
+python scripts/run_analysis.py
+```
+
+**What it does**:
+- Lists all production datasets with window counts
+- Prompts user to select dataset
+- Prompts for model configuration (or uses defaults)
+- Runs complete 10-agent ODD workflow
+- Displays comprehensive results summary
+- Saves analysis report + executive summary
+- Runtime: 2-5 minutes per dataset
+
+**Features**:
+- ✅ Environment variables loaded from .env automatically
+- 📊 Visual dataset selection menu
+- 🤖 Configurable model selection (or use defaults)
+- 📝 Comprehensive console output with summary
+- 💾 Automatic result saving to `data/analysis_results/real_robot/`
+
+**Example session**:
+```
+AVAILABLE PRODUCTION DATASETS
+ 1. collection_173442_chunk_01    ( 25 windows)
+ 2. collection_173442_chunk_02    ( 25 windows)
+ ...
+14. office_navigation              ( 13 windows)
+
+Select dataset number: 14
+
+Use default models? [Y/n]: y
+✅ Model configuration set
+
+⏳ This may take 2-5 minutes...
+✅ ANALYSIS COMPLETE
+
+📊 Summary:
+   • Windows analyzed: 13
+   • ODD compliance: IN_ODD
+   • Violations: 0
+   • Warnings: 2
+```
+
+---
+
+### `batch_analysis.py` - **Batch Production Processor**
+
+**Purpose**: Process all production datasets and generate aggregate meta-analysis.
+
+**Usage**:
+```bash
+# Process all datasets
+python scripts/batch_analysis.py
+
+# Preview what would be processed (no actual analysis)
+python scripts/batch_analysis.py --dry-run
+
+# Skip datasets with existing recent results
+python scripts/batch_analysis.py --skip-existing
+```
+
+**What it does**:
+- Scans all datasets in `data/processed/production/`
+- Processes each dataset with full ODD workflow
+- Saves individual analysis reports
+- Generates aggregate meta-analysis report
+- Displays comprehensive summary statistics
+- Runtime: ~1 hour for 14 datasets (283 windows total)
+
+**Features**:
+- 🔄 Batch processing of all production data
+- 📊 Aggregate statistics across all datasets
+- 🏆 Compliance summary (compliant/non-compliant/partial)
+- ⚠️ Common violations and warnings analysis
+- 💾 Individual + aggregate report generation
+- ⏭️ Skip previously analyzed datasets (--skip-existing)
+- 🔍 Dry-run mode for preview
+
+**Output structure**:
+```
+data/analysis_results/real_robot/
+├── collection_173442_chunk_01_analysis_20241123_143022.json
+├── collection_173442_chunk_02_analysis_20241123_144530.json
+├── ...
+├── office_navigation_analysis_20241123_150142.json
+└── aggregate_analysis_20241123_151200.json  # Meta-analysis
+```
+
+**Aggregate report includes**:
+- Total datasets/windows analyzed
+- Overall compliance distribution
+- Most common violations (frequency-ranked)
+- Most common warnings (frequency-ranked)
+- Per-dataset summary breakdown
+
+---
+
+## 🚀 Legacy Workflow Scripts
+
+### `odd_workflow.py` - Original Production Script
 
 **Purpose**: Run complete ODD/COD analysis using the parameterized `odd_agents` module.
 
@@ -49,7 +154,118 @@ result = await run_odd_workflow(
 
 ---
 
+### `validate_data_structure.py` - Data Structure Validator
+
+**Purpose**: Validate that directory names match file naming conventions (required for workflow).
+
+**Usage**:
+```bash
+# Validate all processed data
+python scripts/validate_data_structure.py
+
+# Validate specific directory
+python scripts/validate_data_structure.py data/processed/production
+
+# Only check immediate children (not recursive)
+python scripts/validate_data_structure.py data/processed/production --no-recursive
+```
+
+**What it checks**:
+- ✅ Directory name matches index file name
+- ✅ Directory name matches scenario name in filenames
+- ✅ Index file exists
+- ⚠️ Motion, camera, and BEV files are present
+
+**Why needed**: The workflow tools use `directory.name` to construct expected filenames. If directory name doesn't match the `run_id` embedded in files, agents will fail to find windows.
+
+**Example output**:
+```
+Found 14 scenarios to validate
+
+✅ collection_20251122_173442_chunk_01
+✅ collection_20251122_173813_chunk_01
+❌ office_navigation
+   ❌ NAMING MISMATCH: Directory 'office_navigation' but files use 'sim_run_new'
+
+Validation FAILED - please fix naming mismatches above
+```
+
+---
+
 ## 📊 Data Processing Scripts
+
+### `split_scenario.py` - Scenario Chunking for Large Datasets
+
+**Purpose**: Split large scenarios into manageable chunks to avoid LLM context/output limits.
+
+**Usage**:
+```bash
+# Split with default chunk size (25 windows)
+python scripts/split_scenario.py data/processed/runs/collection_20251122_173442
+
+# Custom chunk size
+python scripts/split_scenario.py data/processed/runs/collection_20251122_173442 --chunk-size 30
+
+# Custom output directory
+python scripts/split_scenario.py data/processed/runs/collection_20251122_173442 --output data/processed/chunks
+```
+
+**What it does**:
+- Splits scenarios exceeding ~20 windows into sequential chunks
+- Creates new sub-scenario directories with renamed files
+- Generates index files for each chunk
+- Maintains manifest showing chunk-to-original mapping
+- Preserves all metadata and file types
+
+**Why needed**: Motion/Perception/Collision agents can fail on large datasets (>25 windows) due to LLM response truncation. Chunking ensures reliable processing.
+
+**Output structure**:
+```
+data/processed/runs/
+├── collection_20251122_173442/              # Original (62 windows)
+├── collection_20251122_173442_chunk_01/     # Chunk 1 (windows 000-024)
+├── collection_20251122_173442_chunk_02/     # Chunk 2 (windows 025-049)
+├── collection_20251122_173442_chunk_03/     # Chunk 3 (windows 050-061)
+└── collection_20251122_173442_chunks_manifest.json  # Mapping manifest
+```
+
+---
+
+### `split_all_scenarios.py` - Batch Scenario Splitting
+
+**Purpose**: Automatically split all large scenarios in one command.
+
+**Usage**:
+```bash
+# Split all scenarios >15 windows into 25-window chunks
+python scripts/split_all_scenarios.py --threshold 15 --chunk-size 25
+
+# Dry run to see what would be split
+python scripts/split_all_scenarios.py --dry-run
+
+# Custom parameters
+python scripts/split_all_scenarios.py --threshold 20 --chunk-size 30
+```
+
+**What it does**:
+- Scans `data/processed/runs/` for scenarios exceeding threshold
+- Automatically splits each into chunks
+- Creates overall summary of splitting operation
+- Skips already-chunked scenarios (with `_chunk_` in name)
+
+**Example output**:
+```
+Found 7 scenarios to split:
+  collection_20251122_173442    62 windows → 3 chunks
+  collection_20251122_173813    60 windows → 3 chunks
+  ...
+
+✓ Split 7 scenarios
+✓ Created 16 total chunks  
+✓ Distributed 332 windows
+```
+
+---
 
 ### `extract_windows.py` - ROS2 Bag Window Extractor
 
@@ -57,13 +273,36 @@ result = await run_odd_workflow(
 
 **Usage**:
 ```bash
+# IMPORTANT: Output directory will be automatically created to match run-id
+# This ensures workflow tools can find the files correctly
+
 python scripts/extract_windows.py \
   --rosbag data/raw_rosbags/real/my_bag.db3 \
-  --output data/processed/runs/my_scenario \
+  --output data/processed/production \
   --run-id my_scenario \
   --window-length 2.0 \
   --stride 1.0
+
+# Creates: data/processed/production/my_scenario/
+#   with files: motion_my_scenario_w000.json, etc.
+
+# For real robot data with date-stamped collections:
+python scripts/extract_windows.py \
+  --rosbag data/raw_rosbags/real/collection_20251122_173442.db3 \
+  --output data/processed/production \
+  --run-id collection_20251122_173442_chunk_01 \
+  --window-length 2.0 \
+  --stride 1.0
+
+# Creates: data/processed/production/collection_20251122_173442_chunk_01/
+#   with files: motion_collection_20251122_173442_chunk_01_w000.json, etc.
 ```
+
+**CRITICAL NAMING REQUIREMENT**:
+- ⚠️ The output directory name MUST match the run-id
+- Files are created as `motion_{run_id}_w000.json`
+- Workflow tools use directory name to find files
+- Script will automatically append run-id to output path if needed
 
 **Outputs per window**:
 - `motion_<scenario>_w<NNN>.json` - Velocity, IMU, odometry time series
@@ -157,18 +396,34 @@ python scripts/generate_demo_data.py
 ## 📁 Directory Structure After Processing
 
 ```
-data/processed/runs/
-└── my_scenario/
-    ├── index_my_scenario.csv
-    ├── motion_my_scenario_w000.json
-    ├── motion_my_scenario_w001.json
-    ├── ...
-    ├── cam_my_scenario_w000.png
-    ├── cam_my_scenario_w001.png
-    ├── ...
-    ├── bev_occupancy_my_scenario_w000.png
-    ├── bev_occupancy_my_scenario_w001.png
+data/processed/
+├── production/                          # Production datasets
+│   ├── collection_20251122_173442_chunk_01/
+│   │   ├── index_collection_20251122_173442_chunk_01.csv
+│   │   ├── motion_collection_20251122_173442_chunk_01_w000.json
+│   │   ├── cam_collection_20251122_173442_chunk_01_w000.png
+│   │   ├── bev_occupancy_collection_20251122_173442_chunk_01_w000.png
+│   │   └── ...
+│   └── collection_20251122_173813_chunk_01/
+│       └── ...
+├── test_data/                           # Curated test sets
+│   ├── real/                            # Real robot test sets
+│   │   ├── real_01_173442/
+│   │   │   ├── index_real_01_173442.csv
+│   │   │   ├── motion_real_01_173442_w000.json
+│   │   │   └── ...
+│   │   └── real_02_173813/
+│   │       └── ...
+│   └── sim/                             # Simulation test sets
+│       └── sim_run_test/
+│           ├── index_sim_run_test.csv
+│           ├── motion_sim_run_test_w000.json
+│           └── ...
+└── runs/                                # Legacy/development runs (deprecated)
     └── ...
+
+CRITICAL: Directory names MUST match the scenario name embedded in filenames!
+Example: Directory "real_01_173442" contains files "motion_real_01_173442_w000.json"
 ```
 
 ---
