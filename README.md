@@ -244,6 +244,7 @@ go2-odd-observer/
 | Document | Description |
 |----------|-------------|
 | [**Getting Started**](docs/guides/GETTING_STARTED.md) | Complete setup, usage examples, troubleshooting |
+| [**Agent Architecture**](docs/agents/README.md) | Comprehensive documentation for all 10 agents in the pipeline |
 | [**Model Selection**](docs/MODEL_SELECTION_GUIDE.md) | Cost optimization, when to use flash-lite vs 2.5-pro |
 | [**Scripts Guide**](scripts/README.md) | Extract windows, render visualizations, generate data |
 | [**Notebooks Guide**](notebooks/README.md) | Interactive analysis, visualizations, exports |
