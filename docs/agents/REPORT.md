@@ -12,7 +12,7 @@ The **ReportAgent** is the final agent in the ODD analysis workflow. It synthesi
 
 ### Purpose
 
-Generates the final comprehensive report by synthesizing outputs from all 9 previous agents.
+Generates the final comprehensive report by synthesizing outputs from the 9 preceding agents in the workflow.
 
 **Problem it solves**: Raw sensor analysis and compliance data is not directly actionable. This agent provides:
 - Executive summary for stakeholders

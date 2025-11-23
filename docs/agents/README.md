@@ -152,7 +152,7 @@ The LLM performs implicit sensor fusion, combining:
 |---------------|-------------|--------------|
 | Vision Agents (Perception, Collision) | Higher | Use flash-lite by default, upgrade to pro only when needed |
 | Synthesis Agents (ODD Spec, COD, Compliance, Report) | Lower | flash-lite sufficient for JSON reasoning |
-| Motion Agent | Medium | Pure data analysis, flash-lite works well |
+| Motion Agents | Medium | Pure data analysis, flash-lite works well |
 
 **Example**: Full 13-window analysis costs ~$0.05 with flash-lite defaults
 

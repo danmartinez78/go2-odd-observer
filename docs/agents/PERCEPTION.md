@@ -116,8 +116,10 @@ Orchestrates per-window perception analysis by iterating through all time window
 
 **Key Distinctions in Prompt:**
 - `terrain_roughness_class`: Ground surface elevation (not texture)
-  - "smooth" = flat floor (includes rugs/carpets on flat surface)
-  - "rough" = elevation changes, stairs, slopes
+  - "smooth" = flat floor with minimal elevation changes (includes rugs/carpets on flat surface)
+  - "moderate" = small bumps, gentle slopes, slightly uneven surfaces
+  - "rough" = significant elevation changes, stairs, ramps, rocky/unpaved ground
+  - "very_rough" = extreme terrain (large boulders, steep slopes, severely uneven surfaces)
 - `obstacle_density`: Concentration of objects in forward path
 - `traversability_score`: Combined terrain + obstacles assessment
 

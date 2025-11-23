@@ -201,8 +201,8 @@ Logic: Sum all values, divide by count
 
 **Issue 2: Tied majority vote**
 - **Symptom**: Categorical axis has equal counts for multiple classes (e.g., 5 "bright", 5 "dim")
-- **Agent behavior**: Should select one (typically first encountered or most conservative)
-- **Expected**: This is acceptable - COD represents best estimate
+- **Agent behavior**: The LLM will select one based on its reasoning (implementation-dependent: may choose first encountered, most conservative, or use additional context)
+- **Expected**: This is acceptable - COD represents best estimate, and the agent's choice should be documented in the cod_summary field
 
 **Issue 3: Extreme numeric values**
 - **Symptom**: Averaged values seem unrealistic (e.g., obstacle_density = 0.95)
