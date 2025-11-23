@@ -427,14 +427,17 @@ Synthesizes per-window motion data into aggregate statistics and overall activit
 
 ### Motion Detection Thresholds
 
-**Empirically validated on Unitree Go2:**
+**Default thresholds (empirically validated on Unitree Go2):**
 ```python
+# These are default values that may need adjustment for different robot platforms
 MOTION_THRESHOLDS = {
     "peak_horizontal_accel": 0.15,  # m/s²
     "peak_angular_velocity": 0.1,   # rad/s
     "avg_horizontal_accel": 0.08    # m/s²
 }
 ```
+
+**Note:** These thresholds are embedded in the tool implementation and can be adjusted by modifying the tool code for different robot platforms.
 
 **Adjust for other platforms:**
 - Larger robots: Increase thresholds (more mass, less responsive)
