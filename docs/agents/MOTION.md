@@ -28,6 +28,8 @@ Orchestrates per-window motion analysis by iterating through all time windows an
 **Environment Dependencies:**
 - Scenario directory with motion data files (`motion_*.json`)
   - Contains: `accel_x`, `accel_y`, `accel_z`, `gyro_x`, `gyro_y`, `gyro_z`, `roll`, `pitch`, `timestamps`
+  - **Data source**: Custom `go2_interfaces/msg/IMU` message type (requires go2_ros2_sdk)
+  - Extracted from `/imu` topic during rosbag processing
 
 ### Outputs
 
@@ -108,12 +110,14 @@ Orchestrates per-window motion analysis by iterating through all time windows an
 
 **Data Extraction:**
 ```python
-# Load motion_*.json file
-accel_x, accel_y, accel_z  # Linear acceleration (m/s²)
-gyro_x, gyro_y, gyro_z     # Angular velocity (rad/s)
-roll, pitch                 # Platform orientation (degrees)
-timestamps                  # Sample timestamps
+# Load motion_*.json file (extracted from go2_interfaces/msg/IMU)
+accel_x, accel_y, accel_z  # Linear acceleration (m/s²) from IMU.accelerometer
+gyro_x, gyro_y, gyro_z     # Angular velocity (rad/s) from IMU.gyroscope
+roll, pitch                 # Platform orientation (degrees) from odometry quaternion
+timestamps                  # Sample timestamps (relative to window start)
 ```
+
+**Important**: IMU data requires `go2_interfaces` package (from go2_ros2_sdk). If package not available during extraction, IMU fields will be zeros.
 
 **Statistical Analysis:**
 - **Horizontal acceleration**: `sqrt(accel_x² + accel_y²)` - planar motion magnitude
