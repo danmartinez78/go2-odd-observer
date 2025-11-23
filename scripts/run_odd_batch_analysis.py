@@ -77,10 +77,10 @@ and open workspaces. The floors should be smooth (tile, hardwood, or low-pile ca
 and there needs to be adequate lighting so the cameras can see clearly. Bright office 
 lighting is ideal, but it can handle dimmer areas too. No pitch-black rooms though.
 
-The robot moves at a walking pace - nothing crazy fast. Think leisurely stroll, not 
-a sprint. It's designed to navigate around typical office obstacles like chairs, 
-desk legs, and the occasional box, but it's not meant for super cluttered spaces 
-where there's barely room to move.
+The robot moves with gentle, controlled acceleration - no sudden movements or jerky 
+motion. Think smooth and steady, not aggressive starts and stops. It's designed to 
+navigate around typical office obstacles like chairs, desk legs, and the occasional 
+box, but it's not meant for super cluttered spaces where there's barely room to move.
 
 The robot expects relatively flat, stable ground. No stairs, no steep ramps, and 
 definitely not designed for outdoor terrain like gravel or grass. It needs space 
@@ -127,10 +127,14 @@ def find_production_scenarios():
     return scenarios
 
 
-def save_scenario_results(result: Dict[str, Any], scenario_name: str, output_base: Path) -> Path:
+def save_scenario_results(result: Dict[str, Any], scenario_name: str, output_base: Path, source_path: str = None) -> Path:
     """Save individual scenario results."""
     scenario_dir = output_base / scenario_name
     scenario_dir.mkdir(parents=True, exist_ok=True)
+
+    # Add source path to result if provided
+    if source_path:
+        result['source_scenario_path'] = source_path
 
     # Save full result
     full_result_path = scenario_dir / "full_result.json"
@@ -285,6 +289,7 @@ async def process_scenario(scenario: Dict[str, Any], genai_client: Client, api_k
                 'success': True,
                 'scenario_name': scenario_name,
                 'window_count': scenario['windows'],
+                'source_path': scenario_path,
                 'data': result
             }
         else:
@@ -383,7 +388,7 @@ async def main():
             if result['success']:
                 # Save individual results
                 save_scenario_results(
-                    result['data'], result['scenario_name'], output_base)
+                    result['data'], result['scenario_name'], output_base, result.get('source_path'))
                 if not HAS_TQDM:
                     print(f"  ✅ Completed: {result['scenario_name']}")
             else:
