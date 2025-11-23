@@ -80,8 +80,9 @@ No pitch-black rooms though.
 
 The robot moves with smooth to moderate acceleration - controlled movements during 
 normal navigation. It can handle quick starts and stops when needed (like avoiding 
-obstacles), but it's not meant for aggressive racing-style maneuvers. Think responsive 
-and agile, not jerky or violent. It's designed to 
+obstacles), but it's not meant for aggressive racing-style maneuvers or abrupt jerky 
+motions. Think responsive and agile, not violent or chaotic. The motion should feel 
+controlled and deliberate, even when reacting to obstacles. It's designed to 
 navigate around typical indoor obstacles like furniture, chairs, desk legs, and the 
 occasional box, but it's not meant for super cluttered spaces where there's barely 
 room to move.

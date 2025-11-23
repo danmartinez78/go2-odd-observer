@@ -34,13 +34,14 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
     async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
         """
         Tool: Analyze robot motion using IMU sensor data and optional camera visual odometry.
-        
+
         NOTE: Odometry data from wheel encoders is unreliable/unavailable. This analysis
         relies solely on IMU (accelerometer + gyroscope) and camera-based velocity estimation.
         """
         try:
             scenario_name = scenario_path.name
-            motion_file = scenario_path / f"motion_{scenario_name}_w{window_id}.json"
+            motion_file = scenario_path / \
+                f"motion_{scenario_name}_w{window_id}.json"
             cam_file = scenario_path / f"cam_{scenario_name}_w{window_id}.png"
 
             if not motion_file.exists():
@@ -76,16 +77,22 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
 
             # Statistical analysis
             peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
-            avg_horiz_accel = sum(horiz_accel) / len(horiz_accel) if horiz_accel else 0.0
-            median_horiz_accel = sorted(horiz_accel)[len(horiz_accel)//2] if horiz_accel else 0.0
+            avg_horiz_accel = sum(horiz_accel) / \
+                len(horiz_accel) if horiz_accel else 0.0
+            median_horiz_accel = sorted(horiz_accel)[len(
+                horiz_accel)//2] if horiz_accel else 0.0
 
             # Angular velocity analysis
-            peak_gyro_z = max(abs(gz) for gz in gyro_z_valid) if gyro_z_valid else 0.0
-            avg_gyro_z = sum(abs(gz) for gz in gyro_z_valid) / len(gyro_z_valid) if gyro_z_valid else 0.0
+            peak_gyro_z = max(abs(gz)
+                              for gz in gyro_z_valid) if gyro_z_valid else 0.0
+            avg_gyro_z = sum(abs(gz) for gz in gyro_z_valid) / \
+                len(gyro_z_valid) if gyro_z_valid else 0.0
 
             # Full 3D rotation analysis
-            peak_gyro_x = max(abs(gx) for gx in gyro_x if abs(gx) > 1e-6) if any(abs(gx) > 1e-6 for gx in gyro_x) else 0.0
-            peak_gyro_y = max(abs(gy) for gy in gyro_y if abs(gy) > 1e-6) if any(abs(gy) > 1e-6 for gy in gyro_y) else 0.0
+            peak_gyro_x = max(abs(gx) for gx in gyro_x if abs(
+                gx) > 1e-6) if any(abs(gx) > 1e-6 for gx in gyro_x) else 0.0
+            peak_gyro_y = max(abs(gy) for gy in gyro_y if abs(
+                gy) > 1e-6) if any(abs(gy) > 1e-6 for gy in gyro_y) else 0.0
 
             # Platform orientation stats
             max_roll = max(abs(r) for r in roll) if roll else 0.0
@@ -99,9 +106,10 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
                     if dt > 1e-6:
                         jerk = abs(horiz_accel[i] - horiz_accel[i-1]) / dt
                         jerk_samples.append(jerk)
-            
+
             peak_jerk = max(jerk_samples) if jerk_samples else 0.0
-            avg_jerk = sum(jerk_samples) / len(jerk_samples) if jerk_samples else 0.0
+            avg_jerk = sum(jerk_samples) / \
+                len(jerk_samples) if jerk_samples else 0.0
 
             # Build multimodal prompt with IMU + camera
             prompt_parts = [types.Part(text=f"""You are a robotics motion analyst for window {window_id}.
@@ -194,13 +202,13 @@ Note: estimated_speed_mps should be your best estimate from camera blur/flow if 
 
             data = extract_json_block(response.text or "")
             data["window_id"] = window_id
-            
+
             # Ensure backward compatibility
             if "estimated_speed_mps" not in data:
                 data["estimated_speed_mps"] = None
             if "motion_smoothness" not in data:
                 data["motion_smoothness"] = "moderate"
-            
+
             return data
 
         except Exception as err:
