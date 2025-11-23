@@ -21,7 +21,7 @@
 
 **Deploying autonomous robots? Need to know if they're operating safely?**
 
-This system uses **10 specialized AI agents** to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically answer:
+This system uses **7 specialized AI agents** to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically answer:
 
 ✅ **Is the robot within its design limits?** (Operational Design Domain compliance)  
 ⚠️ **Are conditions approaching safety boundaries?** (Warning detection)  
@@ -72,8 +72,8 @@ echo "GOOGLE_API_KEY=your-api-key-here" > .env  # Get free key: https://aistudio
 ### 2️⃣ Run Analysis
 
 ```bash
-# Analyze test dataset (2 windows, ~1 minute)
-python scripts/odd_workflow.py
+# Interactive analysis CLI (select from test/production scenarios)
+python scripts/run_odd_analysis.py
 ```
 
 ### 3️⃣ View Results
@@ -104,7 +104,7 @@ jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/late
 
 ## 🤖 How It Works
 
-### 10-Agent Pipeline
+### 7-Agent Pipeline
 
 ```mermaid
 graph LR
@@ -265,7 +265,7 @@ Violations: 3
 ```
 go2-odd-observer/
 ├── odd_agents/              # Core AI agent module (parameterized, no global state)
-│   ├── agents/              # 10 agent implementations (perception, motion, etc.)
+│   ├── agents/              # 7 agent implementations (perception, motion, collision, etc.)
 │   ├── tools/               # Agent tool functions (Gemini API wrappers)
 │   └── workflow.py          # Pipeline orchestration
 ├── scripts/
@@ -297,7 +297,7 @@ go2-odd-observer/
 |----------|-------------|
 | [**Live Demo**](https://danmartinez78.github.io/go2-odd-observer/) | Interactive HTML reports deployed on GitHub Pages |
 | [**Getting Started**](docs/guides/GETTING_STARTED.md) | Complete setup, usage examples, troubleshooting |
-| [**Agent Architecture**](docs/agents/README.md) | Comprehensive documentation for all 10 agents in the pipeline |
+| [**Agent Architecture**](docs/agents/README.md) | Comprehensive documentation for all 7 agents in the pipeline |
 | [**Model Selection**](docs/MODEL_SELECTION_GUIDE.md) | Cost optimization, when to use flash vs 2.5-pro |
 | [**Scripts Guide**](scripts/README.md) | Extract windows, render visualizations, generate reports |
 | [**Notebooks Guide**](notebooks/README.md) | Interactive analysis, visualizations, exports |
@@ -357,6 +357,10 @@ open incident_report.html
 ### Custom ODD for Different Robots
 
 ```python
+from odd_agents import run_odd_workflow
+from google.genai import Client
+import os
+
 # Outdoor delivery robot ODD
 outdoor_odd = """
 Delivery robot for outdoor sidewalk navigation.
@@ -367,8 +371,11 @@ Delivery robot for outdoor sidewalk navigation.
 - Weather: dry conditions only
 """
 
+client = Client(api_key=os.getenv("GOOGLE_API_KEY"))
 result = await run_odd_workflow(
-    scenario_path="outdoor_test",
+    scenario_path="data/processed/outdoor_test",
+    genai_client=client,
+    api_key=os.getenv("GOOGLE_API_KEY"),
     nl_odd_description=outdoor_odd
 )
 ```
