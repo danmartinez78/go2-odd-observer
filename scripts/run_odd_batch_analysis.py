@@ -70,17 +70,19 @@ MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
 # ODD DESCRIPTION (Default from notebook)
 # ============================================================================
 DEFAULT_ODD_DESCRIPTION = """
-The Unitree Go2 is a quadruped robot designed for indoor office navigation. 
+The Unitree Go2 is a quadruped robot designed for general indoor navigation.
 
-It's meant to operate in typical office buildings - think conference rooms, hallways, 
-and open workspaces. The floors should be smooth (tile, hardwood, or low-pile carpet), 
-and there needs to be adequate lighting so the cameras can see clearly. Bright office 
-lighting is ideal, but it can handle dimmer areas too. No pitch-black rooms though.
+It's meant to operate in typical indoor environments - think homes, offices, hallways, 
+conference rooms, living rooms, and open workspaces. The floors should be smooth (tile, 
+hardwood, or low-pile carpet), and there needs to be adequate lighting so the cameras 
+can see clearly. Bright lighting is ideal, but it can handle dimmer areas too. 
+No pitch-black rooms though.
 
 The robot moves with gentle, controlled acceleration - no sudden movements or jerky 
 motion. Think smooth and steady, not aggressive starts and stops. It's designed to 
-navigate around typical office obstacles like chairs, desk legs, and the occasional 
-box, but it's not meant for super cluttered spaces where there's barely room to move.
+navigate around typical indoor obstacles like furniture, chairs, desk legs, and the 
+occasional box, but it's not meant for super cluttered spaces where there's barely 
+room to move.
 
 The robot expects relatively flat, stable ground. No stairs, no steep ramps, and 
 definitely not designed for outdoor terrain like gravel or grass. It needs space 
@@ -92,6 +94,10 @@ DEFINITELY NOT designed for:
 - Dark rooms where vision sensors can't work
 - Extremely crowded spaces where collision is almost guaranteed
 - Rough terrain, gravel, sand, or anything unstable
+- Industrial environments with heavy machinery or hazardous materials
+- Extremely crowded spaces where collision is almost guaranteed
+- Rough terrain, gravel, sand, or anything unstable
+- Industrial environments with heavy machinery or hazardous materials
 """
 
 
