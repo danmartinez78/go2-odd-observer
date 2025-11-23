@@ -349,6 +349,9 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Generate timestamp
     timestamp = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
+    
+    # JSON filename for download link
+    json_filename = f"{scenario_name}_full_result.json"
 
     # Build HTML (continued in next file due to length)
     html = f"""<!DOCTYPE html>
@@ -571,8 +574,9 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 <!-- Hero Section -->
 <div class="hero-section">
     <div class="container">
-        <div class="mb-3">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
             <a href="../index.html" class="btn btn-outline-light">← Back to Home</a>
+            <a href="{json_filename}" class="btn btn-outline-light" download>📥 Download JSON</a>
         </div>
         <div class="row align-items-center">
             <div class="col-md-8">
@@ -886,9 +890,19 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
+    
+    # Copy JSON file to same directory for download link
+    import shutil
+    json_output = output_path.parent / json_filename
+    # Find the source JSON (passed as input_path in main)
+    # For now, copy from the result dict by re-serializing
+    import json as json_module
+    with open(json_output, 'w', encoding='utf-8') as f:
+        json_module.dump(result, f, indent=2)
 
     print(f"✅ Report generated: {output_path}")
     print(f"   File size: {output_path.stat().st_size / 1024:.1f} KB")
+    print(f"📥 JSON exported: {json_output}")
 
 
 def main():
