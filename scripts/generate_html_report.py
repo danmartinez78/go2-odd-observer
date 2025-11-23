@@ -349,7 +349,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Generate timestamp
     timestamp = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
-    
+
     # JSON filename for download link
     json_filename = f"{scenario_name}_full_result.json"
 
@@ -869,7 +869,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
-    
+
     # Copy JSON file to same directory for download link
     import shutil
     json_output = output_path.parent / json_filename
