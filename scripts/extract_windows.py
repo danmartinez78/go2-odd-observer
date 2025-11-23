@@ -464,6 +464,7 @@ class WindowExtractor:
         # BEV parameters
         bev_size = 400
         meters_per_pixel = 0.05  # 5cm per pixel
+        ground_threshold = 0.10  # 10cm - points below this are considered ground
 
         if not points:
             # Return empty feature maps
@@ -496,10 +497,12 @@ class WindowExtractor:
 
             # Check bounds
             if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
-                # Occupancy: mark as occupied
-                occupancy_grid[pixel_y, pixel_x] = 255
+                # Occupancy: only mark as occupied if above ground threshold
+                # This filters out ground plane and shows only obstacles
+                if z > ground_threshold:
+                    occupancy_grid[pixel_y, pixel_x] = 255
 
-                # Accumulate for height statistics
+                # Accumulate for height statistics (includes all points for terrain analysis)
                 point_count[pixel_y, pixel_x] += 1
                 height_sum[pixel_y, pixel_x] += z
                 height_sq_sum[pixel_y, pixel_x] += z * z

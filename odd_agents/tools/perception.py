@@ -71,7 +71,9 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             You are a perception expert analyzing synchronized robot sensors for window {window_id}.
             You will receive two images:
             - Image A: RGB camera frame from the robot's forward camera.
-            - Image B: LiDAR bird's-eye occupancy map where bright pixels indicate obstacles.
+            - Image B: LiDAR bird's-eye occupancy map showing OBSTACLES ONLY (ground filtered out).
+              Bright pixels indicate objects/obstacles ABOVE ground level (>10cm height).
+              Dark/black pixels indicate free/navigable space.
 
             **CRITICAL DISTINCTIONS:**
             
@@ -83,8 +85,8 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
                NOTE: A rug on a flat floor is "smooth" terrain. Surface texture (plush, high-pile) is NOT terrain roughness.
             
             2. **occupancy_ratio**: Fraction of BEV grid cells occupied by obstacles (objects ABOVE ground level).
-               - Only count objects/obstacles visible in the BEV occupancy map (bright pixels)
-               - Do NOT confuse ground surface texture with obstacles
+               - The BEV map already filters ground - bright pixels are obstacles, dark pixels are free space
+               - Estimate the fraction of bright (obstacle) pixels in the navigable area ahead
             
             3. **obstacle_density**: Concentration/number of distinct obstacles in the forward path.
                - 0.0 = clear path, no obstacles

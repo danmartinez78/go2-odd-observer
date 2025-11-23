@@ -10,7 +10,40 @@
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 3rem 0;
+            padding: 2rem 0;
+        }
+
+        /* Desktop optimizations */
+        @media (min-width: 1200px) {
+            body {
+                padding: 4rem 0;
+            }
+
+            .container {
+                max-width: 1400px;
+            }
+
+            .hero {
+                padding: 5rem 4rem !important;
+            }
+
+            .report-card {
+                padding: 3rem !important;
+            }
+
+            h1.display-4 {
+                font-size: 4rem !important;
+            }
+
+            .lead {
+                font-size: 1.5rem !important;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .container {
+                max-width: 1600px;
+            }
         }
 
         .hero {
@@ -86,6 +119,30 @@
             font-weight: bold;
             margin-right: 0.5rem;
         }
+
+        /* Multi-column layouts for desktop */
+        @media (min-width: 992px) {
+            .feature-grid {
+                column-count: 2;
+                column-gap: 2rem;
+            }
+
+            .feature-grid .feature-list {
+                break-inside: avoid;
+            }
+        }
+
+        /* Section headers */
+        .section-header {
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* Improved spacing */
+        .content-section {
+            margin-bottom: 4rem;
+        }
     </style>
 </head>
 
@@ -99,23 +156,25 @@
         </div>
 
         <!-- Navigation -->
-        <div class="row mb-5">
-            <div class="col-md-10 offset-md-1">
+        <div class="row mb-5 content-section">
+            <div class="col-12 col-lg-10 offset-lg-1 col-xl-8 offset-xl-2">
                 <div class="hero p-3">
                     <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="#reports" class="btn btn-outline-dark">📊 Reports</a>
-                        <a href="dashboard.html" class="btn btn-primary">📈 Dashboard</a>
-                        <a href="guides/GETTING_STARTED.md" class="btn btn-outline-dark">📖 Guides</a>
-                        <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-outline-dark">💻 GitHub</a>
+                        <a href="#reports" class="btn btn-outline-dark btn-lg">📊 Reports</a>
+                        <a href="dashboard.html" class="btn btn-primary btn-lg">📈 Dashboard</a>
+                        <a href="guides/GETTING_STARTED.md" class="btn btn-outline-dark btn-lg">📖 Guides</a>
+                        <a href="https://github.com/danmartinez78/go2-odd-observer"
+                            class="btn btn-outline-dark btn-lg">💻
+                            GitHub</a>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Available Reports -->
-        <div class="row" id="reports">
-            <div class="col-md-8 offset-md-2">
-                <h2 class="text-white mb-4">📊 Individual Reports</h2>
+        <div class="row content-section" id="reports">
+            <div class="col-12 col-lg-10 offset-lg-1">
+                <h2 class="text-white mb-4 section-header">📊 Individual Reports</h2>
 
                 <!-- Demo Report Card -->
                 <div class="report-card">
@@ -123,8 +182,10 @@
                         <div class="col-md-8">
                             <h3>Real Robot Analysis - Emergency Stop Scenario</h3>
                             <p class="text-muted mb-2"><strong>Scenario:</strong> real_03_174232 (Living Room)</p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Real Go2 Robot Data</p>
-                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 2 | <strong>Peak Accel:</strong> 5.69 m/s² | <strong>Motion:</strong> Abrupt</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Real Go2 Robot
+                                Data</p>
+                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 2 | <strong>Peak
+                                    Accel:</strong> 5.69 m/s² | <strong>Motion:</strong> Abrupt</p>
 
                             <div class="mb-3">
                                 <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
@@ -166,7 +227,8 @@
                         <div class="col-md-8">
                             <h3>More Individual Scenarios</h3>
                             <p class="text-muted mb-2"><strong>Status:</strong> Coming Soon</p>
-                            <p class="text-muted mb-3">Additional detailed reports for specific scenarios will be added here</p>
+                            <p class="text-muted mb-3">Additional detailed reports for specific scenarios will be added
+                                here</p>
                         </div>
                         <div class="col-md-4 text-center">
                             <button class="btn btn-secondary w-100" disabled>
@@ -179,17 +241,18 @@
         </div>
 
         <!-- Dashboard Section -->
-        <div class="row mt-5">
-            <div class="col-md-8 offset-md-2">
-                <h2 class="text-white mb-4">📈 Aggregate Analysis</h2>
-                
+        <div class="row content-section">
+            <div class="col-12 col-lg-10 offset-lg-1">
+                <h2 class="text-white mb-4 section-header">📈 Aggregate Analysis</h2>
+
                 <div class="report-card">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <h3>Interactive Dashboard - Batch Analysis</h3>
                             <p class="text-muted mb-2"><strong>Coverage:</strong> All analyzed scenarios</p>
-                            <p class="text-muted mb-3"><strong>Features:</strong> Compliance distribution, violation breakdown, performance metrics</p>
-                            
+                            <p class="text-muted mb-3"><strong>Features:</strong> Compliance distribution, violation
+                                breakdown, performance metrics</p>
+
                             <ul class="feature-list mb-0">
                                 <li>Aggregate statistics across all windows</li>
                                 <li>Interactive pie charts & bar graphs</li>
@@ -208,21 +271,21 @@
         </div>
 
         <!-- About Section -->
-        <div class="row mt-5">
-            <div class="col-md-8 offset-md-2">
+        <div class="row content-section">
+            <div class="col-12 col-lg-10 offset-lg-1">
                 <div class="hero">
                     <h2 class="mb-4">🚀 About This Project</h2>
-                    <p class="mb-3">
+                    <p class="mb-4" style="font-size: 1.15rem;">
                         The <strong>ODD Observer</strong> is an AI-powered multi-agent system that monitors whether a
-                        quadruped robot operates within its Operational Design Domain (ODD). Built with Google's 
-                        Agentic Development Kit (ADK) and Gemini models, it provides real-time safety analysis 
+                        quadruped robot operates within its Operational Design Domain (ODD). Built with Google's
+                        Agentic Development Kit (ADK) and Gemini models, it provides real-time safety analysis
                         from multimodal sensor data.
                     </p>
 
-                    <h4 class="mt-4 mb-3">🔬 Technical Innovation:</h4>
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h5 class="text-primary">Sensor Fusion</h5>
+                    <h4 class="mt-5 mb-4">🔬 Technical Innovation:</h4>
+                    <div class="row mb-5">
+                        <div class="col-lg-6 mb-4">
+                            <h5 class="text-primary mb-3">Sensor Fusion</h5>
                             <ul class="feature-list">
                                 <li>Camera + LiDAR BEV analysis (gemini-2.5-pro)</li>
                                 <li>IMU-based motion with jerk detection</li>
@@ -230,8 +293,8 @@
                                 <li>Odometry-independent (works with real robots)</li>
                             </ul>
                         </div>
-                        <div class="col-md-6">
-                            <h5 class="text-primary">Multi-Agent Pipeline</h5>
+                        <div class="col-lg-6 mb-4">
+                            <h5 class="text-primary mb-3">Multi-Agent Pipeline</h5>
                             <ul class="feature-list">
                                 <li>8 specialized agents (perception, motion, collision, etc.)</li>
                                 <li>Natural language ODD specification</li>
@@ -241,17 +304,18 @@
                         </div>
                     </div>
 
-                    <h4 class="mt-4 mb-3">✨ Key Features:</h4>
-                    <div class="row">
-                        <div class="col-md-6">
+                    <h4 class="mt-5 mb-4">✨ Key Features:</h4>
+                    <div class="feature-grid mb-4">
+                        <div>
                             <ul class="feature-list">
-                                <li><strong>Motion Smoothness Analysis</strong> - Jerk-based abrupt motion detection</li>
+                                <li><strong>Motion Smoothness Analysis</strong> - Jerk-based abrupt motion detection
+                                </li>
                                 <li><strong>Terrain Classification</strong> - Distinguishes surface vs elevation</li>
                                 <li><strong>Real Robot Validation</strong> - Tested on Unitree Go2</li>
                                 <li><strong>Data-Driven Thresholds</strong> - 5.0 m/s² from 100 production windows</li>
                             </ul>
                         </div>
-                        <div class="col-md-6">
+                        <div>
                             <ul class="feature-list">
                                 <li><strong>Interactive Reports</strong> - Plotly charts & dark mode</li>
                                 <li><strong>Aggregate Dashboard</strong> - Batch analysis visualization</li>
@@ -262,9 +326,9 @@
                     </div>
 
                     <div class="alert alert-info mt-4">
-                        <strong>🎯 Real-World Impact:</strong> This system detected 4 critical violations in the demo 
-                        scenario: abrupt emergency stop motion (jerk-based), blocked path (traversability: 0.0), 
-                        critical collision risk (0.9), and acceleration spike (5.69 m/s²). The robot correctly 
+                        <strong>🎯 Real-World Impact:</strong> This system detected 4 critical violations in the demo
+                        scenario: abrupt emergency stop motion (jerk-based), blocked path (traversability: 0.0),
+                        critical collision risk (0.9), and acceleration spike (5.69 m/s²). The robot correctly
                         identified unsafe operating conditions.
                     </div>
 
