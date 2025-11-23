@@ -221,20 +221,63 @@
                     </div>
                 </div>
 
-                <!-- Future Reports Placeholder -->
-                <div class="report-card" style="opacity: 0.6;">
+                <!-- Production Scenario Report -->
+                <div class="report-card">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h3>More Individual Scenarios</h3>
-                            <p class="text-muted mb-2"><strong>Status:</strong> Coming Soon</p>
-                            <p class="text-muted mb-3">Additional detailed reports for specific scenarios will be added
-                                here</p>
+                            <h3>Production Analysis - Living Room Navigation (25 Windows)</h3>
+                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_173442_chunk_01
+                            </p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Living Room - Real Go2
+                                Production Data</p>
+                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 25 | <strong>Peak
+                                    Accel:</strong> 8.81 m/s² | <strong>Motion:</strong> Abrupt</p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">3 Violations | 25 Collision Events</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
+                                <li>Consistent abrupt motion across all 25 windows</li>
+                                <li>Extreme acceleration: 8.81 m/s² (exceeds 5.0 m/s² limit)</li>
+                                <li>High collision risk: 0.652 average (18 high/critical events)</li>
+                                <li>Sensor discrepancy: Camera detects low obstacles BEV misses</li>
+                            </ul>
+
+                            <p class="mb-2"><strong>Analysis Highlights:</strong></p>
+                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
+                                <li>First full production scenario (25-window chunk)</li>
+                                <li>BEV ground filtering applied (10cm threshold)</li>
+                                <li>Demonstrates multi-agent analysis at scale</li>
+                                <li>Identifies critical sensor fusion issues</li>
+                            </ul>
                         </div>
                         <div class="col-md-4 text-center">
-                            <button class="btn btn-secondary w-100" disabled>
-                                Coming Soon...
-                            </button>
+                            <a href="reports/collection_20251122_173442_chunk_01_report.html"
+                                class="btn btn-primary btn-view-report w-100 mb-3">
+                                View Full Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>🏭 Production Data (25 windows)</div>
+                                <div>📸 Full Image Set (125 BEV + 25 Camera)</div>
+                                <div>📥 JSON Download Available</div>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Future Reports Placeholder -->
+                <div class="report-card" style="border: 2px dashed #dee2e6; background: #f8f9fa;">
+                    <div class="text-center py-4">
+                        <h4 class="text-muted mb-3">📊 Additional Test Scenarios Coming Soon</h4>
+                        <p class="text-muted mb-2">Batch generation in progress for 7 test scenarios:</p>
+                        <ul class="list-unstyled text-muted" style="font-size: 0.9rem;">
+                            <li>• real_01_173442 through real_06_174604 (6 real scenarios)</li>
+                            <li>• sim_run_test (1 simulation scenario)</li>
+                        </ul>
+                        <p class="text-muted mb-0" style="font-size: 0.85rem;">Each report includes 2-window analysis with full multi-agent evaluation</p>
                     </div>
                 </div>
             </div>
