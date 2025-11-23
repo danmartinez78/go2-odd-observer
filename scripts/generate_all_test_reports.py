@@ -168,30 +168,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-# Process real scenarios
-echo "Processing REAL robot scenarios..."
-echo ""
-for scenario in "${REAL_SCENARIOS[@]}"; do
-    run_scenario "$scenario" "real"
-done
-
-# Process sim scenarios
-echo "Processing SIMULATION scenarios..."
-echo ""
-for scenario in "${SIM_SCENARIOS[@]}"; do
-    run_scenario "$scenario" "sim"
-done
-
-echo "=================================="
-echo "✅ ALL REPORTS GENERATED"
-echo "=================================="
-echo ""
-echo "Results:"
-echo "  - Analysis JSON: $ANALYSIS_DIR/"
-echo "  - HTML Reports: docs/reports/"
-echo ""
-echo "Next steps:"
-echo "  1. Review reports in docs/reports/"
-echo "  2. Update docs/index.html to link to all reports"
-echo "  3. Commit and push to deploy to GitHub Pages"
