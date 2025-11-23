@@ -68,8 +68,10 @@ hardwood, or low-pile carpet), and there needs to be adequate lighting so the ca
 can see clearly. Bright lighting is ideal, but it can handle dimmer areas too. 
 No pitch-black rooms though.
 
-The robot moves with gentle, controlled acceleration - no sudden movements or jerky 
-motion. Think smooth and steady, not aggressive starts and stops. It's designed to 
+The robot moves with smooth to moderate acceleration - controlled movements during 
+normal navigation. It can handle quick starts and stops when needed (like avoiding 
+obstacles), but it's not meant for aggressive racing-style maneuvers. Think responsive 
+and agile, not jerky or violent. It's designed to 
 navigate around typical indoor obstacles like furniture, chairs, desk legs, and the 
 occasional box, but it's not meant for super cluttered spaces where there's barely 
 room to move.
