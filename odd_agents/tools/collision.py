@@ -61,8 +61,12 @@ MOTION CONTEXT:
 - Peak angular velocity: {peak_gyro:.4f} rad/s
 
 IMAGES PROVIDED:
-1. Camera feed (egocentric view)
-2. BEV LiDAR map (top-down obstacle map)
+1. Camera feed (egocentric view from robot)
+2. BEV LiDAR occupancy map (top-down obstacle map)
+   - Shows OBSTACLES ONLY (ground filtered out, >10cm height threshold)
+   - Bright pixels = obstacles above ground, dark pixels = free/navigable space
+   - Robot is at CENTER of map (200,200 in 400x400 grid), facing upward
+   - Upper half = forward path, lower half = behind, sides = lateral areas
 
 TASK: Analyze collision risk by fusing motion + camera + BEV data.
 

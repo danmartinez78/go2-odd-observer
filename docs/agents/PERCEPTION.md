@@ -113,13 +113,18 @@ Orchestrates per-window perception analysis by iterating through all time window
 **Multimodal Fusion:**
 - **Camera image**: Environment type, lighting, visual obstacles
 - **LiDAR BEV**: Occupancy ratio, obstacle density, traversability
+  - **Ground filtering**: BEV shows only obstacles >10cm above ground (ground plane filtered out)
+  - **Robot position**: Center of 400x400 grid (pixel 200,200), facing upward (+x direction)
+  - **Spatial layout**: Upper half = forward path, lower half = behind, sides = lateral areas
 
 **Key Distinctions in Prompt:**
-- `terrain_roughness_class`: Ground surface elevation (not texture)
-  - "smooth" = flat floor with minimal elevation changes (includes rugs/carpets on flat surface)
-  - "moderate" = small bumps, gentle slopes, slightly uneven surfaces
-  - "rough" = significant elevation changes, stairs, ramps, rocky/unpaved ground
-  - "very_rough" = extreme terrain (large boulders, steep slopes, severely uneven surfaces)
+- `terrain_roughness_class`: Ground surface elevation changes (NOT surface texture or materials)
+  - "smooth" = flat floor with minimal elevation changes (<5cm variation)
+    - Includes: smooth concrete, flat carpet/rugs, level tile floors
+    - Key: Surface can be plush/textured but still "smooth" if elevation is flat
+  - "moderate" = small bumps, gentle slopes (5-15cm elevation changes)
+  - "rough" = significant elevation changes (15-30cm), stairs, ramps, rocky/unpaved ground
+  - "very_rough" = extreme terrain (>30cm changes), large boulders, steep slopes
 - `obstacle_density`: Concentration of objects in forward path
 - `traversability_score`: Combined terrain + obstacles assessment
 
@@ -187,6 +192,12 @@ Orchestrates per-window perception analysis by iterating through all time window
 - **Symptom**: High-pile rug classified as "rough terrain"
 - **Cause**: Model confusing surface texture with elevation changes
 - **Fix**: Prompt emphasizes terrain = elevation, not texture (already mitigated)
+
+**Issue 4: Ground plane showing as obstacles in old data**
+- **Symptom**: High occupancy_ratio (70-80%) on flat floors
+- **Cause**: Old data didn't filter ground from BEV occupancy
+- **Fix**: Regenerate data with updated extraction (10cm ground filtering now applied)
+- **Note**: Data extracted after Nov 2025 has ground filtering; older data may show inflated metrics
 
 ---
 
