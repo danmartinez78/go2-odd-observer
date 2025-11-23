@@ -105,7 +105,7 @@ class WindowExtractor:
         self.stride = stride
 
         if run_id is None:
-            self.run_id = self.rosbag_path.stem.replace('_', '-')
+            self.run_id = self.rosbag_path.stem
         else:
             self.run_id = run_id
 
@@ -323,12 +323,18 @@ class WindowExtractor:
                     motion_data["gyro_z"][closest_idx] = imu_msg.angular_velocity.z
                 elif hasattr(imu_msg, 'accelerometer'):
                     # Go2 custom IMU message (convert numpy float32 to Python float)
-                    motion_data["accel_x"][closest_idx] = float(imu_msg.accelerometer[0])
-                    motion_data["accel_y"][closest_idx] = float(imu_msg.accelerometer[1])
-                    motion_data["accel_z"][closest_idx] = float(imu_msg.accelerometer[2])
-                    motion_data["gyro_x"][closest_idx] = float(imu_msg.gyroscope[0])
-                    motion_data["gyro_y"][closest_idx] = float(imu_msg.gyroscope[1])
-                    motion_data["gyro_z"][closest_idx] = float(imu_msg.gyroscope[2])
+                    motion_data["accel_x"][closest_idx] = float(
+                        imu_msg.accelerometer[0])
+                    motion_data["accel_y"][closest_idx] = float(
+                        imu_msg.accelerometer[1])
+                    motion_data["accel_z"][closest_idx] = float(
+                        imu_msg.accelerometer[2])
+                    motion_data["gyro_x"][closest_idx] = float(
+                        imu_msg.gyroscope[0])
+                    motion_data["gyro_y"][closest_idx] = float(
+                        imu_msg.gyroscope[1])
+                    motion_data["gyro_z"][closest_idx] = float(
+                        imu_msg.gyroscope[2])
 
         # Ensure all arrays have same length
         target_len = len(motion_data["timestamps"])
