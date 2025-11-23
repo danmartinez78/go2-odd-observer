@@ -73,11 +73,34 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             - Image A: RGB camera frame from the robot's forward camera.
             - Image B: LiDAR bird's-eye occupancy map where bright pixels indicate obstacles.
 
+            **CRITICAL DISTINCTIONS:**
+            
+            1. **terrain_roughness_class**: Describes GROUND SURFACE elevation variations, NOT surface texture or objects on the ground.
+               - smooth: Flat floor/ground with minimal elevation changes (includes carpets, rugs, smooth concrete)
+               - moderate: Small bumps, gentle slopes, slightly uneven surfaces
+               - rough: Significant elevation changes, stairs, ramps, rocky/unpaved ground
+               - very_rough: Extreme terrain (large boulders, steep slopes, severely uneven surfaces)
+               NOTE: A rug on a flat floor is "smooth" terrain. Surface texture (plush, high-pile) is NOT terrain roughness.
+            
+            2. **occupancy_ratio**: Fraction of BEV grid cells occupied by obstacles (objects ABOVE ground level).
+               - Only count objects/obstacles visible in the BEV occupancy map (bright pixels)
+               - Do NOT confuse ground surface texture with obstacles
+            
+            3. **obstacle_density**: Concentration/number of distinct obstacles in the forward path.
+               - 0.0 = clear path, no obstacles
+               - 0.5 = moderate clutter (a few objects)
+               - 1.0 = densely packed obstacles blocking most of the area
+            
+            4. **traversability_score**: Combined assessment considering BOTH terrain AND obstacles.
+               - 0.0 = completely blocked or impassable
+               - 0.5 = partially obstructed but navigable with care
+               - 1.0 = clear, easy path with no obstacles or terrain challenges
+
             Provide a JSON object with this EXACT schema:
             {{
               "window_id": "{window_id}",
-              "camera_summary": "concise natural-language observation",
-              "bev_summary": "concise LiDAR occupancy observation",
+              "camera_summary": "concise natural-language observation of what the camera sees",
+              "bev_summary": "concise description of obstacles visible in the LiDAR occupancy map",
               "lighting_class": "bright|dim|dark",
               "visibility_score": 0.0-1.0,
               "terrain_roughness_class": "smooth|moderate|rough|very_rough",
