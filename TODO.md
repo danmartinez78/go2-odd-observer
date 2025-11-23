@@ -149,6 +149,18 @@
 
 ## Backlog / Nice-to-Have
 
+- [ ] **BEV Ground Filtering Validation** ⚠️ NEXT STEP
+  - [x] Implemented 10cm height threshold for ground filtering ✅ MERGED TO DEV
+  - [ ] Reprocess production data with filtered BEV occupancy
+  - [ ] Compare perception metrics before/after (occupancy ratio, obstacle density)
+  - [ ] Validate on scenario 17 (emergency stop) - expect reduced false positives
+  - [ ] Update batch statistics (100 windows) with new filtering
+  - **Expected improvements**:
+    - Occupancy ratio: 60-80% reduction on flat terrain
+    - Obstacle density: More accurate (matches camera-visible objects)
+    - Traversability: Better correlation with actual path clearance
+  - **Technical details**: `docs/BEV_GROUND_FILTERING.md`
+  - **Status**: Ready for full data regeneration
 - [ ] Web interface for non-technical users
 - [ ] Automated report generation pipeline (executive summary export)
 - [ ] Real-time monitoring dashboard
