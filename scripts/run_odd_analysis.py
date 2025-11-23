@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+"""
+Manual ODD Analysis Runner
+
+Interactive script to run complete ODD analysis workflow on a single scenario.
+Follows the notebook workflow pattern with model configuration at top.
+
+Usage:
+    python scripts/run_odd_analysis.py
+
+Output:
+    data/analysis_results/manual/<timestamp>/<scenario>/
+        - full_result.json
+        - executive_summary.json
+"""
+
+from odd_agents import run_odd_workflow
+import asyncio
+import json
+import os
+import sys
+import warnings
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+from dotenv import load_dotenv
+from google.genai import Client
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+
+# Suppress noisy warnings
+warnings.filterwarnings(
+    'ignore', category=ResourceWarning, message='.*unclosed.*')
+warnings.filterwarnings('ignore', message='.*SSL.*')
+warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+# Customize which models to use for each agent
+# Options: "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro",
+#          "gemini-3-pro", "gemini-robotics-er-1.5-preview"
+
+# Camera + LiDAR analysis (complex vision)
+MODEL_PERCEPTION = "gemini-2.5-pro"
+# IMU motion detection (straightforward)
+MODEL_MOTION = "gemini-2.5-flash"
+# Collision risk assessment (complex reasoning)
+MODEL_COLLISION = "gemini-2.5-pro"
+# ODD specification parsing (complex NLP)
+MODEL_ODD_SPEC = "gemini-2.5-pro"
+MODEL_COD = "gemini-2.5-flash"             # COD classification + compliance
+MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
+
+# ============================================================================
+# ODD DESCRIPTION (Default from notebook)
+# ============================================================================
+DEFAULT_ODD_DESCRIPTION = """
+The Unitree Go2 is a quadruped robot designed for indoor office navigation. 
+
+It's meant to operate in typical office buildings - think conference rooms, hallways, 
+and open workspaces. The floors should be smooth (tile, hardwood, or low-pile carpet), 
+and there needs to be adequate lighting so the cameras can see clearly. Bright office 
+lighting is ideal, but it can handle dimmer areas too. No pitch-black rooms though.
+
+The robot moves at a walking pace - nothing crazy fast. Think leisurely stroll, not 
+a sprint. It's designed to navigate around typical office obstacles like chairs, 
+desk legs, and the occasional box, but it's not meant for super cluttered spaces 
+where there's barely room to move.
+
+The robot expects relatively flat, stable ground. No stairs, no steep ramps, and 
+definitely not designed for outdoor terrain like gravel or grass. It needs space 
+to maneuver safely without constantly being on the verge of hitting things.
+
+DEFINITELY NOT designed for:
+- Outdoor environments (weather, uneven ground, GPS reliance)
+- Staircases or steep slopes
+- Dark rooms where vision sensors can't work
+- Extremely crowded spaces where collision is almost guaranteed
+- Rough terrain, gravel, sand, or anything unstable
+"""
+
+
+def find_scenarios():
+    """Find all available scenarios (production + test datasets)."""
+    scenarios = []
+    base_dir = project_root / "data" / "processed"
+
+    # Search production/, test_data/real/, test_data/sim/
+    search_dirs = [
+        ("production", base_dir / "production"),
+        ("test_data/real", base_dir / "test_data" / "real"),
+        ("test_data/sim", base_dir / "test_data" / "sim"),
+    ]
+
+    for category, search_dir in search_dirs:
+        if not search_dir.exists():
+            continue
+
+        for scenario_dir in sorted(search_dir.iterdir()):
+            if not scenario_dir.is_dir():
+                continue
+            if scenario_dir.name.startswith('.'):
+                continue
+
+            # Check for index file
+            index_files = list(scenario_dir.glob("index_*.csv"))
+            if not index_files:
+                continue
+
+            # Count windows
+            with open(index_files[0]) as f:
+                window_count = len(f.readlines()) - 1  # Subtract header
+
+            scenarios.append({
+                'name': scenario_dir.name,
+                'path': scenario_dir,
+                'category': category,
+                'windows': window_count
+            })
+
+    return scenarios
+
+
+def select_scenario(scenarios):
+    """Prompt user to select a scenario."""
+    print("\n" + "=" * 80)
+    print("AVAILABLE SCENARIOS")
+    print("=" * 80)
+    print()
+
+    # Group by category
+    categories = {}
+    for scenario in scenarios:
+        cat = scenario['category']
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(scenario)
+
+    idx = 1
+    scenario_map = {}
+    for cat in sorted(categories.keys()):
+        print(f"\n{cat}:")
+        print("-" * 80)
+        for scenario in categories[cat]:
+            print(
+                f"  {idx:2d}. {scenario['name']:40s} ({scenario['windows']:3d} windows)")
+            scenario_map[idx] = scenario
+            idx += 1
+
+    print()
+    try:
+        choice = input("Select scenario number (or 'q' to quit): ").strip()
+        if choice.lower() == 'q':
+            return None
+
+        idx = int(choice)
+        if idx in scenario_map:
+            return scenario_map[idx]
+        else:
+            print("❌ Invalid selection")
+            return None
+    except (ValueError, KeyboardInterrupt):
+        return None
+
+
+def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str) -> Path:
+    """Save results to timestamped directory."""
+    # Create output directory
+    output_base = project_root / "data" / "analysis_results" / \
+        "manual" / timestamp / scenario_name
+    output_base.mkdir(parents=True, exist_ok=True)
+
+    # Save full result
+    full_result_path = output_base / "full_result.json"
+    with open(full_result_path, 'w') as f:
+        json.dump(result, f, indent=2)
+
+    # Save executive summary separately
+    summary_path = output_base / "executive_summary.json"
+    summary_data = {
+        'executive_summary': result['report'].get('executive_summary', ''),
+        'key_findings': result['report'].get('key_findings', []),
+        'recommendations': result['report'].get('recommendations', []),
+        'scenario_metadata': result['report'].get('scenario_metadata', {}),
+        'overall_compliance': result['full_analysis']['odd_compliance'].get('overall_compliance', ''),
+        'violations': result['full_analysis']['odd_compliance'].get('violations', []),
+        'warnings': result['full_analysis']['odd_compliance'].get('warnings', [])
+    }
+    with open(summary_path, 'w') as f:
+        json.dump(summary_data, f, indent=2)
+
+    return output_base
+
+
+def display_summary(result: Dict[str, Any]):
+    """Display executive summary and compliance status."""
+    report = result['report']
+    # Handle potential double nesting in compliance data
+    compliance_data = result['full_analysis']['odd_compliance']
+    if 'odd_compliance' in compliance_data:
+        compliance_data = compliance_data['odd_compliance']
+    metadata = report.get('scenario_metadata', {})
+
+    print("\n" + "=" * 80)
+    print("EXECUTIVE SUMMARY")
+    print("=" * 80)
+    print()
+    print(report.get('executive_summary', 'N/A'))
+    print()
+
+    print("=" * 80)
+    print("KEY FINDINGS")
+    print("=" * 80)
+    for i, finding in enumerate(report.get('key_findings', []), 1):
+        print(f"\n{i}. {finding}")
+
+    print()
+    print("=" * 80)
+    print("SCENARIO METADATA")
+    print("=" * 80)
+    print(
+        f"  • Windows analyzed: {metadata.get('total_windows_analyzed', 'N/A')}")
+    print(
+        f"  • Data source: {metadata.get('data_source', 'N/A')} (confidence: {metadata.get('data_source_confidence', 'N/A')})")
+    print(f"  • Environment: {metadata.get('environment_class', 'N/A')}")
+
+    print()
+    print("=" * 80)
+    print("ODD COMPLIANCE")
+    print("=" * 80)
+    print(f"  • Overall: {compliance_data.get('overall_compliance', 'N/A')}")
+    print(f"  • Violations: {len(compliance_data.get('violations', []))}")
+    print(f"  • Warnings: {len(compliance_data.get('warnings', []))}")
+
+    violations = compliance_data.get('violations', [])
+    if violations:
+        print()
+        print("❌ VIOLATIONS:")
+        for v in violations:
+            print(f"    • {v}")
+
+    warnings_list = compliance_data.get('warnings', [])
+    if warnings_list:
+        print()
+        print("⚠️  WARNINGS:")
+        for w in warnings_list:
+            print(f"    • {w}")
+
+    print()
+    print("=" * 80)
+    print("RECOMMENDATIONS")
+    print("=" * 80)
+    for i, rec in enumerate(report.get('recommendations', []), 1):
+        print(f"\n{i}. {rec}")
+
+
+async def main():
+    """Main execution function."""
+    # Load environment
+    load_dotenv()
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        print("❌ GOOGLE_API_KEY not set in environment")
+        print("Please create a .env file with: GOOGLE_API_KEY=your-key")
+        sys.exit(1)
+
+    print("\n" + "=" * 80)
+    print("ODD ANALYSIS - MANUAL RUNNER")
+    print("=" * 80)
+    print()
+    print("🔧 Model Configuration:")
+    print(f"   Perception:  {MODEL_PERCEPTION}")
+    print(f"   Motion:      {MODEL_MOTION}")
+    print(f"   Collision:   {MODEL_COLLISION}")
+    print(f"   ODD Spec:    {MODEL_ODD_SPEC}")
+    print(f"   COD/Comply:  {MODEL_COD}")
+    print(f"   Report:      {MODEL_REPORT}")
+
+    # Find scenarios
+    print()
+    print("🔍 Scanning for scenarios...")
+    scenarios = find_scenarios()
+
+    if not scenarios:
+        print("❌ No scenarios found in data/processed/")
+        print("Please run extract_windows.py to create data")
+        sys.exit(1)
+
+    print(f"✅ Found {len(scenarios)} scenarios")
+
+    # Select scenario
+    scenario = select_scenario(scenarios)
+    if scenario is None:
+        print("\n👋 Cancelled")
+        return
+
+    scenario_path = str(scenario['path'].absolute())
+    scenario_name = scenario['name']
+
+    print()
+    print("=" * 80)
+    print("STARTING ANALYSIS")
+    print("=" * 80)
+    print(f"  • Scenario: {scenario_name}")
+    print(f"  • Windows: {scenario['windows']}")
+    print(f"  • Category: {scenario['category']}")
+    print(f"  • Path: {scenario_path}")
+    print()
+    print("⏳ This may take 2-3 minutes...")
+    print()
+
+    # Create timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Create client
+    genai_client = Client(api_key=api_key)
+
+    try:
+        # Run workflow
+        result = await run_odd_workflow(
+            scenario_path=scenario_path,
+            genai_client=genai_client,
+            api_key=api_key,
+            nl_odd_description=DEFAULT_ODD_DESCRIPTION,
+            model_perception=MODEL_PERCEPTION,
+            model_motion=MODEL_MOTION,
+            model_collision=MODEL_COLLISION,
+            model_odd_spec=MODEL_ODD_SPEC,
+            model_cod=MODEL_COD,
+            model_report=MODEL_REPORT,
+        )
+
+        if result:
+            # Save results
+            output_dir = save_results(result, scenario_name, timestamp)
+
+            # Display summary
+            display_summary(result)
+
+            print()
+            print("=" * 80)
+            print("✅ ANALYSIS COMPLETE")
+            print("=" * 80)
+            print()
+            print(f"📁 Results saved to:")
+            print(f"   {output_dir}")
+            print()
+            print(f"   • full_result.json         - Complete analysis data")
+            print(f"   • executive_summary.json   - Key findings and recommendations")
+
+        else:
+            print()
+            print("❌ Workflow failed - no results generated")
+            sys.exit(1)
+
+    except Exception as e:
+        print()
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+    finally:
+        # Clean up client
+        await genai_client.aio.aclose()
+        # Suppress cleanup warnings
+        sys.stderr = open(os.devnull, 'w')
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n\n👋 Cancelled by user")
+        sys.exit(0)
