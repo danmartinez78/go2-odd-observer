@@ -268,17 +268,120 @@
                     </div>
                 </div>
 
-                <!-- Future Reports Placeholder -->
-                <div class="report-card" style="border: 2px dashed #dee2e6; background: #f8f9fa;">
-                    <div class="text-center py-4">
-                        <h4 class="text-muted mb-3">📊 Additional Test Scenarios Coming Soon</h4>
-                        <p class="text-muted mb-2">Batch generation in progress for 7 test scenarios:</p>
-                        <ul class="list-unstyled text-muted" style="font-size: 0.9rem;">
-                            <li>• real_01_173442 through real_06_174604 (6 real scenarios)</li>
-                            <li>• sim_run_test (1 simulation scenario)</li>
-                        </ul>
-                        <p class="text-muted mb-0" style="font-size: 0.85rem;">Each report includes 2-window analysis
-                            with full multi-agent evaluation</p>
+                <!-- Additional Test Scenarios -->
+                <div class="mt-4 mb-3">
+                    <h3 class="text-white">Additional Test Scenarios (2-Window Analysis)</h3>
+                    <p class="text-muted">Quick validation scenarios across different real robot and simulation conditions</p>
+                </div>
+
+                <!-- real_01_173442 -->
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Test Scenario 1 - real_01_173442</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data | <strong>Windows:</strong> 2</p>
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">3 Violations</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/real_01_173442_report.html" class="btn btn-primary btn-view-report w-100">
+                                View Report →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- real_02_173813 -->
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Test Scenario 2 - real_02_173813</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data | <strong>Windows:</strong> 2</p>
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">3 Violations</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/real_02_173813_report.html" class="btn btn-primary btn-view-report w-100">
+                                View Report →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- real_04_174321 -->
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Test Scenario 4 - real_04_174321</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data | <strong>Windows:</strong> 2</p>
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">4 Violations</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/real_04_174321_report.html" class="btn btn-primary btn-view-report w-100">
+                                View Report →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- real_05_174503 -->
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Test Scenario 5 - real_05_174503</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data | <strong>Windows:</strong> 2</p>
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">3 Violations</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/real_05_174503_report.html" class="btn btn-primary btn-view-report w-100">
+                                View Report →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- real_06_174604 -->
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Test Scenario 6 - real_06_174604</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data | <strong>Windows:</strong> 2</p>
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">2 Violations</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/real_06_174604_report.html" class="btn btn-primary btn-view-report w-100">
+                                View Report →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- sim_run_test - Placeholder until complete -->
+                <div class="report-card" style="border: 2px dashed #dee2e6; background: #f8f9fa; opacity: 0.7;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Simulation Scenario - sim_run_test</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation Data | <strong>Status:</strong> Processing...</p>
+                            <p class="text-muted mb-0" style="font-size: 0.9rem;">Report will be available once batch generation completes</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <button class="btn btn-secondary w-100" disabled>
+                                Processing...
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
