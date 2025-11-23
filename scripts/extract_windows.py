@@ -98,19 +98,43 @@ class WindowExtractor:
             stride: Stride between window starts in seconds
             run_id: Optional run identifier (auto-generated if None)
             data_source: 'real' or 'sim' (auto-detected if None)
+
+        IMPORTANT: The output directory name MUST match the run_id.
+        Files are created with names like motion_{run_id}_w000.json.
+        The workflow tools use the directory name to find these files.
+        If they don't match, the workflow will fail.
         """
         self.rosbag_path = Path(rosbag_path)
-        self.output_dir = Path(output_dir)
-        self.window_length = window_length
-        self.stride = stride
 
+        # Determine run_id first
         if run_id is None:
             self.run_id = self.rosbag_path.stem
         else:
             self.run_id = run_id
 
+        # CRITICAL: Output directory MUST be named after run_id
+        # The workflow uses directory.name to construct filenames
+        base_output = Path(output_dir)
+        if base_output.name != self.run_id:
+            # If output_dir doesn't end with run_id, append it
+            self.output_dir = base_output / self.run_id
+            print(
+                f"⚠️  Directory name adjusted to match run_id: {self.output_dir}")
+        else:
+            self.output_dir = base_output
+
+        self.window_length = window_length
+        self.stride = stride
+
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Verify directory name matches run_id (safety check)
+        if self.output_dir.name != self.run_id:
+            raise ValueError(
+                f"Output directory name '{self.output_dir.name}' must match run_id '{self.run_id}'. "
+                f"This is required for the workflow tools to find window files correctly."
+            )
 
         # Auto-detect data source if not specified
         if data_source is None:
