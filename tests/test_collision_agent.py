@@ -22,6 +22,7 @@ import argparse
 import asyncio
 import json
 import os
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -29,6 +30,12 @@ from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import Client
 from dotenv import load_dotenv
+
+# Suppress SSL and asyncio warnings that clutter output
+warnings.filterwarnings(
+    'ignore', category=ResourceWarning, message='.*unclosed.*')
+warnings.filterwarnings('ignore', message='.*SSL.*')
+warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,7 +56,7 @@ def _extract_result(events: List[Any], agent_name: str = "CollisionSummaryAgent"
 
 async def test_collision_agent(
     scenario_path: str = "data/processed/test_data/sim/sim_run_test",
-    model: str = "gemini-1.5-flash",
+    model: str = "gemini-2.5-flash",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """Run collision agent test with specified parameters."""
@@ -92,6 +99,9 @@ async def test_collision_agent(
     else:
         print("\n❌ No valid JSON output produced")
 
+    # Clean up to prevent SSL errors
+    await genai_client.aio.aclose()
+
     return result
 
 
@@ -106,7 +116,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="gemini-1.5-flash",
+        default="gemini-2.5-flash",
         help="Model to use for testing"
     )
     parser.add_argument(
@@ -132,3 +142,7 @@ if __name__ == "__main__":
     except Exception as exc:
         print(f"\n❌ Fatal error: {exc}")
         raise
+    finally:
+        # Suppress aiohttp cleanup warnings on exit
+        import sys
+        sys.stderr = open(os.devnull, 'w')
