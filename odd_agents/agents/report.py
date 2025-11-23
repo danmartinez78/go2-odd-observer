@@ -31,6 +31,7 @@ Return ONLY valid JSON with this structure:
     "scenario_metadata": {
       "total_windows_analyzed": <int>,
       "scenario_name": "<name>",
+      "environment_class": "<environment_type>",
       "data_source": "simulation|real_world",
       "data_source_confidence": 0.0-1.0
     },
@@ -53,7 +54,10 @@ Return ONLY valid JSON with this structure:
   }
 }
 
-IMPORTANT: Extract data_source and confidence from perception.data_source_classification and include in scenario_metadata.
+IMPORTANT: 
+- Extract environment_class from perception.environment_classification.primary_class
+- Extract data_source and confidence from perception.data_source_classification
+- Include both in scenario_metadata
 
 No explanations outside JSON.""",
     )
