@@ -10,12 +10,15 @@ For AUTOMATED EVALUATION, see:
 
 Usage:
     python tests/test_perception_agent.py
+    python tests/test_perception_agent.py --scenario data/processed/production/sim_run_new
+    python tests/test_perception_agent.py --model gemini-2.0-flash-exp
     
-Expected: JSON output with per-window perception analysis for sim_run_test.
+Expected: JSON output with per-window perception analysis.
 """
 
 from odd_agents.agents.perception import create_perception_loop_agent, create_perception_summary_agent
 from odd_agents import extract_json_block
+import argparse
 import asyncio
 import json
 import os
@@ -29,18 +32,6 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Import from shared module
-
-# Configuration
-API_KEY = os.environ.get("GOOGLE_API_KEY")
-if not API_KEY:
-    print("❌ GOOGLE_API_KEY environment variable not set")
-    raise SystemExit(1)
-
-GENAI_CLIENT = Client(api_key=API_KEY)
-MODEL = "gemini-2.5-pro"
-SCENARIO_PATH = str(Path("data/processed/runs/sim_run_test").absolute())
 
 
 def _extract_result(events: List[Any], agent_name: str = "PerceptionSummaryAgent") -> Optional[Dict[str, Any]]:
@@ -56,18 +47,37 @@ def _extract_result(events: List[Any], agent_name: str = "PerceptionSummaryAgent
     return None
 
 
-async def test_perception_agent() -> Optional[Dict[str, Any]]:
+async def test_perception_agent(
+    scenario_path: str = "data/processed/test_data/sim/sim_run_test",
+    model: str = "gemini-2.0-flash-exp",
+    api_key: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Run perception agent test with specified parameters."""
+
+    # Use provided API key or get from environment
+    if api_key is None:
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            print("❌ GOOGLE_API_KEY environment variable not set")
+            raise SystemExit(1)
+
     print("\n" + "=" * 80)
     print("PERCEPTION WORKFLOW TEST (Camera + LiDAR BEV)")
     print("=" * 80)
+    print(f"Scenario: {Path(scenario_path).name}")
+    print(f"Model: {model}")
+    print("=" * 80)
 
-    # Create workflow using factory functions (creates new instances)
+    # Create client and workflow
+    genai_client = Client(api_key=api_key)
+    scenario_path_abs = str(Path(scenario_path).absolute())
+
     perception_workflow = SequentialAgent(
         name="PerceptionWorkflow",
         sub_agents=[
             create_perception_loop_agent(
-                SCENARIO_PATH, GENAI_CLIENT, MODEL, API_KEY),
-            create_perception_summary_agent(API_KEY, MODEL),
+                scenario_path_abs, genai_client, model, api_key),
+            create_perception_summary_agent(api_key, model),
         ],
     )
 
@@ -86,13 +96,39 @@ async def test_perception_agent() -> Optional[Dict[str, Any]]:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Test Perception Agent")
+    parser.add_argument(
+        "--scenario",
+        type=str,
+        default="data/processed/test_data/sim/sim_run_test",
+        help="Path to scenario directory"
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="gemini-2.0-flash-exp",
+        help="Model to use for testing"
+    )
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="Google API key (defaults to GOOGLE_API_KEY env var)"
+    )
+
+    args = parser.parse_args()
+
     try:
-        summary = asyncio.run(test_perception_agent())
+        summary = asyncio.run(test_perception_agent(
+            scenario_path=args.scenario,
+            model=args.model,
+            api_key=args.api_key
+        ))
         if summary is None:
             raise SystemExit(1)
         print("\n" + "=" * 80)
         print("✅ PERCEPTION AGENT TEST COMPLETED")
         print("=" * 80)
-    except Exception as exc:  # pragma: no cover - debug aid
+    except Exception as exc:
         print(f"\n❌ Fatal error: {exc}")
         raise
