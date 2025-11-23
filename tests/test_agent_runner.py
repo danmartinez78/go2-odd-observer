@@ -130,11 +130,11 @@ def select_model() -> Optional[str]:
     """Prompt user to select model."""
 
     models = {
-        '1': ('gemini-1.5-flash', '1.5 Flash (Fast, Reliable)'),
-        '2': ('gemini-1.5-pro', '1.5 Pro (Stable)'),
-        '3': ('gemini-2.0-flash-lite', '2.0 Flash Lite (Fast, Economical)'),
-        '4': ('gemini-2.0-flash-exp', '2.0 Flash Experimental (Latest)'),
-        '5': ('gemini-2.5-pro', '2.5 Pro (Most Capable)'),
+        '1': ('gemini-2.5-flash', '2.5 Flash (Fast, Recommended)'),
+        '2': ('gemini-2.5-flash-lite', '2.5 Flash Lite (Economical)'),
+        '3': ('gemini-2.5-pro', '2.5 Pro (Most Capable)'),
+        '4': ('gemini-3-pro', '3 Pro (Latest)'),
+        '5': ('gemini-robotics-er-1.5-preview', 'Robotics ER 1.5 (Experimental)'),
     }
 
     print("\n" + "=" * 80)
@@ -147,10 +147,10 @@ def select_model() -> Optional[str]:
     print()
     try:
         choice = input(
-            "Select model (or press Enter for default '1.5-flash'): ").strip()
+            "Select model (or press Enter for default '2.5-flash'): ").strip()
 
         if not choice:  # Default
-            return 'gemini-1.5-flash'
+            return 'gemini-2.5-flash'
 
         if choice.lower() == 'q':
             return None

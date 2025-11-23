@@ -21,17 +21,24 @@ import argparse
 import asyncio
 import json
 import os
+import warnings
 from typing import Any, Optional
 
 from google.adk.runners import InMemoryRunner
 from dotenv import load_dotenv
+
+# Suppress SSL and asyncio warnings that clutter output
+warnings.filterwarnings(
+    'ignore', category=ResourceWarning, message='.*unclosed.*')
+warnings.filterwarnings('ignore', message='.*SSL.*')
+warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 
 # Load environment variables from .env file
 load_dotenv()
 
 
 async def test_odd_spec_agent(
-    model: str = "gemini-1.5-flash",
+    model: str = "gemini-2.5-flash",
     api_key: Optional[str] = None,
     nl_odd_description: Optional[str] = None
 ) -> Optional[dict[str, Any]]:
@@ -93,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="gemini-1.5-flash",
+        default="gemini-2.5-flash",
         help="Model to use for testing"
     )
     parser.add_argument(
@@ -125,3 +132,7 @@ if __name__ == "__main__":
     except Exception as exc:
         print(f"\n❌ Fatal error: {exc}")
         raise
+    finally:
+        # Suppress aiohttp cleanup warnings on exit
+        import sys
+        sys.stderr = open(os.devnull, 'w')
