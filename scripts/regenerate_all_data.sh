@@ -18,6 +18,7 @@ echo ""
 
 # Source ROS2 environment
 source /opt/ros/humble/setup.bash
+source /workspaces/go2-odd-observer/go2_ros2_sdk/install/setup.bash
 
 # Change to workspace root
 cd /workspaces/go2-odd-observer
@@ -167,11 +168,25 @@ echo "Backup location: data/processed/production_pre_bev_filter/"
 echo ""
 
 #===============================================================================
+# POST-PROCESSING: CHUNK LARGE SCENARIOS
+#===============================================================================
+
+echo "================================================================================"
+echo "CHUNKING LARGE SCENARIOS (>40 windows)"
+echo "================================================================================"
+echo ""
+echo "Splitting scenarios that exceed 40-window agent limit..."
+python scripts/split_large_scenarios.py
+echo ""
+echo "✓ Scenario chunking complete"
+echo ""
+
+#===============================================================================
 # POST-PROCESSING: REGENERATE TEST SETS
 #===============================================================================
 
 echo "================================================================================"
-echo "REGENERATING TEST SETS FROM PRODUCTION DATA"
+echo "REGENERATING TEST SETS FROM CHUNKED PRODUCTION DATA"
 echo "================================================================================"
 echo ""
 echo "Creating curated test sets (2 windows per collection)..."
@@ -190,13 +205,20 @@ echo "==========================================================================
 echo ""
 echo "Production data:"
 find data/processed/production -name "motion_*.json" -not -path "*/production_pre_bev_filter/*" | wc -l | xargs echo "  Total windows:"
+ls -d data/processed/production/collection_*_chunk_* data/processed/production/sim_* 2>/dev/null | wc -l | xargs echo "  Total scenarios (chunked):"
 echo ""
 echo "Test data:"
 find data/processed/test_data -name "motion_*.json" | wc -l | xargs echo "  Total windows:"
 echo ""
+echo "Improvements applied:"
+echo "  ✓ BEV ground filtering (10cm height threshold)"
+echo "  ✓ Correct IMU data extraction (go2_interfaces)"
+echo "  ✓ Scenario chunking (≤40 windows per chunk)"
+echo ""
 echo "Next steps:"
-echo "  1. Verify window counts match expectations"
+echo "  1. Verify window counts match expectations (332 total)"
 echo "  2. Compare BEV occupancy images (old vs new)"
-echo "  3. Run perception analysis on sample scenarios"
-echo "  4. Generate updated statistics and reports"
+echo "  3. Verify IMU data is non-zero"
+echo "  4. Run perception analysis on sample scenarios"
+echo "  5. Generate updated statistics and reports"
 echo ""

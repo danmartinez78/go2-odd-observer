@@ -74,6 +74,9 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             - Image B: LiDAR bird's-eye occupancy map showing OBSTACLES ONLY (ground filtered out).
               Bright pixels indicate objects/obstacles ABOVE ground level (>10cm height).
               Dark/black pixels indicate free/navigable space.
+              THE ROBOT IS LOCATED AT THE CENTER OF THE BEV MAP (200, 200 in 400x400 grid).
+              The robot faces in the +x direction (upward in the image).
+              The upper half shows the forward path, lower half shows behind, left/right sides show lateral areas.
 
             **CRITICAL DISTINCTIONS:**
             

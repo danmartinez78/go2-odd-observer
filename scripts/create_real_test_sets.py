@@ -135,8 +135,8 @@ def main():
     data_dir = project_root / "data" / "processed" / "production"
     test_dir = project_root / "data" / "processed" / "test_data" / "real"
 
-    # Find all collections
-    collections = sorted(data_dir.glob("collection_*"))
+    # Find all collections (only _chunk_01 to get one per collection)
+    collections = sorted(data_dir.glob("collection_*_chunk_01"))
 
     if not collections:
         print("No collections found!")
@@ -148,9 +148,14 @@ def main():
     all_metadata = []
 
     for i, collection in enumerate(collections):
+        # Extract date from collection name
+        # collection_20251122_173442_chunk_01 -> 173442
+        parts = collection.name.split('_')
+        time_id = parts[2]  # The HHMMSS part
+
         # Create test name
         # real_01_173442, etc.
-        test_name = f"real_{i+1:02d}_{collection.name[-6:]}"
+        test_name = f"real_{i+1:02d}_{time_id}"
         output_path = test_dir / test_name
 
         # Select windows
