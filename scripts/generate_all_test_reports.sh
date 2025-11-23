@@ -4,7 +4,6 @@ Generate HTML reports for all test data scenarios.
 Non-interactive batch processor.
 """
 
-from odd_agents import run_odd_workflow
 import asyncio
 import json
 import os
@@ -19,6 +18,7 @@ from google.genai import Client
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from odd_agents import run_odd_workflow
 
 # Model configuration (same as run_odd_analysis.py)
 MODEL_PERCEPTION = "gemini-2.5-pro"
@@ -57,12 +57,11 @@ async def run_scenario(scenario_name: str, data_type: str, analysis_dir: Path, g
     print("=" * 80)
     print(f"Processing: {scenario_name} ({data_type})")
     print("=" * 80)
-
-    scenario_path = project_root / "data" / "processed" / \
-        "test_data" / data_type / scenario_name
+    
+    scenario_path = project_root / "data" / "processed" / "test_data" / data_type / scenario_name
     output_dir = analysis_dir / scenario_name
     output_dir.mkdir(parents=True, exist_ok=True)
-
+    
     # Run ODD analysis
     print(f"⏳ Running ODD analysis on {scenario_name}...")
     result = await run_odd_workflow(
@@ -77,17 +76,17 @@ async def run_scenario(scenario_name: str, data_type: str, analysis_dir: Path, g
         model_cod=MODEL_COD,
         model_report=MODEL_REPORT,
     )
-
+    
     if not result:
         print(f"❌ Analysis failed for {scenario_name}")
         return False
-
+    
     # Save JSON result
     json_path = output_dir / "full_result.json"
     with open(json_path, 'w') as f:
         json.dump(result, f, indent=2)
     print(f"✅ Saved: {json_path}")
-
+    
     # Generate HTML report
     import subprocess
     subprocess.run([
@@ -95,10 +94,9 @@ async def run_scenario(scenario_name: str, data_type: str, analysis_dir: Path, g
         str(project_root / "scripts" / "generate_html_report.py"),
         "--input", str(json_path),
         "--scenario-dir", str(scenario_path),
-        "--output", str(project_root / "docs" / "reports" /
-                        f"{scenario_name}_report.html")
+        "--output", str(project_root / "docs" / "reports" / f"{scenario_name}_report.html")
     ], check=True)
-
+    
     print(f"✅ Completed: {scenario_name}")
     print()
     return True
@@ -111,12 +109,12 @@ async def main():
     if not api_key:
         print("❌ GOOGLE_API_KEY not set")
         sys.exit(1)
-
+    
     print("=" * 80)
     print("Test Scenario Report Generator")
     print("=" * 80)
     print()
-
+    
     # Scenarios to process
     real_scenarios = [
         "real_01_173442",
@@ -126,35 +124,34 @@ async def main():
         "real_05_174503",
         "real_06_174604",
     ]
-
+    
     sim_scenarios = [
         "sim_run_test",
     ]
-
+    
     # Create output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    analysis_dir = project_root / "data" / "analysis_results" / \
-        "automated" / f"test_reports_{timestamp}"
+    analysis_dir = project_root / "data" / "analysis_results" / "automated" / f"test_reports_{timestamp}"
     analysis_dir.mkdir(parents=True, exist_ok=True)
-
+    
     print(f"Analysis results will be saved to: {analysis_dir}")
     print()
-
+    
     # Create client
     genai_client = Client(api_key=api_key)
-
+    
     # Process all scenarios
     success_count = 0
     total_count = len(real_scenarios) + len(sim_scenarios)
-
+    
     for scenario in real_scenarios:
         if await run_scenario(scenario, "real", analysis_dir, genai_client):
             success_count += 1
-
+    
     for scenario in sim_scenarios:
         if await run_scenario(scenario, "sim", analysis_dir, genai_client):
             success_count += 1
-
+    
     print("=" * 80)
     print("✅ ALL REPORTS GENERATED")
     print("=" * 80)
@@ -171,3 +168,30 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# Process real scenarios
+echo "Processing REAL robot scenarios..."
+echo ""
+for scenario in "${REAL_SCENARIOS[@]}"; do
+    run_scenario "$scenario" "real"
+done
+
+# Process sim scenarios
+echo "Processing SIMULATION scenarios..."
+echo ""
+for scenario in "${SIM_SCENARIOS[@]}"; do
+    run_scenario "$scenario" "sim"
+done
+
+echo "=================================="
+echo "✅ ALL REPORTS GENERATED"
+echo "=================================="
+echo ""
+echo "Results:"
+echo "  - Analysis JSON: $ANALYSIS_DIR/"
+echo "  - HTML Reports: docs/reports/"
+echo ""
+echo "Next steps:"
+echo "  1. Review reports in docs/reports/"
+echo "  2. Update docs/index.html to link to all reports"
+echo "  3. Commit and push to deploy to GitHub Pages"
