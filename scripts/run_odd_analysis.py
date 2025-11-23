@@ -60,37 +60,60 @@ MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
 # ODD DESCRIPTION (Default from notebook)
 # ============================================================================
 DEFAULT_ODD_DESCRIPTION = """
-The Unitree Go2 is a quadruped robot designed for general indoor navigation.
+The Unitree Go2 is a quadruped robot designed for general indoor navigation in 
+residential and commercial spaces.
 
-It's meant to operate in typical indoor environments - think homes, offices, hallways, 
-conference rooms, living rooms, and open workspaces. The floors should be smooth (tile, 
-hardwood, or low-pile carpet), and there needs to be adequate lighting so the cameras 
-can see clearly. Bright lighting is ideal, but it can handle dimmer areas too. 
-No pitch-black rooms though.
+ENVIRONMENT:
+The robot operates in typical indoor environments including homes, offices, hallways, 
+conference rooms, living rooms, and workspaces. It handles smooth floors (tile, 
+hardwood, low-pile carpet) and requires adequate lighting for camera-based perception. 
+Bright to moderate lighting is ideal; very dim areas are acceptable but pitch-black 
+rooms are outside operational limits.
 
-The robot moves with smooth to moderate acceleration - controlled movements during 
-normal navigation. It can handle quick starts and stops when needed (like avoiding 
-obstacles), but it's not meant for aggressive racing-style maneuvers or abrupt jerky 
-motions. Think responsive and agile, not violent or chaotic. The motion should feel 
-controlled and deliberate, even when reacting to obstacles. It's designed to 
-navigate around typical indoor obstacles like furniture, chairs, desk legs, and the 
-occasional box, but it's not meant for super cluttered spaces where there's barely 
-room to move.
+OBSTACLE HANDLING:
+Designed for furniture-dense residential spaces with moderate to high obstacle density. 
+The robot can navigate around sofas, coffee tables, dining chairs, desk legs, and 
+typical household items. Close proximity to furniture is expected and normal during 
+navigation. The robot is NOT designed for extreme clutter where clear navigation paths 
+are blocked, doorways are obstructed, or the floor is covered with scattered objects.
 
-The robot expects relatively flat, stable ground. No stairs, no steep ramps, and 
-definitely not designed for outdoor terrain like gravel or grass. It needs space 
-to maneuver safely without constantly being on the verge of hitting things.
+MOTION CHARACTERISTICS:
+The robot uses dynamic motion control appropriate for agile quadruped navigation:
+- Smooth motion during open navigation in hallways and clear spaces
+- Quick reactive maneuvers when avoiding obstacles (acceleration up to 10 m/s²)
+- Brief "abrupt" motion is normal and expected during:
+  * Obstacle avoidance reactions
+  * Direction changes around furniture
+  * Emergency stops when unexpected obstacles appear
+  
+The robot is NOT designed for:
+- Aggressive high-speed racing or sustained high acceleration
+- Violent or erratic motion when operating in open, obstacle-free spaces
 
-DEFINITELY NOT designed for:
-- Outdoor environments (weather, uneven ground, GPS reliance)
-- Staircases or steep slopes
-- Dark rooms where vision sensors can't work
-- Extremely crowded spaces where collision is almost guaranteed
-- Rough terrain, gravel, sand, or anything unstable
+TERRAIN:
+Designed for flat, stable indoor surfaces. Can handle:
+- Gentle transitions between rooms (door thresholds, slight elevation changes)
+- Minor surface variations (rug edges, mat transitions)
+
+NOT designed for:
+- Staircases (multi-step elevation changes)
+- Steep ramps (>15 degree incline)
+- Outdoor terrain (gravel, grass, dirt, uneven ground)
+- Unstable surfaces (sand, loose materials)
+
+COLLISION EXPECTATIONS:
+In furniture-dense environments (living rooms, dining areas), proximity to obstacles 
+is unavoidable and normal. Collision risk scores up to 0.75 are acceptable when 
+navigating through furnished spaces. The robot should maintain awareness and avoid 
+actual contact, but close proximity (<0.5m to obstacles) is expected.
+
+DEFINITELY NOT DESIGNED FOR:
+- Outdoor environments (weather exposure, GPS reliance, rough terrain)
+- Dark rooms where camera sensors cannot function
 - Industrial environments with heavy machinery or hazardous materials
-- Extremely crowded spaces where collision is almost guaranteed
-- Rough terrain, gravel, sand, or anything unstable
-- Industrial environments with heavy machinery or hazardous materials
+- Extreme clutter where navigation paths are completely blocked
+- Environments requiring climbing (stairs, steep slopes >15°)
+- High-speed applications or aggressive maneuvering
 """
 
 
