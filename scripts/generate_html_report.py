@@ -691,27 +691,6 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     ''' for vw in violation_windows)}
 </div>
 
-<!-- Interactive Charts -->
-<div class="container mb-5">
-    <h2 class="mb-4">📊 Analysis Charts</h2>
-    
-    <div class="chart-container">
-        <div id="accel-chart"></div>
-    </div>
-    
-    <div class="chart-container">
-        <div id="risk-chart"></div>
-    </div>
-    
-    <div class="chart-container">
-        <div id="accel-timeseries-chart"></div>
-    </div>
-    
-    <div class="chart-container">
-        <div id="gyro-timeseries-chart"></div>
-    </div>
-</div>
-
 <!-- ODD Compliance Details -->
 <div class="container mb-5">
     <h2 class="mb-4">📏 ODD Compliance</h2>
