@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODD Observer - Interactive Analysis Reports</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 3rem 0;
+        }
+
+        .hero {
+            background: white;
+            border-radius: 16px;
+            padding: 4rem 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 3rem;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+            border-color: #667eea;
+        }
+
+        .badge-status {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .badge-violation {
+            background-color: #dc3545;
+        }
+
+        .badge-in-odd {
+            background-color: #28a745;
+        }
+
+        h1 {
+            color: #2d3748;
+            font-weight: 700;
+        }
+
+        .lead {
+            color: #4a5568;
+        }
+
+        .btn-view-report {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-view-report:hover {
+            transform: scale(1.05);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .feature-list li::before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero text-center">
+            <h1 class="display-4 mb-3">🤖 ODD Observer</h1>
+            <p class="lead mb-4">Interactive Analysis Reports for Robot Operational Design Domain Monitoring</p>
+            <p class="text-muted">Powered by Multi-Agent AI Analysis Pipeline</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="row mb-5">
+            <div class="col-md-10 offset-md-1">
+                <div class="hero p-3">
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="#reports" class="btn btn-outline-dark">📊 Reports</a>
+                        <a href="dashboard.html" class="btn btn-primary">📈 Dashboard</a>
+                        <a href="guides/GETTING_STARTED.md" class="btn btn-outline-dark">📖 Guides</a>
+                        <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-outline-dark">💻 GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Reports -->
+        <div class="row" id="reports">
+            <div class="col-md-8 offset-md-2">
+                <h2 class="text-white mb-4">📊 Individual Reports</h2>
+
+                <!-- Demo Report Card -->
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Real Robot Analysis - Emergency Stop Scenario</h3>
+                            <p class="text-muted mb-2"><strong>Scenario:</strong> real_03_174232 (Living Room)</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Real Go2 Robot Data</p>
+                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 2 | <strong>Peak Accel:</strong> 5.69 m/s² | <strong>Motion:</strong> Abrupt</p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">4 Violations Detected</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
+                                <li>Abrupt motion detected (emergency stop maneuver)</li>
+                                <li>Path blocked by obstacle (traversability: 0.0)</li>
+                                <li>Critical collision risk (0.9/1.0)</li>
+                                <li>Acceleration spike: 5.69 m/s² (exceeds 5.0 limit)</li>
+                            </ul>
+
+                            <p class="mb-2"><strong>Analysis Features:</strong></p>
+                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
+                                <li>IMU-based motion analysis with jerk detection</li>
+                                <li>Multimodal perception (camera + LiDAR BEV)</li>
+                                <li>Interactive Plotly charts & dark mode</li>
+                                <li>COD classification with smoothness assessment</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/demo_report.html" class="btn btn-primary btn-view-report w-100 mb-3">
+                                View Full Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>📸 Camera + LiDAR BEV</div>
+                                <div>📊 Motion & Collision Charts</div>
+                                <div>🎯 ODD Compliance Analysis</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Future Reports Placeholder -->
+                <div class="report-card" style="opacity: 0.6;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>More Individual Scenarios</h3>
+                            <p class="text-muted mb-2"><strong>Status:</strong> Coming Soon</p>
+                            <p class="text-muted mb-3">Additional detailed reports for specific scenarios will be added here</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <button class="btn btn-secondary w-100" disabled>
+                                Coming Soon...
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="row mt-5">
+            <div class="col-md-8 offset-md-2">
+                <h2 class="text-white mb-4">📈 Aggregate Analysis</h2>
+                
+                <div class="report-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Interactive Dashboard - Batch Analysis</h3>
+                            <p class="text-muted mb-2"><strong>Coverage:</strong> All analyzed scenarios</p>
+                            <p class="text-muted mb-3"><strong>Features:</strong> Compliance distribution, violation breakdown, performance metrics</p>
+                            
+                            <ul class="feature-list mb-0">
+                                <li>Aggregate statistics across all windows</li>
+                                <li>Interactive pie charts & bar graphs</li>
+                                <li>Scenario-by-scenario comparison table</li>
+                                <li>Environment & terrain distribution analysis</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="dashboard.html" class="btn btn-primary btn-view-report w-100">
+                                View Dashboard →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="row mt-5">
+            <div class="col-md-8 offset-md-2">
+                <div class="hero">
+                    <h2 class="mb-4">🚀 About This Project</h2>
+                    <p class="mb-3">
+                        The <strong>ODD Observer</strong> is an AI-powered multi-agent system that monitors whether a
+                        quadruped robot operates within its Operational Design Domain (ODD). Built with Google's 
+                        Agentic Development Kit (ADK) and Gemini models, it provides real-time safety analysis 
+                        from multimodal sensor data.
+                    </p>
+
+                    <h4 class="mt-4 mb-3">🔬 Technical Innovation:</h4>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Sensor Fusion</h5>
+                            <ul class="feature-list">
+                                <li>Camera + LiDAR BEV analysis (gemini-2.5-pro)</li>
+                                <li>IMU-based motion with jerk detection</li>
+                                <li>Visual odometry for velocity estimation</li>
+                                <li>Odometry-independent (works with real robots)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Multi-Agent Pipeline</h5>
+                            <ul class="feature-list">
+                                <li>8 specialized agents (perception, motion, collision, etc.)</li>
+                                <li>Natural language ODD specification</li>
+                                <li>Automated COD classification</li>
+                                <li>ODD compliance with violation detection</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4 mb-3">✨ Key Features:</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="feature-list">
+                                <li><strong>Motion Smoothness Analysis</strong> - Jerk-based abrupt motion detection</li>
+                                <li><strong>Terrain Classification</strong> - Distinguishes surface vs elevation</li>
+                                <li><strong>Real Robot Validation</strong> - Tested on Unitree Go2</li>
+                                <li><strong>Data-Driven Thresholds</strong> - 5.0 m/s² from 100 production windows</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="feature-list">
+                                <li><strong>Interactive Reports</strong> - Plotly charts & dark mode</li>
+                                <li><strong>Aggregate Dashboard</strong> - Batch analysis visualization</li>
+                                <li><strong>Professional Documentation</strong> - Comprehensive guides</li>
+                                <li><strong>Kaggle ADK Capstone</strong> - Competition submission</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <strong>🎯 Real-World Impact:</strong> This system detected 4 critical violations in the demo 
+                        scenario: abrupt emergency stop motion (jerk-based), blocked path (traversability: 0.0), 
+                        critical collision risk (0.9), and acceleration spike (5.69 m/s²). The robot correctly 
+                        identified unsafe operating conditions.
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-dark btn-lg me-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                                class="bi bi-github" viewBox="0 0 16 16"
+                                style="vertical-align: middle; margin-right: 8px;">
+                                <path
+                                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                            </svg>
+                            View on GitHub
+                        </a>
+                        <a href="README.md" class="btn btn-outline-dark btn-lg">
+                            📖 Documentation
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-5 text-white">
+            <p class="mb-0">Built with ❤️ for the Kaggle ADK Agent Capstone</p>
+            <p class="small">Powered by Google Gemini 2.5 Pro & Multi-Agent AI</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

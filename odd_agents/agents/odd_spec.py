@@ -49,7 +49,7 @@ GUIDANCE FOR CONVERTING VAGUE DESCRIPTIONS TO PRECISE RANGES:
 - "slopes ok" → 0-20° (IN_ODD), 20-25° (BOUNDARY), 25°+ (OUT_ODD)
 
 **Default assumptions if not mentioned:**
-- max_speed_mps: [0.0, 1.5] IN_ODD, [1.5, 2.0] BOUNDARY (conservative)
+- max_accel_mps2: [0.0, 2.0] IN_ODD, [2.0, 5.0] BOUNDARY, >5.0 OUT_ODD (gentle motion)
 - obstacle_density: [0.0, 0.6] IN_ODD, [0.6, 0.8] BOUNDARY
 - traversability_score: [0.5, 1.0] IN_ODD, [0.3, 0.5] BOUNDARY
 - collision_risk: [0.0, 0.3] IN_ODD, [0.3, 0.5] BOUNDARY
@@ -72,10 +72,10 @@ Return ONLY valid JSON:
       }
     },
     "numeric_constraints": {
-      "max_speed_mps": {
-        "in_odd": [0.0, 1.5],
-        "boundary": [1.5, 2.0],
-        "out_odd": [2.0, "inf"]
+      "max_accel_mps2": {
+        "in_odd": [0.0, 2.0],
+        "boundary": [2.0, 5.0],
+        "out_odd": [5.0, "inf"]
       },
       "obstacle_density": {
         "in_odd": [0.0, 0.6],
