@@ -67,10 +67,10 @@ and open workspaces. The floors should be smooth (tile, hardwood, or low-pile ca
 and there needs to be adequate lighting so the cameras can see clearly. Bright office 
 lighting is ideal, but it can handle dimmer areas too. No pitch-black rooms though.
 
-The robot moves at a walking pace - nothing crazy fast. Think leisurely stroll, not 
-a sprint. It's designed to navigate around typical office obstacles like chairs, 
-desk legs, and the occasional box, but it's not meant for super cluttered spaces 
-where there's barely room to move.
+The robot moves with gentle, controlled acceleration - no sudden movements or jerky 
+motion. Think smooth and steady, not aggressive starts and stops. It's designed to 
+navigate around typical office obstacles like chairs, desk legs, and the occasional 
+box, but it's not meant for super cluttered spaces where there's barely room to move.
 
 The robot expects relatively flat, stable ground. No stairs, no steep ramps, and 
 definitely not designed for outdoor terrain like gravel or grass. It needs space 
@@ -168,12 +168,25 @@ def select_scenario(scenarios):
         return None
 
 
-def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str) -> Path:
+def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract compliance data, handling potential double nesting."""
+    compliance = result['full_analysis']['odd_compliance']
+    # Handle double nesting if present
+    if 'odd_compliance' in compliance:
+        return compliance['odd_compliance']
+    return compliance
+
+
+def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, source_path: str = None) -> Path:
     """Save results to timestamped directory."""
     # Create output directory
     output_base = project_root / "data" / "analysis_results" / \
         "manual" / timestamp / scenario_name
     output_base.mkdir(parents=True, exist_ok=True)
+
+    # Add source path to result if provided
+    if source_path:
+        result['source_scenario_path'] = source_path
 
     # Save full result
     full_result_path = output_base / "full_result.json"
@@ -182,14 +195,15 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str) -> 
 
     # Save executive summary separately
     summary_path = output_base / "executive_summary.json"
+    compliance_data = get_compliance_data(result)
     summary_data = {
         'executive_summary': result['report'].get('executive_summary', ''),
         'key_findings': result['report'].get('key_findings', []),
         'recommendations': result['report'].get('recommendations', []),
         'scenario_metadata': result['report'].get('scenario_metadata', {}),
-        'overall_compliance': result['full_analysis']['odd_compliance'].get('overall_compliance', ''),
-        'violations': result['full_analysis']['odd_compliance'].get('violations', []),
-        'warnings': result['full_analysis']['odd_compliance'].get('warnings', [])
+        'overall_compliance': compliance_data.get('overall_compliance', ''),
+        'violations': compliance_data.get('violations', []),
+        'warnings': compliance_data.get('warnings', [])
     }
     with open(summary_path, 'w') as f:
         json.dump(summary_data, f, indent=2)
@@ -201,9 +215,7 @@ def display_summary(result: Dict[str, Any]):
     """Display executive summary and compliance status."""
     report = result['report']
     # Handle potential double nesting in compliance data
-    compliance_data = result['full_analysis']['odd_compliance']
-    if 'odd_compliance' in compliance_data:
-        compliance_data = compliance_data['odd_compliance']
+    compliance_data = get_compliance_data(result)
     metadata = report.get('scenario_metadata', {})
 
     print("\n" + "=" * 80)
@@ -337,7 +349,8 @@ async def main():
 
         if result:
             # Save results
-            output_dir = save_results(result, scenario_name, timestamp)
+            output_dir = save_results(
+                result, scenario_name, timestamp, scenario_path)
 
             # Display summary
             display_summary(result)

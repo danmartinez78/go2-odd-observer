@@ -29,7 +29,7 @@ SYNTHESIS LOGIC:
 - terrain_type: Aggregate from perception.per_window_perception[*].terrain_roughness_class (majority vote)
 
 **Numeric Axes (extract ranges/averages):**
-- max_speed_mps: from motion.overall_stats.max_horizontal_accel_mps2 (convert accel to speed estimate)
+- max_accel_mps2: from motion.overall_stats.max_horizontal_accel_mps2 (peak acceleration)
 - obstacle_density: average from perception.per_window_perception[*].obstacle_density
 - traversability_score: average from perception.per_window_perception[*].traversability_score
 - collision_risk: average from collision.collision_events[*].collision_likelihood_score
@@ -43,6 +43,7 @@ Return ONLY valid JSON:
       "terrain_type": "<value>"
     },
     "numeric": {
+      "max_accel_mps2": <float>,
       "obstacle_density": <float>,
       "traversability_score": <float>,
       "collision_risk": <float>
