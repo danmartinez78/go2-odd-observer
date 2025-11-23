@@ -131,11 +131,34 @@ def extract_violation_windows(result: Dict[str, Any]) -> List[Dict[str, Any]]:
     return violation_windows
 
 
-def generate_plotly_charts(result: Dict[str, Any]) -> Dict[str, str]:
+def load_motion_timeseries(scenario_dir: Path, scenario_name: str, window_ids: List[str]) -> Dict[str, Any]:
+    """Load motion timeseries data from motion JSON files."""
+    timeseries_data = []
+    
+    for window_id in window_ids:
+        motion_file = scenario_dir / f"motion_{scenario_name}_w{window_id}.json"
+        if motion_file.exists():
+            with open(motion_file) as f:
+                motion_json = json.load(f)
+                timeseries_data.append({
+                    'window_id': window_id,
+                    'timestamps': motion_json.get('timestamps', []),
+                    'accel_x': motion_json.get('accel_x', []),
+                    'accel_y': motion_json.get('accel_y', []),
+                    'accel_z': motion_json.get('accel_z', []),
+                    'gyro_x': motion_json.get('gyro_x', []),
+                    'gyro_y': motion_json.get('gyro_y', []),
+                    'gyro_z': motion_json.get('gyro_z', []),
+                })
+    
+    return timeseries_data
+
+
+def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_name: str) -> Dict[str, str]:
     """Generate Plotly chart configurations as JSON strings."""
     charts = {}
 
-    # Acceleration timeline chart
+    # Acceleration timeline chart (per-window summary)
     motion_data = result['full_analysis']['motion']['per_window_motion']
     window_ids = [w['window_id'] for w in motion_data]
     accels = [w.get('peak_horizontal_accel_mps2', 0) for w in motion_data]
@@ -169,6 +192,76 @@ def generate_plotly_charts(result: Dict[str, Any]) -> Dict[str, str]:
         }
     }
     charts['acceleration'] = json.dumps(accel_chart)
+    
+    # Time series charts (IMU data)
+    timeseries = load_motion_timeseries(scenario_dir, scenario_name, window_ids)
+    
+    if timeseries:
+        # Acceleration time series (all windows combined)
+        accel_traces = []
+        for ts in timeseries:
+            if ts['accel_x'] and ts['timestamps']:
+                # Calculate horizontal acceleration magnitude
+                horiz_accel = [((ax**2 + ay**2)**0.5) for ax, ay in zip(ts['accel_x'], ts['accel_y'])]
+                accel_traces.append({
+                    'x': ts['timestamps'],
+                    'y': horiz_accel,
+                    'type': 'scatter',
+                    'mode': 'lines',
+                    'name': f"Window {ts['window_id']}",
+                    'line': {'width': 2}
+                })
+        
+        accel_timeseries_chart = {
+            'data': accel_traces,
+            'layout': {
+                'title': 'Horizontal Acceleration Over Time',
+                'xaxis': {'title': 'Time (s)'},
+                'yaxis': {'title': 'Acceleration (m/s²)'},
+                'hovermode': 'x unified',
+                'shapes': [
+                    {'type': 'line', 'x0': timeseries[0]['timestamps'][0], 
+                     'x1': timeseries[-1]['timestamps'][-1] if timeseries else 2.0,
+                     'y0': 0.5, 'y1': 0.5,
+                     'line': {'color': '#ffc107', 'dash': 'dash', 'width': 1.5}},
+                ]
+            }
+        }
+        charts['accel_timeseries'] = json.dumps(accel_timeseries_chart)
+        
+        # Angular velocity time series
+        gyro_traces = []
+        for ts in timeseries:
+            if ts['gyro_z'] and ts['timestamps']:
+                gyro_traces.append({
+                    'x': ts['timestamps'],
+                    'y': [abs(gz) for gz in ts['gyro_z']],
+                    'type': 'scatter',
+                    'mode': 'lines',
+                    'name': f"Window {ts['window_id']}",
+                    'line': {'width': 2}
+                })
+        
+        gyro_timeseries_chart = {
+            'data': gyro_traces,
+            'layout': {
+                'title': 'Angular Velocity (Yaw) Over Time',
+                'xaxis': {'title': 'Time (s)'},
+                'yaxis': {'title': 'Angular Velocity (rad/s)'},
+                'hovermode': 'x unified',
+                'shapes': [
+                    {'type': 'line', 'x0': timeseries[0]['timestamps'][0],
+                     'x1': timeseries[-1]['timestamps'][-1] if timeseries else 2.0,
+                     'y0': 0.1, 'y1': 0.1,
+                     'line': {'color': '#ffc107', 'dash': 'dash', 'width': 1.5}},
+                ]
+            }
+        }
+        charts['gyro_timeseries'] = json.dumps(gyro_timeseries_chart)
+    else:
+        # Provide empty charts if no timeseries data
+        charts['accel_timeseries'] = json.dumps({'data': [], 'layout': {'title': 'Acceleration Time Series (No Data)'}})
+        charts['gyro_timeseries'] = json.dumps({'data': [], 'layout': {'title': 'Angular Velocity Time Series (No Data)'}})
 
     # Risk matrix scatter plot
     perception_data = result['full_analysis']['perception']['per_window_perception']
@@ -247,7 +340,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             })
 
     # Generate charts
-    charts = generate_plotly_charts(result)
+    charts = generate_plotly_charts(result, scenario_dir, scenario_name)
 
     # Generate timestamp
     timestamp = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
@@ -542,9 +635,32 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                 <div class="image-label">Camera View</div>
                 <img src="{windows_with_images[int(vw['window_id'])]['images'].get('camera', '')}" alt="Camera view">
             </div>
-            <div class="image-container">
-                <div class="image-label">BEV Occupancy</div>
-                <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_occupancy', '')}" alt="BEV occupancy">
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <div class="image-container">
+                    <div class="image-label">BEV Occupancy</div>
+                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_occupancy', '')}" alt="BEV occupancy" class="img-fluid">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="image-container">
+                    <div class="image-label">BEV Height</div>
+                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_height', '')}" alt="BEV height" class="img-fluid">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="image-container">
+                    <div class="image-label">BEV Density</div>
+                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_density', '')}" alt="BEV density" class="img-fluid">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="image-container">
+                    <div class="image-label">BEV Roughness</div>
+                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_roughness', '')}" alt="BEV roughness" class="img-fluid">
+                </div>
             </div>
         </div>
         
@@ -572,6 +688,14 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     
     <div class="chart-container">
         <div id="risk-chart"></div>
+    </div>
+    
+    <div class="chart-container">
+        <div id="accel-timeseries-chart"></div>
+    </div>
+    
+    <div class="chart-container">
+        <div id="gyro-timeseries-chart"></div>
     </div>
 </div>
 
@@ -697,6 +821,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         
         Plotly.relayout('accel-chart', layout_update);
         Plotly.relayout('risk-chart', layout_update);
+        Plotly.relayout('accel-timeseries-chart', layout_update);
+        Plotly.relayout('gyro-timeseries-chart', layout_update);
     }}
     
     // Load saved theme
@@ -707,6 +833,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     // Initialize Plotly charts
     const accelData = {charts['acceleration']};
     const riskData = {charts['risk_matrix']};
+    const accelTimeseriesData = {charts.get('accel_timeseries', '{"data": [], "layout": {"title": "No Data"}}')};
+    const gyroTimeseriesData = {charts.get('gyro_timeseries', '{"data": [], "layout": {"title": "No Data"}}')};
     
     // Apply theme to initial charts
     const isDark = savedTheme === 'dark';
@@ -722,9 +850,13 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     
     accelData.layout = {{ ...accelData.layout, ...themeLayout }};
     riskData.layout = {{ ...riskData.layout, ...themeLayout }};
+    accelTimeseriesData.layout = {{ ...accelTimeseriesData.layout, ...themeLayout }};
+    gyroTimeseriesData.layout = {{ ...gyroTimeseriesData.layout, ...themeLayout }};
     
     Plotly.newPlot('accel-chart', accelData.data, accelData.layout, {{responsive: true}});
     Plotly.newPlot('risk-chart', riskData.data, riskData.layout, {{responsive: true}});
+    Plotly.newPlot('accel-timeseries-chart', accelTimeseriesData.data, accelTimeseriesData.layout, {{responsive: true}});
+    Plotly.newPlot('gyro-timeseries-chart', gyroTimeseriesData.data, gyroTimeseriesData.layout, {{responsive: true}});
     
     // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {{
