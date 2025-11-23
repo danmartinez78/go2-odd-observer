@@ -134,9 +134,10 @@ def extract_violation_windows(result: Dict[str, Any]) -> List[Dict[str, Any]]:
 def load_motion_timeseries(scenario_dir: Path, scenario_name: str, window_ids: List[str]) -> Dict[str, Any]:
     """Load motion timeseries data from motion JSON files."""
     timeseries_data = []
-    
+
     for window_id in window_ids:
-        motion_file = scenario_dir / f"motion_{scenario_name}_w{window_id}.json"
+        motion_file = scenario_dir / \
+            f"motion_{scenario_name}_w{window_id}.json"
         if motion_file.exists():
             with open(motion_file) as f:
                 motion_json = json.load(f)
@@ -150,7 +151,7 @@ def load_motion_timeseries(scenario_dir: Path, scenario_name: str, window_ids: L
                     'gyro_y': motion_json.get('gyro_y', []),
                     'gyro_z': motion_json.get('gyro_z', []),
                 })
-    
+
     return timeseries_data
 
 
@@ -192,17 +193,19 @@ def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_
         }
     }
     charts['acceleration'] = json.dumps(accel_chart)
-    
+
     # Time series charts (IMU data)
-    timeseries = load_motion_timeseries(scenario_dir, scenario_name, window_ids)
-    
+    timeseries = load_motion_timeseries(
+        scenario_dir, scenario_name, window_ids)
+
     if timeseries:
         # Acceleration time series (all windows combined)
         accel_traces = []
         for ts in timeseries:
             if ts['accel_x'] and ts['timestamps']:
                 # Calculate horizontal acceleration magnitude
-                horiz_accel = [((ax**2 + ay**2)**0.5) for ax, ay in zip(ts['accel_x'], ts['accel_y'])]
+                horiz_accel = [((ax**2 + ay**2)**0.5)
+                               for ax, ay in zip(ts['accel_x'], ts['accel_y'])]
                 accel_traces.append({
                     'x': ts['timestamps'],
                     'y': horiz_accel,
@@ -211,7 +214,7 @@ def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_
                     'name': f"Window {ts['window_id']}",
                     'line': {'width': 2}
                 })
-        
+
         accel_timeseries_chart = {
             'data': accel_traces,
             'layout': {
@@ -220,7 +223,7 @@ def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_
                 'yaxis': {'title': 'Acceleration (m/s²)'},
                 'hovermode': 'x unified',
                 'shapes': [
-                    {'type': 'line', 'x0': timeseries[0]['timestamps'][0], 
+                    {'type': 'line', 'x0': timeseries[0]['timestamps'][0],
                      'x1': timeseries[-1]['timestamps'][-1] if timeseries else 2.0,
                      'y0': 0.5, 'y1': 0.5,
                      'line': {'color': '#ffc107', 'dash': 'dash', 'width': 1.5}},
@@ -228,7 +231,7 @@ def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_
             }
         }
         charts['accel_timeseries'] = json.dumps(accel_timeseries_chart)
-        
+
         # Angular velocity time series
         gyro_traces = []
         for ts in timeseries:
@@ -241,7 +244,7 @@ def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_
                     'name': f"Window {ts['window_id']}",
                     'line': {'width': 2}
                 })
-        
+
         gyro_timeseries_chart = {
             'data': gyro_traces,
             'layout': {
@@ -260,8 +263,10 @@ def generate_plotly_charts(result: Dict[str, Any], scenario_dir: Path, scenario_
         charts['gyro_timeseries'] = json.dumps(gyro_timeseries_chart)
     else:
         # Provide empty charts if no timeseries data
-        charts['accel_timeseries'] = json.dumps({'data': [], 'layout': {'title': 'Acceleration Time Series (No Data)'}})
-        charts['gyro_timeseries'] = json.dumps({'data': [], 'layout': {'title': 'Angular Velocity Time Series (No Data)'}})
+        charts['accel_timeseries'] = json.dumps(
+            {'data': [], 'layout': {'title': 'Acceleration Time Series (No Data)'}})
+        charts['gyro_timeseries'] = json.dumps(
+            {'data': [], 'layout': {'title': 'Angular Velocity Time Series (No Data)'}})
 
     # Risk matrix scatter plot
     perception_data = result['full_analysis']['perception']['per_window_perception']
