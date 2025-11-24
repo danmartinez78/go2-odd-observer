@@ -1,0 +1,1511 @@
+{
+  "report": {
+    "executive_summary": "The Unitree Go2 robot operated within a cluttered indoor living room, exhibiting agile and abrupt movements. While fully compliant with its defined Operational Design Domain (ODD) across all parameters, significant collision risks arose from recurrent sensor fusion discrepancies, where low-profile obstacles visible to the camera were not detected by LiDAR.",
+    "scenario_metadata": {
+      "total_windows_analyzed": 25,
+      "scenario_name": "collection_20251122_173813_chunk_01",
+      "environment_class": "indoor",
+      "data_source": "real_world",
+      "data_source_confidence": 1.0
+    },
+    "perception_summary": "The environment was consistently classified as indoor (living room), characterized by bright lighting and smooth terrain (patterned rugs, hard floors). Obstacle density was moderate to high, with furniture and frequent low-lying objects (ramps, boxes, bags). Critical sensor discrepancies were noted in multiple windows where low-profile objects visible to the camera were not detected by the BEV LiDAR. Some camera degradation (distortion, pixelation, overexposure) was also observed. Humans were detected in two windows.",
+    "motion_summary": "The robot exhibited moderate activity, with motion detected in 64% of windows. Motion types were predominantly complex (15 instances, involving translation and rotation) and stationary (9 instances), with one instance of pure translation. Peak horizontal acceleration reached 9.0124 m/s\u00b2 and peak angular velocity was 1.0131 rad/s. Motion smoothness was consistently categorized as abrupt, reflecting agile maneuvers and high jerk values, even in periods of overall stationary status, likely due to sensor noise.",
+    "collision_summary": "The overall average collision likelihood was 0.582. Out of 25 windows, 14 were flagged as high or critical risk, 2 as medium risk, and 9 as low risk. A persistent issue was the sensor fusion failure: low-profile obstacles clearly visible in the camera feed were frequently not detected by the BEV LiDAR. This discrepancy, combined with the robot's active motion in several instances, led to imminent collision risks and a majority of 'stop' recommendations.",
+    "odd_spec_summary": "The ODD for the Unitree Go2 robot permits operation in well-lit, furniture-dense indoor residential/commercial spaces on smooth terrain. It allows for dynamic, agile, and occasionally abrupt motion, with peak accelerations up to 10 m/s\u00b2. Acceptable collision risk in dense environments is up to 0.75. Prohibited areas include outdoors, stairs, steep inclines, and dark rooms.",
+    "cod_classification_summary": "The current operating domain is characterized by an indoor, brightly lit environment with smooth terrain. The robot's motion involved abrupt maneuvers, with a peak acceleration of 9.0124 m/s\u00b2. The environment had a moderate obstacle density (0.364) and fair traversability (0.54), with an average collision risk of 0.582.",
+    "odd_compliance_summary": "The robot's operation remained fully compliant with its defined ODD. All categorical parameters (environment type, lighting, terrain, motion smoothness) and numerical parameters (max acceleration, obstacle density, traversability score, collision risk) fell within the specified 'IN_ODD' ranges. No violations or warnings were formally identified against the ODD specification.",
+    "key_findings": [
+      "Full ODD Compliance: The robot operated entirely within its defined ODD across all categorical and numerical parameters.",
+      "High Collision Risk Frequency: Despite ODD compliance, 14 out of 25 windows showed high or critical collision risk, primarily due to immediate obstacles.",
+      "Persistent Sensor Discrepancy: Low-profile obstacles clearly visible to the camera were frequently missed by the BEV LiDAR, creating critical undetected hazards.",
+      "Agile and Abrupt Motion: The robot exhibited dynamic, abrupt motions with high accelerations (peak 9.01 m/s\u00b2), consistent with the ODD's allowance for such behavior.",
+      "Real-world Data Quality Issues: Several camera frames showed pixelation, distortion, or overexposure, indicating sensor degradation in a real-world setting."
+    ],
+    "recommendations": [
+      "Implement advanced sensor fusion to better integrate camera data for detecting low-profile obstacles missed by LiDAR.",
+      "Re-evaluate collision risk thresholds or introduce a specific hazard category for sensor discrepancies involving undetected critical obstacles.",
+      "Improve camera sensor robustness or filtering to mitigate image degradation in dynamic real-world environments.",
+      "Enhance motion planning to proactively account for potential undetected low-profile hazards, especially in cluttered environments."
+    ]
+  },
+  "full_analysis": {
+    "perception": {
+      "windows_analyzed": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012",
+        "013",
+        "014",
+        "015",
+        "016",
+        "017",
+        "018",
+        "019",
+        "020",
+        "021",
+        "022",
+        "023",
+        "024"
+      ],
+      "environment_classification": {
+        "primary_class": "indoor",
+        "confidence": 1.0,
+        "evidence": [
+          "Consistent descriptions of an indoor 'living room' setting",
+          "Presence of common household furniture like media consoles, armchairs, and plants",
+          "Operation exclusively on indoor surfaces like rugs and smooth floors"
+        ]
+      },
+      "data_source_classification": {
+        "source": "real_world",
+        "confidence": 1.0,
+        "evidence": [
+          "Multiple windows report sensor noise: 'severe_image_distortion', 'severe_camera_corruption', 'pixelated and distorted view'",
+          "Natural lighting imperfections noted, such as 'overexposure' in window 009",
+          "Presence of organic, random clutter like 'bags of pet food', 'cardboard object', and 'cat scratcher ramp'",
+          "Textures are described as natural and varied, e.g., 'high-pile patterned rug', 'plush rug'"
+        ]
+      },
+      "per_window_perception": [
+        {
+          "bev_summary": "A dense cluster of obstacle points is detected immediately in front of and slightly to the right of the robot, indicating a significant, close-range object. The surrounding area appears clear.",
+          "camera_summary": "The robot is indoors on a patterned rug, facing a wooden media console. A large wooden box or ramp with 'EVERYMATE' written on it is directly in the foreground, obstructing the path.",
+          "environmental_constraints": [
+            "clutter",
+            "furniture",
+            "close-range obstacle"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0,
+          "visibility_score": 1,
+          "window_id": "000"
+        },
+        {
+          "bev_summary": "A large, dense, irregularly shaped obstacle cluster is detected directly in front and slightly to the right of the robot, blocking the immediate forward path. Clear, open space is available to the left and right of the obstacle.",
+          "camera_summary": "Low-angle view of an indoor living room. A wooden box is in the immediate foreground, partially obscuring a patterned rug. A large entertainment console, an armchair, and a potted plant are visible in the background.",
+          "environmental_constraints": [
+            "clutter",
+            "confined_space"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 0.9,
+          "window_id": "001"
+        },
+        {
+          "bev_summary": "The area is mostly clear, with a single obstacle cluster detected to the robot's right. The forward path appears completely open.",
+          "camera_summary": "Low-angle view from on top of a bed, looking across a patterned bedspread toward a media console. A small wooden object is in the immediate foreground.",
+          "environmental_constraints": [
+            "On elevated soft surface (bed)",
+            "Close-proximity obstacle"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0,
+          "occupancy_ratio": 0.02,
+          "terrain_roughness_class": "moderate",
+          "traversability_score": 0.2,
+          "visibility_score": 0.8,
+          "window_id": "002"
+        },
+        {
+          "bev_summary": "A large obstacle cluster is detected ahead and to the right, consistent with furniture. The forward-left path appears open for navigation.",
+          "camera_summary": "View of an indoor living area with a patterned rug. A small box is on the floor immediately in front, and a large wooden cabinet and plant block the path ahead and to the right.",
+          "environmental_constraints": [
+            "furniture",
+            "foreground object"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.4,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 0.8,
+          "window_id": "003"
+        },
+        {
+          "bev_summary": "A single, isolated cluster of obstacles is detected approximately 2 meters ahead and to the right, corresponding to the potted plant seen in the camera. The immediate forward and left paths appear clear in the LiDAR data.",
+          "camera_summary": "The robot is in a brightly lit living room, positioned on a patterned rug. Directly in front is a small wooden ramp. The path is flanked by an armchair on the left and a large potted plant on the right, with a media console in the background.",
+          "environmental_constraints": [
+            "Cluttered space",
+            "Obstacle in path"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 0.9,
+          "window_id": "004"
+        },
+        {
+          "bev_summary": "A large, dense cluster of obstacles, corresponding to furniture, is located immediately in front of the robot, blocking the direct path forward. Open space is available to the left and far right.",
+          "camera_summary": "The robot is in a living room on a plush rug, facing a media console. A small ramp-like object is on the floor directly ahead, with an armchair to the left and a large plant to the right.",
+          "environmental_constraints": [
+            "clutter",
+            "narrow_passages",
+            "small_obstacle_on_floor"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.15,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.3,
+          "visibility_score": 0.8,
+          "window_id": "005"
+        },
+        {
+          "bev_summary": "A single, compact cluster of obstacles is detected slightly to the right of center in the immediate forward path, corresponding to the wooden ramp.",
+          "camera_summary": "The robot is indoors in a well-lit living room, facing a small wooden ramp placed on a patterned area rug. In the background, there is furniture including a console table and an armchair.",
+          "environmental_constraints": [
+            "clutter",
+            "indoor_environment"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "006"
+        },
+        {
+          "bev_summary": "A large, dense cluster of obstacles is detected in the front-right quadrant, starting approximately 1.5 meters away from the robot. The immediate forward path and the left side appear to be clear.",
+          "camera_summary": "The robot is in a well-lit living room on a high-pile patterned rug, facing a small wooden ramp. Behind the ramp is a wooden media console, with an armchair to the left and a large plant to the right.",
+          "environmental_constraints": [
+            "clutter",
+            "furniture",
+            "foreground_object",
+            "high-pile_rug"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "007"
+        },
+        {
+          "bev_summary": "A large obstacle, consistent with an armchair, is detected to the robot's immediate front-left. The path directly forward and to the right is clear.",
+          "camera_summary": "A low-angle view from a robot on a patterned rug in a living room, facing a small cardboard house-shaped object. An armchair is visible to the left and a console table in the background.",
+          "environmental_constraints": [
+            "furniture",
+            "clutter"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.3,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.6,
+          "visibility_score": 0.9,
+          "window_id": "008"
+        },
+        {
+          "bev_summary": "A large, dense cluster of obstacles is located to the front-right of the robot. The path directly forward and to the left is clear.",
+          "camera_summary": "Low-angle, overexposed view from a woven rug in a cluttered indoor living room, facing a media console and an armchair.",
+          "environmental_constraints": [
+            "clutter",
+            "overexposure"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.4,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.8,
+          "visibility_score": 0.3,
+          "window_id": "009"
+        },
+        {
+          "bev_summary": "The LiDAR map shows a mostly empty space, with a single, irregularly shaped obstacle cluster located approximately 1-2 meters ahead and to the right of the robot. The path directly forward and to the left appears completely clear.",
+          "camera_summary": "An indoor living room with a prominent high-pile shag rug on the floor. A small wooden object, possibly a pet ramp, is directly in the foreground, with a console table further back, a chair to the left, and a potted tree to the right.",
+          "environmental_constraints": [
+            "indoor_clutter",
+            "high_pile_rug"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.8,
+          "visibility_score": 0.9,
+          "window_id": "010"
+        },
+        {
+          "bev_summary": "The surrounding area is almost entirely clear, with a single, compact obstacle located approximately 2 meters ahead and to the right.",
+          "camera_summary": "A heavily distorted image of a furnished indoor room. A console table is in the center, a chair to the left, and a complex patterned rug covers the floor.",
+          "environmental_constraints": [
+            "severe_image_distortion",
+            "static_obstacle"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.1,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.9,
+          "visibility_score": 0.2,
+          "window_id": "011"
+        },
+        {
+          "bev_summary": "A single, compact obstacle is detected approximately one meter ahead and slightly to the left. The rest of the immediate area is clear.",
+          "camera_summary": "Low-angle view of a living room with a cat scratcher ramp directly ahead on a high-pile patterned rug. Furniture is visible in the background.",
+          "environmental_constraints": [
+            "clutter",
+            "rug"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.02,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "012"
+        },
+        {
+          "bev_summary": "The LiDAR map shows a mostly clear forward path, with a single, medium-sized obstacle cluster located a few meters ahead and to the right, corresponding to the potted plant and adjacent items.",
+          "camera_summary": "Indoor living room with a large, textured rug. A cat scratching ramp is directly in the robot's immediate path, with a console table, chair, and potted plant in the background.",
+          "environmental_constraints": [
+            "indoor_clutter",
+            "furniture",
+            "small_obstacles"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.6,
+          "visibility_score": 0.9,
+          "window_id": "013"
+        },
+        {
+          "bev_summary": "A single, small, dense obstacle is detected immediately in front of the robot, slightly to the right of center. The surrounding area appears completely clear.",
+          "camera_summary": "View from a low angle inside a furnished living room. The robot is on a high-pile, patterned rug, facing a small cardboard cat toy. A console table is visible in the background.",
+          "environmental_constraints": [
+            "indoor_clutter",
+            "low_obstacle",
+            "textured_ground_surface"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.1,
+          "occupancy_ratio": 0.01,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.7,
+          "visibility_score": 0.9,
+          "window_id": "014"
+        },
+        {
+          "bev_summary": "The LiDAR map shows a completely clear path forward. A single, dense obstacle is located in close proximity to the robot's right side.",
+          "camera_summary": "A severely corrupted image of a cluttered indoor room. A patterned rug is on the floor, with furniture against the back wall and a large object to the right. Details are obscured by extreme visual artifacts.",
+          "environmental_constraints": [
+            "severe_camera_corruption",
+            "close_proximity_obstacle_right"
+          ],
+          "humans_detected": false,
+          "lighting_class": "dim",
+          "obstacle_density": 0,
+          "occupancy_ratio": 0,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 1,
+          "visibility_score": 0.1,
+          "window_id": "015"
+        },
+        {
+          "bev_summary": "A single, large, dense obstacle is detected directly in front of the robot, slightly to the right, starting about 1 meter away. The path to the immediate left is clear, while the forward and rightward paths are blocked.",
+          "camera_summary": "A heavily pixelated and distorted view of a cluttered indoor room. A large, ornate rug is in the foreground, with various pieces of furniture and decorative objects in the midground and background. A brightly lit object is on the right.",
+          "environmental_constraints": [
+            "cluttered_environment",
+            "blocked_path",
+            "sensor_degradation"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 0.3,
+          "window_id": "016"
+        },
+        {
+          "bev_summary": "The path directly forward is clear. A single, C-shaped cluster of obstacles is detected off to the robot's front-right.",
+          "camera_summary": "A heavily pixelated and compressed view of a cluttered indoor living room. The robot is on a large, patterned rug, facing furniture against the far wall. An archway is visible to the right.",
+          "environmental_constraints": [
+            "clutter",
+            "poor image quality"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.03,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.9,
+          "visibility_score": 0.3,
+          "window_id": "017"
+        },
+        {
+          "bev_summary": "A dense cluster of obstacles is detected slightly to the right-of-center in the robot's immediate forward path. The area to the left and further ahead is clear.",
+          "camera_summary": "An indoor living room with a large, high-pile patterned rug. Immediate obstacles include a cardboard object to the left and two large bags to the right.",
+          "environmental_constraints": [
+            "clutter",
+            "obstacles"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.03,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.7,
+          "visibility_score": 1,
+          "window_id": "018"
+        },
+        {
+          "bev_summary": "A U-shaped cluster of obstacles is detected slightly ahead and to the right of the robot, corresponding to the large bags seen in the camera. The surrounding area is clear.",
+          "camera_summary": "The robot is indoors on a high-pile, patterned rug. The path ahead is partially obstructed by a cardboard object on the left and two large bags of pet food on the right. A person is visible in the background on the far right.",
+          "environmental_constraints": [
+            "clutter",
+            "confined_space"
+          ],
+          "humans_detected": true,
+          "lighting_class": "bright",
+          "obstacle_density": 0.4,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "019"
+        },
+        {
+          "bev_summary": "A U-shaped cluster of obstacles is detected approximately 1-1.5 meters directly in front of the robot, blocking the immediate forward path but leaving open space to the left and right.",
+          "camera_summary": "The robot is in a well-lit living room, positioned on a patterned rug. Ahead is a small cardboard object, and to the right are two large bags, creating a partially obstructed path.",
+          "environmental_constraints": [
+            "clutter",
+            "narrow passage"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.1,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "020"
+        },
+        {
+          "bev_summary": "A dense cluster of obstacles is detected approximately 1-3 meters ahead and to the right of the robot, blocking the direct forward and rightward paths. The path to the left appears completely clear.",
+          "camera_summary": "View from a low-angle camera in a well-lit living room. The robot is on a patterned rug, with a small cardboard object ahead, two large bags and a plant to the right, and furniture in the background.",
+          "environmental_constraints": [
+            "static obstacles",
+            "clutter"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.7,
+          "occupancy_ratio": 0.15,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "021"
+        },
+        {
+          "bev_summary": "A dense cluster of obstacles is detected directly in the robot's forward path, blocking the way forward and to the right, but leaving a clear path to the left.",
+          "camera_summary": "Low-angle view of a living room with a patterned rug; the immediate path is blocked by a pet ramp on the left and two large bags of pet food on the right.",
+          "environmental_constraints": [
+            "Clutter",
+            "Confined space"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.15,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "022"
+        },
+        {
+          "bev_summary": "A dense cluster of obstacles is located directly ahead and slightly to the right of the robot, blocking the immediate forward path. The area to the left is clear.",
+          "camera_summary": "Robot is on a high-pile patterned rug in a living room, facing a small wooden ramp and two large bags of pet food which obstruct the immediate path.",
+          "environmental_constraints": [
+            "indoor_clutter",
+            "soft_obstacles",
+            "low_obstacle"
+          ],
+          "humans_detected": false,
+          "lighting_class": "bright",
+          "obstacle_density": 0.6,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "023"
+        },
+        {
+          "bev_summary": "A large, dense cluster of obstacles is detected slightly ahead and to the right of the robot, blocking the path on that side. The path to the immediate front and left appears clear.",
+          "camera_summary": "The robot is in a living room on a patterned rug, facing a small cardboard ramp. To the right are two large bags and a person is partially visible.",
+          "environmental_constraints": [
+            "clutter",
+            "human presence"
+          ],
+          "humans_detected": true,
+          "lighting_class": "bright",
+          "obstacle_density": 0.4,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.7,
+          "visibility_score": 1,
+          "window_id": "024"
+        }
+      ]
+    },
+    "motion": {
+      "windows_analyzed": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012",
+        "013",
+        "014",
+        "015",
+        "016",
+        "017",
+        "018",
+        "019",
+        "020",
+        "021",
+        "022",
+        "023",
+        "024"
+      ],
+      "overall_stats": {
+        "total_windows": 25,
+        "motion_detected_count": 16,
+        "motion_detection_rate": 0.64,
+        "motion_type_distribution": {
+          "stationary": 9,
+          "translation": 1,
+          "rotation": 0,
+          "complex": 15
+        },
+        "max_horizontal_accel_mps2": 9.0124,
+        "max_angular_velocity_radps": 1.0131,
+        "overall_assessment": "moderate_activity"
+      },
+      "per_window_motion": [
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is classified as STATIONARY. The primary evidence is the front camera image, which is exceptionally sharp and clear, with no signs of motion blur, optical flow, or scene shift. This strongly indicates no translational or significant rotational motion. \n\nSupporting this, the IMU gyroscope data shows very low angular velocities (peak 0.0234 rad/s for yaw), which are well below the threshold of 0.05 rad/s typically indicating sensor noise or drift, not genuine rotation. \n\nWhile the IMU accelerometer reports non-zero horizontal acceleration (peak 0.3070 m/s\u00b2, average 0.1894 m/s\u00b2), these values are small (<1.0 m/s\u00b2) and within the range commonly observed from gravity leakage or sensor artifacts, especially given the maximum platform tilt of 0.5\u00b0. Although 0.5\u00b0 of tilt would theoretically contribute less than the observed average acceleration, imperfections in gravity compensation or minor vibrations can account for such residual readings. The acceleration samples, while varying, remain consistently low in magnitude. \n\nThe jerk analysis shows very high values (peak 1148.68 m/s\u00b3), which would typically suggest abrupt starts/stops or dynamic maneuvers. However, this contradicts the strong camera and gyroscope evidence. In this context, the high jerk is interpreted as likely due to sensor noise, very minor high-frequency vibrations of the platform not translating to macroscopic motion, or filtering effects, rather than actual locomotive starts/stops. The motion_smoothness is set to 'abrupt' to reflect the high jerk values, even though these are not indicative of macro-motion. \n\nGiven the decisive visual evidence and negligible angular velocities, the robot is not moving. The platform is stable with max tilt less than 15\u00b0.",
+          "max_tilt_deg": 0.5,
+          "motion_confidence": 0.95,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.0234,
+          "peak_horizontal_accel_mps2": 0.307,
+          "platform_stability": "stable",
+          "window_id": "000"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is classified as 'stationary' based on the primary camera visual evidence, which overrides conflicting IMU data. The front camera view is perfectly sharp and clear, displaying no motion blur, streaks, or optical flow across textures like the rug, wooden cabinet, or the 'EVERYMATE' text. This is a definitive indicator of no significant translational or rotational movement. IMU gyroscope data supports this, with peak angular velocities (yaw 0.0234 rad/s, roll 0.0170 rad/s, pitch 0.0224 rad/s) all significantly below the 0.05 rad/s threshold for genuine rotation, suggesting sensor noise or negligible micro-vibrations. The platform is highly stable with a maximum tilt of 0.5\u00b0 (well below 15\u00b0), which can account for a small component of the observed horizontal acceleration due to gravity leakage (approx. 0.09 m/s\u00b2 at 0.5\u00b0 pitch). The measured average horizontal acceleration of 0.1940 m/s\u00b2 and peak of 0.3070 m/s\u00b2 are small enough to be attributed to a combination of this minor tilt, sensor bias, and ambient micro-vibrations, particularly when contrasted with the absolute stillness of the camera feed. While the jerk analysis reports exceptionally high values (peak 2185.62 m/s\u00b3, average 337.90 m/s\u00b3), indicating 'abrupt' changes in acceleration, these are considered IMU artifacts or responses to very high-frequency, low-amplitude vibrations that do not translate into detectable macroscopic motion blur in the camera image. The camera's visual evidence is prioritized as the most reliable indicator for actual motion detection.",
+          "max_tilt_deg": 0.5,
+          "motion_confidence": 1,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.0234,
+          "peak_horizontal_accel_mps2": 0.307,
+          "platform_stability": "stable",
+          "window_id": "001"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is classified as stationary. The primary evidence is the front camera view, which displays a sharp, clear image with no discernible motion blur, streaking, or optical flow. All objects in the scene, from the foreground object to the distant furniture and walls, are perfectly still. This visual stability strongly indicates no translational or rotational motion.\n\nIMU gyroscope data supports this, showing extremely low angular velocities (peak 0.0224 rad/s across all axes). These values are well below the threshold for significant rotation (<0.05 rad/s) and are indicative of sensor noise or drift rather than actual rotational movement.\n\nThe IMU accelerometer data shows small horizontal accelerations (peak 0.2848 m/s\u00b2, average 0.1881 m/s\u00b2). While the data is labeled 'gravity-compensated', the Critical Reasoning Rule states that if the camera shows sharp images but the IMU shows acceleration, and the acceleration is small (<1.0 m/s\u00b2) and potentially explained by tilt, it should be classified as stationary (IMU artifact). The platform has a minor tilt (max 0.5\u00b0). While this tilt alone might not fully explain the observed average acceleration if it were purely gravity leakage, the acceleration magnitudes are consistently small. Crucially, the jerk analysis reports extremely high peak (4388.34 m/s\u00b3) and average (446.34 m/s\u00b3) jerk values, which typically indicate abrupt starts/stops. However, given the perfectly static camera image, such high jerk values with very small acceleration magnitudes are most likely attributed to high-frequency sensor noise or artifacts in the accelerometer readings, rather than actual dynamic physical motion that would certainly be visible in the camera feed. The platform is stable as max tilt is 0.5\u00b0 (<15\u00b0).\n\nIn conclusion, the compelling visual evidence from the camera, combined with negligible gyroscope activity, overrides the small and noisy accelerometer readings, leading to a high-confidence determination of 'stationary' motion.",
+          "max_tilt_deg": 0.5,
+          "motion_confidence": 0.95,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.0224,
+          "peak_horizontal_accel_mps2": 0.2848,
+          "platform_stability": "stable",
+          "window_id": "002"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The front camera image displays severe motion blur, streaking, and pixel distortion across the entire frame, which is a primary indicator of significant and rapid movement. Objects like the rug, furniture, and wall decorations are not sharp or static, ruling out a stationary state. The IMU accelerometer data shows a peak horizontal acceleration of 3.8609 m/s\u00b2, which is substantially higher than the approximately 0.86 m/s\u00b2 maximum acceleration that could be attributed to gravity leakage from the observed maximum platform tilt of 4.2\u00b0. The acceleration samples also exhibit varying patterns, consistent with active translational motion rather than a constant, artifact-driven reading. Furthermore, the exceptionally high peak jerk of 18339.18 m/s\u00b3 and average jerk of 1665.02 m/s\u00b3 strongly suggest abrupt starts, stops, or changes in motion, classifying the movement as 'abrupt'. The gyroscope data indicates significant rotational activity, with a peak roll rate of 1.0131 rad/s, a peak pitch rate of 0.4740 rad/s, and a peak yaw rate of 0.3483 rad/s. These angular velocities are well above typical sensor noise thresholds (>0.05 rad/s), confirming genuine rotational motion. The platform remains stable with a maximum roll of 4.2\u00b0 and pitch of 3.2\u00b0, both well below 15\u00b0. Holistically, the congruent evidence from the highly blurred camera image, significant and varying translational acceleration, substantial angular velocities, and extremely high jerk values confidently confirms that the robot is undergoing complex, abrupt motion involving both translation and rotation. The camera's visual evidence of blur is the primary driver for detecting motion, and it is strongly supported by all IMU metrics, ruling out IMU artifacts or a stationary state.",
+          "max_tilt_deg": 4.2,
+          "motion_confidence": 1,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 1.0131,
+          "peak_horizontal_accel_mps2": 3.8609,
+          "platform_stability": "stable",
+          "window_id": "003"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image shows sharp textures and clear edges, which typically suggests a stationary state or very slow motion. However, this conflicts significantly with the comprehensive IMU data for the window.\n\nAddressing the IMU Accelerometer Context: While the platform has a max roll of 4.2\u00b0 and max pitch of 3.2\u00b0, which could contribute up to approximately 0.9 m/s\u00b2 of horizontal acceleration from gravity leakage, the observed accelerometer data far exceeds this. The peak horizontal acceleration is 3.8609 m/s\u00b2, and even the average (1.4238 m/s\u00b2) and median (1.3342 m/s\u00b2) are significantly higher than what tilt alone can explain. Crucially, the acceleration samples exhibit a highly VARYING pattern, not constant values, which is indicative of true translational motion.\n\nMost compellingly, the JERK ANALYSIS shows a peak jerk of 3114.48 m/s\u00b3 and an average jerk of 481.79 m/s\u00b3. These values are astronomically high (far exceeding the >5 m/s\u00b3 threshold for abruptness) and unequivocally indicate extremely abrupt starts, stops, and dynamic changes in motion, making a 'stationary' classification impossible.\n\nFurthermore, the IMU Gyroscope Data reveals significant angular velocities: a peak roll rate of 1.0131 rad/s, a peak pitch rate of 0.4740 rad/s, and a peak yaw rate of 0.3483 rad/s. All these values are well above the typical sensor noise/drift threshold of 0.05 rad/s and show varying magnitudes, confirming genuine rotational motion.\n\nConsidering the Decision Priority, while camera evidence is usually primary, the IMU's temporal patterns (varying acceleration, extremely high jerk) and significant gyroscope readings overwhelmingly indicate dynamic motion. The sharp camera image likely represents a moment of relative stillness within a window that also contained these abrupt, dynamic movements, or the motion was not fast enough to cause blur with the camera's exposure settings. The platform's maximum tilt of 4.2\u00b0 (roll) means it is stable (<15\u00b0).\n\nTherefore, motion is detected. Due to the presence of both significant linear acceleration (translation) and angular velocities (rotation), the motion type is classified as 'complex'. The extremely high jerk values indicate 'abrupt' motion smoothness. Estimated speed cannot be reliably derived from the provided single camera image and dynamic IMU data without further context on duration or integration methods.",
+          "max_tilt_deg": 4.2,
+          "motion_confidence": 0.95,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 1.0131,
+          "peak_horizontal_accel_mps2": 3.8609,
+          "platform_stability": "stable",
+          "window_id": "004"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is exhibiting complex and highly dynamic motion. The primary indicator is the camera image, which shows significant motion blur across the entire scene, including background elements like the TV console, armchair, and foreground rug. This visual evidence strongly suggests active movement at a considerable speed. \n\nSupporting this, the IMU accelerometer data shows highly varying horizontal acceleration samples, ranging from 0.226 to a peak of 3.5601 m/s\u00b2, with an average of 1.3524 m/s\u00b2. This pattern of varying, high acceleration is characteristic of true translational motion, not gravity leakage. The maximum platform tilt (roll 3.5\u00b0, pitch 1.6\u00b0) would only contribute approximately 0.66 m/s\u00b2 from gravity, which is much lower than the observed average and peak accelerations. \n\nThe jerk analysis further corroborates dynamic motion, with extremely high peak (43929.67 m/s\u00b3) and average (5271.65 m/s\u00b3) jerk values, indicating abrupt and rapid changes in acceleration consistent with dynamic maneuvers. \n\nFinally, the IMU gyroscope data confirms significant rotational motion around all axes, with peak rates of 0.6764 rad/s (roll), 0.4112 rad/s (pitch), and 0.2173 rad/s (yaw). These values are well above typical sensor noise thresholds and show sustained angular velocity. \n\nCombined, the motion blur from the camera, the high and varying accelerations, the extreme jerk, and the significant angular velocities provide overwhelming evidence that the robot is undergoing complex motion involving both substantial translation and rotation.",
+          "max_tilt_deg": 3.5,
+          "motion_confidence": 1,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.6764,
+          "peak_horizontal_accel_mps2": 3.5601,
+          "platform_stability": "stable",
+          "window_id": "005"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image is sharp and clear, with no discernible motion blur, smeared textures, or visible optical flow. This visual evidence typically indicates the robot is stationary or moving extremely slowly. However, according to the 'DECISION PRIORITY', while camera evidence is most reliable, IMU data must also be considered, especially when conflicting with the critical reasoning rule.\n\nUpon analyzing the IMU data:\n1.  **IMU Accelerometer**: The peak horizontal acceleration is 1.9396 m/s\u00b2. While the average and median accelerations are lower, this peak is well above the <1.0 m/s\u00b2 threshold for 'small constant acceleration'. The acceleration samples also show varying patterns, not constant values.\n2.  **Jerk Analysis**: The peak jerk is 3267.00 m/s\u00b3, and the average jerk is 548.44 m/s\u00b3. These values are extraordinarily high (far exceeding the '>5 m/s\u00b3' threshold for abrupt motion), indicating very rapid and intense changes in acceleration.\n3.  **IMU Gyroscope**: Peak angular velocities are 0.1268 rad/s (yaw), 0.0660 rad/s (roll), and 0.1630 rad/s (pitch). These peak values are above the 0.05 rad/s threshold often considered sensor noise, suggesting brief rotational movements.\n4.  **Platform Tilt**: The maximum tilt (0.6\u00b0) contributes approximately 0.102 m/s\u00b2 to horizontal acceleration. This is insufficient to explain the observed peak (1.9396 m/s\u00b2) or even the average (0.3443 m/s\u00b2) horizontal accelerations.\n\n**Reconciliation and Reasoning (CRITICAL RULE Application)**:\nThe 'CRITICAL REASONING RULE' states: 'If camera shows sharp, clear images BUT IMU shows acceleration: \u2192 Check if acceleration is constant and small (<1.0 m/s\u00b2) \u2192 Check if platform has tilt that explains the acceleration \u2192 If yes to both: Classify as STATIONARY (IMU artifact from gravity leakage)'.\n\nIn this case, despite the sharp camera image:\n-   The peak acceleration (1.9396 m/s\u00b2) is *not* small (<1.0 m/s\u00b2).\n-   The acceleration is *not* constant (indicated by highly varying samples and extremely high jerk values).\n-   The platform tilt does *not* explain the magnitude of the observed accelerations.\n\nTherefore, the conditions for classifying the IMU data as a 'stationary IMU artifact' are *not met*. This implies the high IMU readings (peak acceleration, peak angular velocities, and especially the extreme jerk) represent genuine, albeit likely very brief and abrupt, physical motion events, rather than sustained movement that would cause camera blur.\n\nThe presence of significant peak horizontal acceleration (translational component) and peak angular velocities across multiple axes (rotational component), combined with extremely high jerk values, leads to the conclusion that abrupt, complex motion occurred. The lack of camera blur suggests this motion was highly momentary, such as a sharp jolt or bump, quickly settling within the camera's integration time.",
+          "max_tilt_deg": 0.6,
+          "motion_confidence": 0.9,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.163,
+          "peak_horizontal_accel_mps2": 1.9396,
+          "platform_stability": "stable",
+          "window_id": "006"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image displays sharp textures and clear edges with no apparent motion blur or optical flow, which typically suggests a stationary robot during the camera's exposure. However, the IMU data presents strong conflicting evidence for the overall measurement window. The peak horizontal acceleration of 2.8659 m/s\u00b2 is significantly higher than what can be attributed to gravity leakage from the platform's maximum tilt of 2.8\u00b0 (which would contribute approximately 0.48 m/s\u00b2). Critically, the peak jerk is an extremely high 11203.81 m/s\u00b3 and the average jerk is 1370.93 m/s\u00b3, both orders of magnitude above the 5 m/s\u00b3 threshold for abrupt motion, strongly indicating dynamic and non-constant changes in acceleration. The IMU gyroscope also reports significant peak angular velocities across all axes (max peak 0.7862 rad/s for roll), well above typical sensor noise thresholds, confirming genuine rotational motion. While the camera is the primary motion indicator, its clarity suggests only a momentary stillness or very short-duration movement during the exposure time. The high acceleration, angular velocity, and especially the extremely high jerk values from the IMU cannot be dismissed as artifacts or constant gravity leakage. They represent actual, dynamic events within the measurement window. Therefore, the robot is determined to have performed abrupt and complex maneuvers involving both translation and rotation, with the camera likely capturing a brief period of rest or the motion being too rapid and short-lived to cause visible blur.",
+          "max_tilt_deg": 2.8,
+          "motion_confidence": 0.8,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.7862,
+          "peak_horizontal_accel_mps2": 2.8659,
+          "platform_stability": "stable",
+          "window_id": "007"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is exhibiting complex, abrupt motion involving both translation and rotation. The camera image, while not severely blurred, shows subtle distortions and slight smearing, particularly noticeable in the carpet texture and the edges of the central object (small wooden structure), indicating that the robot is not perfectly stationary. This visual cue suggests active motion. \n\nIMU accelerometer data strongly supports translational motion: The peak horizontal acceleration of 2.8659 m/s\u00b2 is significantly above values attributable to gravity leakage from platform tilt (estimated at ~0.55 m/s\u00b2 for max tilt of 2.8\u00b0 roll and 1.6\u00b0 pitch). Crucially, the acceleration samples show a highly varying pattern (e.g., jumps from 0.07 to 2.12 to 2.86 m/s\u00b2), which is characteristic of true translational movement rather than constant sensor drift or gravity influence. \n\nJerk analysis provides overwhelming evidence of dynamic, abrupt maneuvers: The peak jerk of 42524.63 m/s\u00b3 and average jerk of 2073.88 m/s\u00b3 are exceptionally high, far exceeding the 5 m/s\u00b3 threshold for 'abrupt' motion. This indicates rapid changes in acceleration, typical of starts, stops, or sudden changes in speed/direction.\n\nIMU gyroscope data confirms significant rotational motion across all axes: Peak roll rate is 0.7862 rad/s, peak pitch rate is 0.3441 rad/s, and peak yaw rate is 0.2738 rad/s. All these values are well above typical sensor noise/drift thresholds (0.05 rad/s), indicating genuine and sustained angular velocities.\n\nThe platform's maximum tilt (2.8\u00b0 roll, 1.6\u00b0 pitch) is minor (<15\u00b0), classifying it as 'stable'. While small tilt can cause some horizontal acceleration artifact, the magnitude, variance, and accompanying jerk and angular rates observed here far exceed what could be attributed to gravity leakage alone. Therefore, the combined evidence from the camera, highly dynamic accelerometer patterns, extremely high jerk, and significant gyroscope readings definitively indicates active and complex motion, which is also abrupt in nature.",
+          "max_tilt_deg": 2.8,
+          "motion_confidence": 1,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.7862,
+          "peak_horizontal_accel_mps2": 2.8659,
+          "platform_stability": "stable",
+          "window_id": "008"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image displays significant motion blur and streaking across the entire scene, particularly visible in the foreground carpet and background elements like the cabinet and wall decorations. This strongly indicates active translational movement during the camera's exposure time. Corroborating this, the IMU accelerometer data shows a high peak horizontal acceleration of 2.9551 m/s\u00b2 and highly varying acceleration samples (e.g., from 0.06 m/s\u00b2 to 1.56 m/s\u00b2). The observed max tilt (3.9\u00b0 pitch, 2.1\u00b0 roll) would contribute a maximum of approximately 0.75 m/s\u00b2 of horizontal acceleration from gravity leakage (sin(3.9\u00b0)*9.81 + sin(2.1\u00b0)*9.81 = 0.667 + 0.353 = 1.02, then sqrt(0.667^2 + 0.353^2) = 0.75 m/s\u00b2), which is significantly less than the peak acceleration recorded and does not explain the varying pattern. Furthermore, the jerk analysis reveals extremely high values (peak 12626.73 m/s\u00b3, average 1288.70 m/s\u00b3), confirming abrupt and dynamic changes in acceleration. The IMU gyroscope data also indicates significant rotational motion, with peak angular velocities of 0.3451 rad/s (yaw), 0.3984 rad/s (roll), and 0.6157 rad/s (pitch), all well above typical noise thresholds. The combination of strong visual motion blur, high and varying linear acceleration, very high jerk, and significant angular velocities definitively confirms that the robot is undergoing complex motion involving both translation and rotation. The platform is considered stable as max tilt is only 3.9\u00b0.",
+          "max_tilt_deg": 3.9,
+          "motion_confidence": 0.95,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.6157,
+          "peak_horizontal_accel_mps2": 2.9551,
+          "platform_stability": "stable",
+          "window_id": "009"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The primary indicator, the camera image, exhibits significant blur across the scene, particularly noticeable in the foreground rug texture and object edges. This directly contradicts a stationary state and strongly suggests active motion. Complementing this, the IMU accelerometer data presents a peak horizontal acceleration of 5.5360 m/s\u00b2 and an average of 1.5110 m/s\u00b2. These values are considerably higher than the estimated horizontal acceleration due to platform tilt (max 3.9\u00b0 pitch/3.2\u00b0 roll, contributing approximately 0.86 m/s\u00b2), ruling out gravity leakage as the sole cause. The acceleration samples also show a varying pattern, indicative of true translational motion rather than static sensor noise. The IMU gyroscope data records significant angular velocities across all axes: a peak yaw rate of 0.3451 rad/s, peak roll of 0.4474 rad/s, and peak pitch of 0.6157 rad/s. The average yaw rate (0.0937 rad/s) is well above typical sensor noise thresholds (>0.05 rad/s), confirming genuine rotational movement. Finally, the extremely high peak jerk (85776.39 m/s\u00b3) and average jerk (8568.13 m/s\u00b3) emphatically point to abrupt and dynamic maneuvers. The platform is classified as stable given the maximum tilt of 3.9\u00b0, which is well below 15\u00b0. Based on the holistic evidence of camera blur, high and varying translational acceleration, significant angular velocities, and extremely high jerk, the robot is executing complex motion involving both translation and rotation.",
+          "max_tilt_deg": 3.9,
+          "motion_confidence": 1,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.6157,
+          "peak_horizontal_accel_mps2": 5.536,
+          "platform_stability": "stable",
+          "window_id": "010"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is unequivocally in motion, exhibiting both translational and rotational components, with a highly abrupt character. The primary indicator is the front camera image, which is severely pixelated, fragmented, and exhibits extensive motion blur and distortion across all visual features\u2014the floor pattern, background objects, and walls are all smeared and unclear. This visual evidence alone strongly contradicts a stationary state and indicates significant motion. Complementing this, the IMU accelerometer data shows a peak horizontal acceleration of 9.0124 m/s\u00b2 and an average of 1.3915 m/s\u00b2, with samples demonstrating a widely varying pattern, confirming active translational dynamics rather than static sensor noise or gravity leakage. The maximum tilt of 3.2\u00b0 (roll) and 2.4\u00b0 (pitch) is small, contributing only an estimated ~0.55 m/s\u00b2 to horizontal acceleration, which cannot account for the much higher observed acceleration values. Furthermore, the jerk analysis reveals extremely high values (peak 57643.05 m/s\u00b3, average 5936.34 m/s\u00b3), far exceeding the threshold for abrupt motion and indicating rapid, non-smooth changes in velocity. The IMU gyroscope data also supports active rotation, with significant peak angular velocities detected (peak roll rate: 0.7393 rad/s, peak yaw rate: 0.4442 rad/s, peak pitch rate: 0.3036 rad/s), indicating sustained rotational movement. Given the combined evidence of extreme camera blur, high and varying accelerations, very high jerk, and significant angular velocities, the robot is undergoing complex, abrupt motion involving both translation and rotation. A specific estimated speed cannot be precisely determined from the image quality alone without further optical flow analysis, thus it is marked as null, though the degree of blur suggests substantial speed.",
+          "max_tilt_deg": 3.2,
+          "motion_confidence": 1,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.7393,
+          "peak_horizontal_accel_mps2": 9.0124,
+          "platform_stability": "stable",
+          "window_id": "011"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image displays sharp textures and clear edges with no visible motion blur, which typically suggests the robot is stationary or moving very slowly at the exact moment the image was captured. However, the IMU data presents a strong and consistent narrative of significant, dynamic motion within the observed window.\n\nIMU accelerometer data shows a peak horizontal acceleration of 9.0124 m/s\u00b2, which is an extremely high value, indicating powerful translational motion. The acceleration samples are highly variable (e.g., [..., 9.0124, 3.43406]), demonstrating a clear pattern of starts, stops, or changes in velocity, rather than constant values indicative of gravity leakage. The maximum platform tilt is 2.4\u00b0 (pitch), which would at most contribute approximately 0.41 m/s\u00b2 (2.4\u00b0 * 0.17 m/s\u00b2/\u00b0) to horizontal acceleration, far too small to explain the 9.0124 m/s\u00b2 peak.\n\nJerk analysis reinforces this, with a peak jerk of 40310.50 m/s\u00b3 and an average jerk of 2475.96 m/s\u00b3. These values are orders of magnitude above the 5 m/s\u00b3 threshold for abrupt motion, confirming highly sudden and forceful maneuvers.\n\nIMU gyroscope data also indicates significant rotational activity, with a peak roll rate of 0.7393 rad/s, a peak yaw rate of 0.4442 rad/s, and a peak pitch rate of 0.2983 rad/s. These are well beyond typical sensor noise and suggest genuine rotation across multiple axes.\n\nThe platform stability is 'stable' as both max roll (2.2\u00b0) and max pitch (2.4\u00b0) are significantly below 15\u00b0.\n\nReconciliation of Camera and IMU: Given the robust and extreme IMU readings (high peak acceleration, high varying acceleration pattern, and very high jerk and angular velocities), it is highly probable that significant motion occurred within the observation window. The sharp camera image, being a single frame, likely represents a snapshot taken during a brief stationary moment, at the end of a rapid maneuver, or with a very high shutter speed that freezes motion, rather than the robot being stationary throughout the entire period. The critical reasoning rule for classifying as stationary (constant and small acceleration matching tilt) is not met due to the high peak and varying nature of the acceleration. Therefore, the robot experienced complex, abrupt motion involving both translation and rotation.",
+          "max_tilt_deg": 2.4,
+          "motion_confidence": 0.95,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.7393,
+          "peak_horizontal_accel_mps2": 9.0124,
+          "platform_stability": "stable",
+          "window_id": "012"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image is perfectly sharp with no visible motion blur, streaks, or optical flow, which would typically be the primary indicator of a stationary robot. However, the IMU data presents compelling evidence of significant motion within the measurement window that cannot be ignored.\n\nThe IMU accelerometer data shows a peak horizontal acceleration of 2.1817 m/s\u00b2. This value is substantially higher than what can be attributed to gravity leakage from the observed platform tilt. With a maximum tilt of 1.1\u00b0 (max roll 1.0\u00b0, max pitch 1.1\u00b0), the expected horizontal acceleration contribution from gravity would be approximately 0.19 m/s\u00b2 (1.1\u00b0 * 0.17 m/s\u00b2/degree). The acceleration samples are also highly variable, not constant, which aligns with true translational motion rather than a static artifact.\n\nCrucially, the jerk analysis reveals an extraordinarily high peak jerk of 29087.60 m/s\u00b3 and a high average jerk of 1863.33 m/s\u00b3. These values are several orders of magnitude greater than the 5 m/s\u00b3 threshold for 'abrupt' motion, indicating an extremely sudden and forceful change in acceleration, highly suggestive of an impact, jolt, or very rapid, short maneuver.\n\nThe IMU gyroscope data further supports motion, with a peak roll rate of 0.4772 rad/s and a peak yaw rate of 0.1566 rad/s. Both these values are well above the typical sensor noise threshold of 0.05 rad/s, confirming actual rotational movement occurred during the window.\n\nReconciling the static camera image with the dynamic IMU data, the most plausible scenario is that a very abrupt, short-duration event (a jolt, impact, or quick nudge) occurred within the IMU sampling window. This event was likely so brief and fast that it either completed before or after the single camera frame was captured, or its duration was shorter than the camera's exposure time, thus preventing visible motion blur. The robot clearly experienced a complex motion involving both significant translational acceleration and rotation in an abrupt manner. The platform itself is stable (max tilt 1.1\u00b0 < 15\u00b0).",
+          "max_tilt_deg": 1.1,
+          "motion_confidence": 0.9,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.4772,
+          "peak_horizontal_accel_mps2": 2.1817,
+          "platform_stability": "stable",
+          "window_id": "013"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The primary indicator, the camera image, shows a perfectly sharp, clear scene with no visible motion blur, streaks, or optical flow. This strongly suggests the robot is stationary. Although the IMU accelerometer reports an average horizontal acceleration of 0.2054 m/s\u00b2 and a peak of 0.4054 m/s\u00b2, these values are small. The platform's maximum pitch of 0.9\u00b0 could contribute approximately 0.154 m/s\u00b2 to horizontal acceleration (9.81 * sin(0.9\u00b0)), accounting for a significant portion of the observed average acceleration due to gravity leakage. The gyroscope data shows very low average angular velocities (0.0156 rad/s for yaw), consistent with a stationary state, despite a brief peak of 0.1097 rad/s which is likely noise or a minor twitch. The platform's max tilt is 0.9\u00b0, classifying it as stable. The jerk analysis reports extremely high peak (3188.20 m/s\u00b3) and average (183.73 m/s\u00b3) jerk. While high jerk usually indicates abrupt motion, given the low absolute acceleration values and the definitive lack of motion blur in the camera, these high jerk values are most likely sensor noise or very brief, sub-perceptible vibrations rather than true, dynamic translational or rotational maneuvers. Following the critical reasoning rule, the clear camera evidence combined with explainable, small IMU accelerometer values from tilt overrides the IMU readings, leading to a classification of 'stationary'. The motion smoothness is classified as 'abrupt' based on the reported high jerk values from the IMU data, even though the overall motion is deemed stationary, indicating that the sensor data itself exhibits abrupt changes.",
+          "max_tilt_deg": 0.9,
+          "motion_confidence": 1,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.1097,
+          "peak_horizontal_accel_mps2": 0.4054,
+          "platform_stability": "stable",
+          "window_id": "014"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image exhibits significant motion blur and distortion throughout, especially in the foreground, which is the primary and most reliable indicator of actual robot motion. This visual evidence strongly overrides any interpretation of IMU data as mere artifacts. The IMU accelerometer data reinforces this, with a peak horizontal acceleration of 1.8059 m/s\u00b2, which is significantly higher than the approximately 0.27 m/s\u00b2 (1.58\u00b0 total tilt * 0.17 m/s\u00b2/\u00b0) that could be attributed to gravity leakage from the maximum observed platform tilt of 1.3 degrees. The acceleration samples also demonstrate varying patterns, consistent with active translational movement. The jerk analysis further confirms dynamic motion, showing an extremely high peak jerk of 12014.35 m/s\u00b3 and an average jerk of 703.66 m/s\u00b3, indicating abrupt starts, stops, or changes in motion. Furthermore, the IMU gyroscope data records peak angular velocities (0.3760 rad/s yaw, 0.4059 rad/s roll, 0.1875 rad/s pitch) that are well above typical sensor noise/drift thresholds, confirming genuine rotational movement around multiple axes. The combination of clear visual evidence of motion, significant and varying translational acceleration, high jerk values, and sustained angular velocities leads to the classification of 'complex' motion (both translation and rotation). The platform tilt remains stable, with maximum roll and pitch angles below 15 degrees.",
+          "max_tilt_deg": 1.3,
+          "motion_confidence": 1,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.4059,
+          "peak_horizontal_accel_mps2": 1.8059,
+          "platform_stability": "stable",
+          "window_id": "015"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image is heavily pixelated and distorted, making it impossible to definitively assess motion blur or optical flow for visual odometry. The image quality is not 'sharp, clear' and therefore cannot be used to contradict strong IMU evidence.\n\nThe IMU accelerometer data shows a high peak horizontal acceleration of 7.4716 m/s\u00b2 and a varying pattern of acceleration samples, ranging up to 1.3729 m/s\u00b2. The average (0.8865 m/s\u00b2) and median (0.3741 m/s\u00b2) horizontal accelerations are also notable. The platform's maximum tilt (1.3\u00b0 pitch, 0.9\u00b0 roll) would contribute an estimated maximum horizontal acceleration of only approximately 0.27 m/s\u00b2 (from gravity leakage). This value is significantly lower than the observed median, average, and peak accelerations, clearly indicating genuine translational motion that cannot be attributed solely to tilt.\n\nJerk analysis reveals extremely high values (peak 74874.85 m/s\u00b3, average 4290.72 m/s\u00b3). These values far exceed the 5 m/s\u00b3 threshold, strongly indicating abrupt and dynamic changes in acceleration, consistent with active maneuvering rather than static conditions.\n\nThe IMU gyroscope data shows significant angular velocities across all axes: peak roll rate of 0.8309 rad/s, peak yaw rate of 0.3760 rad/s, and peak pitch rate of 0.2088 rad/s. The average yaw rate (0.1348 rad/s) is also well above typical sensor noise thresholds (e.g., 0.05 rad/s). These sustained and high angular rates conclusively indicate active rotational motion.\n\nConsidering the strong and consistent evidence from the IMU (high, varying acceleration, extremely high jerk, and significant angular velocities on multiple axes), which cannot be explained by sensor artifacts or gravity leakage from the minor tilt, and given the camera's ambiguous quality, the robot is determined to be undergoing complex motion involving both translation and rotation. The platform is stable (max tilt < 15\u00b0), and the motion is abrupt due to the high jerk.",
+          "max_tilt_deg": 1.3,
+          "motion_confidence": 0.9,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.8309,
+          "peak_horizontal_accel_mps2": 7.4716,
+          "platform_stability": "stable",
+          "window_id": "016"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The camera image exhibits significant pixelation and a fragmented, smeared appearance, particularly in the foreground and on the right side of the scene. This distortion is inconsistent with a sharp, clear image of a stationary object and strongly suggests motion blur or severe visual distortion caused by movement. \n\nIMU accelerometer data shows a high peak horizontal acceleration of 7.4716 m/s\u00b2 and a widely varying set of acceleration samples, indicating true translational motion rather than static sensor noise or gravity leakage. The platform's maximum tilt (1.1\u00b0 pitch, 0.5\u00b0 roll) would only contribute a negligible horizontal acceleration component (approx. 0.18 m/s\u00b2 max), which is far too small and constant to explain the observed varying and high accelerations. \n\nJerk analysis provides compelling evidence of dynamic movement, with an extremely high peak jerk of 131993.08 m/s\u00b3 and an average of 5895.33 m/s\u00b3. These values unequivocally indicate abrupt starts, stops, or rapid changes in velocity, confirming active and non-smooth motion. \n\nIMU gyroscope data reveals significant peak angular velocities across all axes (roll: 0.8309 rad/s, yaw: 0.3633 rad/s, pitch: 0.2088 rad/s). These values are well above typical sensor noise thresholds and indicate sustained rotational motion. \n\nSince both high, varying translational acceleration and significant angular velocities are present, the robot's motion is classified as 'complex'. The high jerk values categorize the motion as 'abrupt'. The platform is stable with tilt angles well below 15 degrees. Due to the high level of pixelation/distortion, a reliable quantitative speed estimate from the camera image is not possible.",
+          "max_tilt_deg": 1.1,
+          "motion_confidence": 0.95,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.8309,
+          "peak_horizontal_accel_mps2": 7.4716,
+          "platform_stability": "stable",
+          "window_id": "017"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "Analysis of window 018 reveals conflicting evidence regarding motion, which requires careful reconciliation based on the provided guidelines. The camera image is sharp, showing clear textures and well-defined edges with no visible motion blur or optical flow. According to the 'Camera Visual Evidence' guideline, this typically indicates that the robot is stationary or moving very slowly during the moment of image capture.\n\nHowever, the IMU data presents a strong case for significant and dynamic motion within the overall window:\n-   **IMU Accelerometer:** Horizontal acceleration samples vary significantly, with a peak of 1.3291 m/s\u00b2 and an average of 0.2869 m/s\u00b2. The peak acceleration is well above 1.0 m/s\u00b2, and the samples show dynamic variation, not constant values. The platform tilt (max 1.1\u00b0) can only account for approximately 0.187 m/s\u00b2 of horizontal acceleration, meaning the observed IMU acceleration is largely genuine and not gravity leakage.\n-   **Jerk Analysis:** The peak jerk is an extremely high 2704.77 m/s\u00b3, and the average jerk is 533.46 m/s\u00b3. Values above 5 m/s\u00b3 are explicitly stated to indicate 'abrupt starts/stops' and dynamic maneuvers.\n-   **IMU Gyroscope:** Peak angular velocities (0.1992 rad/s for pitch, 0.1928 rad/s for roll, 0.1385 rad/s for yaw) are all significantly above the 0.05 rad/s threshold for sensor noise, indicating genuine rotational motion.\n\n**Conflict Resolution and Reasoning:**\nThe primary conflict lies between the sharp camera image (suggesting stationary or very slow motion) and the strong, dynamic IMU signals (suggesting abrupt translational and rotational motion). The 'CRITICAL REASONING RULE' states that if a sharp camera image exists, but IMU shows acceleration, we check if the acceleration is constant and small (<1.0 m/s\u00b2) AND explainable by tilt. In this case, the acceleration is *neither* constant nor small (peak 1.3291 m/s\u00b2), and it is *not* explainable by the minimal tilt. Therefore, this rule *does not* classify the IMU acceleration as an artifact, meaning the IMU readings should be considered valid indicators of real motion.\n\nGiven that the IMU data is not dismissible as an artifact and shows extreme jerk values ('abrupt starts/stops'), it indicates that the robot experienced significant, dynamic motion within the window. The sharp camera image can be reconciled by a very fast camera shutter speed or by capturing a momentary pause within a sequence of abrupt movements. Consequently, motion is detected for the window.\n\n**Motion Classification:**\n-   The presence of significant, varying horizontal acceleration indicates translation.\n-   The presence of sustained angular velocities indicates rotation.\n-   Therefore, the motion type is 'complex'.\n-   The extremely high jerk values classify the motion smoothness as 'abrupt'.\n-   Platform tilt (max 1.1\u00b0) is well below 15\u00b0, confirming 'stable' platform stability. No estimated speed from camera blur is possible due to the sharp image.",
+          "max_tilt_deg": 1.1,
+          "motion_confidence": 0.65,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "complex",
+          "peak_angular_velocity_radps": 0.1992,
+          "peak_horizontal_accel_mps2": 1.3291,
+          "platform_stability": "stable",
+          "window_id": "018"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The robot is experiencing active, though likely low-speed, translational motion with abrupt changes.\n\n**Camera Visual Evidence (Primary Indicator):** The front camera view presents a sharp and clear image with distinct edges and textures. There is no visible motion blur, streaks, or smearing, nor any discernible optical flow from this single frame. This strongly suggests that the robot's translational velocity during the camera's exposure time was very low, or that any movement was minimal in displacement.\n\n**IMU Accelerometer Data:** The reported linear acceleration is 'gravity-compensated', meaning the values represent actual linear forces acting on the robot, not gravity leakage from tilt. The peak horizontal acceleration is 0.1976 m/s\u00b2, and the average is 0.1430 m/s\u00b2. The acceleration samples show clear variation over time, indicating dynamic activity rather than a constant state.\n\n**Jerk Analysis (Smoothness):** This is a critical piece of evidence. The peak jerk is an extremely high 2597.75 m/s\u00b3 and the average jerk is 132.12 m/s\u00b3. Both values are significantly above the 5 m/s\u00b3 threshold for 'abrupt starts/stops'. This high jerk indicates rapid and substantial changes in acceleration, fundamentally contradicting a truly stationary or smoothly moving state. It suggests abrupt, dynamic maneuvers or impulses.\n\n**IMU Gyroscope Data:** The angular velocities are very low (peak 0.0224 rad/s for pitch rate), which are typically considered sensor noise or drift and do not indicate genuine rotational motion.\n\n**Platform Orientation:** The maximum roll (0.5\u00b0) and pitch (0.6\u00b0) angles are very small (<15\u00b0), classifying the platform as stable. Since the accelerometer data is gravity-compensated, these small tilts do not contribute to the observed horizontal acceleration.\n\n**Holistic Reasoning:** Despite the camera showing no visible blur (implying low speed), the gravity-compensated linear acceleration and, particularly, the extremely high jerk values are undeniable indicators of dynamic linear motion. The robot is not inertly stationary; it is undergoing abrupt changes in acceleration, likely resulting in very low-speed, short-duration translational movements or micro-adjustments. Given the absence of significant angular velocity, the motion is classified as translational. The lack of blur prevents a reliable estimation of speed, but the IMU data confirms that the robot is dynamically active.",
+          "max_tilt_deg": 0.6,
+          "motion_confidence": 0.9,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "translation",
+          "peak_angular_velocity_radps": 0.0224,
+          "peak_horizontal_accel_mps2": 0.1976,
+          "platform_stability": "stable",
+          "window_id": "019"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The primary indicator, the front camera view, shows a sharp, clear image with no discernible motion blur, streaking, or optical flow. The textures on the rug and details of background objects are well-defined, strongly indicating the robot was stationary during the camera's exposure time. This camera evidence overrides conflicting IMU data for determining actual motion.\n\nIMU gyroscope data shows very low angular velocities (peak yaw 0.0160 rad/s, peak roll 0.0138 rad/s, peak pitch 0.0224 rad/s). These values are below the 0.05 rad/s threshold and are characteristic of sensor noise or drift, not genuine rotational motion.\n\nPlatform orientation reveals minimal tilt (Max roll 0.4\u00b0, Max pitch 0.6\u00b0), classifying the platform as stable. This small tilt can introduce a horizontal acceleration component due to gravity leakage. Calculations show that a combined tilt of this magnitude could produce approximately 0.123 m/s\u00b2 of horizontal acceleration. The observed average horizontal acceleration from the IMU (0.1480 m/s\u00b2) is very close to this estimated gravity leakage, suggesting that the measured acceleration is primarily an artifact rather than true translational motion. While the accelerometer samples show some variation (peak 0.2514 m/s\u00b2), the overall pattern is consistent with gravity leakage on a stationary robot.\n\nDespite extremely high jerk values (peak 3310.05 m/s\u00b3, average 407.60 m/s\u00b3), these are likely attributable to high-frequency sensor noise, micro-vibrations, or localized, brief shocks that do not translate into observable macroscopic motion or blur in the camera frame. Given the strong visual evidence of no motion and the accelerometer's average values being explained by tilt, the high jerk does not indicate actual dynamic maneuvers. Therefore, the robot is classified as stationary, and its motion smoothness is considered smooth because there is no significant motion to be abrupt.",
+          "max_tilt_deg": 0.6,
+          "motion_confidence": 1,
+          "motion_detected": false,
+          "motion_smoothness": "smooth",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.0224,
+          "peak_horizontal_accel_mps2": 0.2514,
+          "platform_stability": "stable",
+          "window_id": "020"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The front camera image is sharp, clear, and exhibits no motion blur, optical flow, or scene shift. According to the decision priority, camera visual evidence is the most reliable indicator for actual motion and overrides conflicting IMU data. The IMU gyroscope data supports this, showing very low angular velocities (peak 0.0181 rad/s) which are considered sensor noise or drift, not genuine rotation. The platform's maximum roll (0.4\u00b0) and pitch (0.6\u00b0) indicate a stable orientation, contributing an estimated ~0.103 m/s\u00b2 horizontal acceleration from gravity leakage, which partially explains the average horizontal acceleration (0.1463 m/s\u00b2). While the IMU accelerometer data shows varying horizontal acceleration (peak 0.2514 m/s\u00b2) and exceptionally high jerk values (peak 2168.87 m/s\u00b3, average 323.08 m/s\u00b3), indicating dynamic changes in acceleration, these do not translate to visible motion in the camera frame. The critical reasoning rule mandates that if the camera shows sharp, clear images, but the IMU shows acceleration, we must check if the acceleration is small (<1.0 m/s\u00b2) and if tilt explains it. While the acceleration is small and tilt partially explains it, the varying nature and high jerk are noted. However, the conclusive lack of visual motion in the camera image strongly classifies the robot as stationary. The 'abrupt' smoothness classification reflects the high jerk observed in the accelerometer data, even if it doesn't correspond to macroscopic translational motion.",
+          "max_tilt_deg": 0.6,
+          "motion_confidence": 0.9,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.0181,
+          "peak_horizontal_accel_mps2": 0.2514,
+          "platform_stability": "stable",
+          "window_id": "021"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The primary evidence for motion classification comes from the camera image, which is perfectly clear, sharp, and shows no signs of motion blur, streaks, or optical flow. This strongly indicates the robot is stationary. Supporting this, the IMU gyroscope data shows very low peak angular velocities (0.0224 rad/s for pitch, the highest among axes), which are well within typical sensor noise or drift levels and do not suggest any significant rotation. While the IMU accelerometer reports a peak horizontal acceleration of 0.2237 m/s\u00b2 and an average of 0.1478 m/s\u00b2, these values are small (<1.0 m/s\u00b2) and can largely be attributed to gravity leakage. With a maximum platform tilt of 0.7\u00b0, an estimated horizontal acceleration contribution from gravity is approximately 0.119 m/s\u00b2 (9.81 * sin(0.7\u00b0)). The average observed acceleration is very close to this expected value. Although the accelerometer samples show variation and the jerk analysis reports extremely high peak (3028.42 m/s\u00b3) and average (192.09 m/s\u00b3) jerk, these are interpreted as high-frequency sensor noise, minor internal vibrations, or very brief, localized micro-movements, rather than indicative of macroscopic translational motion, given the absolute clarity of the camera image. The platform stability is classified as 'stable' as the maximum tilt (0.7\u00b0) is significantly less than 15\u00b0. Therefore, based on the high confidence provided by the visual evidence and corroborating low angular rates, the robot is classified as stationary, with the IMU accelerometer and jerk data likely reflecting sensor artifacts or imperceptible micro-vibrations.",
+          "max_tilt_deg": 0.7,
+          "motion_confidence": 0.95,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.0224,
+          "peak_horizontal_accel_mps2": 0.2237,
+          "platform_stability": "stable",
+          "window_id": "022"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The primary evidence from the front camera image shows a crystal clear, sharp scene with no visible motion blur, streaking, or optical flow. All textures and edges in the environment are distinct, strongly indicating that the robot is stationary. While the IMU accelerometer reports a peak horizontal acceleration of 0.2045 m/s\u00b2 (average 0.1482 m/s\u00b2), the platform's maximum tilt of 0.7\u00b0 (pitch) could cause approximately 0.1292 m/s\u00b2 of horizontal acceleration due to gravity leakage (based on ~0.76\u00b0 total tilt and 0.17 m/s\u00b2 per degree). The observed acceleration values are very close to this expected gravity component and are considered small (<1.0 m/s\u00b2). The high jerk values (peak 1242.38 m/s\u00b3) are interpreted as artifacts, likely from rapid, high-frequency noise in the accelerometer data being differentiated, rather than indicating actual abrupt dynamic maneuvers, as this would contradict the perfectly clear visual evidence and the low absolute acceleration values. The gyroscope data shows very low peak angular velocities (max 0.0330 rad/s), which are well below the 0.05 rad/s threshold for significant rotation and are consistent with sensor noise/drift for a stationary robot. The platform is stable, with all tilt angles significantly below 15\u00b0. Therefore, considering the camera evidence as primary, and the IMU data as consistent with a stationary robot experiencing gravity leakage and sensor noise, the robot is classified as stationary.",
+          "max_tilt_deg": 0.7,
+          "motion_confidence": 1,
+          "motion_detected": false,
+          "motion_smoothness": "smooth",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.033,
+          "peak_horizontal_accel_mps2": 0.2045,
+          "platform_stability": "stable",
+          "window_id": "023"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "The primary indicator, the front camera image, is perfectly sharp and clear with no discernible motion blur or optical flow across the scene. All static objects like the rug, furniture, and walls show crisp edges, strongly indicating the robot is stationary. While a person is visible on the right with some blur, this indicates their movement relative to the stationary robot, not robot motion.\n\nIMU accelerometer data shows small horizontal accelerations (average 0.1482 m/s\u00b2, median 0.1606 m/s\u00b2, peak 0.2324 m/s\u00b2). These values are below the 1.0 m/s\u00b2 threshold for small acceleration. The platform's maximum tilt (0.7\u00b0) could account for approximately 0.12 m/s\u00b2 of horizontal acceleration due to gravity leakage. The provided acceleration samples show some variation (e.g., dropping to ~0.04 m/s\u00b2), which deviates from a perfectly constant reading, but they do not form a clear pattern of sustained translational motion (e.g., acceleration and deceleration phases).\n\nIMU gyroscope data indicates very low angular velocities across all axes (peak yaw 0.0234 rad/s, peak roll 0.0192 rad/s, peak pitch 0.0330 rad/s). These values are well below 0.05 rad/s and are consistent with sensor noise or drift, not active rotation.\n\nPlatform orientation shows a maximum tilt of 0.7\u00b0 (pitch), which is significantly less than 15\u00b0, classifying the platform as stable.\n\nJerk analysis reports an extremely high peak jerk of 2278.72 m/s\u00b3 and an average jerk of 185.66 m/s\u00b3. According to the guidelines, high jerk (>5 m/s\u00b3) indicates abrupt dynamic maneuvers. This is a significant contradiction to the clear camera evidence. However, per the decision priority, camera visual evidence overrides conflicting IMU data. Therefore, the very high jerk values are interpreted as likely sensor artifacts such as high-frequency vibrations, sensor noise, or micro-movements too small and rapid to result in any visible displacement or motion blur within the camera's frame. These do not represent actual macro-level robot motion that would warrant a 'translation' or 'complex' classification.\n\nIn conclusion, the robot is classified as stationary due to the unequivocal camera evidence, which is prioritized over conflicting IMU data, particularly the high jerk values. The low angular velocities and small, somewhat varying horizontal acceleration are consistent with a stationary state influenced by minor tilt and sensor noise/vibrations.",
+          "max_tilt_deg": 0.7,
+          "motion_confidence": 0.95,
+          "motion_detected": false,
+          "motion_smoothness": "abrupt",
+          "motion_type": "stationary",
+          "peak_angular_velocity_radps": 0.033,
+          "peak_horizontal_accel_mps2": 0.2324,
+          "platform_stability": "stable",
+          "window_id": "024"
+        }
+      ]
+    },
+    "collision": {
+      "windows_analyzed": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012",
+        "013",
+        "014",
+        "015",
+        "016",
+        "017",
+        "018",
+        "019",
+        "020",
+        "021",
+        "022",
+        "023",
+        "024"
+      ],
+      "overall_collision_stats": {
+        "total_windows": 25,
+        "safe_count": 9,
+        "caution_count": 2,
+        "alert_count": 14,
+        "avg_collision_likelihood": 0.582
+      },
+      "collision_events": [
+        {
+          "window_id": "000",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.4,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Very close object (box/ramp labeled 'EVERYMATE') directly in the forward path.",
+            "Cluttered environment with furniture (console, chair) and a plant in the general direction of travel."
+          ],
+          "bev_hazards": [
+            "Large obstacle cluster detected starting at approximately 1.1 meters ahead and to the right.",
+            "Apparent failure to detect the low-profile obstacle that is clearly visible and very close in the camera feed."
+          ],
+          "recommended_action": "stop",
+          "evidence": "The robot is stationary, making the immediate collision risk low. However, sensor fusion reveals a critical hazard: the camera shows a very close low-profile box/ramp (<0.5m away) that is not present in the BEV LiDAR data, likely falling below its height threshold. Any forward motion would result in an immediate collision with this undetected obstacle. The recommended action is to stop and prevent any forward movement."
+        },
+        {
+          "window_id": "001",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.6,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Wooden box/ramp in immediate foreground",
+            "Media console directly ahead"
+          ],
+          "bev_hazards": [
+            "Large static obstacle detected ~0.6m in front-left quadrant"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Robot is stationary. Camera and BEV LiDAR both confirm a large, static obstacle (a wooden box) is approximately 0.6m directly in front of the robot. While there is no immediate risk due to zero velocity, the object completely obstructs the forward path, necessitating a stop or replan before any movement."
+        },
+        {
+          "window_id": "002",
+          "collision_risk_level": "medium",
+          "risk_confidence": 1,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "right",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Very close object in immediate foreground",
+            "Robot is on a soft, uneven surface (bed or rug)"
+          ],
+          "bev_hazards": [
+            "Large obstacle detected at very close proximity (~0.5m) to the robot's front-right"
+          ],
+          "recommended_action": "stop",
+          "evidence": "The robot is stationary, which prevents an immediate collision. However, both the camera feed and BEV map confirm a static obstacle is extremely close. The BEV map indicates the obstacle is ~0.5m away, primarily to the robot's right. The camera confirms a foreground object, though its perceived direction differs. Due to the high potential for collision with any forward or rightward movement, the risk level is medium and the robot should remain stopped."
+        },
+        {
+          "window_id": "003",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Small object (box/ramp) in immediate foreground",
+            "Large furniture (cabinet, chair) directly ahead",
+            "Cluttered indoor environment"
+          ],
+          "bev_hazards": [
+            "Large obstacle cluster detected ~0.5m in front of robot",
+            "Forward path is blocked"
+          ],
+          "recommended_action": "stop",
+          "evidence": "High acceleration (3.86 m/s\u00b2) and angular velocity (1.01 rad/s) are directed towards a cluttered area. LiDAR detects a large obstacle cluster starting at ~0.5m. The camera confirms large furniture and a small, very close object in the immediate path, creating an imminent collision risk."
+        },
+        {
+          "window_id": "004",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.3,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Very close wooden ramp in immediate path (front-left)",
+            "Large media console directly ahead",
+            "Cluttered indoor environment"
+          ],
+          "bev_hazards": [
+            "Obstacle detected to the front-right (~2.1m)",
+            "Perception discrepancy: Close-range ramp and large forward furniture visible in camera are NOT detected in BEV map"
+          ],
+          "recommended_action": "stop",
+          "evidence": "The camera shows a wooden ramp at an extremely close distance (<0.5m), directly in the robot's potential path. The robot is undergoing complex motion with significant acceleration, creating a high risk of imminent collision. The BEV LiDAR fails to detect this primary hazard, indicating a critical sensor fusion problem. An immediate stop is required to prevent a collision."
+        },
+        {
+          "window_id": "005",
+          "collision_risk_level": "critical",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.2,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Small, low-profile wooden object in immediate forward path",
+            "Thick rug may affect traction",
+            "Multiple pieces of furniture (chair, console) in the vicinity"
+          ],
+          "bev_hazards": [
+            "Large obstacle cluster detected to the front-right at approximately 0.9m",
+            "Forward path appears falsely clear; camera shows an obstacle likely below the LiDAR height threshold"
+          ],
+          "recommended_action": "stop",
+          "evidence": "A small, low-profile object is visible in the camera feed, positioned directly in the robot's immediate path at very close range. The robot is currently executing a complex motion with high acceleration, making a collision highly probable. This critical hazard is not detected by the BEV LiDAR, likely due to its low height, demonstrating the necessity of fusing camera data for comprehensive safety analysis."
+        },
+        {
+          "window_id": "006",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.7,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Small wooden ramp directly in path",
+            "Large potted plant to the right"
+          ],
+          "bev_hazards": [
+            "Large obstacle detected ~1.2m to the front-right",
+            "Potential sensor blind spot: ramp visible in camera is not detected in BEV"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Camera shows a low-profile ramp directly in the robot's path at an estimated <1 meter. BEV LiDAR does not detect this immediate hazard, likely due to its low height, but does detect a larger obstacle (potted plant) to the front-right. The robot's complex motion (acceleration and turning) significantly increases the risk of collision with the ramp. The discrepancy between sensors highlights a critical risk, requiring an immediate stop."
+        },
+        {
+          "window_id": "007",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.3,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Small wooden ramp directly in the immediate forward path",
+            "Object is low to the ground and presents a collision/tipping risk"
+          ],
+          "bev_hazards": [
+            "Large static obstacle detected to the right (~1.0m)",
+            "Apparent sensor blind spot: low-lying ramp visible in camera is not detected"
+          ],
+          "recommended_action": "stop",
+          "evidence": "A low-lying wooden ramp is clearly visible in the camera feed directly in the robot's immediate path (<0.5m away). However, this object is not present in the BEV LiDAR map, indicating it is below the sensor's detection height threshold. Given the robot is in complex motion, there is a high risk of collision with this effectively invisible (to LiDAR) obstacle. The BEV map also shows a larger obstacle to the right, limiting evasive maneuver options."
+        },
+        {
+          "window_id": "008",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Small, low-profile object directly in the forward path at very close range",
+            "Cluttered environment with furniture"
+          ],
+          "bev_hazards": [
+            "Obstacle detected to the front-right",
+            "Sensor discrepancy: The closest hazard, visible in the camera, is not detected in the BEV map"
+          ],
+          "recommended_action": "stop",
+          "evidence": "The camera clearly shows a small object directly in the path at an estimated distance of ~0.5 meters. However, the BEV LiDAR map fails to detect this primary hazard. Given the robot's significant horizontal acceleration (2.87 m/s\u00b2) towards this visually-confirmed obstacle, there is a high risk of collision, requiring an immediate stop."
+        },
+        {
+          "window_id": "009",
+          "collision_risk_level": "medium",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 1.25,
+          "obstacle_direction": "right",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Low-profile object on rug directly ahead",
+            "Cluttered environment with multiple pieces of furniture",
+            "Chair and table to the left"
+          ],
+          "bev_hazards": [
+            "Large, dense obstacle cluster detected to the front-right, with closest edge at approx 1.25m"
+          ],
+          "recommended_action": "slow_down",
+          "evidence": "The robot is executing a complex motion (moving and turning) towards a cluttered area. LiDAR confirms a large obstacle cluster approximately 1.25m to the front-right, which is corroborated by furniture visible in the camera feed. The combination of active motion and proximity to a significant, verified obstacle warrants a medium risk assessment and a precautionary speed reduction."
+        },
+        {
+          "window_id": "010",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.4,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Small low-profile object (ramp) in immediate forward path",
+            "Highly textured shag rug may be a traversal hazard",
+            "Cluttered environment with furniture and potted plant nearby"
+          ],
+          "bev_hazards": [
+            "Obstacle detected to the front-right"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Camera shows a small, low-profile ramp directly in the robot's path at very close range (~0.4m), which is not detected by the BEV LiDAR. The BEV map confirms another obstacle to the front-right. Since the robot is currently in complex motion, there is a high risk of imminent collision with the undetected frontal obstacle. An immediate stop is necessary to prevent collision and re-evaluate the path."
+        },
+        {
+          "window_id": "011",
+          "collision_risk_level": "critical",
+          "risk_confidence": 1,
+          "closest_obstacle_meters": 0.75,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Cluttered environment with multiple obstacles",
+            "Small object directly in the immediate path",
+            "Highly textured/uneven floor surface may be a traversability hazard"
+          ],
+          "bev_hazards": [
+            "Obstacle cluster detected directly in front of the robot"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Extremely high acceleration (9.01 m/s\u00b2) is detected while moving directly towards an obstacle confirmed by BEV LiDAR at approximately 0.75 meters. The camera view corroborates a cluttered path. The combination of high acceleration and extreme proximity to the obstacle makes a collision imminent."
+        },
+        {
+          "window_id": "012",
+          "collision_risk_level": "critical",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.75,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Gray ramp-like object directly in the immediate forward path"
+          ],
+          "bev_hazards": [
+            "Solid obstacle detected directly in front of the robot at close range"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Extremely high acceleration (9.01 m/s\u00b2) is detected while moving directly towards a close-range obstacle (~0.75m). The obstacle is clearly visible in the camera feed and is corroborated by the BEV LiDAR map. A collision is imminent without immediate intervention."
+        },
+        {
+          "window_id": "013",
+          "collision_risk_level": "high",
+          "risk_confidence": 1,
+          "closest_obstacle_meters": 0.6,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Static obstacle (cat scratcher/ramp) directly in the immediate path."
+          ],
+          "bev_hazards": [
+            "Obstacle detected directly in the forward path at very close range."
+          ],
+          "recommended_action": "stop",
+          "evidence": "High acceleration (2.18 m/s\u00b2) is detected while moving directly towards a static obstacle. Both camera and BEV LiDAR confirm the obstacle is at very close range (~0.6m), making a collision imminent if motion continues. An immediate stop is required."
+        },
+        {
+          "window_id": "014",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Small cardboard object (cat toy/ramp) directly in front of the robot on the rug."
+          ],
+          "bev_hazards": [
+            "Small, isolated obstacle detected directly in the forward path at very close range."
+          ],
+          "recommended_action": "stop",
+          "evidence": "The robot is stationary, which mitigates immediate risk. However, both the camera and BEV LiDAR clearly detect a small obstacle approximately 0.5 meters directly in the forward path. Any planned forward motion would result in a high probability of collision."
+        },
+        {
+          "window_id": "015",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Untracked low-lying obstacles on floor in immediate path",
+            "Highly cluttered environment",
+            "Severe image distortion and artifacts"
+          ],
+          "bev_hazards": [
+            "Critical discrepancy with camera; BEV fails to detect significant frontal obstacles",
+            "Potential sensor failure or overly aggressive ground filtering"
+          ],
+          "recommended_action": "stop",
+          "evidence": "A critical discrepancy exists between sensors. The BEV map shows the path is mostly clear, but the camera feed reveals the immediate forward path is blocked by low-lying obstacles (~0.5m away). The robot's motion towards these untracked hazards presents a high collision risk. The system cannot safely navigate."
+        },
+        {
+          "window_id": "016",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.9,
+          "obstacle_direction": "right",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Large object/furniture on the right",
+            "Cluttered indoor environment with low-lying objects",
+            "Distorted video feed reducing visibility"
+          ],
+          "bev_hazards": [
+            "Large obstacle detected in close proximity to the robot's right side"
+          ],
+          "recommended_action": "stop",
+          "evidence": "High horizontal acceleration (7.47 m/s\u00b2) and angular velocity are detected near a large obstacle to the right, which is confirmed by the BEV map at approximately 0.9 meters. This aggressive, complex motion suggests a reactive maneuver in a confined space, creating a high risk of collision. An immediate stop is necessary to stabilize and reassess."
+        },
+        {
+          "window_id": "017",
+          "collision_risk_level": "critical",
+          "risk_confidence": 1,
+          "closest_obstacle_meters": 1,
+          "obstacle_direction": "right",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Cluttered environment",
+            "Large object/furniture to the right",
+            "Low-lying object on floor",
+            "Poor image quality with compression artifacts"
+          ],
+          "bev_hazards": [
+            "Large obstacle detected to the immediate right"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Extremely high horizontal acceleration (7.47 m/s^2) indicates a major control failure or impact event. This anomalous motion, combined with a large obstacle detected by LiDAR at ~1.0m to the right (corroborated by the camera view), constitutes a critical and immediate collision risk. An emergency stop is required."
+        },
+        {
+          "window_id": "018",
+          "collision_risk_level": "high",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 1,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Low-profile obstacle (ramp) directly in path",
+            "Large bags to the front-right",
+            "Thick, textured rug may impede motion"
+          ],
+          "bev_hazards": [
+            "Obstacle cluster detected at ~2 meters to the front-right",
+            "Failed to detect the low-profile frontal obstacle visible in camera"
+          ],
+          "recommended_action": "stop",
+          "evidence": "The robot is accelerating towards a low-profile obstacle (~1m, front) clearly visible in the camera. This primary hazard is not detected in the BEV LiDAR map, which only shows a farther obstacle (~2m, front-right). This sensor discrepancy creates a high risk of collision, requiring an immediate stop."
+        },
+        {
+          "window_id": "019",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 1,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": true,
+          "camera_hazards": [
+            "Low-profile cardboard object on floor, front-left of path",
+            "Large bags on floor, front-right of path",
+            "Person partially visible on far right"
+          ],
+          "bev_hazards": [
+            "Obstacle cluster detected ~2.0m to the front-right, corresponding to bags",
+            "Path appears clear directly ahead, but does not show the low-profile cardboard object"
+          ],
+          "recommended_action": "slow_down",
+          "evidence": "The robot is moving forward at low speed. While the BEV map shows a clear path with obstacles to the front-right (bags), the camera reveals a closer, unmapped low-profile cardboard object (~1.0m) to the front-left. The combination of moving toward a narrow gap defined by a known and an unknown obstacle constitutes a low risk, warranting a reduction in speed."
+        },
+        {
+          "window_id": "020",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.5,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Small, low-profile ramp-like object in the immediate forward path.",
+            "Large bags to the front-right."
+          ],
+          "bev_hazards": [
+            "Large obstacle detected to the front-right.",
+            "Apparent failure to detect the low-profile ramp visible in the camera."
+          ],
+          "recommended_action": "stop",
+          "evidence": "Robot is stationary, so motion is not a risk factor. However, the camera clearly shows a small, low-profile obstacle (~0.5m) directly in the forward path. This immediate hazard is not present in the BEV LiDAR map, indicating a sensor limitation. The BEV map does correctly identify larger bags further away to the front-right. Due to the close, undetected obstacle, forward motion is unsafe."
+        },
+        {
+          "window_id": "021",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 0.7,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Small cardboard object in immediate forward path",
+            "Large bags blocking path to the front-right"
+          ],
+          "bev_hazards": [
+            "Obstacle cluster detected in front-right quadrant, approximately 1.8m away",
+            "Potential negative obstacle (cardboard box) visible in camera is not detected by LiDAR"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Robot is stationary, which minimizes immediate risk. However, the forward path is blocked by a cardboard object visible in the camera at approx 0.7m. This close-range object is not detected in the BEV LiDAR map, indicating a potential sensor limitation. BEV map does confirm larger obstacles (bags) further ahead. Given the blocked path, forward motion is unsafe."
+        },
+        {
+          "window_id": "022",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 1.1,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Small wooden object/ramp directly in foreground path",
+            "Large bags on the floor to the front-right",
+            "Textured, high-pile rug could affect traction"
+          ],
+          "bev_hazards": [
+            "Obstacle detected approximately 1.1m to the front-left, corresponding to wooden object",
+            "Large obstacle cluster detected to the front-right, starting at ~1.6m, corresponding to bags"
+          ],
+          "recommended_action": "continue",
+          "evidence": "The robot is stationary, so there is no immediate collision risk. However, multiple static obstacles are detected in the near-field by both camera and LiDAR. The closest is a small wooden object ~1.1m ahead, and large bags are ~1.6m to the front-right. The forward path is obstructed."
+        },
+        {
+          "window_id": "023",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.95,
+          "closest_obstacle_meters": 0.6,
+          "obstacle_direction": "front",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Small wooden object/ramp directly in front",
+            "Large bags to the front-right"
+          ],
+          "bev_hazards": [
+            "Obstacle cluster to the front-right"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Robot is stationary, so immediate risk is low. However, the camera view clearly shows a small wooden object directly in the forward path at very close range (~0.6m). This low-profile object is not detected in the BEV LiDAR map, which only shows larger bags further away to the right. Any forward motion would cause a collision with the hazard missed by LiDAR."
+        },
+        {
+          "window_id": "024",
+          "collision_risk_level": "low",
+          "risk_confidence": 0.9,
+          "closest_obstacle_meters": 1,
+          "obstacle_direction": "multiple",
+          "motion_contributes_to_risk": false,
+          "camera_hazards": [
+            "Small obstacle (wooden ramp) in forward path",
+            "Large bags to the front-right",
+            "Person present to the front-right"
+          ],
+          "bev_hazards": [
+            "Obstacle detected ~1.0m to the front-left (ramp)",
+            "Large obstacle cluster detected ~1.5m to the front-right (bags and person)"
+          ],
+          "recommended_action": "stop",
+          "evidence": "Robot is stationary, which mitigates immediate risk. However, both camera and BEV data confirm multiple obstacles blocking the forward path. The closest is a small ramp ~1.0m away, with larger obstacles and a person also present to the front-right. Forward motion is not advised."
+        }
+      ]
+    },
+    "odd_spec": {
+      "odd_specification": {
+        "categorical_constraints": {
+          "environment_type": {
+            "allowed": [
+              "indoor_residential",
+              "indoor_commercial",
+              "indoor_office",
+              "indoor_corridor"
+            ],
+            "prohibited": [
+              "outdoor_urban",
+              "outdoor_natural",
+              "industrial",
+              "stairs"
+            ]
+          },
+          "lighting_conditions": {
+            "allowed": [
+              "bright",
+              "dim"
+            ],
+            "prohibited": [
+              "dark"
+            ]
+          },
+          "terrain_type": {
+            "allowed": [
+              "smooth"
+            ],
+            "prohibited": [
+              "moderate",
+              "rough",
+              "very_rough",
+              "unstable",
+              "ramps"
+            ]
+          }
+        },
+        "numeric_constraints": {
+          "max_accel_mps2": {
+            "in_odd": [
+              0.0,
+              10.0
+            ],
+            "boundary": [
+              10.0,
+              12.0
+            ],
+            "out_odd": [
+              12.0,
+              "inf"
+            ]
+          },
+          "obstacle_density": {
+            "in_odd": [
+              0.0,
+              0.8
+            ],
+            "boundary": [
+              0.8,
+              0.9
+            ],
+            "out_odd": [
+              0.9,
+              1.0
+            ]
+          },
+          "traversability_score": {
+            "in_odd": [
+              0.5,
+              1.0
+            ],
+            "boundary": [
+              0.3,
+              0.5
+            ],
+            "out_odd": [
+              0.0,
+              0.3
+            ]
+          },
+          "collision_risk": {
+            "in_odd": [
+              0.0,
+              0.75
+            ],
+            "boundary": [
+              0.75,
+              0.85
+            ],
+            "out_odd": [
+              0.85,
+              1.0
+            ]
+          },
+          "max_incline_deg": {
+            "in_odd": [
+              0.0,
+              15.0
+            ],
+            "boundary": [
+              15.0,
+              20.0
+            ],
+            "out_odd": [
+              20.0,
+              "inf"
+            ]
+          }
+        },
+        "ego_vehicle": {
+          "vehicle_type": "quadruped_robot",
+          "dimensions": {
+            "length_m": 0.65,
+            "width_m": 0.31,
+            "height_m": 0.4
+          },
+          "clearance_requirements": {
+            "minimum_gap_width_m": 0.4,
+            "comfortable_clearance_m": 0.5
+          }
+        }
+      },
+      "odd_summary": "ODD for a Unitree Go2 quadruped operating in well-lit, furniture-dense indoor environments on flat surfaces. It is designed for agile maneuvering with brief high acceleration but is prohibited from outdoor use, stairs, steep inclines, or dark areas."
+    },
+    "cod_classification": {
+      "cod_classification": {
+        "categorical": {
+          "environment_type": "indoor",
+          "lighting_conditions": "bright",
+          "terrain_type": "smooth",
+          "motion_smoothness": "abrupt"
+        },
+        "numeric": {
+          "max_accel_mps2": 9.0124,
+          "obstacle_density": 0.364,
+          "traversability_score": 0.54,
+          "collision_risk": 0.582
+        }
+      },
+      "cod_summary": "The robot is operating indoors in bright lighting, primarily on smooth terrain. Its motion is characterized by abrupt maneuvers, with peak accelerations up to 9.01 m/s\u00b2. The environment presents a moderate obstacle density and fair traversability, alongside a notable average collision risk."
+    },
+    "odd_compliance": {
+      "odd_compliance": {
+        "categorical_compliance": {
+          "environment_type": "IN_ODD",
+          "lighting_conditions": "IN_ODD",
+          "terrain_type": "IN_ODD",
+          "motion_smoothness": "IN_ODD"
+        },
+        "numeric_compliance": {
+          "obstacle_density": "IN_ODD",
+          "traversability_score": "IN_ODD",
+          "collision_risk": "IN_ODD"
+        },
+        "overall_compliance": "IN_ODD",
+        "violations": [],
+        "warnings": [],
+        "compliance_summary": "The current operating domain fully aligns with the defined ODD, with all categorical and numerical parameters falling within the allowed operational limits. No violations or warnings were identified."
+      }
+    }
+  }
+}
