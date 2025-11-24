@@ -1,5 +1,59 @@
 # Project TODO - Kaggle Capstone Preparation
 
+## 🚨 CRITICAL ISSUE - FIX ASAP
+
+### ODD Compliance Architecture Flaw (P0 - Safety Critical)
+
+**Problem**: Scenario-level compliance using aggregated averages masks per-window violations
+
+**Current Behavior**:
+- Individual windows can have `collision_likelihood_score = 1.0` (exceeds 0.9 OUT_ODD threshold)
+- But if other windows are safe, the **average** stays below threshold
+- Scenario gets classified as IN_ODD or ODD_BOUNDARY despite critical individual events
+- **Example**: sim_run_new_01 had 2 windows with 1.0 collision risk but shows ODD_BOUNDARY (0 violations)
+
+**Expected Behavior**:
+- **ANY single window violating ODD should make entire scenario OUT_ODD**
+- Per-window compliance check with fail-fast logic
+- "Single violation triggers OUT_ODD (conservative safety approach)" - already documented but not implemented
+
+**Root Cause**:
+- COD Classifier aggregates metrics into scenario-level averages (mean collision risk, max accel, etc.)
+- ODD Compliance Agent compares these averages to thresholds
+- Missing: Per-window violation detection **before** aggregation
+
+**Fix Required**:
+1. Add per-window compliance checking **before** COD aggregation
+2. Collect all window-level violations
+3. If violations list non-empty → `overall_compliance = OUT_ODD` regardless of averages
+4. Update compliance agent prompt to check violations array first
+
+**Impact**:
+- HIGH: Affects safety assessment accuracy
+- Current reports show **false negatives** (compliant when should be violations)
+- Aggregation masking is a fundamental flaw in safety validation
+- Cannot be used for deployment decisions until fixed
+
+**Workaround Applied** (2025-11-24):
+- Added explanatory text to HTML reports clarifying terminology
+- Updated index.html to explain "risk level vs compliance"
+- Does NOT fix underlying issue, just makes current reports understandable for sharing
+
+**Files to Fix**:
+- `odd_agents/agents/cod_classifier.py` - Add per-window violation tracking
+- `odd_agents/agents/compliance.py` - Check violations before comparing averages  
+- `scripts/run_odd_analysis.py` - Pass window-level data to compliance agent
+- `docs/agents/COMPLIANCE.md` - Document per-window checking logic
+
+**Testing**:
+- Re-run sim_run_new_01: Should show OUT_ODD (2 windows exceeded 0.9 collision risk)
+- Verify all production scenarios with reported "critical" events
+- Confirm no false negatives in test scenarios
+
+**Priority**: P0 - Must fix before any production deployment decisions or Kaggle submission
+
+---
+
 ## Priority Tasks
 
 ### 0. Validate with Real Robot Data ✅ COMPLETED
