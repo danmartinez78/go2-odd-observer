@@ -1,0 +1,124 @@
+{
+  "topic": "/robot0/joint_states",
+  "type": "sensor_msgs/msg/JointState",
+  "total_messages": 787,
+  "samples": [
+    {
+      "timestamp_ns": 1763483957737899874,
+      "timestamp_sec": 1763483957.7378998,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 735628071
+          },
+          "frame_id": ""
+        },
+        "name": [
+          "robot0/FL_hip_joint",
+          "robot0/FR_hip_joint",
+          "robot0/RL_hip_joint",
+          "robot0/RR_hip_joint",
+          "robot0/FL_thigh_joint",
+          "robot0/FR_thigh_joint",
+          "robot0/RL_thigh_joint",
+          "robot0/RR_thigh_joint",
+          "robot0/FL_calf_joint",
+          "robot0/FR_calf_joint"
+        ],
+        "position": [
+          -0.12661954760551453,
+          0.08137967437505722,
+          -0.15362390875816345,
+          0.24834652245044708,
+          0.5633212924003601,
+          0.4785596430301666,
+          0.5217172503471375,
+          0.5404359102249146,
+          -0.8454888463020325,
+          -0.8462560176849365
+        ],
+        "velocity": [],
+        "effort": []
+      }
+    },
+    {
+      "timestamp_ns": 1763483957810359611,
+      "timestamp_sec": 1763483957.8103595,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 808626895
+          },
+          "frame_id": ""
+        },
+        "name": [
+          "robot0/FL_hip_joint",
+          "robot0/FR_hip_joint",
+          "robot0/RL_hip_joint",
+          "robot0/RR_hip_joint",
+          "robot0/FL_thigh_joint",
+          "robot0/FR_thigh_joint",
+          "robot0/RL_thigh_joint",
+          "robot0/RR_thigh_joint",
+          "robot0/FL_calf_joint",
+          "robot0/FR_calf_joint"
+        ],
+        "position": [
+          -0.12685440480709076,
+          0.08115167915821075,
+          -0.15406762063503265,
+          0.2482123225927353,
+          0.5636191368103027,
+          0.4793036878108978,
+          0.5240375995635986,
+          0.5430838465690613,
+          -0.8447866439819336,
+          -0.8464577198028564
+        ],
+        "velocity": [],
+        "effort": []
+      }
+    },
+    {
+      "timestamp_ns": 1763483957881083937,
+      "timestamp_sec": 1763483957.881084,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 879642199
+          },
+          "frame_id": ""
+        },
+        "name": [
+          "robot0/FL_hip_joint",
+          "robot0/FR_hip_joint",
+          "robot0/RL_hip_joint",
+          "robot0/RR_hip_joint",
+          "robot0/FL_thigh_joint",
+          "robot0/FR_thigh_joint",
+          "robot0/RL_thigh_joint",
+          "robot0/RR_thigh_joint",
+          "robot0/FL_calf_joint",
+          "robot0/FR_calf_joint"
+        ],
+        "position": [
+          -0.12727084755897522,
+          0.08074450492858887,
+          -0.15439315140247345,
+          0.24763339757919312,
+          0.5628264546394348,
+          0.4790847897529602,
+          0.5216801166534424,
+          0.5411531329154968,
+          -0.8444300293922424,
+          -0.8471438884735107
+        ],
+        "velocity": [],
+        "effort": []
+      }
+    }
+  ]
+}

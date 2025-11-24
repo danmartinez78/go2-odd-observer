@@ -1,0 +1,97 @@
+{
+  "topic": "/camera/image_raw",
+  "type": "sensor_msgs/msg/Image",
+  "total_messages": 743,
+  "samples": [
+    {
+      "timestamp_ns": 1763854501762355833,
+      "timestamp_sec": 1763854501.7623558,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763854501,
+            "nanosec": 755636063
+          },
+          "frame_id": "front_camera"
+        },
+        "height": 720,
+        "width": 1280,
+        "encoding": "bgr8",
+        "is_bigendian": 0,
+        "step": 3840,
+        "data": [
+          22,
+          40,
+          62,
+          41,
+          59,
+          81,
+          48,
+          65,
+          90,
+          39
+        ]
+      }
+    },
+    {
+      "timestamp_ns": 1763854501770282302,
+      "timestamp_sec": 1763854501.7702823,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763854501,
+            "nanosec": 766111144
+          },
+          "frame_id": "front_camera"
+        },
+        "height": 720,
+        "width": 1280,
+        "encoding": "bgr8",
+        "is_bigendian": 0,
+        "step": 3840,
+        "data": [
+          23,
+          43,
+          65,
+          37,
+          57,
+          79,
+          46,
+          66,
+          88,
+          37
+        ]
+      }
+    },
+    {
+      "timestamp_ns": 1763854501920479287,
+      "timestamp_sec": 1763854501.9204793,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763854501,
+            "nanosec": 916473114
+          },
+          "frame_id": "front_camera"
+        },
+        "height": 720,
+        "width": 1280,
+        "encoding": "bgr8",
+        "is_bigendian": 0,
+        "step": 3840,
+        "data": [
+          30,
+          48,
+          70,
+          44,
+          62,
+          84,
+          52,
+          70,
+          92,
+          44
+        ]
+      }
+    }
+  ]
+}

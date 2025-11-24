@@ -1,0 +1,178 @@
+{
+  "topic": "/robot0/go2_states",
+  "type": "go2_interfaces/msg/Go2State",
+  "total_messages": 787,
+  "samples": [
+    {
+      "timestamp_ns": 1763483957740678653,
+      "timestamp_sec": 1763483957.7406785,
+      "message": {
+        "mode": 0,
+        "progress": 0,
+        "gait_type": 0,
+        "foot_raise_height": 0.0,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "body_height": 0.0,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "range_obstacle": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "foot_force": [
+          51,
+          45,
+          24,
+          24
+        ],
+        "foot_position_body": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "foot_speed_body": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "timestamp_ns": 1763483957812624870,
+      "timestamp_sec": 1763483957.812625,
+      "message": {
+        "mode": 0,
+        "progress": 0,
+        "gait_type": 0,
+        "foot_raise_height": 0.0,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "body_height": 0.0,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "range_obstacle": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "foot_force": [
+          43,
+          39,
+          33,
+          36
+        ],
+        "foot_position_body": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "foot_speed_body": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "timestamp_ns": 1763483957884076473,
+      "timestamp_sec": 1763483957.8840766,
+      "message": {
+        "mode": 0,
+        "progress": 0,
+        "gait_type": 0,
+        "foot_raise_height": 0.0,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "body_height": 0.0,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "range_obstacle": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "foot_force": [
+          43,
+          50,
+          21,
+          28
+        ],
+        "foot_position_body": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "foot_speed_body": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  ]
+}

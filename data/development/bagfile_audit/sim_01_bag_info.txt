@@ -1,0 +1,25 @@
+[INFO] [1763994845.034921530] [rosbag2_storage]: Opened database 'data/raw_rosbags/sim/1/sim_1_0.db3' for READ_ONLY.
+
+Files:             data/raw_rosbags/sim/1/sim_1_0.db3
+Bag size:          2.4 GiB
+Storage id:        sqlite3
+Duration:          63.427582002s
+Start:             Nov 18 2025 16:39:17.684165966 (1763483957.684165966)
+End:               Nov 18 2025 16:40:21.111747968 (1763484021.111747968)
+Messages:          7885
+Topic information: Topic: /rosout | Type: rcl_interfaces/msg/Log | Count: 15 | Serialization Format: cdr
+                   Topic: /parameter_events | Type: rcl_interfaces/msg/ParameterEvent | Count: 0 | Serialization Format: cdr
+                   Topic: /events/write_split | Type: rosbag2_interfaces/msg/WriteSplitEvent | Count: 0 | Serialization Format: cdr
+                   Topic: /robot0/odom | Type: nav_msgs/msg/Odometry | Count: 787 | Serialization Format: cdr
+                   Topic: /robot0/front_cam/rgb | Type: sensor_msgs/msg/Image | Count: 787 | Serialization Format: cdr
+                   Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 2361 | Serialization Format: cdr
+                   Topic: /robot0/go2_states | Type: go2_interfaces/msg/Go2State | Count: 787 | Serialization Format: cdr
+                   Topic: /robot0/imu | Type: sensor_msgs/msg/Imu | Count: 787 | Serialization Format: cdr
+                   Topic: /robot0/joint_states | Type: sensor_msgs/msg/JointState | Count: 787 | Serialization Format: cdr
+                   Topic: /robot0/point_cloud2_L1 | Type: sensor_msgs/msg/PointCloud2 | Count: 787 | Serialization Format: cdr
+                   Topic: /robot0/point_cloud2_extra | Type: sensor_msgs/msg/PointCloud2 | Count: 787 | Serialization Format: cdr
+
+
+closing.
+
+closing.

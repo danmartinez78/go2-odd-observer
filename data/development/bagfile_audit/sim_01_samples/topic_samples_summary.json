@@ -1,0 +1,56 @@
+{
+  "/rosout": {
+    "type": "rcl_interfaces/msg/Log",
+    "total_messages": 15,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/rosout_samples.json"
+  },
+  "/robot0/joint_states": {
+    "type": "sensor_msgs/msg/JointState",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_joint_states_samples.json"
+  },
+  "/tf": {
+    "type": "tf2_msgs/msg/TFMessage",
+    "total_messages": 2361,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/tf_samples.json"
+  },
+  "/robot0/odom": {
+    "type": "nav_msgs/msg/Odometry",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_odom_samples.json"
+  },
+  "/robot0/imu": {
+    "type": "sensor_msgs/msg/Imu",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_imu_samples.json"
+  },
+  "/robot0/go2_states": {
+    "type": "go2_interfaces/msg/Go2State",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_go2_states_samples.json"
+  },
+  "/robot0/point_cloud2_L1": {
+    "type": "sensor_msgs/msg/PointCloud2",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_point_cloud2_L1_samples.json"
+  },
+  "/robot0/point_cloud2_extra": {
+    "type": "sensor_msgs/msg/PointCloud2",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_point_cloud2_extra_samples.json"
+  },
+  "/robot0/front_cam/rgb": {
+    "type": "sensor_msgs/msg/Image",
+    "total_messages": 787,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/sim_01_samples/robot0_front_cam_rgb_samples.json"
+  }
+}

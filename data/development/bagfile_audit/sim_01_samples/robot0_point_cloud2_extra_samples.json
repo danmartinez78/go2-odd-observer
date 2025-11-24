@@ -1,0 +1,160 @@
+{
+  "topic": "/robot0/point_cloud2_extra",
+  "type": "sensor_msgs/msg/PointCloud2",
+  "total_messages": 787,
+  "samples": [
+    {
+      "timestamp_ns": 1763483957749127417,
+      "timestamp_sec": 1763483957.7491274,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 746616806
+          },
+          "frame_id": "robot0/lidar_link"
+        },
+        "height": 1,
+        "width": 7737,
+        "fields": [
+          {
+            "name": "x",
+            "offset": 0,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "offset": 4,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "offset": 8,
+            "datatype": 7,
+            "count": 1
+          }
+        ],
+        "is_bigendian": false,
+        "point_step": 12,
+        "row_step": 92844,
+        "data": [
+          62,
+          250,
+          123,
+          63,
+          147,
+          120,
+          198,
+          188,
+          60,
+          191
+        ],
+        "is_dense": false
+      }
+    },
+    {
+      "timestamp_ns": 1763483957822343975,
+      "timestamp_sec": 1763483957.8223438,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 819917508
+          },
+          "frame_id": "robot0/lidar_link"
+        },
+        "height": 1,
+        "width": 7737,
+        "fields": [
+          {
+            "name": "x",
+            "offset": 0,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "offset": 4,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "offset": 8,
+            "datatype": 7,
+            "count": 1
+          }
+        ],
+        "is_bigendian": false,
+        "point_step": 12,
+        "row_step": 92844,
+        "data": [
+          1,
+          193,
+          123,
+          63,
+          125,
+          75,
+          198,
+          188,
+          169,
+          126
+        ],
+        "is_dense": false
+      }
+    },
+    {
+      "timestamp_ns": 1763483957894788629,
+      "timestamp_sec": 1763483957.8947885,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 892599137
+          },
+          "frame_id": "robot0/lidar_link"
+        },
+        "height": 1,
+        "width": 7737,
+        "fields": [
+          {
+            "name": "x",
+            "offset": 0,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "offset": 4,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "offset": 8,
+            "datatype": 7,
+            "count": 1
+          }
+        ],
+        "is_bigendian": false,
+        "point_step": 12,
+        "row_step": 92844,
+        "data": [
+          19,
+          186,
+          124,
+          63,
+          172,
+          15,
+          199,
+          188,
+          38,
+          97
+        ],
+        "is_dense": false
+      }
+    }
+  ]
+}
