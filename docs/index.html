@@ -179,13 +179,13 @@
                 <!-- Production Scenarios -->
                 <div class="mt-4 mb-3">
                     <h3 class="text-white">🏭 Production Analysis</h3>
-                    <p class="text-white mb-2">Real-world operational data analyzed with reasoning-based motion, spatial
+                    <p class="text-white mb-2">Real-world and simulated operational data analyzed with reasoning-based
+                        motion, spatial
                         perception, and ego vehicle awareness</p>
                     <div class="alert alert-success">
-                        <strong>Highlights:</strong> 2 scenarios, 20 windows total |
-                        <strong>Compliance:</strong> ODD_BOUNDARY (0 violations) |
-                        <strong>Key Finding:</strong> Sensor fusion gap - low-profile obstacles visible in camera but
-                        missed by BEV LiDAR
+                        <strong>Highlights:</strong> 3 scenarios, 45 windows total |
+                        <strong>Compliance:</strong> All ODD_BOUNDARY (0 violations) |
+                        <strong>Key Findings:</strong> Sensor fusion gap (real) • Dark lighting detection gap (sim)
                     </div>
                 </div>
 
@@ -203,9 +203,9 @@
                             </p>
 
                             <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">⚠️ ODD BOUNDARY</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Boundary
-                                    Conditions</span>
+                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
+                                <span class="badge bg-warning text-dark badge-status">0 Violations | Operating at
+                                    Boundary</span>
                             </div>
 
                             <p class="mb-2"><strong>Key Findings:</strong></p>
@@ -253,9 +253,9 @@
                             </p>
 
                             <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">⚠️ ODD BOUNDARY</span>
+                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
                                 <span class="badge bg-warning text-dark badge-status">0 Violations | Sensor Fusion
-                                    Issue</span>
+                                    Gap</span>
                             </div>
 
                             <p class="mb-2"><strong>Key Findings:</strong></p>
@@ -288,6 +288,50 @@
                                 <div>📸 Full Image Set (40 BEV + 8 Camera)</div>
                                 <div>📥 <a href="reports/collection_20251122_174321_chunk_03_full_result.json"
                                         download>JSON Download</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- sim_run_new_01 -->
+                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Production 3 - Simulated Office Navigation (25 Windows) 🎮</h3>
+                            <p class="text-muted mb-2"><strong>Scenario:</strong> sim_run_new_01</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Simulated Indoor Office - High Obstacle Density</p>
+                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 1.03 m/s² | <strong>Traversability:</strong> 0.3 (at boundary)</p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
+                                <span class="badge bg-warning text-dark badge-status">0 Violations | Lighting Detection Gap</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
+                                <li><strong>Critical:</strong> Dark lighting detected (windows 000,001,002) but not flagged as violation</li>
+                                <li>2 critical collision risk events (windows 009, 015) with likelihood 1.0</li>
+                                <li>High collision activity: 56% of windows at alert/caution levels (14 alert, 3 caution)</li>
+                                <li>Low traversability (0.3) at boundary - challenging confined space navigation</li>
+                            </ul>
+
+                            <p class="mb-2"><strong>Analysis Features:</strong></p>
+                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
+                                <li>Simulated environment validation (25 windows)</li>
+                                <li>Detection gap identified: Prohibited lighting not flagged by compliance agent</li>
+                                <li>Aggregation masking: Critical events (1.0 risk) masked by average compliance</li>
+                                <li>Confined space analysis: Extreme close proximity obstacle navigation</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/sim_run_new_01_report.html"
+                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
+                                View Full Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>🎮 Simulation Data (25 windows)</div>
+                                <div>📸 Full Image Set (125 BEV + 25 Camera)</div>
+                                <div>📥 <a href="reports/sim_run_new_01_full_result.json" download>JSON Download</a></div>
                             </div>
                         </div>
                     </div>
