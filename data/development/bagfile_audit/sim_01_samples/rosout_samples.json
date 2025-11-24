@@ -1,0 +1,55 @@
+{
+  "topic": "/rosout",
+  "type": "rcl_interfaces/msg/Log",
+  "total_messages": 15,
+  "samples": [
+    {
+      "timestamp_ns": 1763483957684165966,
+      "timestamp_sec": 1763483957.684166,
+      "message": {
+        "stamp": {
+          "sec": 1763483957,
+          "nanosec": 681023190
+        },
+        "level": 20,
+        "name": "rosbag2_recorder",
+        "msg": "Press SPACE for pausing/resuming",
+        "file": "./src/rosbag2_transport/recorder.cpp",
+        "function": "Recorder",
+        "line": 104
+      }
+    },
+    {
+      "timestamp_ns": 1763483957684174621,
+      "timestamp_sec": 1763483957.6841745,
+      "message": {
+        "stamp": {
+          "sec": 1763483957,
+          "nanosec": 682528852
+        },
+        "level": 20,
+        "name": "rosbag2_recorder",
+        "msg": "Listening for topics...",
+        "file": "./src/rosbag2_transport/recorder.cpp",
+        "function": "record",
+        "line": 195
+      }
+    },
+    {
+      "timestamp_ns": 1763483957684177856,
+      "timestamp_sec": 1763483957.6841779,
+      "message": {
+        "stamp": {
+          "sec": 1763483957,
+          "nanosec": 682537198
+        },
+        "level": 20,
+        "name": "rosbag2_recorder",
+        "msg": "Event publisher thread: Starting",
+        "file": "./src/rosbag2_transport/recorder.cpp",
+        "function": "event_publisher_thread_main",
+        "line": 215
+      }
+    }
+  ]
+}

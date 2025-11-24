@@ -1,0 +1,156 @@
+{
+  "real_01_173442": {
+    "source_file": "/workspaces/go2-odd-observer/data/development/bagfile_audit/real_01_173442_bag_info.txt",
+    "metadata": {
+      "files": "data/raw_rosbags/real/collection_20251122_173442/collection_20251122_173442_0.db3",
+      "bag_size": "2.3 GiB",
+      "storage_id": "sqlite3",
+      "duration_seconds": 59.998570971,
+      "start_time": "Nov 22 2025 23:35:01.745918229 (1763854501.745918229)",
+      "end_time": "Nov 22 2025 23:36:01.744489200 (1763854561.744489200)",
+      "total_messages": 4587
+    },
+    "topics": [
+      {
+        "topic": "/tf",
+        "type": "tf2_msgs/msg/TFMessage",
+        "message_count": 1172,
+        "message_rate_hz": 19.53,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/imu",
+        "type": "go2_interfaces/msg/IMU",
+        "message_count": 1148,
+        "message_rate_hz": 19.13,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/odom",
+        "type": "nav_msgs/msg/Odometry",
+        "message_count": 1117,
+        "message_rate_hz": 18.62,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/camera/image_raw",
+        "type": "sensor_msgs/msg/Image",
+        "message_count": 743,
+        "message_rate_hz": 12.38,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/point_cloud2",
+        "type": "sensor_msgs/msg/PointCloud2",
+        "message_count": 351,
+        "message_rate_hz": 5.85,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/joint_states",
+        "type": "sensor_msgs/msg/JointState",
+        "message_count": 55,
+        "message_rate_hz": 0.92,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/tf_static",
+        "type": "tf2_msgs/msg/TFMessage",
+        "message_count": 1,
+        "message_rate_hz": 0.02,
+        "serialization": "cdr"
+      }
+    ]
+  },
+  "sim_01": {
+    "source_file": "/workspaces/go2-odd-observer/data/development/bagfile_audit/sim_01_bag_info.txt",
+    "metadata": {
+      "files": "data/raw_rosbags/sim/1/sim_1_0.db3",
+      "bag_size": "2.4 GiB",
+      "storage_id": "sqlite3",
+      "duration_seconds": 63.427582002,
+      "start_time": "Nov 18 2025 16:39:17.684165966 (1763483957.684165966)",
+      "end_time": "Nov 18 2025 16:40:21.111747968 (1763484021.111747968)",
+      "total_messages": 7885
+    },
+    "topics": [
+      {
+        "topic": "/tf",
+        "type": "tf2_msgs/msg/TFMessage",
+        "message_count": 2361,
+        "message_rate_hz": 37.22,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/odom",
+        "type": "nav_msgs/msg/Odometry",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/front_cam/rgb",
+        "type": "sensor_msgs/msg/Image",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/go2_states",
+        "type": "go2_interfaces/msg/Go2State",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/imu",
+        "type": "sensor_msgs/msg/Imu",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/joint_states",
+        "type": "sensor_msgs/msg/JointState",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/point_cloud2_L1",
+        "type": "sensor_msgs/msg/PointCloud2",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/robot0/point_cloud2_extra",
+        "type": "sensor_msgs/msg/PointCloud2",
+        "message_count": 787,
+        "message_rate_hz": 12.41,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/rosout",
+        "type": "rcl_interfaces/msg/Log",
+        "message_count": 15,
+        "message_rate_hz": 0.24,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/parameter_events",
+        "type": "rcl_interfaces/msg/ParameterEvent",
+        "message_count": 0,
+        "message_rate_hz": 0.0,
+        "serialization": "cdr"
+      },
+      {
+        "topic": "/events/write_split",
+        "type": "rosbag2_interfaces/msg/WriteSplitEvent",
+        "message_count": 0,
+        "message_rate_hz": 0.0,
+        "serialization": "cdr"
+      }
+    ]
+  }
+}

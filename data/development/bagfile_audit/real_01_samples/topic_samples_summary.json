@@ -1,0 +1,44 @@
+{
+  "/tf_static": {
+    "type": "tf2_msgs/msg/TFMessage",
+    "total_messages": 1,
+    "samples_collected": 1,
+    "output_file": "data/development/bagfile_audit/real_01_samples/tf_static_samples.json"
+  },
+  "/point_cloud2": {
+    "type": "sensor_msgs/msg/PointCloud2",
+    "total_messages": 351,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/real_01_samples/point_cloud2_samples.json"
+  },
+  "/tf": {
+    "type": "tf2_msgs/msg/TFMessage",
+    "total_messages": 1172,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/real_01_samples/tf_samples.json"
+  },
+  "/odom": {
+    "type": "nav_msgs/msg/Odometry",
+    "total_messages": 1117,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/real_01_samples/odom_samples.json"
+  },
+  "/imu": {
+    "type": "go2_interfaces/msg/IMU",
+    "total_messages": 1148,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/real_01_samples/imu_samples.json"
+  },
+  "/camera/image_raw": {
+    "type": "sensor_msgs/msg/Image",
+    "total_messages": 743,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/real_01_samples/camera_image_raw_samples.json"
+  },
+  "/joint_states": {
+    "type": "sensor_msgs/msg/JointState",
+    "total_messages": 55,
+    "samples_collected": 3,
+    "output_file": "data/development/bagfile_audit/real_01_samples/joint_states_samples.json"
+  }
+}

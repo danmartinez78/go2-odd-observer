@@ -1,0 +1,21 @@
+[INFO] [1763994835.076622262] [rosbag2_storage]: Opened database 'data/raw_rosbags/real/collection_20251122_173442/collection_20251122_173442_0.db3' for READ_ONLY.
+
+Files:             data/raw_rosbags/real/collection_20251122_173442/collection_20251122_173442_0.db3
+Bag size:          2.3 GiB
+Storage id:        sqlite3
+Duration:          59.998570971s
+Start:             Nov 22 2025 23:35:01.745918229 (1763854501.745918229)
+End:               Nov 22 2025 23:36:01.744489200 (1763854561.744489200)
+Messages:          4587
+Topic information: Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 1172 | Serialization Format: cdr
+                   Topic: /point_cloud2 | Type: sensor_msgs/msg/PointCloud2 | Count: 351 | Serialization Format: cdr
+                   Topic: /joint_states | Type: sensor_msgs/msg/JointState | Count: 55 | Serialization Format: cdr
+                   Topic: /odom | Type: nav_msgs/msg/Odometry | Count: 1117 | Serialization Format: cdr
+                   Topic: /imu | Type: go2_interfaces/msg/IMU | Count: 1148 | Serialization Format: cdr
+                   Topic: /camera/image_raw | Type: sensor_msgs/msg/Image | Count: 743 | Serialization Format: cdr
+                   Topic: /tf_static | Type: tf2_msgs/msg/TFMessage | Count: 1 | Serialization Format: cdr
+
+
+closing.
+
+closing.

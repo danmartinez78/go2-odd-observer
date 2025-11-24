@@ -1,0 +1,160 @@
+{
+  "topic": "/robot0/point_cloud2_L1",
+  "type": "sensor_msgs/msg/PointCloud2",
+  "total_messages": 787,
+  "samples": [
+    {
+      "timestamp_ns": 1763483957747008981,
+      "timestamp_sec": 1763483957.747009,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 741067217
+          },
+          "frame_id": "robot0/UnitreeL1_link"
+        },
+        "height": 1,
+        "width": 28749,
+        "fields": [
+          {
+            "name": "x",
+            "offset": 0,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "offset": 4,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "offset": 8,
+            "datatype": 7,
+            "count": 1
+          }
+        ],
+        "is_bigendian": false,
+        "point_step": 12,
+        "row_step": 344988,
+        "data": [
+          96,
+          28,
+          166,
+          63,
+          72,
+          142,
+          156,
+          184,
+          178,
+          3
+        ],
+        "is_dense": false
+      }
+    },
+    {
+      "timestamp_ns": 1763483957820140127,
+      "timestamp_sec": 1763483957.8201401,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 813340374
+          },
+          "frame_id": "robot0/UnitreeL1_link"
+        },
+        "height": 1,
+        "width": 28749,
+        "fields": [
+          {
+            "name": "x",
+            "offset": 0,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "offset": 4,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "offset": 8,
+            "datatype": 7,
+            "count": 1
+          }
+        ],
+        "is_bigendian": false,
+        "point_step": 12,
+        "row_step": 344988,
+        "data": [
+          83,
+          190,
+          164,
+          63,
+          0,
+          0,
+          0,
+          0,
+          165,
+          194
+        ],
+        "is_dense": false
+      }
+    },
+    {
+      "timestamp_ns": 1763483957890167533,
+      "timestamp_sec": 1763483957.8901675,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763483957,
+            "nanosec": 884708143
+          },
+          "frame_id": "robot0/UnitreeL1_link"
+        },
+        "height": 1,
+        "width": 28749,
+        "fields": [
+          {
+            "name": "x",
+            "offset": 0,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "offset": 4,
+            "datatype": 7,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "offset": 8,
+            "datatype": 7,
+            "count": 1
+          }
+        ],
+        "is_bigendian": false,
+        "point_step": 12,
+        "row_step": 344988,
+        "data": [
+          237,
+          146,
+          164,
+          63,
+          0,
+          0,
+          0,
+          0,
+          65,
+          146
+        ],
+        "is_dense": false
+      }
+    }
+  ]
+}

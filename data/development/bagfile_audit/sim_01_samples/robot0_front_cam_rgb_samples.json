@@ -1,0 +1,97 @@
+{
+  "topic": "/robot0/front_cam/rgb",
+  "type": "sensor_msgs/msg/Image",
+  "total_messages": 787,
+  "samples": [
+    {
+      "timestamp_ns": 1763483957752104250,
+      "timestamp_sec": 1763483957.7521043,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 6,
+            "nanosec": 449999855
+          },
+          "frame_id": "robot0"
+        },
+        "height": 720,
+        "width": 1280,
+        "encoding": "rgb8",
+        "is_bigendian": 0,
+        "step": 3840,
+        "data": [
+          96,
+          86,
+          71,
+          96,
+          86,
+          71,
+          96,
+          86,
+          71,
+          96
+        ]
+      }
+    },
+    {
+      "timestamp_ns": 1763483957822304639,
+      "timestamp_sec": 1763483957.8223045,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 6,
+            "nanosec": 469999855
+          },
+          "frame_id": "robot0"
+        },
+        "height": 720,
+        "width": 1280,
+        "encoding": "rgb8",
+        "is_bigendian": 0,
+        "step": 3840,
+        "data": [
+          96,
+          86,
+          71,
+          96,
+          86,
+          71,
+          96,
+          86,
+          71,
+          96
+        ]
+      }
+    },
+    {
+      "timestamp_ns": 1763483957894770822,
+      "timestamp_sec": 1763483957.8947709,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 6,
+            "nanosec": 489999854
+          },
+          "frame_id": "robot0"
+        },
+        "height": 720,
+        "width": 1280,
+        "encoding": "rgb8",
+        "is_bigendian": 0,
+        "step": 3840,
+        "data": [
+          96,
+          86,
+          71,
+          96,
+          86,
+          71,
+          96,
+          86,
+          71,
+          96
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "topic": "/joint_states",
+  "type": "sensor_msgs/msg/JointState",
+  "total_messages": 55,
+  "samples": [
+    {
+      "timestamp_ns": 1763854502334374092,
+      "timestamp_sec": 1763854502.3343742,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763854502,
+            "nanosec": 333551189
+          },
+          "frame_id": ""
+        },
+        "name": [
+          "FL_hip_joint",
+          "FL_thigh_joint",
+          "FL_calf_joint",
+          "FR_hip_joint",
+          "FR_thigh_joint",
+          "FR_calf_joint",
+          "RL_hip_joint",
+          "RL_thigh_joint",
+          "RL_calf_joint",
+          "RR_hip_joint"
+        ],
+        "position": [
+          -0.033813,
+          0.786049,
+          -1.555047,
+          0.037052,
+          0.833646,
+          -1.501337,
+          -0.077498,
+          0.804634,
+          -1.530135,
+          0.120431
+        ],
+        "velocity": [],
+        "effort": []
+      }
+    },
+    {
+      "timestamp_ns": 1763854503379682373,
+      "timestamp_sec": 1763854503.3796823,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763854503,
+            "nanosec": 379400211
+          },
+          "frame_id": ""
+        },
+        "name": [
+          "FL_hip_joint",
+          "FL_thigh_joint",
+          "FL_calf_joint",
+          "FR_hip_joint",
+          "FR_thigh_joint",
+          "FR_calf_joint",
+          "RL_hip_joint",
+          "RL_thigh_joint",
+          "RL_calf_joint",
+          "RR_hip_joint"
+        ],
+        "position": [
+          -0.033752,
+          0.78608,
+          -1.555063,
+          0.036961,
+          0.833676,
+          -1.501305,
+          -0.077498,
+          0.804664,
+          -1.530135,
+          0.120401
+        ],
+        "velocity": [],
+        "effort": []
+      }
+    },
+    {
+      "timestamp_ns": 1763854504116956711,
+      "timestamp_sec": 1763854504.1169567,
+      "message": {
+        "header": {
+          "stamp": {
+            "sec": 1763854504,
+            "nanosec": 114101358
+          },
+          "frame_id": ""
+        },
+        "name": [
+          "FL_hip_joint",
+          "FL_thigh_joint",
+          "FL_calf_joint",
+          "FR_hip_joint",
+          "FR_thigh_joint",
+          "FR_calf_joint",
+          "RL_hip_joint",
+          "RL_thigh_joint",
+          "RL_calf_joint",
+          "RR_hip_joint"
+        ],
+        "position": [
+          -0.033782,
+          0.786201,
+          -1.555063,
+          0.037022,
+          0.833736,
+          -1.501321,
+          -0.077528,
+          0.804725,
+          -1.530119,
+          0.120401
+        ],
+        "velocity": [],
+        "effort": []
+      }
+    }
+  ]
+}
