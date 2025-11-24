@@ -7,6 +7,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+import cv2
+import numpy as np
+
 
 def build_image_path(scenario_path: Path, prefix: str, window_id: str) -> Path:
     """
@@ -88,3 +91,123 @@ def extract_json_block(text: str) -> Dict[str, Any]:
 
     # Parse and return
     return json.loads(json_text)
+
+
+def auto_crop_bev(bev_image: np.ndarray, margin_percent: float = 0.1) -> np.ndarray:
+    """
+    Crop BEV image to occupied region plus margin.
+
+    Removes empty black borders from bird's-eye-view images while preserving
+    occupied regions with a configurable margin. Maintains square aspect ratio.
+
+    Args:
+        bev_image: Input BEV image (grayscale or RGB, cv2.imread compatible)
+        margin_percent: Margin as fraction of occupied region size (default 0.1 = 10%)
+
+    Returns:
+        Cropped BEV image with margin, maintaining square aspect ratio
+
+    Edge cases:
+        - Empty BEV (all background): Return original
+        - Full BEV (no empty space): Return original
+        - Single-pixel occupied: Return reasonable minimum size
+
+    Examples:
+        Basic usage:
+            >>> cropped = auto_crop_bev(bev_image)
+
+        Custom margin:
+            >>> cropped = auto_crop_bev(bev_image, margin_percent=0.15)
+
+    Note:
+        Typically reduces 400x400 BEV to ~150-250px square.
+    """
+    if bev_image is None or bev_image.size == 0:
+        return bev_image
+
+    # Convert to grayscale for background detection
+    if len(bev_image.shape) == 3:
+        gray = cv2.cvtColor(bev_image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = bev_image
+
+    # Background detection: pixels with value < 5 (black or near-black)
+    non_background_mask = gray >= 5
+    coords = np.argwhere(non_background_mask)
+
+    # Edge case: empty BEV (all background)
+    if coords.size == 0:
+        return bev_image
+
+    # Find bounding box of non-background pixels
+    y0, x0 = coords.min(axis=0)
+    y1, x1 = coords.max(axis=0)
+
+    # Calculate region size
+    region_height = y1 - y0 + 1
+    region_width = x1 - x0 + 1
+
+    # Edge case: full BEV (no empty space to crop)
+    img_height, img_width = bev_image.shape[:2]
+    if region_height >= img_height and region_width >= img_width:
+        return bev_image
+
+    # Calculate margin based on the larger dimension of the occupied region
+    region_size = max(region_height, region_width)
+    margin = int(region_size * margin_percent)
+
+    # Ensure minimum margin of at least 1 pixel if there's any content
+    margin = max(margin, 1)
+
+    # Make square bounding box (use larger dimension)
+    square_size = region_size
+
+    # Calculate center of occupied region
+    center_y = (y0 + y1) // 2
+    center_x = (x0 + x1) // 2
+
+    # Calculate crop boundaries with margin (centered on occupied region)
+    half_size = square_size // 2 + margin
+    crop_y0 = max(0, center_y - half_size)
+    crop_y1 = min(img_height, center_y + half_size)
+    crop_x0 = max(0, center_x - half_size)
+    crop_x1 = min(img_width, center_x + half_size)
+
+    # Adjust to maintain square aspect ratio after clamping to image bounds
+    crop_height = crop_y1 - crop_y0
+    crop_width = crop_x1 - crop_x0
+
+    if crop_height != crop_width:
+        # Expand the smaller dimension if possible
+        target_size = max(crop_height, crop_width)
+
+        if crop_height < target_size:
+            diff = target_size - crop_height
+            expand_top = diff // 2
+            expand_bottom = diff - expand_top
+            if crop_y0 >= expand_top:
+                crop_y0 -= expand_top
+                crop_y1 += expand_bottom
+            else:
+                crop_y1 = min(img_height, crop_y0 + target_size)
+                crop_y0 = max(0, crop_y1 - target_size)
+
+        if crop_width < target_size:
+            diff = target_size - crop_width
+            expand_left = diff // 2
+            expand_right = diff - expand_left
+            if crop_x0 >= expand_left:
+                crop_x0 -= expand_left
+                crop_x1 += expand_right
+            else:
+                crop_x1 = min(img_width, crop_x0 + target_size)
+                crop_x0 = max(0, crop_x1 - target_size)
+
+    # Extract cropped region
+    cropped = bev_image[crop_y0:crop_y1, crop_x0:crop_x1]
+
+    # Edge case: don't return if cropping would increase size (shouldn't happen)
+    if cropped.size >= bev_image.size:
+        return bev_image
+
+    return cropped
