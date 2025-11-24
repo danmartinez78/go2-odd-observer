@@ -98,16 +98,17 @@ def select_representative_windows(result: Dict[str, Any], windows_with_images: L
     selected = []
 
     # Always include first window
-    if total_windows > 0:
-        selected.append(windows_with_images[0])
+    selected.append(windows_with_images[0])
 
-    # Add middle window
-    if total_windows > 2:
+    # For 2 windows: show first and last
+    if total_windows == 2:
+        selected.append(windows_with_images[-1])
+        return selected
+
+    # For 3+ windows: first, middle, last, plus maybe one safe window
+    if total_windows >= 3:
         mid_idx = total_windows // 2
         selected.append(windows_with_images[mid_idx])
-
-    # Add last window if we have at least 3
-    if total_windows > 2:
         selected.append(windows_with_images[-1])
 
     # Try to find one "safe" window (low collision risk)
@@ -120,10 +121,10 @@ def select_representative_windows(result: Dict[str, Any], windows_with_images: L
     ]
 
     # Add a safe window if found and not already selected
-    if safe_windows:
+    if safe_windows and len(selected) < 4:
         # Pick middle safe window
         safe_window = safe_windows[len(safe_windows)//2]
-        if safe_window not in selected and len(selected) < 4:
+        if safe_window not in selected:
             selected.insert(1, safe_window)  # Insert after first
 
     return selected[:4]  # Limit to 4 windows
