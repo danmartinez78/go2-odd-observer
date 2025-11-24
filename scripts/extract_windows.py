@@ -645,22 +645,23 @@ class WindowExtractor:
             rotation_matrix[0, 2] += (bev_size / 2 - robot_pixel_y)
             rotation_matrix[1, 2] += (bev_size / 2 - robot_pixel_x)
             
-            # Apply transformation to all BEV images
+            # Apply transformation to all BEV images using high-quality interpolation
+            # INTER_CUBIC for smooth results on continuous data
             occupancy_grid = cv2.warpAffine(
                 occupancy_grid, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
             )
             height_img = cv2.warpAffine(
                 height_img, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
             )
             density_img = cv2.warpAffine(
                 density_img, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
             )
             roughness_img = cv2.warpAffine(
                 roughness_img, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
             )
 
         # Apply slight blur to make features more visible
