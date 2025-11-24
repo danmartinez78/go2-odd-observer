@@ -646,7 +646,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         <div class="image-comparison">
             <div class="image-container">
                 <div class="image-label">Camera View</div>
-                <img src="{windows_with_images[int(vw['window_id'])]['images'].get('camera', '')}" alt="Camera view">
+                <img src="{next((w['images'].get('camera', '') for w in windows_with_images if w['id'] == vw['window_id']), '')}" alt="Camera view">
             </div>
         </div>
         
@@ -654,25 +654,25 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             <div class="col-md-3">
                 <div class="image-container">
                     <div class="image-label">BEV Occupancy</div>
-                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_occupancy', '')}" alt="BEV occupancy" class="img-fluid">
+                    <img src="{next((w['images'].get('bev_occupancy', '') for w in windows_with_images if w['id'] == vw['window_id']), '')}" alt="BEV occupancy" class="img-fluid">
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="image-container">
                     <div class="image-label">BEV Height</div>
-                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_height', '')}" alt="BEV height" class="img-fluid">
+                    <img src="{next((w['images'].get('bev_height', '') for w in windows_with_images if w['id'] == vw['window_id']), '')}" alt="BEV height" class="img-fluid">
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="image-container">
                     <div class="image-label">BEV Density</div>
-                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_density', '')}" alt="BEV density" class="img-fluid">
+                    <img src="{next((w['images'].get('bev_density', '') for w in windows_with_images if w['id'] == vw['window_id']), '')}" alt="BEV density" class="img-fluid">
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="image-container">
                     <div class="image-label">BEV Roughness</div>
-                    <img src="{windows_with_images[int(vw['window_id'])]['images'].get('bev_roughness', '')}" alt="BEV roughness" class="img-fluid">
+                    <img src="{next((w['images'].get('bev_roughness', '') for w in windows_with_images if w['id'] == vw['window_id']), '')}" alt="BEV roughness" class="img-fluid">
                 </div>
             </div>
         </div>
