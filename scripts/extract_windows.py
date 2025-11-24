@@ -413,9 +413,13 @@ class WindowExtractor:
             }
         else:
             _, pc_msg = closest
+            # Get robot pose for transforming point cloud to base_link frame
+            robot_pose = self._get_robot_pose(center_time)
+
             # Render multi-channel BEV from point cloud
             try:
-                bev_features = self._render_bev_from_pointcloud(pc_msg)
+                bev_features = self._render_bev_from_pointcloud(
+                    pc_msg, robot_pose)
             except Exception as e:
                 print(f"Warning: Failed to render BEV: {e}")
                 empty = np.zeros((400, 400), dtype=np.uint8)
@@ -456,9 +460,84 @@ class WindowExtractor:
 
         return roll, pitch, yaw
 
-    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2) -> Dict[str, np.ndarray]:
+    def _get_robot_pose(self, timestamp: float) -> Optional[Dict[str, float]]:
+        """
+        Get robot pose (position + orientation) at given timestamp from odometry.
+
+        Returns:
+            Dict with keys: x, y, z, roll, pitch, yaw (None if no odom data)
+        """
+        odom_msg_tuple = self._get_closest_message(
+            self.topics['odom'], timestamp)
+        if odom_msg_tuple is None:
+            return None
+
+        _, odom_msg = odom_msg_tuple
+        pos = odom_msg.pose.pose.position
+        ori = odom_msg.pose.pose.orientation
+
+        roll, pitch, yaw = self._quaternion_to_euler(
+            ori.x, ori.y, ori.z, ori.w)
+
+        return {
+            'x': pos.x,
+            'y': pos.y,
+            'z': pos.z,
+            'roll': roll,
+            'pitch': pitch,
+            'yaw': yaw
+        }
+
+    def _transform_point_odom_to_baselink(self, point: Tuple[float, float, float], robot_pose: Dict[str, float]) -> np.ndarray:
+        """
+        Transform a point from odom frame to base_link frame.
+
+        Args:
+            point: (x, y, z) tuple in odom frame
+            robot_pose: Robot pose dict with x, y, z, yaw
+
+        Returns:
+            [x, y, z] in base_link frame
+        """
+        # Convert point to numpy array
+        point_arr = np.array([point[0], point[1], point[2]], dtype=np.float64)
+        
+        # Translation: subtract robot position
+        translated = point_arr - \
+            np.array([robot_pose['x'], robot_pose['y'], robot_pose['z']])
+
+        # Rotation: rotate by -yaw around z-axis (inverse transform)
+        yaw = -robot_pose['yaw']  # Negative for inverse transform
+        cos_yaw = np.cos(yaw)
+        sin_yaw = np.sin(yaw)
+
+        # 2D rotation in XY plane
+        x_base = cos_yaw * translated[0] - sin_yaw * translated[1]
+        y_base = sin_yaw * translated[0] + cos_yaw * translated[1]
+        z_base = translated[2]
+
+        return np.array([x_base, y_base, z_base])
+        if abs(sinp) >= 1:
+            pitch = np.copysign(np.pi / 2, sinp)
+        else:
+            pitch = np.arcsin(sinp)
+
+        # Yaw (z-axis rotation)
+        siny_cosp = 2 * (w * z + x * y)
+        cosy_cosp = 1 - 2 * (y * y + z * z)
+        yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+        return roll, pitch, yaw
+
+    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2, robot_pose: Optional[Dict[str, float]] = None) -> Dict[str, np.ndarray]:
         """
         Render multi-channel bird's-eye-view images from a point cloud.
+
+        Args:
+            pc_msg: PointCloud2 message
+            robot_pose: Optional robot pose dict (x, y, z, yaw) for odom->base_link transform.
+                       If provided, points are transformed from odom frame to base_link frame.
+                       If None, points are assumed to already be in base_link frame (sim data).
 
         Returns:
             Dictionary with keys: 'occupancy', 'height', 'density', 'roughness'
@@ -486,6 +565,15 @@ class WindowExtractor:
 
         points = np.array(points)
 
+        # Transform points from odom to base_link if robot pose is provided
+        if robot_pose is not None:
+            transformed_points = []
+            for point in points:
+                transformed = self._transform_point_odom_to_baselink(
+                    point, robot_pose)
+                transformed_points.append(transformed)
+            points = np.array(transformed_points)
+
         # Create accumulator grids for feature calculation
         occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
         height_grid = np.full((bev_size, bev_size), np.nan, dtype=np.float32)
@@ -500,8 +588,11 @@ class WindowExtractor:
             x, y, z = point
 
             # Convert to pixel coordinates (x forward, y left)
+            # Robot is at center (bev_size/2, bev_size/2)
+            # x-axis (forward) maps to vertical (rows), y-axis (left) maps to horizontal (cols)
             pixel_x = int((x / meters_per_pixel) + bev_size / 2)
-            pixel_y = int((-y / meters_per_pixel) + bev_size / 2)
+            # Fixed: removed negative sign
+            pixel_y = int((y / meters_per_pixel) + bev_size / 2)
 
             # Check bounds
             if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
