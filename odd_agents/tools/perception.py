@@ -9,10 +9,8 @@ from google.adk.tools import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
-import cv2
-import numpy as np
 
-from ..utils import build_image_path, ensure_image_bytes, extract_json_block, auto_crop_bev
+from ..utils import build_image_path, ensure_image_bytes, extract_json_block
 
 
 def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -66,7 +64,7 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             camera_path = build_image_path(scenario_path, "cam", window_id)
             camera_bytes = ensure_image_bytes(camera_path)
 
-            # Load all 4 BEV channels
+            # Load all 4 BEV channels (pre-cropped during data generation)
             bev_occupancy_path = build_image_path(
                 scenario_path, "bev_occupancy", window_id)
             bev_height_path = build_image_path(
@@ -76,30 +74,10 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             bev_roughness_path = build_image_path(
                 scenario_path, "bev_roughness", window_id)
 
-            # Load as numpy arrays for cropping
-            bev_occupancy = cv2.imread(str(bev_occupancy_path))
-            bev_height = cv2.imread(str(bev_height_path))
-            bev_density = cv2.imread(str(bev_density_path))
-            bev_roughness = cv2.imread(str(bev_roughness_path))
-
-            # Auto-crop all BEVs (removes empty borders, maintains square aspect)
-            bev_occupancy_cropped = auto_crop_bev(bev_occupancy)
-            bev_height_cropped = auto_crop_bev(bev_height)
-            bev_density_cropped = auto_crop_bev(bev_density)
-            bev_roughness_cropped = auto_crop_bev(bev_roughness)
-
-            # Encode cropped BEVs as bytes
-            _, bev_occupancy_bytes = cv2.imencode(
-                '.png', bev_occupancy_cropped)
-            _, bev_height_bytes = cv2.imencode('.png', bev_height_cropped)
-            _, bev_density_bytes = cv2.imencode('.png', bev_density_cropped)
-            _, bev_roughness_bytes = cv2.imencode(
-                '.png', bev_roughness_cropped)
-
-            bev_occupancy_bytes = bev_occupancy_bytes.tobytes()
-            bev_height_bytes = bev_height_bytes.tobytes()
-            bev_density_bytes = bev_density_bytes.tobytes()
-            bev_roughness_bytes = bev_roughness_bytes.tobytes()
+            bev_occupancy_bytes = ensure_image_bytes(bev_occupancy_path)
+            bev_height_bytes = ensure_image_bytes(bev_height_path)
+            bev_density_bytes = ensure_image_bytes(bev_density_path)
+            bev_roughness_bytes = ensure_image_bytes(bev_roughness_path)
 
             prompt = f"""
             You are a perception expert analyzing synchronized robot sensors for window {window_id}.
