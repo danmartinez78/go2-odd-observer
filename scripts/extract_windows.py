@@ -501,7 +501,7 @@ class WindowExtractor:
         """
         # Convert point to numpy array
         point_arr = np.array([point[0], point[1], point[2]], dtype=np.float64)
-        
+
         # Translation: subtract robot position
         translated = point_arr - \
             np.array([robot_pose['x'], robot_pose['y'], robot_pose['z']])
@@ -546,7 +546,7 @@ class WindowExtractor:
         # Extract points from PointCloud2 message
         points = []
         for point in pc2.read_points(pc_msg, field_names=("x", "y", "z"), skip_nans=True):
-            points.append(point)
+            points.append([point[0], point[1], point[2]])
 
         # BEV parameters
         bev_size = 400
@@ -563,16 +563,26 @@ class WindowExtractor:
                 'roughness': empty.copy(),
             }
 
-        points = np.array(points)
+        points = np.array(points, dtype=np.float64)
 
         # Transform points from odom to base_link if robot pose is provided
         if robot_pose is not None:
-            transformed_points = []
-            for point in points:
-                transformed = self._transform_point_odom_to_baselink(
-                    point, robot_pose)
-                transformed_points.append(transformed)
-            points = np.array(transformed_points)
+            # Vectorized transformation for efficiency
+            # Translation
+            points = points - \
+                np.array([robot_pose['x'], robot_pose['y'], robot_pose['z']])
+
+            # Rotation around z-axis (inverse transform)
+            yaw = -robot_pose['yaw']
+            cos_yaw = np.cos(yaw)
+            sin_yaw = np.sin(yaw)
+
+            # Apply 2D rotation in XY plane
+            x_new = cos_yaw * points[:, 0] - sin_yaw * points[:, 1]
+            y_new = sin_yaw * points[:, 0] + cos_yaw * points[:, 1]
+            points[:, 0] = x_new
+            points[:, 1] = y_new
+            # z remains unchanged: points[:, 2] = points[:, 2]
 
         # Create accumulator grids for feature calculation
         occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
@@ -590,9 +600,9 @@ class WindowExtractor:
             # Convert to pixel coordinates (x forward, y left)
             # Robot is at center (bev_size/2, bev_size/2)
             # x-axis (forward) maps to vertical (rows), y-axis (left) maps to horizontal (cols)
-            pixel_x = int((x / meters_per_pixel) + bev_size / 2)
-            # Fixed: removed negative sign
-            pixel_y = int((y / meters_per_pixel) + bev_size / 2)
+            # Use round instead of int for better accuracy
+            pixel_x = int(np.round((x / meters_per_pixel) + bev_size / 2))
+            pixel_y = int(np.round((y / meters_per_pixel) + bev_size / 2))
 
             # Check bounds
             if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
