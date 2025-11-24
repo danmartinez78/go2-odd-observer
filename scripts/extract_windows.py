@@ -21,6 +21,11 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 
+# Import BEV cropping utility
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from odd_agents.utils import auto_crop_bev
+
 # ROS2 libraries
 try:
     from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
@@ -421,11 +426,14 @@ class WindowExtractor:
                     'roughness': empty.copy(),
                 }
 
-        # Save each feature as separate PNG
+        # Save each feature as separate PNG (with auto-cropping)
         for feature_name, feature_img in bev_features.items():
+            # Crop BEV to remove empty borders while preserving robot center
+            cropped_img = auto_crop_bev(feature_img)
+            
             bev_path = self.output_dir / \
                 f"bev_{feature_name}_{self.run_id}_w{window_id:03d}.png"
-            cv2.imwrite(str(bev_path), feature_img)
+            cv2.imwrite(str(bev_path), cropped_img)
 
     def _quaternion_to_euler(self, x: float, y: float, z: float, w: float) -> Tuple[float, float, float]:
         """Convert quaternion to Euler angles (roll, pitch, yaw)."""
