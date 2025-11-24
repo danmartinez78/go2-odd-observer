@@ -89,6 +89,46 @@ def get_window_status(window_id: str, result: Dict[str, Any]) -> Tuple[str, str]
         return 'violation', '#dc3545'  # red
 
 
+def select_representative_windows(result: Dict[str, Any], windows_with_images: List[Dict]) -> List[Dict]:
+    """Auto-select representative windows to show scenario overview."""
+    if not windows_with_images:
+        return []
+
+    total_windows = len(windows_with_images)
+    selected = []
+
+    # Always include first window
+    if total_windows > 0:
+        selected.append(windows_with_images[0])
+
+    # Add middle window
+    if total_windows > 2:
+        mid_idx = total_windows // 2
+        selected.append(windows_with_images[mid_idx])
+
+    # Add last window if we have at least 3
+    if total_windows > 2:
+        selected.append(windows_with_images[-1])
+
+    # Try to find one "safe" window (low collision risk)
+    collision_events = result['full_analysis']['collision'].get(
+        'collision_events', [])
+    safe_windows = [
+        w for w in windows_with_images
+        if any(c['window_id'] == w['id'] and c.get('collision_risk_level') in ['none', 'low']
+               for c in collision_events)
+    ]
+
+    # Add a safe window if found and not already selected
+    if safe_windows:
+        # Pick middle safe window
+        safe_window = safe_windows[len(safe_windows)//2]
+        if safe_window not in selected and len(selected) < 4:
+            selected.insert(1, safe_window)  # Insert after first
+
+    return selected[:4]  # Limit to 4 windows
+
+
 def extract_violation_windows(result: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract windows with violations/warnings for spotlight section."""
     compliance = get_compliance_data(result)
@@ -319,6 +359,10 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     report = result['report']
     metadata = report['scenario_metadata']
     scenario_name = metadata['scenario_name']
+
+    # Use the directory name for image matching (handles chunk naming)
+    image_scenario_name = scenario_dir.name
+
     compliance = get_compliance_data(result)
     overall_status = compliance.get('overall_compliance', 'UNKNOWN')
 
@@ -337,7 +381,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     # Collect all window images
     windows_with_images = []
     for window_id in result['full_analysis']['perception']['windows_analyzed']:
-        images = find_window_images(scenario_dir, window_id, scenario_name)
+        images = find_window_images(
+            scenario_dir, window_id, image_scenario_name)
         if images:
             windows_with_images.append({
                 'id': window_id,
@@ -641,6 +686,31 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             <li><strong>OUT_ODD:</strong> Averaged parameters exceeded safe limits</li>
         </ul>
         <p class="mt-3 mb-0" style="font-size: 0.85rem;"><em><strong>Note:</strong> Individual high-risk moments may occur even in compliant scenarios if the overall average remains safe. This report shows scenario-level compliance based on aggregated metrics across all windows.</em></p>
+    </div>
+</div>
+
+<!-- Scenario Overview -->
+<div class="container mb-5">
+    <h2 class="mb-4">🎬 Scenario Overview</h2>
+    <p class="text-muted mb-3">Representative windows showing typical operation throughout the scenario</p>
+    <div class="row">
+        {''.join(f'''
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="metric-card">
+                <h6 class="text-primary mb-2">Window {window['id']}</h6>
+                <div class="mb-2">
+                    <img src="{window['images'].get('camera', '')}" alt="Window {window['id']} camera" style="width: 100%; border-radius: 8px; margin-bottom: 4px;">
+                </div>
+                <div class="mb-2">
+                    <img src="{window['images'].get('bev_occupancy', '')}" alt="Window {window['id']} BEV" style="width: 100%; border-radius: 8px;">
+                </div>
+                <div style="font-size: 0.85rem; margin-top: 8px;">
+                    {f"<div><strong>Motion:</strong> {'Yes' if next((c.get('motion_contributes_to_risk', False) for c in result['full_analysis']['collision'].get('collision_events', []) if c['window_id'] == window['id']), False) else 'No'}</div>" if any(c['window_id'] == window['id'] for c in result['full_analysis']['collision'].get('collision_events', [])) else '<div><strong>Motion:</strong> N/A</div>'}
+                    {f"<div><strong>Risk:</strong> {next((c.get('collision_risk_level', 'N/A').title() for c in result['full_analysis']['collision'].get('collision_events', []) if c['window_id'] == window['id']), 'N/A')}</div>" if any(c['window_id'] == window['id'] for c in result['full_analysis']['collision'].get('collision_events', [])) else '<div><strong>Risk:</strong> N/A</div>'}
+                </div>
+            </div>
+        </div>
+        ''' for window in select_representative_windows(result, windows_with_images))}
     </div>
 </div>
 
