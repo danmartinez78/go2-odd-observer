@@ -13,7 +13,7 @@
     
     <style>
         :root {
-            --status-color: #dc3545;
+            --status-color: #28a745;
             --bg-primary: #ffffff;
             --bg-secondary: #f8f9fa;
             --text-primary: #212529;
@@ -226,11 +226,11 @@
             <div class="col-md-8">
                 <h1 class="display-4">🤖 ODD Analysis Report</h1>
                 <h2 class="h3">Data Set: real_06_174604</h2>
-                <p class="lead mb-0">Generated November 23, 2025 at 23:21:36</p>
+                <p class="lead mb-0">Generated November 24, 2025 at 01:55:03</p>
             </div>
             <div class="col-md-4 text-end">
                 <div class="status-badge">
-                    ❌ OUT OF ODD
+                    ✅ IN ODD
                 </div>
             </div>
         </div>
@@ -248,7 +248,7 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card">
-                <div class="metric-value">2</div>
+                <div class="metric-value">0</div>
                 <div class="metric-label">Violations</div>
             </div>
         </div>
@@ -260,7 +260,7 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card">
-                <div class="metric-value">0.80</div>
+                <div class="metric-value">0.50</div>
                 <div class="metric-label">Avg Collision Risk</div>
             </div>
         </div>
@@ -273,7 +273,7 @@
         <div class="col-12">
             <h2 class="mb-4">📋 Executive Summary</h2>
             <div class="metric-card">
-                <p class="lead">This scenario, 'real_06_174604', involved a robot operating in a bright, indoor residential environment with smooth terrain, encountering a person and a dog. Despite being within ODD for environmental factors, the robot exhibited abrupt motion and faced a critical collision risk (0.8) due to close proximity to dynamic obstacles. Consequently, the overall operation was classified as OUT_ODD.</p>
+                <p class="lead">The scenario 'real_06_174604' describes a stationary Unitree Go2 robot in an indoor living room environment, where it encounters dynamic obstacles including a person and a dog in close proximity. Despite internal IMU data showing 'abrupt' characteristics attributed to sensor noise, the overall operating domain is fully compliant with the ODD, although one instance reported a high collision risk due to nearby dynamic objects.</p>
             </div>
         </div>
     </div>
@@ -330,7 +330,7 @@
             </ul>
         </div>
         
-        <p class="text-muted fst-italic">"An indoor living room with a person and a dog standing on a large, high-pile patterned rug. Furniture is visible in the background and a pillow is on the floor in the foreground."</p>
+        <p class="text-muted fst-italic">"An indoor living room scene with a person moving to the right and a pillow on a large rug to the left. Furniture is visible in the background."</p>
     </div>
     
     <div class="violation-spotlight">
@@ -379,7 +379,7 @@
             </ul>
         </div>
         
-        <p class="text-muted fst-italic">"A person and a large dog are standing directly in front of the robot on a patterned, high-pile rug in a well-lit living room."</p>
+        <p class="text-muted fst-italic">"An indoor living room scene with a person and a large dog standing directly in front of the robot on a patterned area rug."</p>
     </div>
     
 </div>
@@ -405,13 +405,13 @@
                         <tr>
                             <td>environment_type</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>indoor_residential</td>
+                            <td>indoor</td>
                         </tr>
                         
                         <tr>
                             <td>lighting_conditions</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>bright</td>
+                            <td>dim</td>
                         </tr>
                         
                         <tr>
@@ -422,7 +422,7 @@
                         
                         <tr>
                             <td>motion_smoothness</td>
-                            <td class="compliance-status-OUT_ODD">OUT_ODD</td>
+                            <td class="compliance-status-IN_ODD">IN_ODD</td>
                             <td>abrupt</td>
                         </tr>
                         
@@ -453,25 +453,13 @@
                         <tr>
                             <td>traversability_score</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>0.7</td>
+                            <td>0.65</td>
                         </tr>
                         
                         <tr>
                             <td>collision_risk</td>
-                            <td class="compliance-status-OUT_ODD">OUT_ODD</td>
-                            <td>0.8</td>
-                        </tr>
-                        
-                        <tr>
-                            <td>max_accel_mps2</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>0.4294</td>
-                        </tr>
-                        
-                        <tr>
-                            <td>platform_max_slope_deg</td>
-                            <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>N/A</td>
+                            <td>0.5</td>
                         </tr>
                         
                     </tbody>
@@ -486,7 +474,7 @@
     <h2 class="mb-4">🔍 Key Findings</h2>
     <div class="metric-card">
         <ol>
-            <li class="mb-2">The robot operated in a bright, indoor residential environment with smooth terrain, generally compliant with ODD categorical constraints.</li><li class="mb-2">Dynamic obstacles (a person and a dog) were present in close proximity, leading to confined spaces and increased collision risk.</li><li class="mb-2">The robot's motion was consistently classified as 'abrupt', violating the ODD's expectation for smooth to moderate acceleration.</li><li class="mb-2">The overall collision risk was consistently high to critical (average 0.8), exceeding the ODD's defined safe limit.</li><li class="mb-2">Despite low maximum acceleration, the abruptness of motion significantly contributed to the OUT_ODD classification.</li>
+            <li class="mb-2">The robot is operating within its specified indoor residential ODD, characterized by furniture, people, and pets.</li><li class="mb-2">Perception robustly detected dynamic obstacles (human, dog) in close proximity (0.5m) to the robot.</li><li class="mb-2">The robot remained stationary throughout the analyzed windows, effectively mitigating direct collision risks.</li><li class="mb-2">High jerk values were detected by IMU sensors even when stationary, categorized as 'abrupt' motion smoothness, though attributed to sensor noise or internal vibrations.</li><li class="mb-2">Collision risk varied from 'safe' to 'alert' based on the proximity and dynamism of obstacles, reinforcing the importance of maintaining a stop when close to dynamic entities.</li>
         </ol>
     </div>
 </div>
@@ -496,7 +484,7 @@
     <h2 class="mb-4">💡 Recommendations</h2>
     <div class="metric-card">
         <ol>
-            <li class="mb-2">Implement stricter control strategies to ensure smoother robot motion and prevent abrupt movements, particularly when dynamic obstacles are present.</li><li class="mb-2">Enhance collision avoidance algorithms to react more conservatively when dynamic obstacles like humans and pets are detected in close proximity, prioritizing immediate stops or safe evasive maneuvers.</li><li class="mb-2">Review the ODD's obstacle density and traversability thresholds in conjunction with real-world scenarios involving dynamic, unpredictable obstacles to ensure safe operation.</li>
+            <li class="mb-2">Implement further analysis or filtering for IMU data to distinguish between sensor noise/internal vibrations and actual abrupt macroscopic motion, particularly when the robot is stationary.</li><li class="mb-2">Maintain stringent adherence to 'stop' recommendations when dynamic obstacles are in very close proximity, even if the robot is currently stationary, to ensure safety upon potential movement.</li><li class="mb-2">Continuously monitor and refine dynamic obstacle tracking, especially for pets, given their unpredictable movements in residential environments.</li>
         </ol>
     </div>
 </div>
@@ -507,7 +495,7 @@
         <div class="row">
             <div class="col-md-6">
                 <p class="mb-0">Generated by ODD Observer Analysis Pipeline</p>
-                <p class="mb-0"><small>November 23, 2025 at 23:21:36</small></p>
+                <p class="mb-0"><small>November 24, 2025 at 01:55:03</small></p>
             </div>
             <div class="col-md-6 text-end">
                 <p class="mb-0">Environment: real_world</p>
@@ -559,7 +547,7 @@
     
     // Initialize Plotly charts
     const accelData = {"data": [{"x": ["000", "001"], "y": [0.4276, 0.4294], "type": "bar", "marker": {"color": ["#28a745", "#28a745"]}, "name": "Peak Acceleration"}], "layout": {"title": "Peak Acceleration by Window", "xaxis": {"title": "Window ID"}, "yaxis": {"title": "Acceleration (m/s\u00b2)"}, "shapes": [{"type": "line", "x0": -0.5, "x1": 1.5, "y0": 2.0, "y1": 2.0, "line": {"color": "#ffc107", "dash": "dash", "width": 2}}, {"type": "line", "x0": -0.5, "x1": 1.5, "y0": 5.0, "y1": 5.0, "line": {"color": "#dc3545", "dash": "dash", "width": 2}}], "annotations": [{"x": 1.2, "y": 2.0, "text": "IN_ODD (2.0)", "showarrow": false, "yshift": 10}, {"x": 1.2, "y": 5.0, "text": "OUT_ODD (5.0)", "showarrow": false, "yshift": 10}]}};
-    const riskData = {"data": [{"x": [0.9, 0.5], "y": [0.95, 0.95], "mode": "markers+text", "text": ["000", "001"], "textposition": "top center", "marker": {"size": 15, "color": ["#dc3545", "#dc3545"]}, "name": "Windows"}], "layout": {"title": "Risk Matrix: Collision vs Traversability", "xaxis": {"title": "Traversability Score", "range": [0, 1]}, "yaxis": {"title": "Collision Risk", "range": [0, 1]}, "shapes": [{"type": "rect", "x0": 0, "x1": 0.3, "y0": 0.5, "y1": 1, "fillcolor": "#dc3545", "opacity": 0.2, "line": {"width": 0}}]}};
+    const riskData = {"data": [{"x": [0.8, 0.5], "y": [0.95, 0.95], "mode": "markers+text", "text": ["000", "001"], "textposition": "top center", "marker": {"size": 15, "color": ["#dc3545", "#dc3545"]}, "name": "Windows"}], "layout": {"title": "Risk Matrix: Collision vs Traversability", "xaxis": {"title": "Traversability Score", "range": [0, 1]}, "yaxis": {"title": "Collision Risk", "range": [0, 1]}, "shapes": [{"type": "rect", "x0": 0, "x1": 0.3, "y0": 0.5, "y1": 1, "fillcolor": "#dc3545", "opacity": 0.2, "line": {"width": 0}}]}};
     const accelTimeseriesData = {"data": [{"x": [0.028338909149169922, 0.16748738288879395, 0.1680622100830078, 0.17957735061645508, 0.18748879432678223, 0.32683563232421875, 0.3269190788269043, 0.47698187828063965, 0.4772801399230957, 0.4896214008331299, 0.4897027015686035, 0.6323988437652588, 0.6450955867767334, 0.6451394557952881, 0.6451709270477295, 0.7756814956665039, 0.7859654426574707, 0.9129469394683838, 0.9229087829589844, 0.9287269115447998, 1.0615530014038086, 1.0617976188659668, 1.1982066631317139, 1.1982624530792236, 1.2067244052886963, 1.206803560256958, 1.3588383197784424, 1.3597385883331299, 1.3604621887207031, 1.5071089267730713, 1.5071756839752197, 1.640021562576294, 1.6400914192199707, 1.6401453018188477, 1.6401829719543457, 1.811577320098877, 1.811614751815796, 1.9459922313690186, 1.9516990184783936], "y": [0.4096983234149575, 0.3566151665727631, 0.33954701427131867, 0.0, 0.326351879282584, 0.4272222444654435, 0.33774566350380253, 0.3555205526006712, 0.0, 0.4275947288895429, 0.29951491401187047, 0.3582395966951941, 0.3438196541733374, 0.3143112894568327, 0.0, 0.37750521233744655, 0.3523665112237415, 0.36872682360791537, 0.0, 0.38505891922468977, 0.36538042696169093, 0.34924614311260155, 0.25532239952477065, 0.0, 0.3202551641235923, 0.29746253450651855, 0.24021493194418878, 0.3924905326500554, 0.3157919493744694, 0.3626885574519642, 0.33891705275823747, 0.325910767165961, 0.35992734509762025, 0.32251787041481167, 0.40606394031658655, 0.39828073486813276, 0.0, 0.0, 0.381550177241929], "type": "scatter", "mode": "lines", "name": "Window 000", "line": {"width": 2}}, {"x": [0.0004391670227050781, 0.1609494686126709, 0.16188645362854004, 0.3085947036743164, 0.3146083354949951, 0.3146700859069824, 0.44727110862731934, 0.44751596450805664, 0.6022274494171143, 0.6022694110870361, 0.6029617786407471, 0.6038997173309326, 0.7381148338317871, 0.7455823421478271, 0.7456662654876709, 0.7457144260406494, 0.8699741363525391, 0.87790846824646, 1.0076007843017578, 1.0300116539001465, 1.030182123184204, 1.1736652851104736, 1.1740314960479736, 1.3308179378509521, 1.331132411956787, 1.3448667526245117, 1.3449585437774658, 1.5016558170318604, 1.5018789768218994, 1.6393656730651855, 1.654783010482788, 1.6548349857330322, 1.7907249927520752, 1.805128574371338, 1.9351441860198975, 1.950822114944458], "y": [0.0, 0.3023148508129844, 0.0, 0.2937072685877548, 0.3504091208811006, 0.3142569981072035, 0.2969628730992023, 0.3918105821729032, 0.2956668802809081, 0.3836885932815489, 0.2801318346251474, 0.42940054550600243, 0.384470186197389, 0.26566426955876166, 0.3327526878338014, 0.0, 0.3234657602343034, 0.0, 0.2912329822501299, 0.4077261244654735, 0.2827311951379744, 0.3587891723601303, 0.3124250721645011, 0.3310796512519704, 0.0, 0.36074274596839695, 0.3902344487349387, 0.39730219578524434, 0.0, 0.3843601686292267, 0.3449147448688159, 0.34264068482569865, 0.2537657109937832, 0.299239588917351, 0.3610802717399793, 0.29426534739447374], "type": "scatter", "mode": "lines", "name": "Window 001", "line": {"width": 2}}], "layout": {"title": "Horizontal Acceleration Over Time", "xaxis": {"title": "Time (s)"}, "yaxis": {"title": "Acceleration (m/s\u00b2)"}, "hovermode": "x unified", "shapes": [{"type": "line", "x0": 0.028338909149169922, "x1": 1.950822114944458, "y0": 0.5, "y1": 0.5, "line": {"color": "#ffc107", "dash": "dash", "width": 1.5}}]}};
     const gyroTimeseriesData = {"data": [{"x": [0.028338909149169922, 0.16748738288879395, 0.1680622100830078, 0.17957735061645508, 0.18748879432678223, 0.32683563232421875, 0.3269190788269043, 0.47698187828063965, 0.4772801399230957, 0.4896214008331299, 0.4897027015686035, 0.6323988437652588, 0.6450955867767334, 0.6451394557952881, 0.6451709270477295, 0.7756814956665039, 0.7859654426574707, 0.9129469394683838, 0.9229087829589844, 0.9287269115447998, 1.0615530014038086, 1.0617976188659668, 1.1982066631317139, 1.1982624530792236, 1.2067244052886963, 1.206803560256958, 1.3588383197784424, 1.3597385883331299, 1.3604621887207031, 1.5071089267730713, 1.5071756839752197, 1.640021562576294, 1.6400914192199707, 1.6401453018188477, 1.6401829719543457, 1.811577320098877, 1.811614751815796, 1.9459922313690186, 1.9516990184783936], "y": [0.007457000203430653, 0.0010649999603629112, 0.011718000285327435, 0.0, 0.005326000042259693, 0.007457000203430653, 0.011718000285327435, 0.009587000124156475, 0.0, 0.0, 0.007457000203430653, 0.018108999356627464, 0.014914000406861305, 0.005326000042259693, 0.0, 0.002130999928340316, 0.008522000163793564, 0.008522000163793564, 0.0, 0.014914000406861305, 0.0, 0.008522000163793564, 0.010653000324964523, 0.0, 0.002130999928340316, 0.006391999777406454, 0.012783000245690346, 0.012783000245690346, 0.012783000245690346, 0.012783000245690346, 0.011718000285327435, 0.012783000245690346, 0.006391999777406454, 0.003195999888703227, 0.008522000163793564, 0.0, 0.0, 0.0, 0.008522000163793564], "type": "scatter", "mode": "lines", "name": "Window 000", "line": {"width": 2}}, {"x": [0.0004391670227050781, 0.1609494686126709, 0.16188645362854004, 0.3085947036743164, 0.3146083354949951, 0.3146700859069824, 0.44727110862731934, 0.44751596450805664, 0.6022274494171143, 0.6022694110870361, 0.6029617786407471, 0.6038997173309326, 0.7381148338317871, 0.7455823421478271, 0.7456662654876709, 0.7457144260406494, 0.8699741363525391, 0.87790846824646, 1.0076007843017578, 1.0300116539001465, 1.030182123184204, 1.1736652851104736, 1.1740314960479736, 1.3308179378509521, 1.331132411956787, 1.3448667526245117, 1.3449585437774658, 1.5016558170318604, 1.5018789768218994, 1.6393656730651855, 1.654783010482788, 1.6548349857330322, 1.7907249927520752, 1.805128574371338, 1.9351441860198975, 1.950822114944458], "y": [0.0, 0.006391999777406454, 0.0, 0.009587000124156475, 0.011718000285327435, 0.007457000203430653, 0.017044000327587128, 0.004261000081896782, 0.004261000081896782, 0.010653000324964523, 0.0, 0.017044000327587128, 0.004261000081896782, 0.008522000163793564, 0.005326000042259693, 0.0, 0.003195999888703227, 0.0, 0.004261000081896782, 0.009587000124156475, 0.007457000203430653, 0.011718000285327435, 0.008522000163793564, 0.009587000124156475, 0.0, 0.004261000081896782, 0.004261000081896782, 0.010653000324964523, 0.0, 0.017044000327587128, 0.0010649999603629112, 0.015978999435901642, 0.008522000163793564, 0.014914000406861305, 0.004261000081896782, 0.002130999928340316], "type": "scatter", "mode": "lines", "name": "Window 001", "line": {"width": 2}}], "layout": {"title": "Angular Velocity (Yaw) Over Time", "xaxis": {"title": "Time (s)"}, "yaxis": {"title": "Angular Velocity (rad/s)"}, "hovermode": "x unified", "shapes": [{"type": "line", "x0": 0.028338909149169922, "x1": 1.950822114944458, "y0": 0.1, "y1": 0.1, "line": {"color": "#ffc107", "dash": "dash", "width": 1.5}}]}};
     
