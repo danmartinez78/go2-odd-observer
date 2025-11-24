@@ -6,14 +6,24 @@
 
 ## Executive Summary
 
-This document evaluates four approaches for tracking pipeline metadata (agent versions, prompt hashes, ODD specs, execution stats) to enable reproducibility, debugging, and A/B testing. After analyzing ADK compatibility, implementation complexity, and robustness tradeoffs, **we recommend the Hybrid Approach (D)** combining prompt-based self-reporting with workflow-level validation and injection.
+This document evaluates **five approaches** for tracking pipeline metadata (agent versions, prompt hashes, ODD specs, execution stats) to enable reproducibility, debugging, and A/B testing. After analyzing ADK compatibility, implementation complexity, and robustness tradeoffs, **we recommend a two-tier strategy:**
 
-**Key Decision Factors:**
+1. **PRIMARY: Approach E (Callback-Based)** - If ADK callbacks are verified as available
+2. **FALLBACK: Approach D (Hybrid)** - If callbacks are unavailable or unstable
+
+**Approach E (Callback-Based) - Preferred if Available:**
+- ✅ **Official ADK API:** Uses documented callback system
+- ✅ **Simplest:** ~100 lines of code
+- ✅ **Automatic:** Tracks metadata, timing, and tokens without prompt changes
+- ✅ **Clean Separation:** Metadata logic completely separate from agents
+- ⚠️ **Requires Verification:** Must confirm callbacks work in current ADK version
+
+**Approach D (Hybrid) - Proven Fallback:**
 - ✅ **ADK Compatible:** No breaking changes to agent framework
-- ✅ **Zero Infrastructure:** Works with existing ADK SequentialAgent chains
-- ✅ **Simple Migration:** Add metadata instructions to agent prompts incrementally
+- ✅ **Proven:** Works with existing ADK SequentialAgent chains
+- ✅ **Self-Documenting:** Metadata visible in agent outputs
 - ✅ **Robust Fallback:** Workflow validates and supplements missing metadata
-- ✅ **Minimal Complexity:** ~150 lines of code, no wrappers/decorators
+- ✅ **Moderate Complexity:** ~230 lines of code, no fragile wrappers
 
 ---
 
@@ -520,6 +530,219 @@ def build_pipeline_metadata(
 
 ---
 
+### Approach E: Callback-Based (ADK Callbacks)
+
+**Description:** Use ADK's built-in callback system to automatically track metadata during agent execution.
+
+**Background:** ADK provides a callback API (https://google.github.io/adk-docs/callbacks/) that allows hooking into the agent execution lifecycle. This could provide an official, non-invasive way to track metadata.
+
+**Implementation:**
+```python
+from google.adk.callbacks import BaseCallback
+import time
+from datetime import datetime, timezone
+
+class OddMetadataCallback(BaseCallback):
+    """Callback to automatically track agent metadata and execution stats."""
+    
+    def __init__(self, agent_versions: dict, prompt_hashes: dict):
+        self.agent_versions = agent_versions
+        self.prompt_hashes = prompt_hashes
+        self.agent_metadata = {}
+        self.execution_stats = {}
+        self._start_times = {}
+    
+    def on_agent_start(self, agent_name: str, inputs: dict, **kwargs):
+        """Track when agent starts execution."""
+        self._start_times[agent_name] = time.time()
+        self.execution_stats[agent_name] = {
+            'start_time': datetime.now(timezone.utc).isoformat(),
+        }
+    
+    def on_agent_end(self, agent_name: str, outputs: dict, **kwargs):
+        """Track when agent completes and build metadata."""
+        # Calculate duration
+        if agent_name in self._start_times:
+            duration = time.time() - self._start_times[agent_name]
+            self.execution_stats[agent_name]['duration_seconds'] = round(duration, 2)
+        
+        # Build metadata from registry
+        self.agent_metadata[agent_name] = {
+            'agent_name': agent_name,
+            'version': self.agent_versions.get(agent_name, 'unknown'),
+            'prompt_hash': self.prompt_hashes.get(agent_name, ''),
+            'model': kwargs.get('model', 'unknown'),
+            'analysis_timestamp': datetime.now(timezone.utc).isoformat(),
+        }
+    
+    def on_llm_end(self, agent_name: str, response: dict, **kwargs):
+        """Track LLM token usage."""
+        if agent_name not in self.execution_stats:
+            return
+        
+        # Extract token counts from LLM response
+        usage = response.get('usage', {})
+        self.execution_stats[agent_name]['tokens'] = {
+            'prompt_tokens': usage.get('prompt_tokens', 0),
+            'completion_tokens': usage.get('completion_tokens', 0),
+            'total_tokens': usage.get('total_tokens', 0),
+        }
+    
+    def get_pipeline_metadata(self, pipeline_version: str, odd_spec_hash: str, scenario_info: dict) -> dict:
+        """Build complete pipeline metadata."""
+        return {
+            'pipeline_version': pipeline_version,
+            'analysis_timestamp': datetime.now(timezone.utc).isoformat(),
+            'odd_specification': {
+                'hash': odd_spec_hash,
+                'version': 'embedded',
+            },
+            'agent_executions': self.agent_metadata,
+            'execution_stats': self.execution_stats,
+            'scenario_info': scenario_info,
+        }
+
+# Usage in workflow
+async def run_odd_workflow(...):
+    # Create metadata callback
+    callback = OddMetadataCallback(
+        agent_versions=AGENT_VERSIONS,
+        prompt_hashes=PROMPT_HASHES,
+    )
+    
+    # Create workflow
+    odd_workflow = create_odd_workflow(...)
+    
+    # Run with callback registered
+    runner = InMemoryRunner(
+        agent=odd_workflow,
+        app_name="ODD",
+        callbacks=[callback]  # Register callback
+    )
+    events = await runner.run_debug(user_query)
+    
+    # Extract final report
+    result = extract_final_report(events)
+    
+    # Inject metadata from callback
+    result['pipeline_metadata'] = callback.get_pipeline_metadata(
+        pipeline_version=PIPELINE_VERSION,
+        odd_spec_hash=odd_spec_hash,
+        scenario_info={'scenario_id': scenario_name, ...}
+    )
+    
+    return result
+```
+
+**Example Output:**
+```json
+{
+  "report": { "executive_summary": "..." },
+  
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0-metadata-tracking",
+    "analysis_timestamp": "2025-11-24T17:30:00Z",
+    "agent_executions": {
+      "CodClassifierAgent": {
+        "agent_name": "CodClassifierAgent",
+        "version": "2.0.0",
+        "model": "gemini-2.0-flash-lite",
+        "prompt_hash": "d1f7c8a3",
+        "analysis_timestamp": "2025-11-24T17:29:45Z"
+      }
+    },
+    "execution_stats": {
+      "CodClassifierAgent": {
+        "start_time": "2025-11-24T17:29:42Z",
+        "duration_seconds": 3.2,
+        "tokens": {
+          "prompt_tokens": 1250,
+          "completion_tokens": 340,
+          "total_tokens": 1590
+        }
+      }
+    }
+  }
+}
+```
+
+#### Pros
+- ✅ **Official ADK API** - Uses framework-supported callbacks, not workarounds
+- ✅ **Non-invasive** - No changes to agent prompts or logic
+- ✅ **Automatic tracking** - Metadata collected without manual extraction
+- ✅ **Centralized** - All tracking logic in callback class
+- ✅ **Comprehensive** - Access to lifecycle events (start, end, error)
+- ✅ **Token usage** - Built-in access to LLM usage statistics
+- ✅ **Per-agent timing** - Automatic duration tracking
+- ✅ **Clean separation** - Metadata tracking separate from business logic
+- ✅ **No validation needed** - Registry is source of truth, no hallucinations
+
+#### Cons
+- ⚠️ **API availability** - Need to verify callbacks are fully implemented in ADK
+- ⚠️ **API stability** - Callback interface might change between ADK versions
+- ⚠️ **Less self-documenting** - Metadata not visible in agent outputs during debugging
+- ⚠️ **Documentation** - Callback API may be less documented than core features
+- ❌ **Requires verification** - Need to test if callbacks work with current ADK version
+
+#### ADK Compatibility
+⚠️ **NEEDS VERIFICATION** - Callbacks are documented but need to confirm:
+- Are callbacks fully implemented in the ADK version used?
+- Does `InMemoryRunner` support the `callbacks` parameter?
+- Are all lifecycle hooks (`on_agent_start`, `on_agent_end`, `on_llm_end`) available?
+- Is the callback API stable across ADK versions?
+
+#### Risk Assessment
+- **API availability risk:** MEDIUM - Need to verify callbacks are implemented
+- **API stability risk:** LOW-MEDIUM - ADK APIs generally stable but callbacks might evolve
+- **Debugging complexity:** LOW - Straightforward callback logic
+- **Maintenance risk:** LOW - If API is stable, minimal maintenance needed
+
+#### Comparison with Other Approaches
+
+**vs Prompt-Only (A):**
+- ✅ No hallucination risk
+- ✅ Guaranteed accuracy
+- ✅ No prompt pollution
+
+**vs Infrastructure/Wrapper (B):**
+- ✅ Uses official API instead of monkey-patching
+- ✅ More stable and maintainable
+- ✅ Supported by ADK team
+
+**vs Workflow-Level Only (C):**
+- ✅ Per-agent tracking automatically
+- ✅ Built-in timing and token stats
+- ✅ No manual event parsing
+
+**vs Hybrid (D):**
+- ✅ Simpler - no prompt modifications
+- ✅ More reliable - no validation needed
+- ✅ Automatic token tracking
+- ❌ Less self-documenting (metadata not in outputs)
+- ⚠️ Depends on callback API availability
+
+**Verdict:** ⚠️ **CONDITIONALLY RECOMMENDED** - If ADK callbacks are fully available and stable, this becomes the **best approach**. Otherwise, fall back to Hybrid (D).
+
+#### Verification Checklist
+
+Before adopting Approach E, verify:
+- [ ] ADK version supports callbacks
+- [ ] `BaseCallback` class is available in `google.adk.callbacks`
+- [ ] `InMemoryRunner` accepts `callbacks` parameter
+- [ ] Lifecycle hooks (`on_agent_start`, `on_agent_end`, `on_llm_end`) are functional
+- [ ] Token usage is accessible in `on_llm_end`
+- [ ] Callback API is documented and stable
+
+**Recommendation Logic:**
+```
+IF callbacks_verified AND callbacks_stable:
+    USE Approach E (Callback-Based)
+ELSE:
+    USE Approach D (Hybrid)
+```
+
+---
+
 ## 2. ADK Compatibility Research
 
 ### ADK Features Investigated
@@ -598,6 +821,50 @@ async def extract_agent_data(workflow, user_query):
 ```
 
 This pattern is used throughout ADK examples and is stable across versions.
+
+#### 2.5 ADK Callbacks System
+**Finding:** ⚠️ **Callbacks documented but availability needs verification**
+
+ADK documentation (https://google.github.io/adk-docs/callbacks/) describes a callback system for tracking agent execution lifecycle. Key features include:
+
+**Documented Capabilities:**
+- `BaseCallback` class for implementing custom callbacks
+- Lifecycle hooks: `on_agent_start`, `on_agent_end`, `on_agent_error`
+- Tool hooks: `on_tool_start`, `on_tool_end`, `on_tool_error`
+- LLM hooks: `on_llm_start`, `on_llm_end`, `on_llm_error`
+- Runner support: `callbacks` parameter in `InMemoryRunner`
+
+**Potential Use Cases:**
+- Automatic metadata tracking without prompt modifications
+- Per-agent timing and token usage statistics
+- Centralized telemetry collection
+- Error tracking and debugging
+
+**Verification Needed:**
+```python
+# Need to verify this works:
+from google.adk.callbacks import BaseCallback
+
+class MetadataCallback(BaseCallback):
+    def on_agent_end(self, agent_name: str, outputs: dict, **kwargs):
+        # Track metadata automatically
+        pass
+
+runner = InMemoryRunner(
+    agent=workflow,
+    app_name="ODD",
+    callbacks=[MetadataCallback()]  # Does this work?
+)
+```
+
+**Status:** 
+- ✅ **Documented:** Callback API is documented in ADK docs
+- ⚠️ **Not verified:** Need to test with actual ADK installation
+- ⚠️ **Stability unknown:** API maturity and version stability unclear
+
+**Impact on Recommendation:**
+- **If callbacks work:** Approach E (Callback-Based) becomes the best option
+- **If callbacks don't work:** Stick with Approach D (Hybrid)
 
 ### ADK Recommendations
 
@@ -1012,37 +1279,106 @@ async def run_odd_workflow(
 
 ## 4. Recommendation
 
-### Selected Approach: **D - Hybrid (Prompt + Validation)**
+### Primary Recommendation: **E - Callback-Based (If Available)**
 
-#### Justification
+#### Decision Tree
 
-**Best Balance of:**
-1. ✅ **Simplicity** - ~150 lines of code, no complex wrappers
-2. ✅ **Robustness** - Workflow validation ensures correctness
-3. ✅ **ADK Compatibility** - Zero breaking changes, uses event stream idiomatically
-4. ✅ **Debuggability** - Metadata visible in intermediate outputs
-5. ✅ **Gradual Adoption** - Can add prompt metadata incrementally
+```
+1. Can ADK callbacks be verified as working?
+   ├─ YES → Use Approach E (Callback-Based)
+   │         • Simplest and most robust
+   │         • Official ADK API
+   │         • Automatic tracking
+   │
+   └─ NO → Use Approach D (Hybrid)
+             • Proven to work
+             • Good balance of simplicity and robustness
+```
+
+#### Why Approach E (Callback-Based) is Preferred
+
+**If callbacks are available and stable:**
+
+1. ✅ **Official API** - Uses ADK's supported callback system
+2. ✅ **Simplest** - ~100 lines of code (vs ~230 for Hybrid)
+3. ✅ **Most robust** - No hallucination risk, no validation needed
+4. ✅ **Automatic** - Metadata tracked without prompt changes
+5. ✅ **Comprehensive** - Built-in token usage and timing
+6. ✅ **Clean** - Complete separation of metadata logic from agents
+
+**Advantages over Approach D:**
+- 50% less code (~100 vs ~230 lines)
+- No prompt modifications needed
+- Automatic token usage tracking
+- No validation logic required
+- Cleaner separation of concerns
+
+**Requirements:**
+- ADK version must support callbacks
+- `google.adk.callbacks.BaseCallback` must be available
+- `InMemoryRunner` must accept `callbacks` parameter
+- Lifecycle hooks must be functional
+
+#### Fallback: Approach D (Hybrid)
+
+**If callbacks are not available or unstable:**
+
+Use Approach D (Hybrid - Prompt + Validation) as documented in Section 1.
+
+**Justification:**
+1. ✅ **Proven** - Works with current ADK patterns
+2. ✅ **No dependencies** - Uses event stream (stable API)
+3. ✅ **Self-documenting** - Metadata visible in outputs
+4. ✅ **Robust** - Validation ensures correctness
+5. ✅ **Gradual adoption** - Can add incrementally
 
 **Why Not Others:**
 - **Approach A (Prompt-Only):** Too unreliable, no enforcement
-- **Approach B (Infrastructure/Wrapper):** ADK doesn't support execution hooks, would require fragile monkey-patching
-- **Approach C (Workflow-Only):** Works but lacks per-agent attribution and debugging visibility
+- **Approach B (Infrastructure/Wrapper):** ADK doesn't support execution hooks, requires fragile monkey-patching
+- **Approach C (Workflow-Only):** Works but lacks per-agent attribution
 
-### Implementation Complexity
+### Implementation Complexity Comparison
 
-**Code Volume:**
-- New file: `odd_agents/metadata.py` (~150 lines)
-- Modifications: `odd_agents/workflow.py` (~30 lines added)
-- Agent prompt updates: ~5 lines per agent × 10 agents = ~50 lines
+| Approach | Code Lines | Complexity | Token Tracking | Timing |
+|----------|-----------|------------|----------------|--------|
+| **E (Callbacks)** | ~100 | VERY LOW | ✅ Built-in | ✅ Built-in |
+| **D (Hybrid)** | ~230 | LOW | ⚠️ Manual | ⚠️ Manual |
+| C (Workflow-Only) | ~50 | VERY LOW | ❌ | ⚠️ Total only |
+| A (Prompt-Only) | ~20 | VERY LOW | ❌ | ❌ |
+| B (Infrastructure) | ~300+ | HIGH | ⚠️ Possible | ⚠️ Possible |
 
-**Total:** ~230 lines of code
+### Implementation Plan
 
-**Complexity Rating:** LOW
-- No decorators, no monkey-patching, no subclassing
-- Straightforward validation logic
-- Uses existing ADK patterns (event stream extraction)
+#### Phase 1: Verification (1 day)
+1. Check ADK version and callback availability
+2. Test callback implementation with single agent
+3. Verify lifecycle hooks work as expected
+4. Verify token usage is accessible
+
+#### Phase 2A: If Callbacks Work (2-3 days)
+1. Implement `OddMetadataCallback` class
+2. Integrate with workflow runner
+3. Test on complete pipeline
+4. Add metadata to HTML reports
+
+#### Phase 2B: If Callbacks Don't Work (4-6 days)
+1. Implement `odd_agents/metadata.py` utilities
+2. Modify `odd_agents/workflow.py` 
+3. Add metadata self-reporting to agent prompts
+4. Test validation logic
+5. Add metadata to HTML reports
 
 ### Risks and Mitigation
+
+#### Approach E (Callbacks)
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Callbacks not available in ADK version | HIGH | Verify first, fall back to Approach D |
+| Callback API unstable/changes | MEDIUM | Pin ADK version, add integration tests |
+| Incomplete lifecycle hooks | MEDIUM | Test all hooks, fall back to Approach D if missing |
+
+#### Approach D (Hybrid - Fallback)
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
@@ -1056,17 +1392,30 @@ async def run_odd_workflow(
 **Must Have:**
 - ✅ Every analysis output contains `pipeline_metadata`
 - ✅ `agent_executions` includes all 10 agents with version, model, hash
-- ✅ Validation detects and logs version mismatches
 - ✅ Metadata persists through HTML report generation
 
-**Nice to Have:**
-- ✅ Per-agent timing (requires ADK event timestamps - future enhancement)
-- ✅ Token usage tracking (requires ADK instrumentation - future enhancement)
-- ✅ Automated version bump on agent changes (CI/CD hook - future enhancement)
+**Approach-Specific:**
+
+*For Approach E (Callbacks):*
+- ✅ Per-agent timing automatically tracked
+- ✅ Token usage automatically tracked
+- ✅ No validation mismatches (no hallucinations possible)
+
+*For Approach D (Hybrid):*
+- ✅ Validation detects and logs version mismatches
+- ⚠️ Per-agent timing (manual implementation)
+- ⚠️ Token usage tracking (future enhancement)
 
 ### Future Enhancements
 
 **Phase 2 (After Initial Implementation):**
+
+*If using Approach E (Callbacks):*
+1. **Enhanced Callbacks** - Add error tracking, retries monitoring
+2. **Metadata Visualization** - Dashboard showing metadata trends
+3. **Callback Chaining** - Multiple callbacks for different purposes
+
+*If using Approach D (Hybrid):*
 1. **Token Usage Tracking** - Instrument ADK to capture per-agent token counts
 2. **Per-Agent Timing** - Extract timestamps from ADK events
 3. **Automated Version Management** - Git pre-commit hook to validate version bumps
@@ -1078,30 +1427,46 @@ async def run_odd_workflow(
 
 ### Relevant ADK Docs
 - [ADK Agents](https://google.github.io/adk-docs/agents/) - Agent creation patterns
+- [ADK Callbacks](https://google.github.io/adk-docs/callbacks/) - Callback system for lifecycle hooks
 - [ADK Evaluation](https://google.github.io/adk-docs/evaluate/) - Evaluation framework
 - [SequentialAgent](https://google.github.io/adk-docs/agents/#sequential-agent) - Workflow orchestration
 - [InMemoryRunner](https://google.github.io/adk-docs/runners/) - Event stream extraction
 
 ### Key ADK Findings
 1. **No built-in metadata tracking** - Must implement custom solution
-2. **No execution hooks** - Event stream is only access point for intermediate data
-3. **Event stream is stable** - Recommended pattern for extracting agent outputs
+2. **Callbacks documented** - But availability needs verification in current ADK version
+3. **Event stream is stable** - Fallback pattern for extracting agent outputs
 4. **SequentialAgent is composable** - No restrictions on sub-agent design
+5. **Callback API potential** - If available, provides cleanest metadata solution
 
 ---
 
 ## Conclusion
 
-The **Hybrid Approach (D)** provides the optimal solution for pipeline metadata tracking:
-- Respects ADK's architecture (no monkey-patching or workarounds)
-- Provides robustness through validation fallback
-- Enables debugging with visible metadata in agent outputs
-- Remains simple and maintainable (~150 lines of code)
-- Supports incremental adoption
+**Two-Tier Recommendation:**
+
+1. **FIRST CHOICE: Approach E (Callback-Based)** - If ADK callbacks are available
+   - Official ADK API (not a workaround)
+   - Simplest implementation (~100 lines)
+   - Automatic tracking of metadata, timing, and tokens
+   - Clean separation of concerns
+   - **Requires verification** that callbacks work in current ADK version
+
+2. **FALLBACK: Approach D (Hybrid)** - If callbacks unavailable or unstable
+   - Proven to work with current ADK patterns
+   - Robust validation fallback
+   - Self-documenting metadata in outputs
+   - Moderate complexity (~230 lines)
+   - No dependency on unverified ADK features
 
 **Next Steps:**
-1. Review and approve this design
-2. Implement `odd_agents/metadata.py`
+1. **VERIFY** ADK callbacks availability and stability
+   - Test `google.adk.callbacks.BaseCallback`
+   - Test `InMemoryRunner(callbacks=[...])`
+   - Test lifecycle hooks functionality
+2. **CHOOSE** implementation approach based on verification results
+3. Review and approve this design
+4. Implement chosen approach (`odd_agents/metadata.py`)
 3. Update `odd_agents/workflow.py` with metadata injection
 4. Incrementally add metadata self-reporting to agent prompts
 5. Update HTML reports to display metadata
