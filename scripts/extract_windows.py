@@ -565,25 +565,6 @@ class WindowExtractor:
 
         points = np.array(points, dtype=np.float64)
 
-        # Transform points from odom to base_link if robot pose is provided
-        if robot_pose is not None:
-            # Vectorized transformation for efficiency
-            # Translation
-            points = points - \
-                np.array([robot_pose['x'], robot_pose['y'], robot_pose['z']])
-
-            # Rotation around z-axis (inverse transform)
-            yaw = -robot_pose['yaw']
-            cos_yaw = np.cos(yaw)
-            sin_yaw = np.sin(yaw)
-
-            # Apply 2D rotation in XY plane
-            x_new = cos_yaw * points[:, 0] - sin_yaw * points[:, 1]
-            y_new = sin_yaw * points[:, 0] + cos_yaw * points[:, 1]
-            points[:, 0] = x_new
-            points[:, 1] = y_new
-            # z remains unchanged: points[:, 2] = points[:, 2]
-
         # Create accumulator grids for feature calculation
         occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
         height_grid = np.full((bev_size, bev_size), np.nan, dtype=np.float32)
@@ -593,14 +574,12 @@ class WindowExtractor:
         height_min = np.full((bev_size, bev_size), np.inf, dtype=np.float32)
         height_max = np.full((bev_size, bev_size), -np.inf, dtype=np.float32)
 
-        # Project points to BEV and accumulate statistics
+        # Project points to BEV and accumulate statistics (in odom frame)
         for point in points:
             x, y, z = point
 
             # Convert to pixel coordinates (x forward, y left)
-            # Robot is at center (bev_size/2, bev_size/2)
-            # x-axis (forward) maps to vertical (rows), y-axis (left) maps to horizontal (cols)
-            # Use round instead of int for better accuracy
+            # Origin at center of image for odom frame
             pixel_x = int(np.round((x / meters_per_pixel) + bev_size / 2))
             pixel_y = int(np.round((y / meters_per_pixel) + bev_size / 2))
 
@@ -647,6 +626,42 @@ class WindowExtractor:
         std_dev = np.sqrt(variance)
         # Normalize: 0.5m std = 255 (very rough)
         roughness_img = np.clip(std_dev * 510, 0, 255).astype(np.uint8)
+
+        # If robot pose is provided, transform the BEV images to center the robot
+        if robot_pose is not None:
+            # Calculate robot position in pixel coordinates (in odom frame)
+            robot_pixel_x = robot_pose['x'] / meters_per_pixel + bev_size / 2
+            robot_pixel_y = robot_pose['y'] / meters_per_pixel + bev_size / 2
+            
+            # Create rotation matrix around robot position
+            # Negative yaw because we want to rotate the world, not the robot
+            rotation_matrix = cv2.getRotationMatrix2D(
+                (robot_pixel_y, robot_pixel_x),  # Center of rotation (col, row)
+                np.degrees(-robot_pose['yaw']),   # Angle in degrees
+                1.0                                # Scale
+            )
+            
+            # Add translation to move robot to center of image
+            rotation_matrix[0, 2] += (bev_size / 2 - robot_pixel_y)
+            rotation_matrix[1, 2] += (bev_size / 2 - robot_pixel_x)
+            
+            # Apply transformation to all BEV images
+            occupancy_grid = cv2.warpAffine(
+                occupancy_grid, rotation_matrix, (bev_size, bev_size),
+                flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+            )
+            height_img = cv2.warpAffine(
+                height_img, rotation_matrix, (bev_size, bev_size),
+                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+            )
+            density_img = cv2.warpAffine(
+                density_img, rotation_matrix, (bev_size, bev_size),
+                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+            )
+            roughness_img = cv2.warpAffine(
+                roughness_img, rotation_matrix, (bev_size, bev_size),
+                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+            )
 
         # Apply slight blur to make features more visible
         occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
