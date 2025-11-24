@@ -122,7 +122,9 @@ def auto_crop_bev(bev_image: np.ndarray, margin_percent: float = 0.1) -> np.ndar
     Note:
         Typically reduces 400x400 BEV to ~150-250px square.
     """
-    if bev_image is None or bev_image.size == 0:
+    if bev_image is None:
+        return bev_image
+    if bev_image.size == 0 or bev_image.shape[0] == 0 or bev_image.shape[1] == 0:
         return bev_image
 
     # Convert to grayscale for background detection
@@ -206,8 +208,10 @@ def auto_crop_bev(bev_image: np.ndarray, margin_percent: float = 0.1) -> np.ndar
     # Extract cropped region
     cropped = bev_image[crop_y0:crop_y1, crop_x0:crop_x1]
 
-    # Edge case: don't return if cropping would increase size (shouldn't happen)
-    if cropped.size >= bev_image.size:
+    # Safety check: return original if cropped area is not smaller
+    cropped_area = cropped.shape[0] * cropped.shape[1]
+    original_area = img_height * img_width
+    if cropped_area >= original_area:
         return bev_image
 
     return cropped
