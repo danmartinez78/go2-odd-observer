@@ -847,14 +847,66 @@ Document findings:
 
 ---
 
-### Phase 1: Architecture Refactor
-**Goal:** Get the new architecture working, validate with manual testing on small datasets
+## Phase 1: Architecture Refactor + Critical Data Fixes
 
-**Rationale:** Current architecture is fundamentally flawed (averaging destroys violations). Need working pipeline before systematic measurement. Manual testing on 3-5 diverse scenarios validates macro-level correctness.
+**Goal:** Fix fundamental design flaws, critical data gaps, and validate new approach
+
+**Rationale:** Current architecture is fundamentally flawed (averaging destroys violations, missing terrain data). Need working pipeline with complete data before systematic measurement. Manual testing on 3-5 diverse scenarios validates macro-level correctness.
 
 **Tasks:**
 
-#### 1.1 Collision Agent Rework
+### 1.1 BEV Data Enhancement (CRITICAL - Do First!)
+**Current Issue:** Agents only receive `bev_occupancy`, missing height/density/roughness needed for terrain analysis
+
+**Solution Part A - Add Missing BEV Channels:**
+- Perception tool: Load all 4 BEV channels (occupancy, height, density, roughness)
+- Collision tool: Load all 4 BEV channels
+- Update prompts to explain each channel:
+  - Occupancy: Binary obstacle map
+  - Height: Elevation data (critical for terrain roughness!)
+  - Density: Point cloud density (sensor quality indicator)
+  - Roughness: Terrain surface variation (directly computed metric)
+
+**Solution Part B - Auto-Crop BEVs:**
+**Issue:** BEVs are 50-75% empty black borders (wasted tokens)
+**Why Now:** Adding 4 BEVs without cropping = 4x token usage!
+
+```python
+def auto_crop_bev(bev_image):
+    """Crop to occupied region + 10% margin."""
+    occupied = np.where(bev_image != background_color)
+    if len(occupied[0]) == 0:
+        return bev_image  # Empty BEV, keep as-is
+    
+    min_x, max_x = occupied[1].min(), occupied[1].max()
+    min_y, max_y = occupied[0].min(), occupied[0].max()
+    
+    # Add 10% margin
+    margin = 0.1
+    height, width = bev_image.shape[:2]
+    margin_x = int((max_x - min_x) * margin)
+    margin_y = int((max_y - min_y) * margin)
+    
+    crop = bev_image[
+        max(0, min_y - margin_y):min(height, max_y + margin_y),
+        max(0, min_x - margin_x):min(width, max_x + margin_x)
+    ]
+    return crop
+```
+
+**Expected Impact:**
+- 50-75% BEV size reduction per image
+- 4 cropped BEVs ≈ same total size as current 1 uncropped BEV
+- Agents can now accurately assess terrain roughness
+
+**Deliverables:**
+- Update `odd_agents/tools/perception.py` to load 4 BEVs
+- Update `odd_agents/tools/collision.py` to load 4 BEVs
+- Add `auto_crop_bev()` to BEV rendering pipeline
+- Reprocess all windows with 4 cropped BEVs
+- Update prompts with BEV channel explanations
+
+### 1.2 Collision Agent Rework
 - Remove collision risk scoring logic entirely
 - Implement binary collision detection:
   - IMU spike detection (threshold: >10 m/s² acceleration)
@@ -863,7 +915,7 @@ Document findings:
 - Update output schema (collisions_detected list, no risk scores)
 - **Manual test:** Run on 2-3 scenarios, verify no false positive risk alerts
 
-#### 1.2 COD Agent Redesign
+### 1.3 COD Agent Redesign
 - Implement per-window ODD compliance checking
   - Compare each window's conditions against ODD thresholds
   - Output IN_ODD / BOUNDARY / OUT_ODD per window
@@ -878,7 +930,7 @@ Document findings:
   - COD region captures all observations
   - Overlap analysis identifies violations correctly
 
-#### 1.3 Evaluator Agent Creation
+### 1.4 Evaluator Agent Creation
 - Rename Compliance → Evaluator agent
 - Implement severity calculation from window distribution
   - Formula: `(out_odd × 2.0 + boundary × 0.5) / total × 10`
@@ -895,12 +947,43 @@ Document findings:
   - Isolated violation (expect LOW severity, specific flag)
   - Frequent violations (expect HIGH severity, multiple flags)
 
-#### 1.4 Manual Validation Suite
+### 1.5 Manual Validation Suite
 Select 3-5 representative scenarios:
 1. **Fully compliant**: All windows IN_ODD, expect severity=MINIMAL
 2. **Boundary case**: 9 IN_ODD + 1 BOUNDARY, expect severity=MINIMAL, investigation flag
 3. **Isolated violation**: 9 IN_ODD + 1 OUT_ODD, expect severity=LOW, specific violation flag
 4. **Mixed violations**: 7 IN_ODD + 2 BOUNDARY + 1 OUT_ODD, expect severity=MEDIUM
+5. **Frequent violations**: 4 OUT_ODD + 6 IN_ODD, expect severity=HIGH
+
+**Success Criteria:**
+- ✅ Agents receive all 4 BEV channels (verified in tool inputs)
+- ✅ BEVs are auto-cropped (50-75% size reduction measured)
+- ✅ Agents can accurately classify terrain roughness (manual spot-check)
+- ✅ COD regions preserve all per-window observations
+- ✅ Severity scores differentiate isolated vs frequent violations
+- ✅ Collision detection has high precision (no false positives)
+- ✅ Evaluator provides actionable nuanced assessment
+- ✅ Manual review of 3-5 scenarios confirms correctness
+
+**Deliverables:**
+- Auto-crop BEV implementation in rendering pipeline
+- All windows reprocessed with 4 cropped BEVs
+- Updated perception.py and collision.py tools (4 BEV loading)
+- Refactored COD agent with region-based logic
+- New Evaluator agent implementation
+- Updated Collision agent (binary detection)
+- Test results on validation scenarios
+- Updated agent prompts and tool definitions
+
+---
+
+## Phase 2: Performance Optimization & Data Enhancement
+
+**Goal:** Improve efficiency and add visual/LiDAR odometry for richer motion analysis
+
+**Tasks:**
+
+### 2.1 Tool Splitting by Data Type
 5. **Frequent violations**: 5 IN_ODD + 5 OUT_ODD, expect severity=HIGH/CRITICAL
 
 For each scenario, manually verify:
@@ -923,34 +1006,12 @@ For each scenario, manually verify:
 - Manual validation results documented
 - List of edge cases discovered during testing
 
-### Phase 2: Performance Optimization (Quick Wins)
-**Goal:** Improve pipeline efficiency with high-impact, low-effort changes
+### Phase 2: Performance Optimization & Data Enhancement
+**Goal:** Improve efficiency and add visual/LiDAR odometry for richer motion analysis
 
 **Tasks:**
 
-#### 2.1 BEV Auto-Cropping
-**Issue:** BEV images are typically 50-75% empty space (black borders)
-
-**Solution:**
-```python
-def auto_crop_bev(bev_image):
-    # Find occupied pixels (non-background)
-    occupied = np.where(bev_image != background_color)
-    min_x, max_x = occupied[1].min(), occupied[1].max()
-    min_y, max_y = occupied[0].min(), occupied[0].max()
-    
-    # Add 10% margin
-    margin = 0.1
-    crop = bev_image[
-        int(min_y * (1-margin)):int(max_y * (1+margin)),
-        int(min_x * (1-margin)):int(max_x * (1+margin))
-    ]
-    return crop
-```
-
-**Expected gain:** 50-75% BEV file size reduction
-
-#### 2.2 Tool Splitting by Data Type
+#### 2.1 Tool Splitting by Data Type
 **Issue:** Motion agent receives BEV data it never uses
 
 **Solution:** Split tools by required data:
@@ -960,7 +1021,7 @@ def auto_crop_bev(bev_image):
 
 **Expected gain:** 30-40% token reduction, faster execution
 
-#### 2.3 Image Encoding Optimization
+#### 2.2 Image Encoding Optimization
 **Current:** PNG base64 for all images
 
 **Solution:**
@@ -969,15 +1030,85 @@ def auto_crop_bev(bev_image):
 
 **Expected gain:** 40-60% size reduction for camera images
 
+#### 2.3 Visual & LiDAR Odometry Integration (NEW!)
+**Goal:** Add reliable motion estimates from high-rate sensor data
+
+**Background:** Phase 0 findings showed no velocity data available:
+- `/odom` twist = [0, 0, 0] (not populated)
+- `/go2_states` not available on real robot
+- Only option: Compute odometry from visual/LiDAR sensors
+
+**Approach:**
+1. Create standalone odometry functions:
+   - `scripts/compute_visual_odometry.py` - Feature tracking (ORB/SIFT) between camera frames
+   - `scripts/compute_lidar_odometry.py` - ICP alignment between point cloud scans
+2. Validate accuracy on test scenarios (visual vs LiDAR agreement)
+3. Add to window preprocessing - enrich motion JSON with odometry data
+4. Update motion tool to use odometry (additive - preserves existing IMU arrays)
+
+**Data Schema Addition (Additive - No Breaking Changes):**
+```json
+{
+  "motion": {
+    // Existing fields preserved
+    "accel_x": [...], "gyro_x": [...], "timestamps": [...],
+    
+    // NEW: Precomputed odometry
+    "visual_odometry": {
+      "distance_traveled": 2.3,
+      "avg_velocity": 0.46,
+      "max_velocity": 0.62,
+      "trajectory_points": [[0,0], [0.5,0.1], [1.0,0.2], ...],
+      "confidence": 0.85,
+      "method": "ORB_feature_tracking"
+    },
+    "lidar_odometry": {
+      "distance_traveled": 2.4,
+      "avg_velocity": 0.48,
+      "max_velocity": 0.61,
+      "trajectory_points": [[0,0], [0.5,0.15], [1.1,0.25], ...],
+      "confidence": 0.92,
+      "method": "ICP_alignment"
+    },
+    "odometry_agreement": {
+      "distance_diff_meters": 0.1,
+      "agreement_level": "high",  // high/medium/low
+      "recommended_source": "lidar"
+    }
+  }
+}
+```
+
+**Dependencies:**
+- OpenCV for visual odometry (add to requirements.txt)
+- Open3D for LiDAR ICP (add to requirements.txt)
+
+**Validation Criteria:**
+- Visual and LiDAR odometry agree within 10% on test scenarios
+- Documented drift characteristics over time
+- Confidence scoring based on feature quality / ICP convergence
+
+**Expected Impact:**
+- Motion agent can now estimate velocity (differentiate stationary vs moving)
+- Cross-validation between visual/LiDAR increases confidence
+- Odometry discrepancies flag potential sensor issues
+
 **Success Criteria:**
-- ✅ 30-50% overall token reduction
+- ✅ 30-50% overall token reduction (from other Phase 2 items)
 - ✅ Faster execution times (measure on 10-scenario batch)
 - ✅ Same accuracy as Phase 1 (no quality degradation)
+- ✅ Visual/LiDAR odometry implemented and validated
+- ✅ Motion data enriched with odometry (all windows reprocessed)
+- ✅ Agents can now estimate velocity and detect motion
 
 **Deliverables:**
-- BEV cropping implementation
 - Tool refactoring (split by data type)
 - Image encoding updates
+- Visual odometry implementation (`compute_visual_odometry.py`)
+- LiDAR odometry implementation (`compute_lidar_odometry.py`)
+- Odometry validation report
+- Window enrichment script (add odometry to motion JSON)
+- Updated motion tool prompts (explain odometry usage)
 - Performance benchmark comparison (before/after)
 
 ### Phase 3: Evaluation Framework (Systematic Refinement)
