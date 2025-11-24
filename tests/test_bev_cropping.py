@@ -20,6 +20,13 @@ auto_crop_bev = utils.auto_crop_bev
 
 FIXTURES = Path(__file__).parent / "fixtures" / "bev_samples"
 
+# Verify fixtures exist
+if not FIXTURES.exists():
+    raise FileNotFoundError(
+        f"Test fixtures directory not found at {FIXTURES}. "
+        "Please ensure BEV sample images are available in tests/fixtures/bev_samples/"
+    )
+
 
 def test_crop_reduces_size():
     """Cropped BEV should be smaller than original."""
