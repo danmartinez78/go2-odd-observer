@@ -18,37 +18,37 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for complet
 
 ---
 
-## Phase 0: Data Source Discovery ⏳ IN PROGRESS
+## Phase 0: Data Source Discovery ✅ COMPLETED
 
 **Goal:** Identify all available sensor data in bagfiles, find integration opportunities
 
-**Status:** Quick investigation phase (2-4 hours)
+**Status:** Complete - Critical findings documented
 
-- [ ] Create bagfile topic audit script
-  - Systematically inspect all topics in representative bagfiles
-  - Check message rates, data validity, coverage
-  - Identify populated vs empty topics
-- [ ] Run audit on 2-3 representative scenarios
-  - Real robot bagfiles (production data)
-  - Different environment types
-- [ ] Document findings
-  - Available topics inventory (CSV/JSON)
-  - Data quality assessment (rates, validity, coverage)
-  - Utility ratings for each topic
-- [ ] Identify integration opportunities
-  - `/joint_states` - Gait analysis for terrain classification?
-  - `/cmd_vel` - Commanded vs actual motion comparison?
-  - `/contact_states` or foot sensors - Collision detection?
-  - Motor currents - High-resistance situations (collisions, difficult terrain)?
-- [ ] Update sensor documentation
-  - Add "Available Sensors" section to architecture docs
-  - Update `DATA_NAMING_CONVENTION.md` with all available topics
-  - Flag missing sensors valuable for future hardware
+- [x] Create bagfile topic audit script ✅
+  - `data/development/bagfile_audit/dump_topic_samples.py` - Extract message samples
+  - `data/development/bagfile_audit/sample_throughout_bag.py` - Check values across entire bag
+- [x] Run audit on 2-3 representative scenarios ✅
+  - Real: `collection_20251122_173442` (60s, 1117 messages)
+  - Sim: `sim_run_new_01` (60s, full topic coverage)
+- [x] Document findings ✅
+  - `data/development/bagfile_audit/PHASE0_FINDINGS.md` (225 lines)
+  - `data/development/bagfile_audit/bagfile_audit_results.json` (structured metadata)
+  - Sample data: `real_01_samples/` (7 topics × 3 samples), `sim_01_samples/` (11 topics × 3 samples)
+- [x] Identify integration opportunities ✅
+  - **CRITICAL DISCOVERY**: No velocity data available (must compute from sensors)
+  - `/odom`: Position populated, velocity = [0,0,0] always
+  - `/go2_states`: Only in sim, not on real robot
+  - IMU: Primary reliable sensor (19 Hz real, 12 Hz sim)
+  - Joint states: 0.92 Hz on real (too slow), no velocities
+- [x] Update sensor documentation ✅
+  - Findings documented in `PHASE0_FINDINGS.md`
+  - Phase 2 plan updated with visual/LiDAR odometry requirement
 
-**Deliverables:**
-- Topic audit report with findings
-- Integration recommendations (prioritized)
-- Updated sensor documentation
+**Key Findings:**
+- **No velocity data from robot** - Must compute visual/LiDAR odometry (Phase 2)
+- Real vs sim IMU differences (custom msg type vs standard)
+- Joint states too slow for motion analysis
+- Camera + LiDAR must be primary motion sources
 
 See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#phase-0-data-source-discovery-quick-investigation)
 
@@ -58,9 +58,30 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 **Goal:** Get the new architecture working, validate with manual testing
 
-**Status:** Awaiting Phase 0 completion
+**Status:** Ready to begin
 
-### 1.1 Collision Agent Rework
+### 1.1 BEV Data Enhancement ✅ COMPLETED
+- [x] Implement `auto_crop_bev()` function ✅
+  - Location: `odd_agents/utils.py`
+  - Removes 50-75% empty borders
+  - Maintains square aspect ratio
+  - Handles edge cases (empty, full, single-pixel)
+- [x] Create comprehensive test suite ✅
+  - 12 tests in `tests/test_bev_cropping.py`
+  - All tests passing
+  - Coverage: size reduction, content preservation, edge cases
+- [x] Create integration documentation ✅
+  - `docs/BEV_CROP_INTEGRATION.md`
+  - Three integration options (postprocessing, generation, on-the-fly)
+  - Performance impact estimates
+
+**Next Steps for 1.1:**
+- [ ] Add all 4 BEV channels to perception tool (height, density, roughness)
+- [ ] Add all 4 BEV channels to collision tool
+- [ ] Integrate auto-crop into BEV rendering pipeline
+- [ ] Update prompts to explain each BEV channel
+
+### 1.2 Collision Agent Rework
 - [ ] Remove collision risk scoring logic entirely
 - [ ] Implement binary collision detection
   - IMU spike detection (threshold: >10 m/s² acceleration)
@@ -69,7 +90,7 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [ ] Update output schema (collisions_detected list, no risk scores)
 - [ ] Manual test on 2-3 scenarios
 
-### 1.2 COD Agent Redesign
+### 1.3 COD Agent Redesign
 - [ ] Implement per-window ODD compliance checking
   - Compare each window against ODD thresholds
   - Output IN_ODD / BOUNDARY / OUT_ODD per window
@@ -81,7 +102,7 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
   - Detect numeric overlap with OUT_ODD ranges
 - [ ] Manual test: verify no averaging, all violations preserved
 
-### 1.3 Evaluator Agent Creation
+### 1.4 Evaluator Agent Creation
 - [ ] Rename Compliance → Evaluator agent
 - [ ] Implement severity calculation from window distribution
   - Formula: `(out_odd × 2.0 + boundary × 0.5) / total × 10`
@@ -94,7 +115,7 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [ ] Generate investigation flags (specific, actionable)
 - [ ] Generate executive summary
 
-### 1.4 Manual Validation Suite
+### 1.5 Manual Validation Suite
 - [ ] Select 3-5 representative scenarios
   - Fully compliant
   - Boundary case
@@ -107,6 +128,8 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [ ] Verify no violations averaged away
 
 **Success Criteria:**
+- ✅ Auto-crop function implemented and tested (50-75% size reduction)
+- ✅ Agents receive all 4 BEV channels (height, density, roughness, occupancy)
 - ✅ New pipeline runs end-to-end without errors
 - ✅ COD regions capture all observations (no fictional averaged points)
 - ✅ Severity scores differentiate scenarios appropriately
@@ -118,29 +141,55 @@ See [Phase 1 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 ## Phase 2: Performance Optimization 🔧 PLANNED
 
-**Goal:** Improve pipeline efficiency with high-impact, low-effort changes
+**Goal:** Improve pipeline efficiency and add visual/LiDAR odometry
 
 **Status:** After Phase 1 validation
 
-### 2.1 BEV Auto-Cropping
-- [ ] Implement auto-crop for BEV images (remove empty borders)
-- [ ] Expected gain: 50-75% BEV file size reduction
-
-### 2.2 Tool Splitting by Data Type
+### 2.1 Tool Splitting by Data Type
 - [ ] Split tools by required data
   - `camera_image_tool` → Perception Image Agent only
   - `bev_occupancy_tool` → Perception BEV Agent only
   - `imu_data_tool` → Motion agents only
 - [ ] Expected gain: 30-40% token reduction
 
-### 2.3 Image Encoding Optimization
+### 2.2 Image Encoding Optimization
 - [ ] Camera images: JPEG at quality 85-90
 - [ ] BEV images: Keep PNG (sharp geometric features)
 - [ ] Expected gain: 40-60% size reduction for camera images
 
+### 2.3 Visual & LiDAR Odometry Integration (NEW!)
+**Goal:** Add reliable motion estimates from high-rate sensor data
+
+**Background:** Phase 0 findings showed no velocity data available:
+- `/odom` twist = [0, 0, 0] (not populated)
+- `/go2_states` not available on real robot
+- Only option: Compute odometry from visual/LiDAR sensors
+
+**Approach:**
+1. Create standalone odometry functions:
+   - `scripts/compute_visual_odometry.py` - Feature tracking (ORB/SIFT) between camera frames
+   - `scripts/compute_lidar_odometry.py` - ICP alignment between point cloud scans
+2. Validate accuracy on test scenarios (visual vs LiDAR agreement)
+3. Add to window preprocessing - enrich motion JSON with odometry data
+4. Update motion tool to use odometry (additive - preserves existing IMU arrays)
+
+**Dependencies:**
+- OpenCV for visual odometry (add to requirements.txt)
+- Open3D for LiDAR ICP (add to requirements.txt)
+
+**Validation Criteria:**
+- Visual and LiDAR odometry agree within 10% on test scenarios
+- Documented drift characteristics over time
+- Confidence scoring based on feature quality / ICP convergence
+
+**Expected Impact:**
+- Motion agent can now estimate velocity (differentiate stationary vs moving)
+- Cross-validation between visual/LiDAR increases confidence
+- Odometry discrepancies flag potential sensor issues
+
 ### 2.4 Performance Benchmarking
 - [ ] Measure before/after on 10-scenario batch
-- [ ] Verify 30-50% overall token reduction
+- [ ] Verify 30-50% overall token reduction (from all Phase 2 items)
 - [ ] Verify same accuracy as Phase 1
 
 See [Phase 2 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#phase-2-performance-optimization-quick-wins)
@@ -229,18 +278,25 @@ See [Phase 4 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 ## Additional Tasks
 
-### Pipeline Metadata & Telemetry Design
+### Pipeline Metadata & Telemetry Design ✅ COMPLETED
 
-**Status:** Awaiting Issue #1 completion
+**Status:** Design complete in `docs/METADATA_DESIGN.md` (1,476 lines)
 
-- [ ] Design metadata structure (pipeline version, ODD spec version, agent versions)
-- [ ] Implement ODD versioning (version string, hash)
-- [ ] Implement agent versioning (version, model, prompt hash)
-- [ ] Add execution stats (duration, token usage, timings)
+- [x] Research ADK capabilities and patterns ✅
+- [x] Analyze 5 approaches (prompt-only, infrastructure, workflow, hybrid, callback-based) ✅
+- [x] Create proof-of-concept code for recommended approaches ✅
+- [x] Document two-tier recommendation ✅
+  - **PRIMARY**: Approach E (Callback-Based) using `google.adk.callbacks.BaseCallback`
+  - **FALLBACK**: Approach D (Hybrid) with self-report + validation
+
+**Next Steps:**
+- [ ] Verify ADK callbacks availability in current version
+- [ ] Implement chosen approach (~100 lines for callbacks, ~230 for hybrid)
+- [ ] Integrate metadata into pipeline
 - [ ] Update reports to display metadata footer
 - [ ] Enable A/B testing and performance tracking
 
-See [Metadata design in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#pipeline-metadata--telemetry-new)
+See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 
 ### Kaggle Capstone Preparation
 
@@ -439,18 +495,22 @@ See [Metadata design in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 **Last Updated**: November 24, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Architecture Redesign Planning Phase
+**Status**: Phase 1 - BEV Enhancement Complete, Agent Refactor Ready
 
-**Current Focus**: Phase 0 - Data Source Discovery
+**Current Focus**: Phase 1 - Architecture Refactor
 
 **Recent Completions**:
+- ✅ Phase 0: Bagfile audit complete (critical finding: no velocity data)
+- ✅ BEV auto-crop implementation (50-75% size reduction, all tests passing)
+- ✅ Metadata design complete (2 approaches documented with POCs)
+- ✅ TODO.md reorganized with Phase 0-4 structure
 - ✅ Real robot data validation (270 windows, 6 scenarios)
 - ✅ Production workflow scripts (manual + batch)
 - ✅ IMU-based motion analysis (odometry-independent)
-- ✅ Bug fixes (compliance extraction, environment metadata)
-- ✅ Documentation cleanup and reorganization
 
 **Next Steps**:
-1. Complete Phase 0: Audit bagfile topics and identify integration opportunities
-2. Begin Phase 1: Implement architecture refactor (collision, COD, evaluator agents)
-3. Continue Kaggle preparation in parallel (evaluation tests, final report)
+1. Add all 4 BEV channels to perception/collision tools
+2. Integrate auto-crop into BEV rendering pipeline
+3. Implement COD agent redesign (per-window compliance)
+4. Implement Collision agent redesign (binary detection)
+5. Implement Evaluator agent (severity-based synthesis)
