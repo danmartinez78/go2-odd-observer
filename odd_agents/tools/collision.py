@@ -9,8 +9,10 @@ from google.adk.tools import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
+import cv2
+import numpy as np
 
-from ..utils import build_image_path, ensure_image_bytes, extract_json_block
+from ..utils import build_image_path, ensure_image_bytes, extract_json_block, auto_crop_bev
 
 
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -34,16 +36,46 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
         motion_metrics: Dict[str, Any],
         tool_context: ToolContext
     ) -> Dict[str, Any]:
-        """Tool: run a direct multimodal Gemini call to analyze collision risk from motion metrics + camera + BEV."""
+        """Tool: run a direct multimodal Gemini call to analyze collision risk from motion metrics + camera + 4 BEV channels."""
         try:
-            # Build paths
+            # Load camera image
             cam_path = build_image_path(scenario_path, "cam", window_id)
-            bev_path = build_image_path(
-                scenario_path, "bev_occupancy", window_id)
-
-            # Load images
             cam_bytes = ensure_image_bytes(cam_path)
-            bev_bytes = ensure_image_bytes(bev_path)
+
+            # Load all 4 BEV channels
+            bev_occupancy_path = build_image_path(
+                scenario_path, "bev_occupancy", window_id)
+            bev_height_path = build_image_path(
+                scenario_path, "bev_height", window_id)
+            bev_density_path = build_image_path(
+                scenario_path, "bev_density", window_id)
+            bev_roughness_path = build_image_path(
+                scenario_path, "bev_roughness", window_id)
+
+            # Load as numpy arrays for cropping
+            bev_occupancy = cv2.imread(str(bev_occupancy_path))
+            bev_height = cv2.imread(str(bev_height_path))
+            bev_density = cv2.imread(str(bev_density_path))
+            bev_roughness = cv2.imread(str(bev_roughness_path))
+
+            # Auto-crop all BEVs (removes empty borders, maintains square aspect)
+            bev_occupancy_cropped = auto_crop_bev(bev_occupancy)
+            bev_height_cropped = auto_crop_bev(bev_height)
+            bev_density_cropped = auto_crop_bev(bev_density)
+            bev_roughness_cropped = auto_crop_bev(bev_roughness)
+
+            # Encode cropped BEVs as bytes
+            _, bev_occupancy_bytes = cv2.imencode(
+                '.png', bev_occupancy_cropped)
+            _, bev_height_bytes = cv2.imencode('.png', bev_height_cropped)
+            _, bev_density_bytes = cv2.imencode('.png', bev_density_cropped)
+            _, bev_roughness_bytes = cv2.imencode(
+                '.png', bev_roughness_cropped)
+
+            bev_occupancy_bytes = bev_occupancy_bytes.tobytes()
+            bev_height_bytes = bev_height_bytes.tobytes()
+            bev_density_bytes = bev_density_bytes.tobytes()
+            bev_roughness_bytes = bev_roughness_bytes.tobytes()
 
             # Build multimodal prompt
             motion_status = "MOTION DETECTED" if motion_metrics.get(
@@ -62,19 +94,32 @@ MOTION CONTEXT:
 
 IMAGES PROVIDED:
 1. Camera feed (egocentric view from robot)
-2. BEV LiDAR occupancy map (top-down obstacle map, 400x400 pixels)
-   - Shows OBSTACLES ONLY (ground filtered out, >10cm height threshold)
-   - Bright pixels = obstacles above ground, dark pixels = free/navigable space
-   - Robot is at CENTER of map (200,200), facing upward (top of image = forward)
-   - SCALE: 0.05 meters per pixel (20 pixels = 1 meter, 40 pixels = 2 meters)
-   - Total coverage: 20m x 20m area centered on robot
-   - Upper half = forward path, lower half = behind, sides = lateral areas
-   - NOTE: Robot's own body may appear at center - ignore pixels within ~10-pixel radius of center when estimating obstacle distances
-   
-   IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
-   to understand the robot's size when estimating collision risk and safe distances.
+2. BEV LiDAR Occupancy (obstacles only)
+3. BEV LiDAR Height (elevation map)
+4. BEV LiDAR Density (point cloud density)
+5. BEV LiDAR Roughness (terrain surface variation)
 
-TASK: Analyze collision risk by fusing motion + camera + BEV data.
+ALL BEV IMAGES (2-5):
+- Auto-cropped to remove empty borders (50-75% size reduction)
+- Robot is at CENTER of map, facing upward (top = forward direction)
+- SCALE: 0.05 meters per pixel (20 pixels = 1 meter)
+- Coverage: ~20m x 20m area centered on robot (varies after crop)
+- Upper half = forward path, lower half = behind, sides = lateral areas
+
+BEV CHANNEL DETAILS:
+- **Occupancy (2)**: Binary obstacle map. Bright = obstacles ABOVE ground (>10cm), dark = free space.
+  NOTE: Robot's own body may appear at center - ignore pixels within ~10-pixel radius.
+- **Height (3)**: Elevation data. Grayscale intensity = height above ground plane.
+  Use to assess terrain hazards (stairs, ramps, drop-offs).
+- **Density (4)**: Point cloud density. Brighter = more LiDAR points.
+  Low density may indicate occlusion or max range - affects obstacle confidence.
+- **Roughness (5)**: Terrain surface variation. Brighter = more uneven.
+  High roughness may indicate unstable terrain or collision risk areas.
+
+IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
+to understand the robot's size when estimating collision risk and safe distances.
+
+TASK: Analyze collision risk by fusing motion + camera + all 4 BEV channels.
 
 Provide a JSON object with this EXACT schema:
 {{
@@ -99,7 +144,13 @@ No explanations outside the JSON."""
                     types.Part(inline_data=types.Blob(
                         mime_type="image/png", data=cam_bytes)),
                     types.Part(inline_data=types.Blob(
-                        mime_type="image/png", data=bev_bytes)),
+                        mime_type="image/png", data=bev_occupancy_bytes)),
+                    types.Part(inline_data=types.Blob(
+                        mime_type="image/png", data=bev_height_bytes)),
+                    types.Part(inline_data=types.Blob(
+                        mime_type="image/png", data=bev_density_bytes)),
+                    types.Part(inline_data=types.Blob(
+                        mime_type="image/png", data=bev_roughness_bytes)),
                 ],
             )
 
