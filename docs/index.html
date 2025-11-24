@@ -226,48 +226,100 @@
                     </div>
                 </div>
 
-                <!-- Production Scenario Report -->
-                <div class="report-card">
+                <!-- Production Scenarios with Refined ODD v2.0 -->
+                <div class="mt-4 mb-3">
+                    <h3 class="text-white">🏭 Production Analysis - Refined ODD v2.0</h3>
+                    <p class="text-white mb-2">Real-world operational data analyzed with reasoning-based motion, spatial perception, and ego vehicle awareness</p>
+                    <div class="alert alert-success">
+                        <strong>Production Highlights:</strong> 2 scenarios, 20 windows total |
+                        <strong>Compliance:</strong> ODD_BOUNDARY (0 violations) |
+                        <strong>Critical Finding:</strong> Sensor fusion gap - low-profile obstacles visible in camera but missed by BEV LiDAR
+                    </div>
+                </div>
+
+                <!-- collection_20251122_173442_chunk_03 -->
+                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h3>Production Analysis - Living Room Navigation (25 Windows)</h3>
-                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_173442_chunk_01
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Living Room - Real Go2
-                                Production Data</p>
-                            <p class="text-muted mb-3"><strong>Windows Analyzed:</strong> 25 | <strong>Peak
-                                    Accel:</strong> 8.81 m/s² | <strong>Motion:</strong> Abrupt</p>
+                            <h3>Production 1 - Living Room Navigation (12 Windows) 🏭</h3>
+                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_173442_chunk_03</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Challenging Conditions</p>
+                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 10.45 m/s² (at boundary) | <strong>Avg Collision Risk:</strong> 0.75 (at boundary)</p>
 
                             <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">3 Violations | 18 High-Risk Windows</span>
+                                <span class="badge badge-boundary badge-status me-2">⚠️ ODD BOUNDARY</span>
+                                <span class="badge bg-warning text-dark badge-status">0 Violations | Boundary Conditions</span>
                             </div>
 
                             <p class="mb-2"><strong>Key Findings:</strong></p>
                             <ul class="feature-list mb-3" style="font-size: 0.95rem;">
-                                <li>Consistent abrupt motion across all 25 windows</li>
-                                <li>Extreme acceleration: 8.81 m/s² (exceeds 5.0 m/s² limit)</li>
-                                <li>High collision risk: 72% of windows at alert/caution level</li>
-                                <li>Sensor discrepancy: Camera detects low obstacles BEV misses</li>
+                                <li>Camera sensor corruption degrading visual perception (multiple windows)</li>
+                                <li>Critical collision states in 4 windows (005, 006, 010, 011)</li>
+                                <li>High collision risk (9/12 windows) indicating aggressive maneuvers</li>
+                                <li>Sensor discrepancies for low-lying obstacles (camera vs BEV LiDAR)</li>
                             </ul>
 
-                            <p class="mb-2"><strong>Analysis Highlights:</strong></p>
+                            <p class="mb-2"><strong>Refined ODD Features:</strong></p>
                             <ul class="feature-list mb-0" style="font-size: 0.9rem;">
-                                <li>First full production scenario (25-window chunk)</li>
-                                <li>BEV ground filtering applied (10cm threshold)</li>
-                                <li>Demonstrates multi-agent analysis at scale</li>
-                                <li>Identifies critical sensor fusion issues</li>
+                                <li>Reasoning-based motion: Handles complex movement patterns</li>
+                                <li>Boundary zone detection: 10 m/s² accel limit enforced</li>
+                                <li>Ego vehicle specs: 0.65×0.31×0.4m with clearance requirements</li>
+                                <li>Real-world validation: 12 windows of production operation</li>
                             </ul>
                         </div>
                         <div class="col-md-4 text-center">
-                            <a href="reports/collection_20251122_173442_chunk_01_report.html"
-                                class="btn btn-primary btn-view-report w-100 mb-3">
+                            <a href="reports/collection_20251122_173442_chunk_03_report.html"
+                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
                                 View Full Report →
                             </a>
                             <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🏭 Production Data (25 windows)</div>
-                                <div>📸 Full Image Set (125 BEV + 25 Camera)</div>
-                                <div>📥 JSON Download Available</div>
+                                <div>🏭 Production Data (12 windows)</div>
+                                <div>📸 Full Image Set (60 BEV + 12 Camera)</div>
+                                <div>📥 <a href="reports/collection_20251122_173442_chunk_03_full_result.json" download>JSON Download</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- collection_20251122_174321_chunk_03 -->
+                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Production 2 - Living Room Navigation (8 Windows) 🏭</h3>
+                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_174321_chunk_03</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Sensor Fusion Gap</p>
+                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 7.67 m/s² (in boundary 5-10) | <strong>Max Instability:</strong> 16.0° (in boundary 15-20)</p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-boundary badge-status me-2">⚠️ ODD BOUNDARY</span>
+                                <span class="badge bg-warning text-dark badge-status">0 Violations | Sensor Fusion Issue</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
+                                <li><strong>Critical:</strong> Low-profile obstacles (boxes) visible in camera but missed by BEV LiDAR</li>
+                                <li>Reasoning-based motion correctly classified stationary windows despite IMU noise</li>
+                                <li>Platform instability reaching boundary zone (16.0° pitch/roll)</li>
+                                <li>Acceleration in boundary zone demonstrates refined ODD effectiveness</li>
+                            </ul>
+
+                            <p class="mb-2"><strong>Refined ODD Showcase:</strong></p>
+                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
+                                <li>Stationary detection: Windows 003,004,006,007 correctly identified (no false positives)</li>
+                                <li>Spatial awareness: BEV scale 0.05 m/pixel, robot body exclusion ~10px radius</li>
+                                <li>Boundary handling: Accel/instability correctly flagged as boundary conditions</li>
+                                <li><strong>Sensor fusion gap:</strong> Height threshold issue (&lt;10cm obstacles missed)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/collection_20251122_174321_chunk_03_report.html"
+                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
+                                View Full Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>🏭 Production Data (8 windows)</div>
+                                <div>📸 Full Image Set (40 BEV + 8 Camera)</div>
+                                <div>📥 <a href="reports/collection_20251122_174321_chunk_03_full_result.json" download>JSON Download</a></div>
                             </div>
                         </div>
                     </div>
