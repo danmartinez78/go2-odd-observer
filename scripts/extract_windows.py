@@ -11,6 +11,7 @@ Usage:
     python extract_windows.py --rosbag <path> --output <dir> [options]
 """
 
+from odd_agents.utils import auto_crop_bev
 import argparse
 import json
 import os
@@ -24,7 +25,6 @@ from collections import defaultdict
 # Import BEV cropping utility
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from odd_agents.utils import auto_crop_bev
 
 # ROS2 libraries
 try:
@@ -430,7 +430,7 @@ class WindowExtractor:
         for feature_name, feature_img in bev_features.items():
             # Crop BEV to remove empty borders while preserving robot center
             cropped_img = auto_crop_bev(feature_img)
-            
+
             bev_path = self.output_dir / \
                 f"bev_{feature_name}_{self.run_id}_w{window_id:03d}.png"
             cv2.imwrite(str(bev_path), cropped_img)
