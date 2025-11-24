@@ -1,33 +1,32 @@
 {
   "report": {
-    "executive_summary": "The robot operated in a bright, indoor living room environment, which is generally within its ODD for environment type, lighting, and terrain. However, the robot exhibited abrupt and excessively high accelerations, resulting in critical collision risks due to high obstacle density and low traversability. This led to significant non-compliance with the defined ODD, particularly concerning motion dynamics and safety parameters.",
+    "executive_summary": "The Unitree Go2 robot operated in an indoor, bright, smooth environment, exhibiting abrupt motion and high acceleration while navigating moderate obstacle density. The conditions are largely within the ODD, though the traversability score was at the boundary, indicating navigation in a somewhat challenging area with notable collision risk.",
     "scenario_metadata": {
       "total_windows_analyzed": 2,
       "scenario_name": "real_05_174503",
       "environment_class": "indoor",
       "data_source": "real_world",
-      "data_source_confidence": 0.95
+      "data_source_confidence": 0.99
     },
-    "perception_summary": "The scenario unfolds in a well-lit indoor living room, characterized by plush or high-pile patterned rugs and typical residential furniture. Initial observations (window 000) indicated a moderate obstacle density (0.4) and reasonable traversability (0.5). However, a subsequent observation (window 001) revealed a significantly cluttered space with high obstacle density (0.8) and critically low traversability (0.1), effectively blocking forward movement. Low-profile obstacles were noted as a specific environmental constraint.",
-    "motion_summary": "Motion was detected in both analyzed windows, characterized primarily by abruptness. Window 000 showed translational motion with low speed (0.1 m/s) but high jerk, contributing to an 'abrupt' smoothness classification. Window 001 exhibited complex motion with an extremely high peak horizontal acceleration of 9.1608 m/s\u00b2 and a significant peak angular velocity of 0.8256 rad/s, also classified as 'abrupt'. Both instances indicate aggressive, uncontrolled movements, despite the platform remaining stable with minimal tilt.",
-    "collision_summary": "A high collision risk was identified in window 000 due to a low-profile box in the robot's immediate path, which was missed by the BEV LiDAR. In window 001, the collision risk escalated to 'critical' due to extremely high acceleration (9.16 m/s\u00b2) in conjunction with close, large obstacles to the front-right. Both instances had a closest obstacle distance of 0.3 meters, and the robot's motion actively contributed to the heightened risk. The overall assessment indicates 2 alert-level collision events with an average collision likelihood of 0.8.",
-    "odd_spec_summary": "The ODD specifies operation in well-lit, indoor environments (offices, homes, corridors) with smooth, flat terrain, moderate obstacle density, and controlled, non-aggressive acceleration (max 2.0 m/s\u00b2 in-ODD, 5.0 m/s\u00b2 out-ODD). It prohibits aggressive jerky motions, cluttered spaces (obstacle density > 0.8), and high collision risks (risk > 0.5).",
-    "cod_classification_summary": "The robot is operating in a bright, indoor residential environment with smooth terrain (likely rugs). The current motion is abrupt with an extremely high peak acceleration of 9.1608 m/s\u00b2. The operating domain features a high obstacle density (0.6) and critically low traversability (0.3), leading to a high collision risk (0.8).",
-    "odd_compliance_summary": "The robot is significantly outside its design domain. While the environment type, lighting, and terrain are compliant, motion dynamics (abruptness, peak acceleration of 9.1608 m/s\u00b2) and safety metrics (collision risk of 0.8) are in clear violation of the ODD. The obstacle density (0.6) and traversability score (0.3) are at the ODD boundary, pushing operational limits and contributing to the non-compliance.",
+    "perception_summary": "The scenario occurred in an indoor residential environment with bright lighting and smooth, albeit sometimes patterned, terrain. Obstacle density varied from moderate (0.3) to high (0.6), with one window showing a single immediate obstacle and another a dense cluster blocking the path. Traversability scores ranged from 0.5 to 0.4, indicating areas that were at the lower bound of easy traversability. No humans were detected.",
+    "motion_summary": "The robot displayed varied motion, including a period of stationary operation (Window 000) and another of abrupt, complex motion (Window 001) with a high peak horizontal acceleration of 9.1608 m/s\u00b2 and significant angular velocity (0.8256 rad/s). Despite the dynamic movements, the platform remained stable throughout the analyzed windows.",
+    "collision_summary": "The scenario involved elevated collision risk. In Window 000, a medium risk was identified with a stationary robot facing a direct obstacle 0.5m ahead. Window 001 presented a high risk, where significant robot motion (high acceleration) was directly associated with an obstacle cluster 0.8m to the front-right, suggesting an emergency maneuver or impact. The average collision likelihood across windows was 0.675.",
+    "odd_spec_summary": "ODD for a Unitree Go2 quadruped robot in indoor residential and commercial environments with moderate-to-high furniture density, tolerant of high accelerations for obstacle avoidance.",
+    "cod_classification_summary": "The robot is operating indoors in bright lighting on smooth terrain. Motion is abrupt, characterized by high acceleration, likely due to navigation in a moderately dense obstacle environment with a notable collision risk.",
+    "odd_compliance_summary": "The operating conditions are generally within the ODD, with the traversability score indicating navigation in an area close to its lower design limits, suggesting potentially challenging terrain for optimal performance.",
     "key_findings": [
-      "The robot's motion smoothness is consistently 'abrupt', violating the ODD requirement for smooth to moderate acceleration.",
-      "The peak horizontal acceleration (9.1608 m/s\u00b2) significantly exceeds the ODD's 'OUT_ODD' threshold of 5.0 m/s\u00b2, indicating aggressive and uncontrolled movement.",
-      "The collision risk (0.8) is critically high and well beyond the ODD's 'OUT_ODD' threshold of 0.5.",
-      "Obstacle density (0.6) and traversability score (0.3) are at the ODD boundary, indicating challenging environmental conditions that verge on non-compliance.",
-      "A critical perception failure occurred in window 000, where a low-profile obstacle in the robot's path was not detected by the primary navigation sensor (BEV LiDAR), directly contributing to high collision risk.",
-      "The robot initiated complex motion with high acceleration and rotation while facing dense, large obstacles, leading to a critical collision situation."
+      "The environment (indoor, bright lighting, smooth terrain) consistently aligns with the ODD specifications.",
+      "Obstacle density ranged from 0.3 to 0.6, falling within the ODD's acceptable range for moderate-to-high furniture density.",
+      "The robot exhibited abrupt, high-acceleration motion (peak 9.16 m/s\u00b2) during one window, which is within the ODD's tolerance for obstacle avoidance maneuvers.",
+      "The average traversability score (0.45, with a low of 0.4 in one window) was classified as 'ODD_BOUNDARY', indicating navigation in conditions that are challenging but technically within the specified limits.",
+      "An average collision risk of 0.675 was calculated, which remains within the ODD's acceptable threshold (up to 0.75) for furniture-dense environments.",
+      "A low-profile obstacle was detected directly in front of the stationary robot in Window 000, requiring a 'stop' action to prevent collision upon movement.",
+      "The complex and abrupt motion in Window 001, combined with high acceleration, strongly suggests a reactive maneuver to a dense obstacle cluster, correlating with the high collision risk in that period."
     ],
     "recommendations": [
-      "Immediate review and refinement of motion control algorithms to eliminate abrupt accelerations and maintain smooth, controlled movements within ODD specifications.",
-      "Enhance perception systems, particularly for low-profile and proximate obstacles, through sensor fusion (e.g., integrating depth camera data with LiDAR) or improved object detection algorithms.",
-      "Implement robust collision avoidance strategies that trigger immediate stops or significant speed reductions when obstacle density is high or traversability is low, and especially when unmapped obstacles are detected.",
-      "Conduct further testing in similar environments with high obstacle density to evaluate the robot's reactive capabilities and ensure compliance with safety protocols.",
-      "Re-evaluate the ODD's numerical thresholds for maximum acceleration and collision risk, or adjust the robot's operational parameters to consistently operate within the current defined ODD."
+      "Monitor and investigate instances where the traversability score falls into the ODD_BOUNDARY range to ensure the robot's navigation performance and robustness are maintained in these challenging conditions.",
+      "Review high-acceleration events and high collision risk instances (e.g., Window 001) to optimize obstacle avoidance strategies and confirm they are preventing actual contact, rather than just reacting to near-misses.",
+      "Ensure the robot's planning and control system effectively handles low-profile obstacles detected directly in its path, particularly when transitioning from a stationary to a moving state, to prevent initiating movement into an obstruction."
     ]
   },
   "full_analysis": {
@@ -40,52 +39,48 @@
         "primary_class": "indoor",
         "confidence": 0.98,
         "evidence": [
-          "Consistent description of a 'living room'",
-          "Presence of typical residential furniture (armchair, cabinet, media console)",
-          "Indoor lighting conditions noted as 'bright'"
+          "Camera summaries explicitly state 'indoors' and 'indoor living room'.",
+          "Observed objects (media console, armchair, pet food bags) are typical of an indoor residential setting."
         ]
       },
       "data_source_classification": {
         "source": "real_world",
-        "confidence": 0.95,
+        "confidence": 0.99,
         "evidence": [
-          "Scenario name 'real_05_174503' strongly implies real-world data",
-          "Descriptions of textures like 'plush' and 'high-pile patterned rug' suggest organic complexity",
-          "Presence of irregular, cluttered objects like 'large bags'"
+          "The scenario name 'real_05_174503' is a strong indicator of real-world data.",
+          "Descriptions include varied and slightly irregular objects ('high-pile patterned rug', 'large bags of pet food', 'large plant') which are more characteristic of a real environment than a curated simulation."
         ]
       },
       "per_window_perception": [
         {
-          "bev_summary": "A dense cluster of obstacles is detected immediately to the front-right of the robot. The path to the left and further ahead appears clear.",
-          "camera_summary": "The robot is on a plush, patterned rug in a well-lit living room. Directly in front is a low black box. To the right are large bags, and further back are a cabinet, an armchair, and a plant.",
+          "bev_summary": "A single, small obstacle is detected directly in the robot's immediate forward path. The surrounding area appears to be clear.",
+          "camera_summary": "The robot is indoors on a high-pile patterned rug, facing a small, flat box. The room contains furniture including a media console, a chair, a tripod, and a large plant.",
           "environmental_constraints": [
             "clutter",
-            "furniture",
-            "low_obstacle"
+            "immediate_obstacle"
           ],
           "humans_detected": false,
           "lighting_class": "bright",
-          "obstacle_density": 0.4,
-          "occupancy_ratio": 0.1,
+          "obstacle_density": 0.3,
+          "occupancy_ratio": 0.05,
           "terrain_roughness_class": "smooth",
           "traversability_score": 0.5,
           "visibility_score": 1,
           "window_id": "000"
         },
         {
-          "bev_summary": "A large, solid obstacle is detected directly in the robot's forward path, with additional smaller obstacles to the immediate right and left, effectively blocking forward movement.",
-          "camera_summary": "The robot is indoors in a well-lit living room, positioned on a high-pile patterned rug and facing a media console. An armchair is to the left, and large bags are on the floor to the right.",
+          "bev_summary": "A dense cluster of obstacles is located in the forward-right quadrant, blocking the direct path. The area to the left of the robot appears to be clear.",
+          "camera_summary": "An indoor living room with the robot on a patterned rug facing a media console. Obstacles include a ramp or dock directly in front, an armchair to the left, and large bags of pet food to the right.",
           "environmental_constraints": [
-            "cluttered space",
-            "furniture",
-            "large objects on floor"
+            "indoor_clutter",
+            "narrow_passage"
           ],
           "humans_detected": false,
           "lighting_class": "bright",
-          "obstacle_density": 0.8,
-          "occupancy_ratio": 0.2,
+          "obstacle_density": 0.6,
+          "occupancy_ratio": 0.1,
           "terrain_roughness_class": "smooth",
-          "traversability_score": 0.1,
+          "traversability_score": 0.4,
           "visibility_score": 1,
           "window_id": "001"
         }
@@ -98,12 +93,10 @@
       ],
       "overall_stats": {
         "total_windows": 2,
-        "motion_detected_count": 2,
-        "motion_detection_rate": 1.0,
+        "motion_detected_count": 1,
+        "motion_detection_rate": 0.5,
         "motion_type_distribution": {
-          "stationary": 0,
-          "translation": 1,
-          "rotation": 0,
+          "stationary": 1,
           "complex": 1
         },
         "max_horizontal_accel_mps2": 9.1608,
@@ -112,13 +105,13 @@
       },
       "per_window_motion": [
         {
-          "estimated_speed_mps": 0.1,
-          "evidence": "IMU accelerometer data shows an average horizontal acceleration of 0.2812 m/s\u00b2, which is above the 0.05 m/s\u00b2 threshold for translation. Peak angular velocity across all axes is 0.0224 rad/s, below the 0.1 rad/s threshold, indicating no significant rotation. The camera image shows sharp floor textures and no visible motion blur, which aligns with low velocity movement. Platform tilt is minimal (max 1.7\u00b0), indicating stability. However, the peak jerk of 2369.84 m/s\u00b3 is significantly high (>5 m/s\u00b3), suggesting abrupt changes in acceleration even at low speeds, leading to an 'abrupt' smoothness classification. The estimated speed is based on the camera's sharp textures indicating low velocity, supported by the IMU's translation data.",
+          "estimated_speed_mps": 0,
+          "evidence": "The primary evidence, the front camera image, is exceptionally sharp and clear, showing no signs of motion blur, streaks, or optical flow. Textures on the rug and the 'EVERYMATE' text are crisp, strongly indicating a static scene and a stationary robot. The IMU accelerometer reports a peak horizontal acceleration of 0.3627 m/s\u00b2 and an average of 0.2812 m/s\u00b2. These values are small (<1.0 m/s\u00b2) and are well explained by gravity leakage due to the platform's tilt. With a maximum roll of 1.7\u00b0 and pitch of 1.5\u00b0, the platform is stable. A tilt of 1.7\u00b0 is expected to contribute approximately 0.29 m/s\u00b2 (1.7\u00b0 * 0.17 m/s\u00b2) to horizontal acceleration, which closely matches the observed average acceleration, confirming it as a gravity artifact. The IMU gyroscope data also supports a stationary state, with all peak angular velocities being very low (0.0224 rad/s), well below the 0.05 rad/s threshold for significant rotation. While the peak jerk (2369.84 m/s\u00b3) and average jerk (248.08 m/s\u00b3) are very high, indicating abrupt changes in the *measured* acceleration, this is interpreted as sensor noise or minor micro-vibrations amplified during differentiation, rather than actual dynamic physical motion. The overwhelming visual evidence and the coherent explanation of IMU accelerometer data by platform tilt override the high jerk readings, leading to a classification of stationary.",
           "max_tilt_deg": 1.7,
-          "motion_confidence": 0.7,
-          "motion_detected": true,
+          "motion_confidence": 0.95,
+          "motion_detected": false,
           "motion_smoothness": "abrupt",
-          "motion_type": "translation",
+          "motion_type": "stationary",
           "peak_angular_velocity_radps": 0.0224,
           "peak_horizontal_accel_mps2": 0.3627,
           "platform_stability": "stable",
@@ -126,9 +119,9 @@
         },
         {
           "estimated_speed_mps": null,
-          "evidence": "IMU accelerometer data shows a peak horizontal acceleration of 9.1608 m/s\u00b2 and an average of 1.0084 m/s\u00b2, both exceeding the 0.05 m/s\u00b2 translation threshold and 0.5 m/s\u00b2 strong acceleration threshold. IMU gyroscope data indicates a peak angular velocity of 0.8256 rad/s (from roll rate), exceeding the 0.1 rad/s rotation threshold. Together, these classify the motion as 'complex'. Jerk analysis shows an extremely high peak jerk of 94843.87 m/s\u00b3, indicating abrupt motion. Platform orientation is stable with a maximum tilt of 1.9\u00b0. The camera image appears sharp with clear textures, suggesting low velocity or stationary status at the moment of capture. However, without multiple frames for optical flow or visible blur, and given the high peak IMU values, a precise speed estimation from visual odometry alone is uncertain for this specific instant, hence 'null'.",
+          "evidence": "The robot is experiencing complex, abrupt motion involving both significant translation and rotation. Although the camera image appears sharp with no obvious motion blur, the IMU data provides overwhelming evidence of dynamic activity. The peak horizontal acceleration of 9.1608 m/s\u00b2 is extremely high, approaching 1g, and cannot be attributed to gravity leakage from the minimal platform tilt (max 1.9\u00b0 would contribute at most approximately 0.43 m/s\u00b2). Furthermore, the accelerometer samples show highly varying patterns, including these sharp spikes, which contradicts a 'constant and small' acceleration indicative of a stationary robot with gravity leakage. The jerk analysis reinforces this, with an exceptionally high peak jerk of 94843.87 m/s\u00b3 and an average of 3652.83 m/s\u00b3, clearly indicating abrupt starts, stops, or changes in motion. The gyroscope data further supports motion, with peak angular velocities of 0.8256 rad/s (roll), 0.3324 rad/s (pitch), and 0.2045 rad/s (yaw). These values are well above typical sensor noise thresholds (>0.05 rad/s) and signify genuine rotational movement. The platform's maximum tilt of 1.9\u00b0 indicates stable terrain. Per the decision priority, while camera evidence is primary, the 'critical reasoning rule' for classifying as stationary when camera is sharp and IMU shows acceleration is NOT met, as the IMU acceleration is neither constant nor small (<1.0 m/s\u00b2 peak) and cannot be explained by tilt. Thus, the strong, varying acceleration, extremely high jerk, and significant angular rates override the single-frame visual interpretation, indicating the robot is actively moving in an abrupt and dynamic manner during this window.",
           "max_tilt_deg": 1.9,
-          "motion_confidence": 0.9,
+          "motion_confidence": 0.95,
           "motion_detected": true,
           "motion_smoothness": "abrupt",
           "motion_type": "complex",
@@ -147,40 +140,41 @@
       "overall_collision_stats": {
         "total_windows": 2,
         "safe_count": 0,
-        "caution_count": 0,
-        "alert_count": 2,
-        "avg_collision_likelihood": 0.8
+        "caution_count": 1,
+        "alert_count": 1,
+        "avg_collision_likelihood": 0.675
       },
       "collision_events": [
         {
           "bev_hazards": [
-            "Obstacle cluster to the front-right"
+            "Obstacle detected ~0.5m directly in front",
+            "Large obstacle cluster to the front-right"
           ],
           "camera_hazards": [
-            "Low-profile box directly in immediate path",
-            "Bags of pet food to the right"
+            "Low-profile object (box lid) directly in front",
+            "Large bags on the right"
           ],
-          "closest_obstacle_meters": 0.3,
-          "collision_risk_level": "high",
-          "evidence": "Camera shows a low-profile box directly in the robot's path. However, the BEV LiDAR map does not show this obstacle, likely due to its low height or proximity. With the robot moving forward, there is a high risk of imminent collision with an object the primary navigation sensor has missed.",
-          "motion_contributes_to_risk": true,
+          "closest_obstacle_meters": 0.5,
+          "collision_risk_level": "medium",
+          "evidence": "Robot is stationary, so immediate collision risk is low. However, both the camera and BEV LiDAR confirm a low-profile obstacle is approximately 0.5m directly in front, completely blocking the forward path. Any forward motion would result in a collision, justifying a medium potential risk level and a 'stop' recommendation.",
+          "motion_contributes_to_risk": false,
           "obstacle_direction": "front",
           "recommended_action": "stop",
-          "risk_confidence": 0.9,
+          "risk_confidence": 0.95,
           "window_id": "000"
         },
         {
           "bev_hazards": [
-            "Close, large obstacle cluster to the front-right"
+            "Large obstacle cluster detected to the front-right, approximately 0.8m away"
           ],
           "camera_hazards": [
-            "Large deformable bags on the right",
-            "Cluttered floor space",
-            "Textured rug may cause wheel slip"
+            "Large bags on the floor to the right",
+            "Cluttered environment",
+            "Tripod legs to the left"
           ],
-          "closest_obstacle_meters": 0.3,
-          "collision_risk_level": "critical",
-          "evidence": "Extremely high acceleration (9.16 m/s\u00b2) indicates a non-nominal event, such as a collision or major slip, has occurred or is imminent. The close proximity of the obstacle on the right, confirmed by both the BEV map and camera, makes this a critical situation.",
+          "closest_obstacle_meters": 0.8,
+          "collision_risk_level": "high",
+          "evidence": "Extremely high peak acceleration (9.16 m/s\u00b2) suggests an emergency brake or minor collision. This motion anomaly correlates directly with the camera and BEV data, which both identify a large obstacle cluster (bags) in the robot's immediate path to the front-right.",
           "motion_contributes_to_risk": true,
           "obstacle_direction": "right",
           "recommended_action": "stop",
@@ -194,13 +188,15 @@
         "categorical_constraints": {
           "environment_type": {
             "allowed": [
+              "indoor_residential",
+              "indoor_commercial",
               "indoor_office",
-              "indoor_corridor",
-              "indoor_residential"
+              "indoor_corridor"
             ],
             "prohibited": [
               "outdoor_urban",
               "outdoor_natural",
+              "industrial",
               "stairs"
             ]
           },
@@ -210,20 +206,21 @@
               "dim"
             ],
             "prohibited": [
-              "dark",
-              "low_light"
+              "dark"
             ]
           },
           "terrain_type": {
             "allowed": [
-              "smooth"
+              "flat",
+              "smooth",
+              "low_pile_carpet"
             ],
             "prohibited": [
-              "moderate",
+              "stairs",
+              "steep_ramp",
               "rough",
-              "very_rough",
-              "gravel",
-              "grass"
+              "uneven",
+              "unstable"
             ]
           }
         },
@@ -231,28 +228,28 @@
           "max_accel_mps2": {
             "in_odd": [
               0.0,
-              2.0
+              10.0
             ],
             "boundary": [
-              2.0,
-              5.0
+              10.0,
+              12.0
             ],
             "out_odd": [
-              5.0,
+              12.0,
               "inf"
             ]
           },
           "obstacle_density": {
             "in_odd": [
               0.0,
-              0.6
-            ],
-            "boundary": [
-              0.6,
               0.8
             ],
-            "out_odd": [
+            "boundary": [
               0.8,
+              0.9
+            ],
+            "out_odd": [
+              0.9,
               1.0
             ]
           },
@@ -273,18 +270,18 @@
           "collision_risk": {
             "in_odd": [
               0.0,
-              0.3
+              0.75
             ],
             "boundary": [
-              0.3,
-              0.5
+              0.75,
+              0.85
             ],
             "out_odd": [
-              0.5,
+              0.85,
               1.0
             ]
           },
-          "max_platform_angle_deg": {
+          "platform_max_abs_angle_deg": {
             "in_odd": [
               0.0,
               15.0
@@ -298,9 +295,21 @@
               "inf"
             ]
           }
+        },
+        "ego_vehicle": {
+          "vehicle_type": "quadruped_robot",
+          "dimensions": {
+            "length_m": 0.65,
+            "width_m": 0.31,
+            "height_m": 0.4
+          },
+          "clearance_requirements": {
+            "minimum_gap_width_m": 0.4,
+            "comfortable_clearance_m": 0.5
+          }
         }
       },
-      "odd_summary": "Defines the operating domain for a quadruped robot in well-lit, indoor environments like offices and homes, featuring smooth, flat surfaces and moderate obstacle density. The robot is expected to move with controlled, non-aggressive acceleration."
+      "odd_summary": "ODD for a Unitree Go2 quadruped robot in indoor residential and commercial environments with moderate-to-high furniture density, tolerant of high accelerations for obstacle avoidance."
     },
     "cod_classification": {
       "cod_classification": {
@@ -312,12 +321,12 @@
         },
         "numeric": {
           "max_accel_mps2": 9.1608,
-          "obstacle_density": 0.6,
-          "traversability_score": 0.3,
-          "collision_risk": 0.8
+          "obstacle_density": 0.45,
+          "traversability_score": 0.45,
+          "collision_risk": 0.675
         }
       },
-      "cod_summary": "The robot is currently operating in a bright, indoor residential environment with smooth terrain (likely rugs). Motion is abrupt with extremely high acceleration. There's a moderate obstacle density and low traversability, resulting in a high collision risk."
+      "cod_summary": "The robot is operating indoors in bright lighting on smooth terrain. Motion is abrupt, characterized by high acceleration, likely due to navigation in a moderately dense obstacle environment with a notable collision risk."
     },
     "odd_compliance": {
       "odd_compliance": {
@@ -325,25 +334,20 @@
           "environment_type": "IN_ODD",
           "lighting_conditions": "IN_ODD",
           "terrain_type": "IN_ODD",
-          "motion_smoothness": "OUT_ODD"
+          "motion_smoothness": "IN_ODD"
         },
         "numeric_compliance": {
-          "obstacle_density": "ODD_BOUNDARY",
+          "obstacle_density": "IN_ODD",
           "traversability_score": "ODD_BOUNDARY",
-          "collision_risk": "OUT_ODD",
-          "max_accel_mps2": "OUT_ODD"
+          "collision_risk": "IN_ODD",
+          "max_accel_mps2": "IN_ODD"
         },
-        "overall_compliance": "OUT_ODD",
-        "violations": [
-          "motion_smoothness: abrupt (ODD specifies smooth to moderate acceleration, not abrupt jerky motions)",
-          "max_accel_mps2: 9.1608 m/s\u00b2 (exceeds OUT_ODD threshold of 5.0 m/s\u00b2)",
-          "collision_risk: 0.8 (exceeds OUT_ODD threshold of 0.5)"
-        ],
+        "overall_compliance": "ODD_BOUNDARY",
+        "violations": [],
         "warnings": [
-          "obstacle_density: 0.6 (at ODD_BOUNDARY, indicating a moderately cluttered space)",
-          "traversability_score: 0.3 (at ODD_BOUNDARY, indicating difficult traversability)"
+          "traversability_score (0.45) is in ODD_BOUNDARY range [0.3, 0.5]"
         ],
-        "compliance_summary": "The robot is operating significantly outside its design domain due to abrupt and extremely high acceleration, leading to a critical collision risk. While the general environment (indoor, bright, smooth terrain) is compliant, the motion dynamics and safety metrics are violated. The high obstacle density and low traversability also push the environment to its operational limits."
+        "compliance_summary": "The operating conditions are generally within the ODD, with the traversability score indicating navigation in an area close to its lower design limits, suggesting potentially challenging terrain for optimal performance."
       }
     }
   }

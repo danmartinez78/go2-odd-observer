@@ -226,7 +226,7 @@
             <div class="col-md-8">
                 <h1 class="display-4">🤖 ODD Analysis Report</h1>
                 <h2 class="h3">Data Set: real_01_173442</h2>
-                <p class="lead mb-0">Generated November 23, 2025 at 23:02:03</p>
+                <p class="lead mb-0">Generated November 24, 2025 at 01:32:05</p>
             </div>
             <div class="col-md-4 text-end">
                 <div class="status-badge">
@@ -248,7 +248,7 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card">
-                <div class="metric-value">3</div>
+                <div class="metric-value">1</div>
                 <div class="metric-label">Violations</div>
             </div>
         </div>
@@ -260,7 +260,7 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card">
-                <div class="metric-value">0.90</div>
+                <div class="metric-value">0.85</div>
                 <div class="metric-label">Avg Collision Risk</div>
             </div>
         </div>
@@ -273,7 +273,7 @@
         <div class="col-12">
             <h2 class="mb-4">📋 Executive Summary</h2>
             <div class="metric-card">
-                <p class="lead">The scenario 'real_01_173442' involves a robot operating in a real-world indoor living room environment, which is generally compliant with the ODD's environmental requirements. However, the robot exhibited abrupt, high-acceleration motion and encountered close-proximity obstacles, leading to a high collision risk and overall operation outside the defined ODD.</p>
+                <p class="lead">The scenario 'real_01_173442' involves a quadruped robot navigating an indoor environment with furniture and low-lying objects. While most operational parameters fall within the defined ODD, the robot consistently exhibits a critical collision risk due to high acceleration towards close-range obstacles, indicating a significant safety concern.</p>
             </div>
         </div>
     </div>
@@ -326,11 +326,11 @@
             <ul>
                 <li>🔴 <strong>Acceleration:</strong> 5.98 m/s² (exceeds 5.0 threshold)</li>
                 
-                <li>🔴 <strong>Collision Risk:</strong> 0.95 (exceeds 0.5 threshold)</li>
+                <li>🔴 <strong>Collision Risk:</strong> 1.00 (exceeds 0.5 threshold)</li>
             </ul>
         </div>
         
-        <p class="text-muted fst-italic">"View of an indoor living room with significant image artifacts. A couch is on the left, a media console in the center-right, and a small ramp-like object is on the patterned rug directly in front."</p>
+        <p class="text-muted fst-italic">"A low-angle view of an indoor living room. The floor is covered with a textured rug, with a small wooden ramp-like object in the immediate foreground. Furniture, including a couch and a console table, is visible against the walls."</p>
     </div>
     
     <div class="violation-spotlight">
@@ -379,7 +379,7 @@
             </ul>
         </div>
         
-        <p class="text-muted fst-italic">"Indoor living room scene with severe visual artifacts and compression noise. A cluttered rug and a box-like object are in the immediate foreground, with a cabinet against the far wall."</p>
+        <p class="text-muted fst-italic">"Low-angle view of an indoor room with a patterned rug. An object, possibly a book, is on the floor directly ahead. Furniture is visible in the background to the left and right."</p>
     </div>
     
 </div>
@@ -405,13 +405,13 @@
                         <tr>
                             <td>environment_type</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>indoor</td>
+                            <td>indoor_office</td>
                         </tr>
                         
                         <tr>
                             <td>lighting_conditions</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>bright</td>
+                            <td>moderate</td>
                         </tr>
                         
                         <tr>
@@ -422,7 +422,7 @@
                         
                         <tr>
                             <td>motion_smoothness</td>
-                            <td class="compliance-status-OUT_ODD">OUT_ODD</td>
+                            <td class="compliance-status-IN_ODD">IN_ODD</td>
                             <td>abrupt</td>
                         </tr>
                         
@@ -447,19 +447,19 @@
                         <tr>
                             <td>obstacle_density</td>
                             <td class="compliance-status-IN_ODD">IN_ODD</td>
-                            <td>0.55</td>
+                            <td>0.35</td>
                         </tr>
                         
                         <tr>
                             <td>traversability_score</td>
-                            <td class="compliance-status-ODD_BOUNDARY">ODD_BOUNDARY</td>
-                            <td>0.45</td>
+                            <td class="compliance-status-IN_ODD">IN_ODD</td>
+                            <td>0.7</td>
                         </tr>
                         
                         <tr>
                             <td>collision_risk</td>
                             <td class="compliance-status-OUT_ODD">OUT_ODD</td>
-                            <td>0.9</td>
+                            <td>0.85</td>
                         </tr>
                         
                     </tbody>
@@ -474,7 +474,7 @@
     <h2 class="mb-4">🔍 Key Findings</h2>
     <div class="metric-card">
         <ol>
-            <li class="mb-2">The robot's motion was consistently abrupt with peak accelerations significantly exceeding ODD limits (5.982 m/s² vs. 5.0 m/s² boundary).</li><li class="mb-2">A high collision risk (0.9) was detected in both windows, placing the operation well outside the ODD (max 0.5 for OUT_ODD).</li><li class="mb-2">Close-proximity obstacles (as close as 0.4 meters) were directly in the robot's path, contributing to the high collision risk.</li><li class="mb-2">The traversability score (0.45) was at the ODD boundary, indicating challenging navigation conditions.</li><li class="mb-2">Perception quality was compromised by significant image artifacts and compression noise, despite adequate lighting.</li>
+            <li class="mb-2">The environment (indoor office/residential, smooth terrain, dim/bright lighting) is compliant with the ODD.</li><li class="mb-2">Robot motion is complex and abrupt, which is consistent with the ODD's allowance for reactive maneuvers and direction changes.</li><li class="mb-2">The current operating domain's collision risk (0.85) exceeds the ODD's acceptable limit of 0.75, indicating a non-compliant and unsafe condition.</li><li class="mb-2">Close-range obstacles (0.6m, 0.75m) combined with high accelerations are the primary drivers of the critical collision risk.</li>
         </ol>
     </div>
 </div>
@@ -484,7 +484,7 @@
     <h2 class="mb-4">💡 Recommendations</h2>
     <div class="metric-card">
         <ol>
-            <li class="mb-2">Implement robust collision avoidance and emergency braking systems to address the high collision risk from close-proximity obstacles.</li><li class="mb-2">Review and re-tune motion control algorithms to ensure adherence to ODD-defined acceleration limits and motion smoothness requirements.</li><li class="mb-2">Investigate and rectify camera hardware or software issues contributing to image artifacts and poor visual quality to improve perception accuracy.</li><li class="mb-2">Develop navigation strategies and ODD extensions for environments with boundary-level traversability and moderate obstacle densities, or ensure operation avoids such conditions.</li>
+            <li class="mb-2">Investigate the cause of persistent high collision risk, specifically the robot's behavior when encountering close-range obstacles while exhibiting high acceleration.</li><li class="mb-2">Review and potentially adjust motion control parameters, particularly acceleration profiles, when navigating in close proximity to obstacles in cluttered indoor environments.</li><li class="mb-2">Enhance obstacle avoidance strategies to ensure adequate braking distance or path adjustments are made earlier, especially for low-lying objects directly in the path.</li><li class="mb-2">Prioritize safety measures or system updates to prevent the robot from maintaining high acceleration towards confirmed, close-range hazards.</li>
         </ol>
     </div>
 </div>
@@ -495,7 +495,7 @@
         <div class="row">
             <div class="col-md-6">
                 <p class="mb-0">Generated by ODD Observer Analysis Pipeline</p>
-                <p class="mb-0"><small>November 23, 2025 at 23:02:03</small></p>
+                <p class="mb-0"><small>November 24, 2025 at 01:32:05</small></p>
             </div>
             <div class="col-md-6 text-end">
                 <p class="mb-0">Environment: real_world</p>
@@ -547,7 +547,7 @@
     
     // Initialize Plotly charts
     const accelData = {"data": [{"x": ["000", "001"], "y": [5.982, 2.4845], "type": "bar", "marker": {"color": ["#dc3545", "#ffc107"]}, "name": "Peak Acceleration"}], "layout": {"title": "Peak Acceleration by Window", "xaxis": {"title": "Window ID"}, "yaxis": {"title": "Acceleration (m/s\u00b2)"}, "shapes": [{"type": "line", "x0": -0.5, "x1": 1.5, "y0": 2.0, "y1": 2.0, "line": {"color": "#ffc107", "dash": "dash", "width": 2}}, {"type": "line", "x0": -0.5, "x1": 1.5, "y0": 5.0, "y1": 5.0, "line": {"color": "#dc3545", "dash": "dash", "width": 2}}], "annotations": [{"x": 1.2, "y": 2.0, "text": "IN_ODD (2.0)", "showarrow": false, "yshift": 10}, {"x": 1.2, "y": 5.0, "text": "OUT_ODD (5.0)", "showarrow": false, "yshift": 10}]}};
-    const riskData = {"data": [{"x": [0.5, 0.4], "y": [0.95, 0.95], "mode": "markers+text", "text": ["000", "001"], "textposition": "top center", "marker": {"size": 15, "color": ["#dc3545", "#dc3545"]}, "name": "Windows"}], "layout": {"title": "Risk Matrix: Collision vs Traversability", "xaxis": {"title": "Traversability Score", "range": [0, 1]}, "yaxis": {"title": "Collision Risk", "range": [0, 1]}, "shapes": [{"type": "rect", "x0": 0, "x1": 0.3, "y0": 0.5, "y1": 1, "fillcolor": "#dc3545", "opacity": 0.2, "line": {"width": 0}}]}};
+    const riskData = {"data": [{"x": [0.8, 0.6], "y": [1.0, 0.95], "mode": "markers+text", "text": ["000", "001"], "textposition": "top center", "marker": {"size": 15, "color": ["#dc3545", "#dc3545"]}, "name": "Windows"}], "layout": {"title": "Risk Matrix: Collision vs Traversability", "xaxis": {"title": "Traversability Score", "range": [0, 1]}, "yaxis": {"title": "Collision Risk", "range": [0, 1]}, "shapes": [{"type": "rect", "x0": 0, "x1": 0.3, "y0": 0.5, "y1": 1, "fillcolor": "#dc3545", "opacity": 0.2, "line": {"width": 0}}]}};
     const accelTimeseriesData = {"data": [{"x": [0.048920631408691406, 0.06268167495727539, 0.18618392944335938, 0.18921232223510742, 0.3187432289123535, 0.3337438106536865, 0.45706748962402344, 0.4782087802886963, 0.5980925559997559, 0.7331204414367676, 0.7331914901733398, 0.8833794593811035, 0.8834664821624756, 0.8835554122924805, 0.8836283683776855, 1.0129663944244385, 1.0163817405700684, 1.1374297142028809, 1.137535572052002, 1.1505324840545654, 1.1624934673309326, 1.2953310012817383, 1.2954776287078857, 1.4353911876678467, 1.4356324672698975, 1.455646276473999, 1.4557337760925293, 1.4564533233642578, 1.5898120403289795, 1.6042377948760986, 1.7342729568481445, 1.7384283542633057, 1.868030071258545, 1.8899788856506348], "y": [0.31432777049871313, 5.982015978166672, 0.0, 1.5421950612594981, 3.8028066036908417, 1.4289644639282666, 5.823793150911724, 0.0, 1.687167246728206, 1.183919669584402, 0.0, 0.06249059752163892, 0.9152991942774321, 0.8689540861147405, 0.3736686270503562, 0.7278076442767057, 0.18416700877027145, 0.9294340505851421, 0.3565751236759078, 0.0, 0.4141501178685713, 0.5963913197239287, 0.0, 0.2683885397848861, 0.0, 4.319554818955149, 0.3508817346848721, 0.23971049263423233, 0.28435893424721714, 0.02708784539240239, 0.031422643695949305, 0.16526084564976726, 0.11759049642365874, 0.0], "type": "scatter", "mode": "lines", "name": "Window 000", "line": {"width": 2}}, {"x": [0.11506533622741699, 0.1236419677734375, 0.25467777252197266, 0.25475430488586426, 0.2548999786376953, 0.3836221694946289, 0.39052367210388184, 0.4221515655517578, 0.42221570014953613, 0.5456500053405762, 0.545708417892456, 0.671870231628418, 0.6784985065460205, 0.8094620704650879, 0.8098957538604736, 0.9480564594268799, 0.9481790065765381, 0.9624290466308594, 1.0946300029754639, 1.0950894355773926, 1.1110286712646484, 1.1110942363739014, 1.2431747913360596, 1.2442071437835693, 1.4056777954101562, 1.4060842990875244, 1.4137723445892334, 1.4138576984405518, 1.5475177764892578, 1.5475754737854004, 1.7032136917114258, 1.7039813995361328, 1.8472211360931396, 1.8483119010925293, 1.8958895206451416, 1.8969533443450928], "y": [0.155627607234081, 0.14697577541024542, 0.07045642026163276, 0.10073445543793036, 0.029927199336575633, 0.0, 0.05471467641403243, 0.039085220123263105, 0.06713375210243605, 0.10062781658215081, 0.0, 0.058706833495869734, 0.14945994182834818, 0.015141933900068804, 0.07665170797825858, 0.04670234181896969, 0.13779707966870147, 0.06429887896682578, 0.18593653506526955, 0.0, 0.06974128517409381, 0.1234930461968083, 0.09840261854523452, 0.06416474004242877, 0.04337729188861848, 0.0, 0.0378560679439444, 0.0912393131579334, 0.11971661564323643, 0.0, 0.05785809175673621, 0.09672886926925543, 2.4844781233369595, 1.1350133236850668, 0.9934945908393473, 1.4078251814231968], "type": "scatter", "mode": "lines", "name": "Window 001", "line": {"width": 2}}], "layout": {"title": "Horizontal Acceleration Over Time", "xaxis": {"title": "Time (s)"}, "yaxis": {"title": "Acceleration (m/s\u00b2)"}, "hovermode": "x unified", "shapes": [{"type": "line", "x0": 0.048920631408691406, "x1": 1.8969533443450928, "y0": 0.5, "y1": 0.5, "line": {"color": "#ffc107", "dash": "dash", "width": 1.5}}]}};
     const gyroTimeseriesData = {"data": [{"x": [0.048920631408691406, 0.06268167495727539, 0.18618392944335938, 0.18921232223510742, 0.3187432289123535, 0.3337438106536865, 0.45706748962402344, 0.4782087802886963, 0.5980925559997559, 0.7331204414367676, 0.7331914901733398, 0.8833794593811035, 0.8834664821624756, 0.8835554122924805, 0.8836283683776855, 1.0129663944244385, 1.0163817405700684, 1.1374297142028809, 1.137535572052002, 1.1505324840545654, 1.1624934673309326, 1.2953310012817383, 1.2954776287078857, 1.4353911876678467, 1.4356324672698975, 1.455646276473999, 1.4557337760925293, 1.4564533233642578, 1.5898120403289795, 1.6042377948760986, 1.7342729568481445, 1.7384283542633057, 1.868030071258545, 1.8899788856506348], "y": [0.013848000206053257, 0.33236199617385864, 0.0, 0.10013499855995178, 0.014914000406861305, 0.031957998871803284, 0.2098570019006729, 0.0, 0.06924200057983398, 0.06285099685192108, 0.0, 0.2482070028781891, 0.08415599912405014, 0.0681769996881485, 0.013848000206053257, 0.007457000203430653, 0.02343600057065487, 0.045805998146533966, 0.003195999888703227, 0.0, 0.009587000124156475, 0.005326000042259693, 0.0, 0.06711199879646301, 0.0, 0.05113299936056137, 0.04687200114130974, 0.05219800025224686, 0.012783000245690346, 0.02556600049138069, 0.009587000124156475, 0.004261000081896782, 0.019175000488758087, 0.0], "type": "scatter", "mode": "lines", "name": "Window 000", "line": {"width": 2}}, {"x": [0.11506533622741699, 0.1236419677734375, 0.25467777252197266, 0.25475430488586426, 0.2548999786376953, 0.3836221694946289, 0.39052367210388184, 0.4221515655517578, 0.42221570014953613, 0.5456500053405762, 0.545708417892456, 0.671870231628418, 0.6784985065460205, 0.8094620704650879, 0.8098957538604736, 0.9480564594268799, 0.9481790065765381, 0.9624290466308594, 1.0946300029754639, 1.0950894355773926, 1.1110286712646484, 1.1110942363739014, 1.2431747913360596, 1.2442071437835693, 1.4056777954101562, 1.4060842990875244, 1.4137723445892334, 1.4138576984405518, 1.5475177764892578, 1.5475754737854004, 1.7032136917114258, 1.7039813995361328, 1.8472211360931396, 1.8483119010925293, 1.8958895206451416, 1.8969533443450928], "y": [0.0010649999603629112, 0.014914000406861305, 0.007457000203430653, 0.008522000163793564, 0.009587000124156475, 0.0, 0.0010649999603629112, 0.006391999777406454, 0.010653000324964523, 0.007457000203430653, 0.0, 0.012783000245690346, 0.002130999928340316, 0.005326000042259693, 0.0010649999603629112, 0.004261000081896782, 0.008522000163793564, 0.0, 0.015978999435901642, 0.0, 0.0010649999603629112, 0.005326000042259693, 0.009587000124156475, 0.0010649999603629112, 0.007457000203430653, 0.0, 0.006391999777406454, 0.004261000081896782, 0.022370999678969383, 0.0, 0.008522000163793564, 0.003195999888703227, 0.04474100098013878, 0.045805998146533966, 0.04261099919676781, 0.04687200114130974], "type": "scatter", "mode": "lines", "name": "Window 001", "line": {"width": 2}}], "layout": {"title": "Angular Velocity (Yaw) Over Time", "xaxis": {"title": "Time (s)"}, "yaxis": {"title": "Angular Velocity (rad/s)"}, "hovermode": "x unified", "shapes": [{"type": "line", "x0": 0.048920631408691406, "x1": 1.8969533443450928, "y0": 0.1, "y1": 0.1, "line": {"color": "#ffc107", "dash": "dash", "width": 1.5}}]}};
     
