@@ -1,0 +1,344 @@
+{
+  "report": {
+    "executive_summary": "This scenario, 'real_06_174604', involved a robot operating in a bright, indoor residential environment with smooth terrain, encountering a person and a dog. Despite being within ODD for environmental factors, the robot exhibited abrupt motion and faced a critical collision risk (0.8) due to close proximity to dynamic obstacles. Consequently, the overall operation was classified as OUT_ODD.",
+    "scenario_metadata": {
+      "total_windows_analyzed": 2,
+      "scenario_name": "real_06_174604",
+      "environment_class": "indoor",
+      "data_source": "real_world",
+      "data_source_confidence": 0.95
+    },
+    "perception_summary": "The scenario takes place in a bright, indoor living room environment, confirmed as real-world data. The robot encountered a person and a dog standing on a large, high-pile patterned rug. Obstacle density ranged from 0.2 to 0.5, with traversability scores between 0.5 and 0.9. Key environmental constraints included human presence, dynamic obstacles, clutter, and confined spaces, particularly in the immediate forward path.",
+    "motion_summary": "Motion was detected in all analyzed windows, primarily characterized by translation with peak horizontal accelerations around 0.42 m/s\u00b2 and low angular velocities. The platform remained stable with a maximum tilt of 1.3 degrees. However, the motion smoothness was consistently classified as 'abrupt' due to extremely high jerk values, despite an overall assessment of moderate activity.",
+    "collision_summary": "Both analyzed windows presented a high to critical collision risk, with an average collision likelihood of 0.8. The closest obstacle was detected at 0.8 to 1.0 meters, involving a person and a dog, often directly in the robot's path. The robot's motion was deemed to contribute to this risk, leading to strong recommendations for an immediate stop in both instances.",
+    "odd_spec_summary": "Defines an ODD for a quadruped robot operating in well-lit, common indoor environments with smooth, flat surfaces and up to moderate obstacle density. It is not designed for outdoor use, stairs, steep slopes, or highly cluttered spaces, nor for aggressive or jerky motions.",
+    "cod_classification_summary": "The robot is operating in a bright, indoor residential environment (living room) with smooth terrain. It is currently experiencing abrupt motion and navigating through a moderately dense obstacle field, which includes a person and a dog, resulting in a high collision risk.",
+    "odd_compliance_summary": "The operating domain for environment type, lighting, terrain, maximum acceleration, and platform slope are within the ODD. However, the robot's motion smoothness is abrupt, and it is experiencing a high collision risk (0.8), both of which are outside the defined ODD parameters.",
+    "key_findings": [
+      "The robot operated in a bright, indoor residential environment with smooth terrain, generally compliant with ODD categorical constraints.",
+      "Dynamic obstacles (a person and a dog) were present in close proximity, leading to confined spaces and increased collision risk.",
+      "The robot's motion was consistently classified as 'abrupt', violating the ODD's expectation for smooth to moderate acceleration.",
+      "The overall collision risk was consistently high to critical (average 0.8), exceeding the ODD's defined safe limit.",
+      "Despite low maximum acceleration, the abruptness of motion significantly contributed to the OUT_ODD classification."
+    ],
+    "recommendations": [
+      "Implement stricter control strategies to ensure smoother robot motion and prevent abrupt movements, particularly when dynamic obstacles are present.",
+      "Enhance collision avoidance algorithms to react more conservatively when dynamic obstacles like humans and pets are detected in close proximity, prioritizing immediate stops or safe evasive maneuvers.",
+      "Review the ODD's obstacle density and traversability thresholds in conjunction with real-world scenarios involving dynamic, unpredictable obstacles to ensure safe operation."
+    ]
+  },
+  "full_analysis": {
+    "perception": {
+      "windows_analyzed": [
+        "000",
+        "001"
+      ],
+      "environment_classification": {
+        "primary_class": "indoor",
+        "confidence": 0.98,
+        "evidence": [
+          "camera summary describes a 'living room'",
+          "presence of furniture, rug, and pillow",
+          "no outdoor elements detected"
+        ]
+      },
+      "data_source_classification": {
+        "source": "real_world",
+        "confidence": 0.95,
+        "evidence": [
+          "scenario name 'real_06_174604' indicates real-world data",
+          "presence of complex organic forms (person, dog)",
+          "description of a 'high-pile patterned rug' suggests natural textures and potential imperfections"
+        ]
+      },
+      "per_window_perception": [
+        {
+          "bev_summary": "A single, large obstacle cluster, corresponding to the person and dog, is detected to the immediate right of the robot. The path directly ahead and to the left is clear.",
+          "camera_summary": "An indoor living room with a person and a dog standing on a large, high-pile patterned rug. Furniture is visible in the background and a pillow is on the floor in the foreground.",
+          "environmental_constraints": [
+            "human_presence",
+            "dynamic_obstacle",
+            "clutter"
+          ],
+          "humans_detected": true,
+          "lighting_class": "bright",
+          "obstacle_density": 0.2,
+          "occupancy_ratio": 0.05,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.9,
+          "visibility_score": 1,
+          "window_id": "000"
+        },
+        {
+          "bev_summary": "A large, consolidated obstacle cluster, corresponding to the person and dog, is located slightly to the right of center in the immediate forward path.",
+          "camera_summary": "A person and a large dog are standing directly in front of the robot on a patterned, high-pile rug in a well-lit living room.",
+          "environmental_constraints": [
+            "dynamic_obstacles",
+            "confined_space"
+          ],
+          "humans_detected": true,
+          "lighting_class": "bright",
+          "obstacle_density": 0.5,
+          "occupancy_ratio": 0.15,
+          "terrain_roughness_class": "smooth",
+          "traversability_score": 0.5,
+          "visibility_score": 1,
+          "window_id": "001"
+        }
+      ]
+    },
+    "motion": {
+      "windows_analyzed": [
+        "000",
+        "001"
+      ],
+      "overall_stats": {
+        "total_windows": 2,
+        "motion_detected_count": 2,
+        "motion_detection_rate": 1.0,
+        "motion_type_distribution": {
+          "translation": 2
+        },
+        "max_horizontal_accel_mps2": 0.4294,
+        "max_angular_velocity_radps": 0.0224,
+        "overall_assessment": "moderate_activity"
+      },
+      "per_window_motion": [
+        {
+          "estimated_speed_mps": null,
+          "evidence": "IMU accelerometer data shows peak horizontal acceleration of 0.4276 m/s\u00b2 and average of 0.3504 m/s\u00b2, which is well above the 0.05 m/s\u00b2 threshold, confirming translation. All peak angular velocities are below 0.1 rad/s (peak 0.0202 rad/s), indicating no significant rotation. Jerk analysis reveals extremely high values (peak 1374.77 m/s\u00b3, average 132.69 m/s\u00b3), classifying the motion as abrupt. The platform is stable with a maximum tilt of 1.3\u00b0. The camera image shows generally sharp floor textures and background, consistent with a low instantaneous speed, though a blurred person indicates relative motion within the scene. Estimated speed is null due to the inability to accurately determine instantaneous speed from a single frame given the acceleration context.",
+          "max_tilt_deg": 1.3,
+          "motion_confidence": 0.9,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "translation",
+          "peak_angular_velocity_radps": 0.0202,
+          "peak_horizontal_accel_mps2": 0.4276,
+          "platform_stability": "stable",
+          "window_id": "000"
+        },
+        {
+          "estimated_speed_mps": null,
+          "evidence": "IMU accelerometer data shows a peak horizontal acceleration of 0.4294 m/s\u00b2, which exceeds the 0.05 m/s\u00b2 threshold, confirming translation. All angular velocities (peak 0.0224 rad/s) are well below the 0.1 rad/s threshold, indicating no significant rotation. The peak jerk (3557.26 m/s\u00b3) and average jerk (347.97 m/s\u00b3) are significantly higher than 5 m/s\u00b3, classifying the motion as abrupt. Platform stability is confirmed with maximum tilt angles of 0.8\u00b0 roll and 1.3\u00b0 pitch, well below the 15\u00b0 threshold. The provided camera image is a single frame and, despite showing sharp textures, does not allow for visual odometry-based speed estimation due to the lack of sequential frames for blur or optical flow analysis.",
+          "max_tilt_deg": 1.3,
+          "motion_confidence": 0.9,
+          "motion_detected": true,
+          "motion_smoothness": "abrupt",
+          "motion_type": "translation",
+          "peak_angular_velocity_radps": 0.0224,
+          "peak_horizontal_accel_mps2": 0.4294,
+          "platform_stability": "stable",
+          "window_id": "001"
+        }
+      ]
+    },
+    "collision": {
+      "windows_analyzed": [
+        "000",
+        "001"
+      ],
+      "overall_collision_stats": {
+        "total_windows": 2,
+        "safe_count": 0,
+        "caution_count": 0,
+        "alert_count": 2,
+        "avg_collision_likelihood": 0.8
+      },
+      "collision_events": [
+        {
+          "bev_hazards": [
+            "large obstacle detected forward-right"
+          ],
+          "camera_hazards": [
+            "person's leg and foot",
+            "dog",
+            "pillow on floor"
+          ],
+          "closest_obstacle_meters": 0.8,
+          "collision_risk_level": "high",
+          "evidence": "Robot is translating towards a person and a dog at close range. Both camera and BEV LiDAR confirm a large, dynamic obstacle to the forward-right. The robot's motion directly increases the risk, necessitating an immediate stop to avoid collision.",
+          "motion_contributes_to_risk": true,
+          "obstacle_direction": "multiple",
+          "recommended_action": "stop",
+          "risk_confidence": 0.95,
+          "window_id": "000"
+        },
+        {
+          "bev_hazards": [
+            "large obstacle cluster directly in forward path"
+          ],
+          "camera_hazards": [
+            "human in immediate path",
+            "dog in immediate path",
+            "unpredictable dynamic obstacles"
+          ],
+          "closest_obstacle_meters": 1,
+          "collision_risk_level": "critical",
+          "evidence": "Robot is translating forward directly towards a human and a dog at very close range (~1m). The hazard is confirmed by both camera and BEV data, creating an imminent collision risk that requires an immediate stop.",
+          "motion_contributes_to_risk": true,
+          "obstacle_direction": "front",
+          "recommended_action": "stop",
+          "risk_confidence": 0.95,
+          "window_id": "001"
+        }
+      ]
+    },
+    "odd_spec": {
+      "odd_specification": {
+        "categorical_constraints": {
+          "environment_type": {
+            "allowed": [
+              "indoor_office",
+              "indoor_corridor",
+              "indoor_residential"
+            ],
+            "prohibited": [
+              "outdoor_urban",
+              "outdoor_natural",
+              "stairs",
+              "industrial"
+            ]
+          },
+          "lighting_conditions": {
+            "allowed": [
+              "bright",
+              "dim"
+            ],
+            "prohibited": [
+              "dark",
+              "low_light"
+            ]
+          },
+          "terrain_type": {
+            "allowed": [
+              "smooth",
+              "low_pile_carpet"
+            ],
+            "prohibited": [
+              "moderate",
+              "rough",
+              "very_rough",
+              "ramps",
+              "gravel",
+              "grass"
+            ]
+          }
+        },
+        "numeric_constraints": {
+          "max_accel_mps2": {
+            "in_odd": [
+              0.0,
+              3.5
+            ],
+            "boundary": [
+              3.5,
+              5.0
+            ],
+            "out_odd": [
+              5.0,
+              "inf"
+            ]
+          },
+          "obstacle_density": {
+            "in_odd": [
+              0.0,
+              0.6
+            ],
+            "boundary": [
+              0.6,
+              0.8
+            ],
+            "out_odd": [
+              0.8,
+              1.0
+            ]
+          },
+          "traversability_score": {
+            "in_odd": [
+              0.5,
+              1.0
+            ],
+            "boundary": [
+              0.3,
+              0.5
+            ],
+            "out_odd": [
+              0.0,
+              0.3
+            ]
+          },
+          "collision_risk": {
+            "in_odd": [
+              0.0,
+              0.3
+            ],
+            "boundary": [
+              0.3,
+              0.5
+            ],
+            "out_odd": [
+              0.5,
+              1.0
+            ]
+          },
+          "platform_max_slope_deg": {
+            "in_odd": [
+              0.0,
+              15.0
+            ],
+            "boundary": [
+              15.0,
+              20.0
+            ],
+            "out_odd": [
+              20.0,
+              "inf"
+            ]
+          }
+        }
+      },
+      "odd_summary": "Defines an ODD for a quadruped robot operating in well-lit, common indoor environments with smooth, flat surfaces and up to moderate obstacle density. It is not designed for outdoor use, stairs, steep slopes, or highly cluttered spaces."
+    },
+    "cod_classification": {
+      "cod_classification": {
+        "categorical": {
+          "environment_type": "indoor_residential",
+          "lighting_conditions": "bright",
+          "terrain_type": "smooth",
+          "motion_smoothness": "abrupt"
+        },
+        "numeric": {
+          "max_accel_mps2": 0.4294,
+          "obstacle_density": 0.35,
+          "traversability_score": 0.7,
+          "collision_risk": 0.8
+        }
+      },
+      "cod_summary": "The robot is operating in a bright, indoor residential environment (living room) with smooth terrain. It is currently experiencing abrupt motion and navigating through a moderately dense obstacle field, which includes a person and a dog, resulting in a high collision risk."
+    },
+    "odd_compliance": {
+      "odd_compliance": {
+        "categorical_compliance": {
+          "environment_type": "IN_ODD",
+          "lighting_conditions": "IN_ODD",
+          "terrain_type": "IN_ODD",
+          "motion_smoothness": "OUT_ODD"
+        },
+        "numeric_compliance": {
+          "obstacle_density": "IN_ODD",
+          "traversability_score": "IN_ODD",
+          "collision_risk": "OUT_ODD",
+          "max_accel_mps2": "IN_ODD",
+          "platform_max_slope_deg": "IN_ODD"
+        },
+        "overall_compliance": "OUT_ODD",
+        "violations": [
+          "motion_smoothness: abrupt",
+          "collision_risk: 0.8"
+        ],
+        "warnings": [],
+        "compliance_summary": "The operating domain for environment type, lighting, terrain, maximum acceleration, and platform slope are within the ODD. However, the robot's motion smoothness is abrupt, and it is experiencing a high collision risk (0.8), both of which are outside the defined ODD parameters."
+      }
+    }
+  }
+}

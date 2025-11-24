@@ -71,12 +71,18 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             You are a perception expert analyzing synchronized robot sensors for window {window_id}.
             You will receive two images:
             - Image A: RGB camera frame from the robot's forward camera.
-            - Image B: LiDAR bird's-eye occupancy map showing OBSTACLES ONLY (ground filtered out).
+            - Image B: LiDAR bird's-eye occupancy map showing OBSTACLES ONLY (ground filtered out, 400x400 pixels).
               Bright pixels indicate objects/obstacles ABOVE ground level (>10cm height).
               Dark/black pixels indicate free/navigable space.
-              THE ROBOT IS LOCATED AT THE CENTER OF THE BEV MAP (200, 200 in 400x400 grid).
-              The robot faces in the +x direction (upward in the image).
+              THE ROBOT IS LOCATED AT THE CENTER OF THE BEV MAP (200, 200).
+              The robot faces upward (top of image = forward direction).
+              SCALE: 0.05 meters per pixel (20 pixels = 1 meter, 40 pixels = 2 meters).
+              Total coverage: 20m x 20m area centered on robot.
               The upper half shows the forward path, lower half shows behind, left/right sides show lateral areas.
+              NOTE: Robot's own body may appear at center - ignore when assessing obstacles.
+              
+              IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
+              to understand the robot's footprint when assessing traversability and passable gaps.
 
             **CRITICAL DISTINCTIONS:**
             
