@@ -62,11 +62,17 @@ MOTION CONTEXT:
 
 IMAGES PROVIDED:
 1. Camera feed (egocentric view from robot)
-2. BEV LiDAR occupancy map (top-down obstacle map)
+2. BEV LiDAR occupancy map (top-down obstacle map, 400x400 pixels)
    - Shows OBSTACLES ONLY (ground filtered out, >10cm height threshold)
    - Bright pixels = obstacles above ground, dark pixels = free/navigable space
-   - Robot is at CENTER of map (200,200 in 400x400 grid), facing upward
+   - Robot is at CENTER of map (200,200), facing upward (top of image = forward)
+   - SCALE: 0.05 meters per pixel (20 pixels = 1 meter, 40 pixels = 2 meters)
+   - Total coverage: 20m x 20m area centered on robot
    - Upper half = forward path, lower half = behind, sides = lateral areas
+   - NOTE: Robot's own body may appear at center - ignore pixels within ~10-pixel radius of center when estimating obstacle distances
+   
+   IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
+   to understand the robot's size when estimating collision risk and safe distances.
 
 TASK: Analyze collision risk by fusing motion + camera + BEV data.
 

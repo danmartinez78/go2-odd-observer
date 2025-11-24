@@ -92,10 +92,26 @@ Return ONLY valid JSON:
         "boundary": [0.3, 0.5],
         "out_odd": [0.5, 1.0]
       }
+    },
+    "ego_vehicle": {
+      "vehicle_type": "quadruped_robot",
+      "dimensions": {
+        "length_m": 0.65,
+        "width_m": 0.31,
+        "height_m": 0.40
+      },
+      "clearance_requirements": {
+        "minimum_gap_width_m": 0.4,
+        "comfortable_clearance_m": 0.5
+      }
     }
   },
   "odd_summary": "Brief description of what this ODD specification defines"
 }
+
+CRITICAL REQUIREMENT: The ego_vehicle section is MANDATORY. Extract robot/vehicle physical specifications 
+(dimensions, footprint, clearance) from the ODD description into the structured ego_vehicle fields.
+If specific dimensions are not provided in the description, use reasonable defaults for the vehicle type mentioned.
 
 No explanations outside JSON.""",
     )

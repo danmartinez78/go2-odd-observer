@@ -147,26 +147,59 @@ Front camera view (use for visual odometry estimation):
 [See attached image]
 
 **ANALYSIS GUIDELINES**:
-1. Motion Detection Thresholds:
-   - Horizontal accel > 0.05 m/s²: Translation detected (moving forward/sideways/backward)
-   - Horizontal accel > 0.5 m/s²: Strong acceleration/deceleration
-   - Angular velocity > 0.1 rad/s: Rotation detected (turning)
+
+**MOTION REASONING FRAMEWORK**:
+Determine if the robot is actually moving by considering ALL evidence holistically.
+
+1. IMU Accelerometer Context:
+   - Small constant acceleration (<1.0 m/s²) combined with platform tilt often indicates gravity leakage, NOT motion
+   - Reference: 1° of tilt contributes approximately 0.17 m/s² to horizontal acceleration
+   - True translational motion typically shows VARYING acceleration patterns, not constant values
+   - Stationary robots on tilted platforms will show steady horizontal acceleration from gravity
+
+2. Camera Visual Evidence (PRIMARY MOTION INDICATOR):
+   - Sharp textures, clear edges, no motion blur → Robot is stationary or moving very slowly
+   - Blurred edges, motion streaks, smeared textures → Robot is moving at significant speed
+   - Visible optical flow or scene shift between frames → Active translation
+   - Stable, static scene → Robot is stationary
+   - Camera evidence OVERRIDES IMU when they conflict
+
+3. IMU Gyroscope Analysis:
+   - Very small gyro values (<0.05 rad/s) are typically sensor noise or drift, not actual rotation
+   - Sustained angular velocity with varying magnitude indicates genuine rotation
+   - Constant low gyro values suggest stationary robot with sensor bias
+
+4. Platform Tilt Consideration:
+   - Check current roll/pitch angles - tilt causes horizontal gravity components
+   - Example: pitch=1.25° and roll=-0.74° could contribute ~0.21 m/s² horizontal acceleration
+   - If acceleration magnitude matches expected gravity component from tilt → likely stationary
+
+5. Temporal Pattern Analysis:
+   - Genuine motion: acceleration varies over time (starts, stops, changes)
+   - IMU artifacts: constant or slowly drifting values throughout window
+   - High jerk (>10 m/s³) suggests actual dynamic maneuvers
+
+**DECISION PRIORITY** (in order of reliability):
+1. Camera visual evidence (most reliable for determining actual motion)
+2. Temporal patterns in IMU (varying = motion, constant = artifact)
+3. Gyroscope for rotation detection
+4. Accelerometer magnitude (only after accounting for gravity/tilt)
+
+**CRITICAL REASONING RULE**:
+If camera shows sharp, clear images BUT IMU shows acceleration:
+→ Check if acceleration is constant and small (<1.0 m/s²)
+→ Check if platform has tilt that explains the acceleration
+→ If yes to both: Classify as STATIONARY (IMU artifact from gravity leakage)
+
+3. Platform Stability Assessment:
+   - Roll/pitch > 15°: Unstable (climbing, descending, or on incline)
+   - Roll/pitch < 15°: Stable (on flat or gently sloped terrain)
    
-2. Visual Odometry Hints (from camera):
-   - Blurred edges → high velocity
-   - Sharp floor textures → low velocity or stationary
-   - Optical flow direction → movement direction
-   - Scene shift between frames → approximate speed
-   
-3. Platform Stability:
-   - Roll/pitch > 15°: Unstable (climbing/descending)
-   - Roll/pitch < 15°: Stable (flat terrain)
-   
-4. Motion Type Classification:
-   - "stationary": accel < 0.05 AND gyro < 0.1
-   - "rotation": gyro ≥ 0.1 AND accel < 0.5 (turning in place)
-   - "translation": accel ≥ 0.05 AND gyro < 0.1 (straight motion)
-   - "complex": accel ≥ 0.05 AND gyro ≥ 0.1 (turning while moving)
+4. Motion Type Classification Guidelines:
+   - "stationary": No visual motion in camera AND (low varying accel OR constant accel matching tilt)
+   - "rotation": Sustained gyro activity with camera showing scene rotation but no translation
+   - "translation": Camera shows optical flow/blur AND varying acceleration pattern
+   - "complex": Camera shows both rotation and translation with corresponding IMU patterns
 
 **OUTPUT**: JSON object with EXACT schema (no extra text):
 {{
@@ -180,10 +213,11 @@ Front camera view (use for visual odometry estimation):
   "motion_confidence": 0.0-1.0,
   "estimated_speed_mps": <float or null>,
   "motion_smoothness": "smooth|moderate|abrupt",
-  "evidence": "Brief explanation citing IMU values and camera observations"
+  "evidence": "Detailed explanation citing camera observations, IMU patterns, tilt compensation, and reasoning process"
 }}
 
-Note: estimated_speed_mps should be your best estimate from camera blur/flow if possible, null if uncertain.""")]
+Note: estimated_speed_mps should be your best estimate from camera blur/flow if possible, null if uncertain.
+Focus your evidence on WHY you classified the motion as you did, especially when camera and IMU appear to conflict.""")]
 
             # Add camera image if available
             if cam_file.exists():

@@ -15,6 +15,7 @@ Output:
 """
 
 from odd_agents import run_odd_workflow
+import argparse
 import asyncio
 import json
 import os
@@ -62,6 +63,13 @@ MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
 DEFAULT_ODD_DESCRIPTION = """
 The Unitree Go2 is a quadruped robot designed for general indoor navigation in 
 residential and commercial spaces.
+
+ROBOT PHYSICAL SPECIFICATIONS (EGO VEHICLE):
+- Footprint: 0.65m length × 0.31m width (standing posture)
+- Height: 0.40m (standing), 0.25m (crouching)
+- Minimum passable gap: 0.4m width for straight corridors
+- Comfortable clearance: 0.5m+ width for maneuvering around obstacles
+- Turning radius: ~0.3m (can rotate in place)
 
 ENVIRONMENT:
 The robot operates in typical indoor environments including homes, offices, hallways, 
@@ -305,6 +313,22 @@ def display_summary(result: Dict[str, Any]):
 
 async def main():
     """Main execution function."""
+    # Parse arguments
+    parser = argparse.ArgumentParser(
+        description="Run ODD analysis on a scenario"
+    )
+    parser.add_argument(
+        "--scenario",
+        type=str,
+        help="Scenario name or path to run analysis on (skips interactive selection)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        help="Output directory for results (default: data/analysis_results/manual/<timestamp>)"
+    )
+    args = parser.parse_args()
+
     # Load environment
     load_dotenv()
     api_key = os.environ.get("GOOGLE_API_KEY")
@@ -337,11 +361,28 @@ async def main():
 
     print(f"✅ Found {len(scenarios)} scenarios")
 
-    # Select scenario
-    scenario = select_scenario(scenarios)
-    if scenario is None:
-        print("\n👋 Cancelled")
-        return
+    # Select scenario (either from args or interactively)
+    if args.scenario:
+        # Find matching scenario by name
+        scenario = None
+        for s in scenarios:
+            if s['name'] == args.scenario or str(s['path']) == args.scenario:
+                scenario = s
+                break
+
+        if scenario is None:
+            print(f"❌ Scenario '{args.scenario}' not found")
+            print(
+                f"Available scenarios: {', '.join(s['name'] for s in scenarios)}")
+            sys.exit(1)
+
+        print(f"\n✅ Using scenario: {scenario['name']}")
+    else:
+        # Interactive selection
+        scenario = select_scenario(scenarios)
+        if scenario is None:
+            print("\n👋 Cancelled")
+            return
 
     scenario_path = str(scenario['path'].absolute())
     scenario_name = scenario['name']
@@ -381,8 +422,30 @@ async def main():
 
         if result:
             # Save results
-            output_dir = save_results(
-                result, scenario_name, timestamp, scenario_path)
+            if args.output_dir:
+                # Use specified output directory
+                output_base = Path(args.output_dir)
+                output_dir = output_base / scenario_name
+            else:
+                # Use default timestamp-based directory
+                output_base = Path(
+                    scenario_path).parent.parent.parent / "analysis_results" / "manual" / timestamp
+                output_dir = output_base / scenario_name
+
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Save full results
+            full_result_path = output_dir / "full_result.json"
+            with open(full_result_path, 'w') as f:
+                json.dump(result, f, indent=2)
+
+            # Save executive summary
+            summary_path = output_dir / "executive_summary.json"
+            with open(summary_path, 'w') as f:
+                json.dump({
+                    'report': result.get('report', {}),
+                    'scenario_metadata': result.get('report', {}).get('scenario_metadata', {}),
+                }, f, indent=2)
 
             # Display summary
             display_summary(result)
