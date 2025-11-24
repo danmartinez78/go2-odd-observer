@@ -551,11 +551,13 @@ class OddMetadataCallback(BaseCallback):
         self.agent_metadata = {}
         self.execution_stats = {}
         self._start_times = {}
+        # Store pipeline start time (assumes callback created immediately before execution)
         self._pipeline_start = datetime.now(timezone.utc)
     
     def on_agent_start(self, agent_name: str, inputs: dict, **kwargs):
         """Track when agent starts execution."""
         self._start_times[agent_name] = time.time()
+        # Initialize stats dict for this agent (handles out-of-order callbacks)
         self.execution_stats.setdefault(agent_name, {})
         self.execution_stats[agent_name]['start_time'] = datetime.now(timezone.utc).isoformat()
     
