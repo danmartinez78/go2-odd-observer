@@ -551,19 +551,20 @@ class OddMetadataCallback(BaseCallback):
         self.agent_metadata = {}
         self.execution_stats = {}
         self._start_times = {}
+        self._pipeline_start = datetime.now(timezone.utc)
     
     def on_agent_start(self, agent_name: str, inputs: dict, **kwargs):
         """Track when agent starts execution."""
         self._start_times[agent_name] = time.time()
-        self.execution_stats[agent_name] = {
-            'start_time': datetime.now(timezone.utc).isoformat(),
-        }
+        self.execution_stats.setdefault(agent_name, {})
+        self.execution_stats[agent_name]['start_time'] = datetime.now(timezone.utc).isoformat()
     
     def on_agent_end(self, agent_name: str, outputs: dict, **kwargs):
         """Track when agent completes and build metadata."""
         # Calculate duration
         if agent_name in self._start_times:
             duration = time.time() - self._start_times[agent_name]
+            self.execution_stats.setdefault(agent_name, {})
             self.execution_stats[agent_name]['duration_seconds'] = round(duration, 2)
         
         # Build metadata from registry
@@ -577,8 +578,8 @@ class OddMetadataCallback(BaseCallback):
     
     def on_llm_end(self, agent_name: str, response: dict, **kwargs):
         """Track LLM token usage."""
-        if agent_name not in self.execution_stats:
-            return
+        # Initialize stats dict if not present (handles out-of-order callbacks)
+        self.execution_stats.setdefault(agent_name, {})
         
         # Extract token counts from LLM response
         usage = response.get('usage', {})
@@ -592,7 +593,7 @@ class OddMetadataCallback(BaseCallback):
         """Build complete pipeline metadata."""
         return {
             'pipeline_version': pipeline_version,
-            'analysis_timestamp': datetime.now(timezone.utc).isoformat(),
+            'analysis_timestamp': self._pipeline_start.isoformat(),  # Use consistent timestamp
             'odd_specification': {
                 'hash': odd_spec_hash,
                 'version': 'embedded',
@@ -1467,7 +1468,7 @@ Use Approach D (Hybrid - Prompt + Validation) as documented in Section 1.
 2. **CHOOSE** implementation approach based on verification results
 3. Review and approve this design
 4. Implement chosen approach (`odd_agents/metadata.py`)
-3. Update `odd_agents/workflow.py` with metadata injection
-4. Incrementally add metadata self-reporting to agent prompts
-5. Update HTML reports to display metadata
-6. Add CI/CD validation for version consistency
+5. Update `odd_agents/workflow.py` with metadata injection
+6. Incrementally add metadata self-reporting to agent prompts (if using Hybrid)
+7. Update HTML reports to display metadata
+8. Add CI/CD validation for version consistency
