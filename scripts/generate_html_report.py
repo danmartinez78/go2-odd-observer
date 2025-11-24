@@ -623,6 +623,27 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     </div>
 </div>
 
+<!-- Understanding This Report -->
+<div class="container mb-4">
+    <div class="alert alert-info">
+        <h5 class="alert-heading">📖 Understanding Risk Levels vs. Compliance</h5>
+        <p class="mb-2"><strong>Risk Levels</strong> describe obstacle proximity in individual windows:</p>
+        <ul class="mb-2" style="font-size: 0.9rem;">
+            <li><strong>None/Low:</strong> Obstacles distant (>2m) or robot stationary</li>
+            <li><strong>Medium:</strong> Obstacles 1-2m away, robot moving slowly</li>
+            <li><strong>High:</strong> Obstacles close (<1m), robot moving</li>
+            <li><strong>Critical:</strong> Very close proximity (<0.5m), imminent collision risk</li>
+        </ul>
+        <p class="mb-2"><strong>ODD Compliance</strong> measures whether scenario-averaged metrics stay within safe operational limits:</p>
+        <ul class="mb-0" style="font-size: 0.9rem;">
+            <li><strong>IN_ODD:</strong> All averaged parameters within design limits</li>
+            <li><strong>ODD_BOUNDARY:</strong> Some averages at edge of limits (caution zone)</li>
+            <li><strong>OUT_ODD:</strong> Averaged parameters exceeded safe limits</li>
+        </ul>
+        <p class="mt-3 mb-0" style="font-size: 0.85rem;"><em><strong>Note:</strong> Individual high-risk moments may occur even in compliant scenarios if the overall average remains safe. This report shows scenario-level compliance based on aggregated metrics across all windows.</em></p>
+    </div>
+</div>
+
 <!-- Executive Summary -->
 <div class="container mb-5">
     <div class="row">

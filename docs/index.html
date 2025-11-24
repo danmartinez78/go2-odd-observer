@@ -211,7 +211,7 @@
                             <p class="mb-2"><strong>Key Findings:</strong></p>
                             <ul class="feature-list mb-3" style="font-size: 0.95rem;">
                                 <li>Camera sensor corruption degrading visual perception (multiple windows)</li>
-                                <li>Critical collision states in 4 windows (005, 006, 010, 011)</li>
+                                <li>Close-proximity events in 4 windows (005, 006, 010, 011) - obstacles <0.5m< /li>
                                 <li>High collision risk (9/12 windows) indicating aggressive maneuvers</li>
                                 <li>Sensor discrepancies for low-lying obstacles (camera vs BEV LiDAR)</li>
                             </ul>
@@ -299,19 +299,25 @@
                         <div class="col-md-8">
                             <h3>Production 3 - Simulated Office Navigation (25 Windows) 🎮</h3>
                             <p class="text-muted mb-2"><strong>Scenario:</strong> sim_run_new_01</p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Simulated Indoor Office - High Obstacle Density</p>
-                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 1.03 m/s² | <strong>Traversability:</strong> 0.3 (at boundary)</p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Simulated Indoor Office - High
+                                Obstacle Density</p>
+                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 1.03 m/s² |
+                                <strong>Traversability:</strong> 0.3 (at boundary)
+                            </p>
 
                             <div class="mb-3">
                                 <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Lighting Detection Gap</span>
+                                <span class="badge bg-warning text-dark badge-status">0 Violations | Lighting Detection
+                                    Gap</span>
                             </div>
 
                             <p class="mb-2"><strong>Key Findings:</strong></p>
                             <ul class="feature-list mb-3" style="font-size: 0.95rem;">
-                                <li><strong>Critical:</strong> Dark lighting detected (windows 000,001,002) but not flagged as violation</li>
-                                <li>2 critical collision risk events (windows 009, 015) with likelihood 1.0</li>
-                                <li>High collision activity: 56% of windows at alert/caution levels (14 alert, 3 caution)</li>
+                                <li><strong>Analysis Gap:</strong> Dark lighting detected (windows 000,001,002) but not
+                                    flagged as violation</li>
+                                <li>2 very close proximity events (windows 009, 015) - obstacles <0.5m< /li>
+                                <li>High collision activity: 56% of windows at alert/caution levels (14 alert, 3
+                                    caution)</li>
                                 <li>Low traversability (0.3) at boundary - challenging confined space navigation</li>
                             </ul>
 
@@ -331,7 +337,8 @@
                             <div class="text-muted" style="font-size: 0.85rem;">
                                 <div>🎮 Simulation Data (25 windows)</div>
                                 <div>📸 Full Image Set (125 BEV + 25 Camera)</div>
-                                <div>📥 <a href="reports/sim_run_new_01_full_result.json" download>JSON Download</a></div>
+                                <div>📥 <a href="reports/sim_run_new_01_full_result.json" download>JSON Download</a>
+                                </div>
                             </div>
                         </div>
                     </div>
