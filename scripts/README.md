@@ -16,11 +16,11 @@ python scripts/run_odd_analysis.py
 ```
 
 **What it does**:
-- Scans production/ and test_data/ for available scenarios
+- Scans data/production/ and data/test/ for available scenarios
 - Interactive scenario selection with window counts
-- Runs complete 10-agent ODD workflow
+- Runs complete ODD workflow
 - Displays executive summary and compliance status
-- Saves results to `data/analysis_results/manual/<timestamp>/<scenario>/`
+- Saves results to `data/archive/analysis_results/manual/<timestamp>/<scenario>/`
   - `full_result.json` - Complete analysis data
   - `executive_summary.json` - Key findings and recommendations
 
@@ -62,10 +62,10 @@ python scripts/run_odd_batch_analysis.py
 ```
 
 **What it does**:
-- Auto-discovers all scenarios in `data/processed/production/`
+- Auto-discovers all scenarios in `data/production/`
 - Processes each sequentially with progress bars
 - Exits on first error (saves API costs)
-- Saves individual results to `data/analysis_results/automated/<timestamp>/<scenario>/`
+- Saves individual results to `data/archive/analysis_results/automated/<timestamp>/<scenario>/`
 - Generates aggregate report combining all scenarios
 
 **Features**:
@@ -76,8 +76,8 @@ python scripts/run_odd_batch_analysis.py
 
 **Output Structure**:
 ```
-data/analysis_results/automated/20251123_150000/
-├── sim_run_new/
+data/archive/analysis_results/automated/20251123_150000/
+├── sim_1_0/
 │   ├── full_result.json
 │   └── executive_summary.json
 ├── real_01_173442/
@@ -98,6 +98,51 @@ data/analysis_results/automated/20251123_150000/
 ---
 
 ## 📊 Data Processing Scripts
+
+### `create_test_sets.py` - **Test Set Generator**
+
+**Purpose**: Extract 2-window subsets from production data to create small test datasets.
+
+**Usage**:
+```bash
+# Interactive mode (recommended)
+python scripts/create_test_sets.py
+
+# Command-line mode
+python scripts/create_test_sets.py --source data/production/sim_1_0 --windows 10,11 --output data/test/sim_test_w010_w011
+python scripts/create_test_sets.py --source data/production/sim_1_0 --windows 30-31 --output data/test/sim_test_w030_w031
+```
+
+**What it does**:
+- Extracts specified windows from production scenarios
+- Copies all necessary files (motion JSON, camera, BEV channels)
+- Creates proper CSV index for the test set
+- Useful for creating small, focused test datasets
+
+**Interactive Mode**:
+1. Lists available production scenarios
+2. Select source scenario
+3. Choose window IDs (e.g., "10,11" or "10-31")
+4. Specify output directory
+5. Confirms before overwriting existing test sets
+
+**Output Structure**:
+```
+data/test/sim_test_w010_w011/
+├── index_sim_test_w010_w011.csv
+├── motion_sim_1_0_w010.json
+├── motion_sim_1_0_w011.json
+├── cam_sim_1_0_w010.png
+├── cam_sim_1_0_w011.png
+├── bev_occupancy_sim_1_0_w010.png
+├── bev_occupancy_sim_1_0_w011.png
+├── bev_height_sim_1_0_w010.png
+├── bev_height_sim_1_0_w011.png
+├── bev_roughness_sim_1_0_w010.png
+└── bev_roughness_sim_1_0_w011.png
+```
+
+---
 
 ### `extract_windows.py` - **ROS2 Bag Window Extractor**
 
@@ -212,30 +257,29 @@ python scripts/create_real_test_sets.py
 
 ```
 data/
-├── processed/
-│   ├── production/                    # Production datasets (270 windows)
-│   │   ├── real_01_173442/
-│   │   ├── real_02_173813/
-│   │   └── ...
-│   └── test_data/                     # Curated test sets
-│       ├── real/                      # Real robot (6 scenarios, 12 windows)
-│       │   ├── real_01_173442/
-│       │   └── ...
-│       └── sim/                       # Simulation (1 scenario, 2 windows)
-│           └── sim_run_test/
+├── production/                        # Production datasets
+│   └── sim_1_0/                      # 62 windows
+│       ├── index_sim_1_0.csv
+│       ├── motion_sim_1_0_w000.json
+│       ├── cam_sim_1_0_w000.png
+│       └── bev_*_sim_1_0_w000.png
 │
-├── analysis_results/
-│   ├── manual/                        # From run_odd_analysis.py
-│   │   └── 20251123_174240/
-│   │       └── sim_run_test/
-│   │           ├── full_result.json
-│   │           └── executive_summary.json
-│   └── automated/                     # From run_odd_batch_analysis.py
-│       └── 20251123_150000/
-│           ├── sim_run_new/
-│           ├── real_01_173442/
-│           ├── ...
-│           └── aggregate_report.json
+├── test/                              # Test datasets
+│   ├── sim_test_w010_w011/           # 2 windows
+│   ├── sim_test_w030_w031/           # 2 windows
+│   └── sim_test_w050_w051/           # 2 windows
+│
+├── archive/
+│   └── analysis_results/
+│       ├── manual/                    # From run_odd_analysis.py
+│       │   └── 20251125_150000/
+│       │       └── sim_test_w010_w011/
+│       │           ├── full_result.json
+│       │           └── executive_summary.json
+│       └── automated/                 # From run_odd_batch_analysis.py
+│           └── 20251125_150000/
+│               ├── sim_1_0/
+│               └── aggregate_report.json
 │
 └── raw_rosbags/
     ├── real/                          # Real robot bags

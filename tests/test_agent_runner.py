@@ -31,23 +31,24 @@ def find_scenarios() -> List[Tuple[str, Path, int]]:
         List of (name, path, window_count) tuples
     """
     scenarios = []
-    base_dir = Path("data/processed")
+    data_dir = Path("data")
 
-    # Search production/, test_data/real/, test_data/sim/
+    # Search production/ and test/ subdirectories
     search_dirs = [
-        base_dir / "production",
-        base_dir / "test_data" / "real",
-        base_dir / "test_data" / "sim",
+        data_dir / "production",
+        data_dir / "test",
     ]
 
     for search_dir in search_dirs:
         if not search_dir.exists():
             continue
 
+        # Standard structure for both production and test directories
         for scenario_dir in sorted(search_dir.iterdir()):
             if not scenario_dir.is_dir():
                 continue
-            if scenario_dir.name.startswith('.'):
+            # Skip special directories
+            if scenario_dir.name in ['.', '..', 'images'] or scenario_dir.name.startswith('.'):
                 continue
 
             # Check for index file
@@ -60,7 +61,7 @@ def find_scenarios() -> List[Tuple[str, Path, int]]:
                 window_count = len(f.readlines()) - 1  # Subtract header
 
             # Get relative path for display
-            rel_path = scenario_dir.relative_to(base_dir)
+            rel_path = scenario_dir.relative_to(data_dir)
 
             scenarios.append((str(rel_path), scenario_dir, window_count))
 
@@ -99,7 +100,7 @@ def select_agent() -> Optional[str]:
     agents = {
         '1': ('perception', 'Perception (Camera + LiDAR BEV)'),
         '2': ('motion', 'Motion (IMU Analysis)'),
-        '3': ('collision', 'Collision (Multimodal Risk)'),
+        '3': ('collision', 'Collision (Binary Detection)'),
         '4': ('odd_spec', 'ODD Specification'),
         '5': ('all', 'All Agents (Sequential)'),
     }
@@ -257,8 +258,8 @@ def main():
     scenarios = find_scenarios()
 
     if not scenarios:
-        print("❌ No scenarios found in data/processed/")
-        print("Please run extract_windows.py to create test data")
+        print("❌ No scenarios found in data/production/ or data/test/")
+        print("Please run extract_windows.py to create scenario data")
         sys.exit(1)
 
     print(f"✅ Found {len(scenarios)} scenarios")

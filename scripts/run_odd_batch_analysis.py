@@ -9,7 +9,7 @@ Usage:
     python scripts/run_odd_batch_analysis.py
 
 Output:
-    data/analysis_results/automated/<timestamp>/
+    data/archive/analysis_results/automated/<timestamp>/
         <scenario_1>/
             - full_result.json
             - executive_summary.json
@@ -107,7 +107,7 @@ DEFINITELY NOT designed for:
 def find_production_scenarios():
     """Find all production scenarios."""
     scenarios = []
-    production_dir = project_root / "data" / "processed" / "production"
+    production_dir = project_root / "data" / "production"
 
     if not production_dir.exists():
         return scenarios
@@ -357,7 +357,7 @@ async def main():
 
     # Create timestamp and output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_base = project_root / "data" / \
+    output_base = project_root / "data" / "archive" / \
         "analysis_results" / "automated" / timestamp
     output_base.mkdir(parents=True, exist_ok=True)
 
