@@ -13,44 +13,36 @@ from ..tools.collision import create_collision_tools
 def create_collision_loop_agent(
     scenario_path: str, genai_client: Client, model: str, api_key: str
 ) -> Agent:
-    """Create a new CollisionLoopAgent instance for binary collision detection."""
+    """Create a new CollisionLoopAgent instance for multimodal collision detection."""
     from ..tools.perception import create_perception_tools
 
     list_windows_tool, _ = create_perception_tools(
         scenario_path, genai_client, model)
-    detect_collision_tool = create_collision_tools(scenario_path)
+    analyze_collision_tool = create_collision_tools(
+        scenario_path, genai_client, model)
 
     return Agent(
         name="CollisionLoopAgent",
         model=Gemini(model=model, api_key=api_key),
-        tools=[list_windows_tool, detect_collision_tool],
+        tools=[list_windows_tool, analyze_collision_tool],
         output_key="temp:collision_data",
         instruction="""You orchestrate collision detection across all scenario windows.
 
 AVAILABLE TOOLS:
 - list_windows_tool
-- detect_collision_tool
-
-MOTION DATA AVAILABLE:
-{temp:motion_output?}
+- analyze_collision_tool
 
 COLLISION DETECTION APPROACH:
-This is BINARY detection - we only detect actual collisions that occurred, not risk levels.
-Detection is based on IMU data thresholds:
-- Acceleration spikes >10 m/s² (sudden impact)
-- Angular velocity anomalies >5 rad/s (severe rotation/spin-out)
-- Jerk spikes >50 m/s³ (sudden acceleration change)
+Use multimodal analysis (IMU + camera + BEV) to detect actual collisions.
+The collision tool loads its own sensor data and performs independent analysis.
 
 Steps you MUST follow:
 1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. Parse the motion data from {temp:motion_output?} to extract per_window_motion array.
-3. For each window_id returned (in that order):
-   a. Find the corresponding motion metrics from per_window_motion (match by window_id)
-   b. Call detect_collision_tool(window_id=..., motion_metrics=...)
-   IMPORTANT: Tool name is exactly "detect_collision_tool" - no typos, no extra characters.
-   IMPORTANT: Pass the full motion metrics object for that window.
-4. Collect each tool response exactly as returned.
-5. After all windows are processed, respond with JSON:
+2. For each window_id returned (in that order):
+   Call analyze_collision_tool(window_id=...)
+   IMPORTANT: Tool name is exactly "analyze_collision_tool" - no typos.
+3. Collect each tool response exactly as returned.
+4. After all windows are processed, respond with JSON:
 {
   "windows_analyzed": ["..."],
   "collision_detections": [<tool_response_objects_in_order>]
@@ -79,19 +71,26 @@ Otherwise:
    - Total windows analyzed
    - Number of windows with collisions detected
    - Number of windows without collisions
-   - List of collision evidence from detected windows
+   - Collect detailed evidence from detected collisions
 3. Produce final JSON:
 {
   "windows_analyzed": [...],
   "overall_collision_stats": {
     "total_windows": <int>,
     "collisions_detected_count": <int>,
-    "no_collision_count": <int>
+    "no_collision_count": <int>,
+    "collision_detection_rate": <float 0-1>
   },
   "collisions_detected": [
     {
       "window_id": "...",
-      "evidence": [...],
+      "confidence": <float>,
+      "evidence": {
+        "imu_analysis": "...",
+        "camera_analysis": "...",
+        "bev_analysis": "...",
+        "multimodal_reasoning": "..."
+      },
       "imu_metrics": {...}
     }
   ],
