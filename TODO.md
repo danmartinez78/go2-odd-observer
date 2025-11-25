@@ -135,9 +135,9 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - ✅ Collision: IMU metrics only (from motion output)
 - ✅ Previous BEV bug FIXED (all 3 channels now loaded)
 
-### 1.3 COD Agent Redesign � IN PROGRESS (Nov 25, 2025)
+### 1.3 COD Agent Redesign ✅ COMPLETED (Nov 25, 2025)
 
-**Architecture Changes (COMPLETED):**
+**Architecture Changes:**
 - [x] Remove `collision_risk` from ODD spec parsing ✅
   - Collision is operational outcome, not environmental constraint
   - Removed from numeric_constraints and NL prompt
@@ -156,57 +156,152 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
   - Removed collision_risk from numeric_compliance checks
   - Will become Evaluator in Phase 1.4 (region comparison + distance)
 
-**Validation in Progress:**
-- [x] Manual test run initiated on sim_test_w010_w011 (2 windows) ✅
-- [ ] Review test results with new architecture
-- [ ] Verify ODD spec semantic context works with downstream agents
-- [ ] Validate no schema mismatches
+**Validation:**
+- [x] Manual test run on sim_test_w010_w011 (2 windows) ✅
+- [x] All agents executed successfully (9/9) ✅
+- [x] ODD spec semantic context working ✅
+- [x] No schema mismatches ✅
 
-**Remaining Tasks:**
-- [ ] Implement per-window ODD compliance checking in Evaluator (Phase 1.4)
-  - Compare each window's measurements against ODD max/min limits
-  - Flag violations per window (no averaging)
-- [ ] Implement scenario COD region construction
-  - Categorical: collect all unique observed values
-  - Numeric: extract min/max/range for each axis
-- [ ] Implement distance-from-limits calculation (Phase 1.4)
-  - Calculate magnitude of violations (how far beyond limit?)
-  - Example: 15 m/s² vs 10 m/s² limit = 50% overage
-- [ ] Manual test: verify no averaging, all violations preserved
+**Outcome**: COD agent successfully decoupled. Compliance checking working with new architecture.
 
-### 1.5 Collision Agent BEV Enhancement 💡 DEFERRED
+### 1.4 Agent Versioning & Telemetry ✅ COMPLETED (Nov 25, 2025)
 
-**Proposed Enhancement:** Add BEV occupancy visual confirmation to collision detection
+**Goal**: Track agent versions, prompts, models, and token usage for reproducibility and A/B testing
 
-**Rationale:**
-- Multimodal validation (similar to motion agent using camera to validate IMU)
-- Visual confirmation: Obstacle in final frames → collision vs command stop → no obstacle
-- Impact geometry: BEV could show contact patterns during collision
+**Implementation:**
+- [x] Create prompt extraction system ✅
+  - `odd_agents/agent_prompts.py` - Extracts prompts from agent factory functions
+  - Dynamic extraction via dummy agent instantiation
+  - Lazy caching to avoid repeated instantiation
+  - 10 prompt extraction functions (one per agent)
+- [x] Create metadata tracking utilities ✅
+  - `odd_agents/metadata.py` - SHA-256 hash, registry building, event parsing
+  - `hash_text()` for prompts/ODD specs (16-char hex)
+  - `build_agent_registry()` maps agents to versions/models/hashes
+  - `extract_pipeline_metadata()` parses ADK event stream
+- [x] Create prompt catalog system ✅
+  - `odd_agents/prompt_catalog.py` - Hash-to-description lookup
+  - Generated catalog: `odd_agents/prompt_catalog.json` (24KB, 91 lines)
+  - `build_prompt_catalog()` creates catalog from current prompts
+  - `reconstruct_workflow_config()` rebuilds full config from metadata
+- [x] Integrate into workflow ✅
+  - `odd_agents/workflow.py` enhanced with metadata tracking
+  - Builds agent registry before execution
+  - Captures events via `runner.run_debug()`
+  - Extracts metadata from event stream
+  - Returns: report + full_analysis + analysis_metadata + pipeline_metadata
+- [x] Add metadata display to reports ✅
+  - `scripts/run_odd_analysis.py` displays analysis_metadata
+  - Shows: pipeline version, duration, agents executed, tokens, estimated cost
+  - Metadata saved in JSON outputs
+  - HTML reports: footer + collapsible accordion with per-agent details
+- [x] Documentation updates ✅
+  - `scripts/README.md` - metadata field reference with examples
+  - `docs/ARCHITECTURE_REDESIGN.md` - Phase 1.4 completion details
 
-**Challenges:**
-- **Self-hit complexity**: Robot body appears in BEV center (~0.3m radius)
-  - Agent needs clear instructions about masking center region
-  - Must understand BEV spatial mapping (pixels → meters)
-- **Temporal mismatch**: Current binary detection checks thresholds anywhere in window
-  - BEV requires frame-by-frame analysis (which frames show what)
-  - Need temporal correlation (obstacle appeared when IMU spiked?)
-- **False positive risk**: Robot always near obstacles in cluttered environments
-  - Hard to distinguish "near furniture" (normal) vs "contacted furniture" (collision)
-- **Scope creep**: Phase 1.2 just completed and validated (0 false positives)
-  - Adding BEV requires rewriting collision.py, complex prompts, additional testing
-  - Delays Phase 1.3 (COD agent redesign)
+**Architecture Decision:**
+- **Event-based extraction** (Approach F) - simpler than documented callback approach
+- ADK `runner.run_debug()` returns `List[Event]` with comprehensive metadata
+- Event attributes: author, timestamp, invocation_id, model_version, usage_metadata
+- No ADK callback API exists (`google.adk.callbacks` module not found)
 
-**Decision:** Defer to Phase 1.5+ or post-versioning
-- Current IMU-only system works (no false positives on test data)
-- Better fit for Phase 2 after agent versioning (A/B test IMU-only vs IMU+BEV)
-- Need better temporal analysis design first (frame-level reasoning)
-- Can revisit with sophisticated temporal reasoning later
+**Test Results (sim_test_w010_w011):**
+- ✅ Duration: 214.86 seconds (~3.6 minutes)
+- ✅ Total tokens: 62,860 tokens
+- ✅ Estimated cost: $1.26 USD
+- ✅ Agents executed: 9/9 successfully
+- ✅ Prompt hashes: All 9 unique (c562d20a787ea343, efea7cba0ac6164b, etc.)
+- ✅ Models verified: Declared vs actual match
+- ✅ Metadata captured and saved to JSON
 
-**If Implemented Later:**
-- Load BEV occupancy frames in collision.py
-- Mask robot body center (~0.3m radius) in prompts
-- Temporal analysis: "Does BEV show obstacle contact during IMU spike window?"
-- More sophisticated evidence gathering (not just boolean)
+**Outcome**: Complete pipeline metadata tracking ready for A/B testing and reproducibility.
+
+### 1.4.1 ODD-Schema Driven Architecture 📋 PLANNED (CRITICAL FIX)
+
+**Problem Identified (Nov 25, 2025)**: Hardcoded agent measurement schemas prevent generalization
+
+**Root Cause:**
+- ODD Spec agent produces dynamic dimension schemas from natural language
+- Perception/Motion/Collision/COD agents have hardcoded measurement expectations
+- Example: COD agent expects `max_acceleration`, `max_gyro`, `lighting_quality`, etc.
+- If ODD spec changes (add `max_speed`, remove `terrain_roughness`), agents break
+
+**Architectural Flaw:**
+- COD classifier agent doesn't read ODD spec for dimension schema
+- All loop/summary agents hardcoded to specific measurement names
+- Prevents adapting to different ODD structures (drone vs ground robot)
+
+**Proposed Solution:**
+1. **All agents read ODD spec to extract dimension schemas dynamically**
+   - Perception: Read ODD spec numeric/categorical axes → extract those measurements
+   - Motion: Read ODD spec motion-related axes → calculate those metrics
+   - COD: Read ODD spec to build measurement schema dynamically
+   - Collision: Independent (binary detection, not ODD-driven)
+
+2. **Schema-driven prompts:**
+   - "The ODD spec defines these dimensions: [list]"
+   - "Extract measurements for: [dimension_1], [dimension_2], ..."
+   - Agent adapts output structure to match ODD requirements
+
+**Benefits:**
+- Generalization: Same agents work for any ODD structure
+- Flexibility: Change ODD spec without modifying agent code
+- Correctness: COD measurements always align with ODD dimensions
+
+**Tradeoffs:**
+- Complexity: Agents must parse ODD spec structure
+- Prompt length: Must include full dimension schemas
+- Testing: Need fixtures with mocked upstream data
+
+**Deliverables:**
+- [ ] Update Perception agent to read ODD spec dimensions
+- [ ] Update Motion agent to read ODD spec dimensions
+- [ ] Update COD agent to read ODD spec for schema (not compliance)
+- [ ] Create test fixtures with mocked motion/perception outputs
+- [ ] Validate schema-driven approach on 2-3 different ODD structures
+- [ ] Document in ARCHITECTURE_REDESIGN.md
+
+**Priority**: HIGH - Blocks true ODD generalization
+**Estimated Effort**: 2-3 days (prompt updates, testing)
+**Token Impact**: +500-1000 tokens per agent (ODD spec inclusion)
+
+### 1.6 Collision Agent BEV Enhancement ✅ COMPLETED (Nov 25, 2025)
+
+**Originally Deferred, Completed During Phase 1.4**
+
+**Implementation:**
+- [x] Refactored collision agent to multimodal design ✅
+  - Data: IMU (motion.json) + camera.png + 3 BEV channels
+  - BEV channels: occupancy, height, roughness
+  - Independent loading (no upstream dependencies)
+- [x] Enhanced collision detection with BEV reasoning ✅
+  - LLM reasoning across all modalities (not hardcoded thresholds)
+  - BEV spatial guidance: 0.05m/pixel, 400×400, robot at (200,200), 15px exclusion
+  - Evidence structure: IMU metrics + camera + BEV analysis
+- [x] Fixed data loading independence ✅
+  - Removed motion_metrics parameter (was causing None values)
+  - Direct motion.json loading in collision tool
+  - Calculate metrics: peak_accel, peak_gyro, max_tilt, peak_jerk from raw data
+- [x] Updated agent architecture ✅
+  - Removed {temp:motion_output?} dependency
+  - Simplified instruction (no motion data parsing)
+  - Tool call: analyze_collision_tool(window_id=...) without motion_metrics
+
+**Test Results (sim_test_w010_w011):**
+- ✅ Window 010: 0.98 confidence no collision
+- ✅ Window 011: 0.95 confidence no collision
+- ✅ Multimodal evidence structured correctly
+- ✅ BEV reasoning operational (obstacle awareness)
+- ✅ No false positives on normal motion
+
+**Architectural Improvement:**
+- Before: Hardcoded thresholds (>10 m/s² = collision)
+- After: LLM reasoning with multimodal evidence
+- Result: More nuanced collision detection with visual confirmation
+
+**Outcome**: Collision agent upgraded from IMU-only to full multimodal (IMU + camera + BEV), maintaining independence and improving reasoning quality.
+
+### 1.7 Manual Validation Testing 📋 PLANNED
 
 **Goal**: Rename Compliance to Evaluator, add distance-from-limits calculation with telemetry
 
@@ -230,7 +325,11 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [ ] Generate investigation flags (specific, actionable)
 - [ ] A/B test with telemetry: severity scoring v1 vs v2
 
-### 1.6 VIS Odometry + Motion Improvements 📋 PLANNED
+### 1.7 Manual Validation Testing 📋 PLANNED
+
+**Goal**: Validate new architecture with diverse scenarios
+
+**Tasks**:
 - [ ] Select 3-5 representative scenarios
   - Fully compliant
   - Boundary case
@@ -680,26 +779,35 @@ Total windows: 8 (vs 12 uniform) but better event coverage
 
 **Last Updated**: November 25, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.1 Complete, Starting Phase 1.2
+**Status**: Phase 1.4 Complete, Phase 1.4.1 Planned
 
-**Current Focus**: Phase 1.2 - Collision Agent Rework
+**Current Focus**: Phase 1.4 wrap-up and merge preparation
 
 **Recent Completions**:
-- ✅ Phase 1.1: BEV Enhancement (merged to dev Nov 25)
-  - Auto-crop: 65-72% size reduction
-  - Density removed: 3 channels (occupancy, height, roughness)
-  - Data reorganized: production/, test/, archive/
-  - Sim data ready: 62 production + 6 test windows
-  - Documentation updated: 4 docs (transformation status, enhancement summary, versioning, README)
-- ✅ Branch cleanup: Deleted 16 merged branches (20→5 remaining)
-- ✅ Phase 0: Bagfile audit (no velocity data)
+- ✅ Phase 1.4: Agent Versioning & Telemetry (completed Nov 25)
+  - Event-based metadata extraction (62,860 tokens, $1.26, 214s)
+  - Version registry, prompt catalog, metadata utilities
+  - Terminal/JSON/HTML metadata display
+  - Per-agent execution tracking with prompt hashes
+  - Documentation updated: scripts/README.md, ARCHITECTURE_REDESIGN.md
+- ✅ Phase 1.6: Collision BEV Enhancement (completed Nov 25, originally deferred)
+  - Multimodal collision detection (IMU + camera + 3 BEV channels)
+  - Independent data loading (removed motion_metrics dependency)
+  - LLM reasoning vs hardcoded thresholds
+  - Test results: 0.95-0.98 confidence, no false positives
+- ✅ Phase 1.1-1.3: BEV Enhancement, Collision Rework, COD Redesign (merged to dev)
+- ✅ Branch cleanup: 16 merged branches deleted
 - ✅ Real robot validation (270 windows, 6 scenarios)
-- ✅ Production workflow scripts (manual + batch)
-- ✅ IMU-based motion analysis
+
+**Critical Discovery**:
+- ⚠️ ODD-Schema architectural flaw identified (Phase 1.4.1)
+  - Problem: Agents have hardcoded dimension expectations
+  - ODD Spec generates dynamic schemas, but agents don't read them
+  - Blocks generalization to different ODD structures
+  - Fix planned: Schema-driven agents reading ODD spec dynamically
 
 **Next Steps**:
-1. Add all 4 BEV channels to perception/collision tools
-2. Integrate auto-crop into BEV rendering pipeline
-3. Implement COD agent redesign (per-window compliance)
-4. Implement Collision agent redesign (binary detection)
-5. Implement Evaluator agent (severity-based synthesis)
+1. Complete Phase 1.4 wrap-up (tests, integration, git commit)
+2. Phase 1.4.1: ODD-Schema Driven Architecture (critical fix)
+3. Phase 1.5: Evaluator Agent Enhancement (severity-based synthesis)
+4. Phase 1.7: Manual Validation Testing

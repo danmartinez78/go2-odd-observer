@@ -55,8 +55,8 @@ def _extract_result(events: List[Any], agent_name: str = "PerceptionSummaryAgent
 
 
 async def test_perception_agent(
-    scenario_path: str = "data/processed/test_data/sim/sim_run_test",
-    model: str = "gemini-2.5-flash",
+    scenario_path: str = "data/test/sim_test_w010_w011",
+    model: str = "gemini-2.0-flash-exp",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """Run perception agent test with specified parameters."""

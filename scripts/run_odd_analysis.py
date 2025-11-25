@@ -250,6 +250,7 @@ def display_summary(result: Dict[str, Any]):
     # Handle potential double nesting in compliance data
     compliance_data = get_compliance_data(result)
     metadata = report.get('scenario_metadata', {})
+    analysis_meta = result.get('analysis_metadata', {})
 
     print("\n" + "=" * 80)
     print("EXECUTIVE SUMMARY")
@@ -273,6 +274,23 @@ def display_summary(result: Dict[str, Any]):
     print(
         f"  • Data source: {metadata.get('data_source', 'N/A')} (confidence: {metadata.get('data_source_confidence', 'N/A')})")
     print(f"  • Environment: {metadata.get('environment_class', 'N/A')}")
+
+    # Display analysis metadata if available
+    if analysis_meta:
+        print()
+        print("=" * 80)
+        print("ANALYSIS METADATA")
+        print("=" * 80)
+        print(
+            f"  • Pipeline version: {analysis_meta.get('pipeline_version', 'N/A')}")
+        print(
+            f"  • Duration: {analysis_meta.get('analysis_duration_seconds', 'N/A')} seconds")
+        print(
+            f"  • Agents executed: {analysis_meta.get('total_agents_executed', 'N/A')}")
+        print(
+            f"  • Total tokens: {analysis_meta.get('total_tokens_used', 'N/A'):,}")
+        print(
+            f"  • Estimated cost: ${analysis_meta.get('estimated_cost_usd', 0):.4f} USD")
 
     print()
     print("=" * 80)

@@ -7,13 +7,11 @@ from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
 
-def create_odd_spec_agent(api_key: str, model: str) -> Agent:
-    """Create a new OddSpecAgent instance."""
-    return Agent(
-        name="OddSpecAgent",
-        model=Gemini(model=model, api_key=api_key),
-        output_key="temp:odd_spec",
-        instruction="""You are an Operational Design Domain (ODD) specification expert.
+# Agent version tracking
+AGENT_VERSION = "2.0.0"
+
+# Prompt template for hashing
+PROMPT_TEMPLATE = """You are an Operational Design Domain (ODD) specification expert.
 
 TASK: Convert the provided natural language ODD description into a formal specification with precise numerical ranges and categorical constraints.
 
@@ -50,77 +48,47 @@ Do NOT define boundary or out-of-spec zones (Evaluator agent handles that).
 - "moderate" → min: 0.4 (normalized)
 - "challenging" → min: 0.3 (normalized)
 
-**Platform stability (roll/pitch angles):**
-- "stable/flat" → max: 15°
-- "gentle slopes" → max: 20°
-- "moderate slopes" → max: 25°
+**Lighting:**
+- Categorical constraint: bright, moderate, dim, dark
+- Convert vague descriptions to one of these levels
 
-**Default assumptions if not mentioned:**
-- max_accel_mps2: 2.0 (gentle motion assumed)
-- obstacle_density: 0.6 (moderate density)
-- traversability_score_min: 0.5 (good traversability)
-- platform_stability_max_deg: 15.0 (flat surfaces)
+**Environment type:**
+- Categorical constraint: list allowed environment types
+- Indoor: office, residential, warehouse, hallway, etc.
+- Outdoor: urban, natural, industrial, etc.
 
-CRITICAL: For each numeric constraint, provide:
-1. "max" or "min": The design limit value
-2. "description": What this measurement represents physically and its scale/units
-3. "measurement_guidance": Clear instructions for upstream agents on HOW to compute this value from sensor data
+**Terrain:**
+- Categorical constraint: smooth, slightly_rough, rough, very_rough
+- Do NOT define prohibited terrain types - just list designed terrain
 
-This creates a shared vocabulary so Perception, Motion, and COD agents all understand what to measure and how.
+CRITICAL: For numeric constraints, define ONLY max values for the designed operating envelope.
+DO NOT create min/boundary/out-of-spec ranges - this is done later by Evaluator.
 
-Return ONLY valid JSON:
+Expected output JSON:
 {
   "odd_specification": {
     "categorical_constraints": {
-      "environment_type": {
-        "allowed": ["indoor_office", "indoor_corridor"],
-        "prohibited": ["outdoor_urban", "outdoor_natural", "stairs"]
-      },
-      "lighting_conditions": {
-        "allowed": ["bright", "dim"],
-        "prohibited": ["dark", "low_light"]
-      },
-      "terrain_type": {
-        "allowed": ["smooth"],
-        "prohibited": ["moderate", "rough", "very_rough"]
-      }
+      "environment_type": ["allowed_type1", "allowed_type2"],
+      "lighting_conditions": ["allowed_level1", "allowed_level2"],
+      "terrain_type": ["allowed_terrain1", "allowed_terrain2"]
     },
     "numeric_constraints": {
-      "max_accel_mps2": {
-        "max": 10.0,
-        "description": "Maximum horizontal acceleration in meters per second squared during agile maneuvers",
-        "measurement_guidance": "Extract peak magnitude of horizontal acceleration from IMU linear_acceleration (x,y components) during observation window. Report peak value, not average."
-      },
-      "obstacle_density": {
-        "max": 0.7,
-        "description": "Normalized obstacle density (0.0-1.0) where 0=empty space, 1=fully cluttered. Represents furniture/object density in navigable space.",
-        "measurement_guidance": "Count distinct objects detected in camera/BEV view, divide by visible floor area in m², normalize to range 0-1 based on typical indoor furniture density (0.3 objects/m² = 0.5 normalized)."
-      },
-      "traversability_score": {
-        "min": 0.5,
-        "description": "Normalized traversability score (0.0-1.0) where 1.0=perfectly smooth/clear, 0.0=impassable. Represents ease of navigation based on terrain roughness and clearance.",
-        "measurement_guidance": "Assess from BEV terrain roughness and clearance analysis. Smooth flat surfaces with good clearance = 0.8-1.0, minor obstacles/transitions = 0.5-0.8, rough/cluttered = 0.0-0.5."
-      }
-    },
-    "ego_vehicle": {
-      "vehicle_type": "quadruped_robot",
-      "dimensions": {
-        "length_m": 0.65,
-        "width_m": 0.31,
-        "height_m": 0.40
-      },
-      "clearance_requirements": {
-        "minimum_gap_width_m": 0.4,
-        "comfortable_clearance_m": 0.5
-      }
+      "max_speed_mps": <max_value>,
+      "max_accel_mps2": <max_value>,
+      "max_obstacle_density": <max_value>,
+      "min_traversability_score": <min_value>
     }
-  },
-  "odd_summary": "Brief description of what this ODD specification defines"
+  }
 }
 
-CRITICAL REQUIREMENT: The ego_vehicle section is MANDATORY. Extract robot/vehicle physical specifications 
-(dimensions, footprint, clearance) from the ODD description into the structured ego_vehicle fields.
-If specific dimensions are not provided in the description, use reasonable defaults for the vehicle type mentioned.
+Return ONLY the JSON. No markdown, no explanations."""
 
-No explanations outside JSON.""",
+
+def create_odd_spec_agent(api_key: str, model: str) -> Agent:
+    """Create a new OddSpecAgent instance."""
+    return Agent(
+        name="OddSpecAgent",
+        model=Gemini(model=model, api_key=api_key),
+        output_key="temp:odd_spec",
+        instruction=PROMPT_TEMPLATE,
     )
