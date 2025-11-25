@@ -169,8 +169,8 @@ def main():
         "directory",
         type=str,
         nargs='?',
-        default="data/processed",
-        help="Directory to validate (default: data/processed)"
+        default="data/production",
+        help="Directory to validate (default: data/production)"
     )
     parser.add_argument(
         "--no-recursive",
