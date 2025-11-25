@@ -344,7 +344,7 @@ async def main():
     scenarios = find_production_scenarios()
 
     if not scenarios:
-        print("❌ No production scenarios found in data/processed/production/")
+        print("❌ No production scenarios found in data/production/")
         print("Please run extract_windows.py to create data")
         sys.exit(1)
 

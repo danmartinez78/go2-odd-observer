@@ -11,6 +11,7 @@ Usage:
     python extract_windows.py --rosbag <path> --output <dir> [options]
 """
 
+from odd_agents.utils import auto_crop_bev
 import argparse
 import json
 import os
@@ -20,6 +21,9 @@ from typing import Dict, List, Tuple, Optional
 import numpy as np
 import pandas as pd
 from collections import defaultdict
+
+# Import BEV utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # ROS2 libraries
 try:
@@ -87,6 +91,8 @@ class WindowExtractor:
         stride: float = 1.0,
         run_id: Optional[str] = None,
         data_source: Optional[str] = None,
+        bev_rotation: int = 0,
+        bev_flip_horizontal: bool = False,
     ):
         """
         Initialize window extractor.
@@ -98,6 +104,10 @@ class WindowExtractor:
             stride: Stride between window starts in seconds
             run_id: Optional run identifier (auto-generated if None)
             data_source: 'real' or 'sim' (auto-detected if None)
+            bev_rotation: Optional rotation to apply to BEVs in degrees (0, 90, 180, 270)
+                         Positive = clockwise. Sim-specific workaround.
+            bev_flip_horizontal: If True, flip BEV horizontally after rotation.
+                                Sim-specific workaround for coordinate frame issues.
 
         IMPORTANT: The output directory name MUST match the run_id.
         Files are created with names like motion_{run_id}_w000.json.
@@ -111,6 +121,10 @@ class WindowExtractor:
             self.run_id = self.rosbag_path.stem
         else:
             self.run_id = run_id
+
+        # Store BEV transformation settings (data-source specific workarounds)
+        self.bev_rotation = bev_rotation
+        self.bev_flip_horizontal = bev_flip_horizontal
 
         # CRITICAL: Output directory MUST be named after run_id
         # The workflow uses directory.name to construct filenames
@@ -238,7 +252,6 @@ class WindowExtractor:
                 "cam_image_path": f"cam_{self.run_id}_w{i:03d}.png",
                 "bev_occupancy_path": f"bev_occupancy_{self.run_id}_w{i:03d}.png",
                 "bev_height_path": f"bev_height_{self.run_id}_w{i:03d}.png",
-                "bev_density_path": f"bev_density_{self.run_id}_w{i:03d}.png",
                 "bev_roughness_path": f"bev_roughness_{self.run_id}_w{i:03d}.png",
             }
 
@@ -403,7 +416,6 @@ class WindowExtractor:
             bev_features = {
                 'occupancy': empty.copy(),
                 'height': empty.copy(),
-                'density': empty.copy(),
                 'roughness': empty.copy(),
             }
         else:
@@ -417,9 +429,37 @@ class WindowExtractor:
                 bev_features = {
                     'occupancy': empty.copy(),
                     'height': empty.copy(),
-                    'density': empty.copy(),
                     'roughness': empty.copy(),
                 }
+
+        # Apply data-source specific transformations to match expected BEV format:
+        # - Robot at center
+        # - Forward (x-axis) pointing up in image
+        # - Not mirrored (right is right, left is left)
+
+        # Rotation (if specified)
+        if self.bev_rotation != 0:
+            for feature_name in bev_features:
+                if self.bev_rotation == 90:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_90_CLOCKWISE)
+                elif self.bev_rotation == 180:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_180)
+                elif self.bev_rotation == 270:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        # Horizontal flip (if specified)
+        if self.bev_flip_horizontal:
+            for feature_name in bev_features:
+                bev_features[feature_name] = cv2.flip(
+                    bev_features[feature_name], 1)
+
+        # Apply auto-crop to preserve obstacles while reducing size
+        for feature_name in bev_features:
+            bev_features[feature_name] = auto_crop_bev(
+                bev_features[feature_name])
 
         # Save each feature as separate PNG
         for feature_name, feature_img in bev_features.items():
@@ -453,7 +493,7 @@ class WindowExtractor:
         Render multi-channel bird's-eye-view images from a point cloud.
 
         Returns:
-            Dictionary with keys: 'occupancy', 'height', 'density', 'roughness'
+            Dictionary with keys: 'occupancy', 'height', 'roughness'
             Each value is a 400x400 uint8 numpy array
         """
         # Extract points from PointCloud2 message
@@ -472,7 +512,6 @@ class WindowExtractor:
             return {
                 'occupancy': empty.copy(),
                 'height': empty.copy(),
-                'density': empty.copy(),
                 'roughness': empty.copy(),
             }
 
@@ -521,13 +560,7 @@ class WindowExtractor:
         height_img[mask] = np.clip(
             (height_grid[mask] + 2.0) * 63.75, 0, 255).astype(np.uint8)
 
-        # 2. Density map (number of points per cell)
-        density_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
-        max_count = point_count.max() if point_count.max() > 0 else 1
-        density_img = np.clip((point_count / max_count)
-                              * 255, 0, 255).astype(np.uint8)
-
-        # 3. Roughness map (height variance within cell)
+        # 2. Roughness map (height variance within cell)
         roughness_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
         # Calculate variance: Var(X) = E[X²] - E[X]²
         variance = np.zeros((bev_size, bev_size), dtype=np.float32)
@@ -542,13 +575,11 @@ class WindowExtractor:
         # Apply slight blur to make features more visible
         occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
         height_img = cv2.GaussianBlur(height_img, (3, 3), 0)
-        density_img = cv2.GaussianBlur(density_img, (3, 3), 0)
         roughness_img = cv2.GaussianBlur(roughness_img, (3, 3), 0)
 
         return {
             'occupancy': occupancy_grid,
             'height': height_img,
-            'density': density_img,
             'roughness': roughness_img,
         }
 
@@ -683,6 +714,18 @@ def main():
         default=None,
         help="Data source: 'real' for real robot, 'sim' for simulator (default: auto-detect from path)"
     )
+    parser.add_argument(
+        "--bev-rotation",
+        type=int,
+        choices=[0, 90, 180, 270],
+        default=0,
+        help="Rotation to apply to BEVs in degrees, clockwise (default: 0). Data-source specific."
+    )
+    parser.add_argument(
+        "--bev-flip-horizontal",
+        action="store_true",
+        help="Flip BEV horizontally after rotation. Data-source specific workaround."
+    )
 
     args = parser.parse_args()
 
@@ -694,6 +737,8 @@ def main():
         stride=args.stride,
         run_id=args.run_id,
         data_source=args.data_source,
+        bev_rotation=args.bev_rotation,
+        bev_flip_horizontal=args.bev_flip_horizontal,
     )
 
     # Extract windows

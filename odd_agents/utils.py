@@ -154,22 +154,23 @@ def auto_crop_bev(bev_image: np.ndarray, margin_percent: float = 0.1) -> np.ndar
     if region_height >= img_height and region_width >= img_width:
         return bev_image
 
-    # Calculate margin based on the larger dimension of the occupied region
-    region_size = max(region_height, region_width)
-    margin = int(region_size * margin_percent)
+    # CRITICAL: Robot is always at center of original BEV (looking up)
+    # We must preserve this spatial relationship!
+    center_y = img_height // 2  # Robot's Y position (center of image)
+    center_x = img_width // 2   # Robot's X position (center of image)
 
-    # Ensure minimum margin of at least 1 pixel if there's any content
-    margin = max(margin, 1)
+    # Calculate maximum distance from robot to any occupied pixel
+    # This ensures we don't crop out distant obstacles
+    dy_max = max(abs(y0 - center_y), abs(y1 - center_y))
+    dx_max = max(abs(x0 - center_x), abs(x1 - center_x))
+    max_distance = max(dy_max, dx_max)
 
-    # Make square bounding box (use larger dimension)
-    square_size = region_size
+    # Add margin as percentage of the maximum distance
+    margin = int(max_distance * margin_percent)
+    margin = max(margin, 1)  # Minimum 1 pixel margin
 
-    # Calculate center of occupied region
-    center_y = (y0 + y1) // 2
-    center_x = (x0 + x1) // 2
-
-    # Calculate crop boundaries with margin (centered on occupied region)
-    half_size = square_size // 2 + margin
+    # Calculate crop boundaries with margin (centered on ROBOT)
+    half_size = max_distance + margin
     crop_y0 = max(0, center_y - half_size)
     crop_y1 = min(img_height, center_y + half_size)
     crop_x0 = max(0, center_x - half_size)
