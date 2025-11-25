@@ -252,7 +252,6 @@ class WindowExtractor:
                 "cam_image_path": f"cam_{self.run_id}_w{i:03d}.png",
                 "bev_occupancy_path": f"bev_occupancy_{self.run_id}_w{i:03d}.png",
                 "bev_height_path": f"bev_height_{self.run_id}_w{i:03d}.png",
-                "bev_density_path": f"bev_density_{self.run_id}_w{i:03d}.png",
                 "bev_roughness_path": f"bev_roughness_{self.run_id}_w{i:03d}.png",
             }
 
@@ -417,7 +416,6 @@ class WindowExtractor:
             bev_features = {
                 'occupancy': empty.copy(),
                 'height': empty.copy(),
-                'density': empty.copy(),
                 'roughness': empty.copy(),
             }
         else:
@@ -431,7 +429,6 @@ class WindowExtractor:
                 bev_features = {
                     'occupancy': empty.copy(),
                     'height': empty.copy(),
-                    'density': empty.copy(),
                     'roughness': empty.copy(),
                 }
 
@@ -439,7 +436,7 @@ class WindowExtractor:
         # - Robot at center
         # - Forward (x-axis) pointing up in image
         # - Not mirrored (right is right, left is left)
-        
+
         # Rotation (if specified)
         if self.bev_rotation != 0:
             for feature_name in bev_features:
@@ -452,11 +449,12 @@ class WindowExtractor:
                 elif self.bev_rotation == 270:
                     bev_features[feature_name] = cv2.rotate(
                         bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
-        
+
         # Horizontal flip (if specified)
         if self.bev_flip_horizontal:
             for feature_name in bev_features:
-                bev_features[feature_name] = cv2.flip(bev_features[feature_name], 1)
+                bev_features[feature_name] = cv2.flip(
+                    bev_features[feature_name], 1)
 
         # Apply auto-crop to preserve obstacles while reducing size
         for feature_name in bev_features:
@@ -495,7 +493,7 @@ class WindowExtractor:
         Render multi-channel bird's-eye-view images from a point cloud.
 
         Returns:
-            Dictionary with keys: 'occupancy', 'height', 'density', 'roughness'
+            Dictionary with keys: 'occupancy', 'height', 'roughness'
             Each value is a 400x400 uint8 numpy array
         """
         # Extract points from PointCloud2 message
@@ -514,7 +512,6 @@ class WindowExtractor:
             return {
                 'occupancy': empty.copy(),
                 'height': empty.copy(),
-                'density': empty.copy(),
                 'roughness': empty.copy(),
             }
 
@@ -563,13 +560,7 @@ class WindowExtractor:
         height_img[mask] = np.clip(
             (height_grid[mask] + 2.0) * 63.75, 0, 255).astype(np.uint8)
 
-        # 2. Density map (number of points per cell)
-        density_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
-        max_count = point_count.max() if point_count.max() > 0 else 1
-        density_img = np.clip((point_count / max_count)
-                              * 255, 0, 255).astype(np.uint8)
-
-        # 3. Roughness map (height variance within cell)
+        # 2. Roughness map (height variance within cell)
         roughness_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
         # Calculate variance: Var(X) = E[X²] - E[X]²
         variance = np.zeros((bev_size, bev_size), dtype=np.float32)
@@ -584,13 +575,11 @@ class WindowExtractor:
         # Apply slight blur to make features more visible
         occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
         height_img = cv2.GaussianBlur(height_img, (3, 3), 0)
-        density_img = cv2.GaussianBlur(density_img, (3, 3), 0)
         roughness_img = cv2.GaussianBlur(roughness_img, (3, 3), 0)
 
         return {
             'occupancy': occupancy_grid,
             'height': height_img,
-            'density': density_img,
             'roughness': roughness_img,
         }
 
