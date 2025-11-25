@@ -60,7 +60,7 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 **Status:** Ready to begin
 
-### 1.1 BEV Data Enhancement ✅ COMPLETED
+### 1.1 BEV Data Enhancement ✅ COMPLETED (Nov 25, 2025)
 - [x] Implement `auto_crop_bev()` function ✅
   - Location: `odd_agents/utils.py`
   - Removes 50-75% empty borders
@@ -70,25 +70,65 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
   - 12 tests in `tests/test_bev_cropping.py`
   - All tests passing
   - Coverage: size reduction, content preservation, edge cases
-- [x] Create integration documentation ✅
-  - `docs/BEV_CROP_INTEGRATION.md`
-  - Three integration options (postprocessing, generation, on-the-fly)
-  - Performance impact estimates
+- [x] Integrate auto-crop into BEV rendering pipeline ✅
+  - `scripts/extract_windows.py` updated
+  - 90° rotation + horizontal flip + auto-crop
+  - 65-72% size reduction on sim data
+- [x] Remove density BEV channel ✅
+  - **Decision**: Density redundant with occupancy/height/roughness
+  - **Final channels**: Occupancy, Height, Roughness (3 total)
+  - Sim data: Density was just proximity to sensor (not useful)
+  - Real data blocked: Needs per-scan LiDAR (accumulated maps cause aliasing)
+- [x] Update all 3 BEV channels in tools ✅
+  - Perception tool: occupancy, height, roughness
+  - Collision tool: occupancy, height, roughness
+  - Prompts updated to explain each channel
+- [x] Generate production data ✅
+  - 62 sim windows in `data/production/sim_1_0/`
+  - 6 test windows in `data/test/sim/`
+  - Data versioning: `{source}_{id}_v{version}` schema
+- [x] Update documentation ✅
+  - `docs/BEV_TRANSFORMATION_STATUS.md` - detailed status
+  - `docs/BEV_ENHANCEMENT_SUMMARY.md` - merge summary
+  - `data/DATA_VERSIONS.md` - versioning schema
+  - `data/README.md` - reorganized structure
+- [x] Data directory reorganization ✅
+  - `data/production/` - batch processed data
+  - `data/test/` - all test samples (unified location)
+  - `data/archive/` - old analysis results
+  - Removed: `data/processed/`, `data/processed/test_data/`
+- [x] Merge to dev ✅
+  - Branch: `feature/phase1.1-bev-enhancement`
+  - Merged: Nov 25, 2025
+  - 23 files changed, 932 insertions(+), 391 deletions(-)
 
-**Next Steps for 1.1:**
-- [ ] Add all 4 BEV channels to perception tool (height, density, roughness)
-- [ ] Add all 4 BEV channels to collision tool
-- [ ] Integrate auto-crop into BEV rendering pipeline
-- [ ] Update prompts to explain each BEV channel
+**Outcome**: 3-channel BEV pipeline ready for Phase 1.2
 
-### 1.2 Collision Agent Rework
+### 1.2 Collision Agent Rework 📋 NEXT (Starting Nov 26, 2025)
 - [ ] Remove collision risk scoring logic entirely
+  - Current: 0-1 risk scores based on multimodal fusion
+  - Target: Binary collision detection (yes/no)
 - [ ] Implement binary collision detection
   - IMU spike detection (threshold: >10 m/s² acceleration)
   - Angular velocity change patterns
   - Force sensor integration (if available from Phase 0)
-- [ ] Update output schema (collisions_detected list, no risk scores)
-- [ ] Manual test on 2-3 scenarios
+- [ ] Update output schema
+  - New: `collisions_detected` list with timestamps
+  - Remove: `collision_risk` scores, risk levels
+  - Keep: Window-level summary for reporting
+- [ ] Update agent files
+  - `odd_agents/agents/collision.py` - agent prompt
+  - `odd_agents/tools/collision.py` - tool function
+  - Test: `tests/test_collision_agent.py`
+- [ ] Manual test on sim data
+  - Test data ready: `data/test/sim/` (6 windows)
+  - Command: `python scripts/run_odd_analysis.py`
+  - Validate: No false positives, detects actual collisions
+
+**Test Data Available:**
+- `data/test/sim/` - 6 windows (w010-011, w030-031, w050-051)
+- Each window: motion JSON + camera + 3 BEV channels
+- Expected time: 2-3 hours
 
 ### 1.3 COD Agent Redesign
 - [ ] Implement per-window ODD compliance checking
@@ -493,20 +533,24 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 
 ---
 
-**Last Updated**: November 24, 2025  
+**Last Updated**: November 25, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1 - BEV Enhancement Complete, Agent Refactor Ready
+**Status**: Phase 1.1 Complete, Starting Phase 1.2
 
-**Current Focus**: Phase 1 - Architecture Refactor
+**Current Focus**: Phase 1.2 - Collision Agent Rework
 
 **Recent Completions**:
-- ✅ Phase 0: Bagfile audit complete (critical finding: no velocity data)
-- ✅ BEV auto-crop implementation (50-75% size reduction, all tests passing)
-- ✅ Metadata design complete (2 approaches documented with POCs)
-- ✅ TODO.md reorganized with Phase 0-4 structure
-- ✅ Real robot data validation (270 windows, 6 scenarios)
+- ✅ Phase 1.1: BEV Enhancement (merged to dev Nov 25)
+  - Auto-crop: 65-72% size reduction
+  - Density removed: 3 channels (occupancy, height, roughness)
+  - Data reorganized: production/, test/, archive/
+  - Sim data ready: 62 production + 6 test windows
+  - Documentation updated: 4 docs (transformation status, enhancement summary, versioning, README)
+- ✅ Branch cleanup: Deleted 16 merged branches (20→5 remaining)
+- ✅ Phase 0: Bagfile audit (no velocity data)
+- ✅ Real robot validation (270 windows, 6 scenarios)
 - ✅ Production workflow scripts (manual + batch)
-- ✅ IMU-based motion analysis (odometry-independent)
+- ✅ IMU-based motion analysis
 
 **Next Steps**:
 1. Add all 4 BEV channels to perception/collision tools
