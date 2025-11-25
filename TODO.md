@@ -135,26 +135,43 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - ✅ Collision: IMU metrics only (from motion output)
 - ✅ Previous BEV bug FIXED (all 3 channels now loaded)
 
-### 1.3 COD Agent Redesign 📋 NEXT
+### 1.3 COD Agent Redesign � IN PROGRESS (Nov 25, 2025)
 
-**Items to Address After Agent Versioning:**
-- Remove `collision_risk` from COD numeric metrics (add `collision_detected` boolean)
-- Remove `collision_risk` constraint from ODD spec parsing
-- Clarify `visibility_score` vs `lighting_class` semantics in perception prompt
-  - Current: `lighting_class` = environmental lighting quality
-  - Current: `visibility_score` may = navigable area visibility (explains 0.0 when blocked)
-  - Decision needed: Keep separate or merge into single metric?
+**Architecture Changes (COMPLETED):**
+- [x] Remove `collision_risk` from ODD spec parsing ✅
+  - Collision is operational outcome, not environmental constraint
+  - Removed from numeric_constraints and NL prompt
+- [x] Simplify ODD spec to max/min limits only ✅
+  - Removed 3-zone structure (in_odd/boundary/out_odd)
+  - New schema: {"max": 10.0, "min": 0.0} for numeric constraints
+- [x] Add semantic context to ODD spec ✅
+  - Added `description` field (what the metric means)
+  - Added `measurement_guidance` field (how agents should measure it)
+  - Creates shared vocabulary for Perception, Motion, COD, Evaluator
+- [x] Decouple COD agent from compliance checking ✅
+  - Renamed to CodMeasurementAgent
+  - Pure measurement extraction (no compliance logic)
+  - Output: per_window_measurements + cod_region + statistics
+- [x] Update Compliance agent ✅
+  - Removed collision_risk from numeric_compliance checks
+  - Will become Evaluator in Phase 1.4 (region comparison + distance)
 
-**Core Redesign Tasks:**
-- [ ] Implement per-window ODD compliance checking
-  - Compare each window against ODD thresholds
-  - Output IN_ODD / BOUNDARY / OUT_ODD per window
+**Validation in Progress:**
+- [x] Manual test run initiated on sim_test_w010_w011 (2 windows) ✅
+- [ ] Review test results with new architecture
+- [ ] Verify ODD spec semantic context works with downstream agents
+- [ ] Validate no schema mismatches
+
+**Remaining Tasks:**
+- [ ] Implement per-window ODD compliance checking in Evaluator (Phase 1.4)
+  - Compare each window's measurements against ODD max/min limits
+  - Flag violations per window (no averaging)
 - [ ] Implement scenario COD region construction
   - Categorical: collect all unique observed values
   - Numeric: extract min/max/range for each axis
-- [ ] Implement ODD overlap analysis
-  - Detect categorical violations
-  - Detect numeric overlap with OUT_ODD ranges
+- [ ] Implement distance-from-limits calculation (Phase 1.4)
+  - Calculate magnitude of violations (how far beyond limit?)
+  - Example: 15 m/s² vs 10 m/s² limit = 50% overage
 - [ ] Manual test: verify no averaging, all violations preserved
 
 ### 1.5 Collision Agent BEV Enhancement 💡 DEFERRED
@@ -191,20 +208,29 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - Temporal analysis: "Does BEV show obstacle contact during IMU spike window?"
 - More sophisticated evidence gathering (not just boolean)
 
-### 1.4 Evaluator Agent Creation
+**Goal**: Rename Compliance to Evaluator, add distance-from-limits calculation with telemetry
+
+**Tasks**:
 - [ ] Rename Compliance → Evaluator agent
-- [ ] Implement severity calculation from window distribution
-  - Formula: `(out_odd × 2.0 + boundary × 0.5) / total × 10`
+- [ ] Implement ODD/COD distance computation for severity
+  - For violations: calculate magnitude (how far beyond limit?)
+  - Example: COD max_accel = 15 m/s², ODD limit = 10 m/s² → 50% overage
+  - Use distance + frequency for severity scoring
+- [ ] Implement severity calculation from per-window compliance
+  - Input: per_window_measurements from COD + ODD spec
+  - Check each window against ODD limits
+  - Formula: Based on violation magnitude × frequency
   - Map to severity levels (MINIMAL/LOW/MEDIUM/HIGH/CRITICAL)
-- [ ] Integrate all flags
-  - ODD violations from COD agent
+- [ ] Integrate collision detection flags
+  - Check COD boolean: collision_detected
+  - Flag as critical safety event (separate from ODD compliance)
+- [ ] Integrate other agent flags
   - Sensor quality issues from Perception
   - Motion anomalies from Motion agents
-  - Collision detections from Collision agent
 - [ ] Generate investigation flags (specific, actionable)
-- [ ] Generate executive summary
+- [ ] A/B test with telemetry: severity scoring v1 vs v2
 
-### 1.5 Manual Validation Suite
+### 1.6 VIS Odometry + Motion Improvements 📋 PLANNED
 - [ ] Select 3-5 representative scenarios
   - Fully compliant
   - Boundary case
@@ -579,6 +605,76 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 - [ ] Historical trend analysis across deployments
 - [ ] Compliance certification export (PDF report)
 - [ ] Meta-analysis tools for comparing batch runs
+
+### Future Research: Intelligent Data Selection Agent
+
+**Current Limitation**: Fixed window sampling strategy
+- Programmatically select observation windows (e.g., every 5 seconds)
+- Single camera frame + single LiDAR scan per window
+- May miss critical events (sudden obstacle, lighting change, collision)
+- Compute efficiency vs. data coverage trade-off
+
+**Proposed Enhancement**: Pre-Analysis Triage Agent
+- **Goal**: Intelligent selection of "interesting" data for detailed analysis
+- **Method**: Lightweight LLM scan of full scenario data
+- **Output**: Prioritized windows/frames for detailed processing
+
+**Implementation Approach**:
+1. **Quick Scan Phase** (low-cost model, e.g., flash-lite):
+   - Load all camera thumbnails (downsampled 128x128)
+   - Load IMU time series (full resolution, low token cost)
+   - Load LiDAR occupancy overview (downsampled BEV)
+   
+2. **Triage Analysis**:
+   - Detect regime changes (bright → dark, clear → cluttered)
+   - Identify motion anomalies (acceleration spikes, sudden stops)
+   - Flag potential safety events (collision signatures, near-miss)
+   - Score each window: ROUTINE / INTERESTING / CRITICAL
+   
+3. **Adaptive Sampling**:
+   - ROUTINE windows: Skip or sample 1 per 10 seconds
+   - INTERESTING windows: Standard sampling (current 5s cadence)
+   - CRITICAL windows: Dense sampling (1-2s cadence, multiple frames)
+
+**Benefits**:
+- **Better violation detection**: Don't miss transient events
+- **Compute efficiency**: Focus expensive analysis on important data
+- **Adaptive fidelity**: Match analysis depth to scenario complexity
+- **Post-incident investigation**: Automatic zoom-in on anomalies
+
+**Example Use Case**:
+```
+Scenario: 60-second navigation run
+Full data: 60 camera frames, 720 IMU samples, 12 LiDAR scans
+
+Triage agent output:
+- Seconds 0-30: ROUTINE (slow corridor walk)
+  → Sample: 3 windows (10s cadence)
+- Seconds 30-35: INTERESTING (furniture cluster detected)
+  → Sample: 1 window (5s cadence)
+- Seconds 35-38: CRITICAL (IMU spike + sudden stop)
+  → Sample: 2 windows (1.5s cadence, 2 frames each)
+- Seconds 38-60: ROUTINE (resumed slow walk)
+  → Sample: 2 windows (10s cadence)
+
+Total windows: 8 (vs 12 uniform) but better event coverage
+```
+
+**Technical Challenges**:
+- Downsampling strategy (maintain detectability of events)
+- Triage agent prompt design (what makes data "interesting"?)
+- Confidence calibration (avoid false negatives on subtle violations)
+- Cost/benefit analysis (triage overhead vs. savings on main analysis)
+
+**Integration Point**: Phase 5+ or post-Kaggle capstone
+- Requires stable Phase 1-4 architecture first
+- Enables scaling to longer scenarios (5-10 minute runs)
+- Research contribution: Multi-stage adaptive analysis pipeline
+
+**Related Work**:
+- Active learning for robotics (selective labeling)
+- Video summarization (keyframe extraction)
+- Anomaly detection for time series (changepoint detection)
 
 ---
 

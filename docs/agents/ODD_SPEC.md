@@ -14,7 +14,9 @@ The **OddSpecAgent** converts natural language descriptions of a robot's Operati
 
 Transforms conversational ODD descriptions into formal specifications with:
 - Categorical constraints (environment types, lighting, terrain)
-- Numerical ranges with three zones: IN_ODD (safe), BOUNDARY (caution), OUT_ODD (unsafe)
+- Numerical limits with semantic context (max/min + description + measurement_guidance)
+
+**Phase 1.3 Changes**: Simplified to max/min limits (removed 3-zone in_odd/boundary/out_odd), removed collision_risk, added semantic context fields for measurement consistency
 
 **Problem it solves**: Robotics engineers and safety engineers shouldn't need to manually define complex JSON specifications. This agent interprets vague descriptions ("moderate speed", "low obstacles") and produces precise thresholds.
 
@@ -39,7 +41,7 @@ Quadruped robot designed for indoor office navigation.
 
 **Output Key:** `temp:odd_spec`
 
-**Schema:**
+**Schema (Phase 1.3 - Simplified):**
 ```json
 {
   "odd_specification": {
@@ -59,30 +61,34 @@ Quadruped robot designed for indoor office navigation.
     },
     "numeric_constraints": {
       "max_accel_mps2": {
-        "in_odd": [0.0, 2.0],
-        "boundary": [2.0, 5.0],
-        "out_odd": [5.0, "inf"]
+        "max": 10.0,
+        "description": "Maximum horizontal acceleration in meters per second squared during agile maneuvers",
+        "measurement_guidance": "Extract peak magnitude of horizontal acceleration (sqrt(x² + y²)) from IMU linear_acceleration during observation window. Report peak value, not average."
       },
       "obstacle_density": {
-        "in_odd": [0.0, 0.6],
-        "boundary": [0.6, 0.8],
-        "out_odd": [0.8, 1.0]
+        "max": 0.7,
+        "description": "Maximum normalized obstacle density (0-1 scale) in navigation area",
+        "measurement_guidance": "Count distinct obstacles in BEV occupancy map, divide by total navigable area, normalize to 0-1 scale where 1.0 = completely obstructed."
       },
       "traversability_score": {
-        "in_odd": [0.5, 1.0],
-        "boundary": [0.3, 0.5],
-        "out_odd": [0.0, 0.3]
-      },
-      "collision_risk": {
-        "in_odd": [0.0, 0.3],
-        "boundary": [0.3, 0.5],
-        "out_odd": [0.5, 1.0]
+        "min": 0.5,
+        "description": "Minimum ease of navigation score (0-1 scale) where 1.0 = completely clear path",
+        "measurement_guidance": "Assess from BEV roughness and occupancy: combine surface smoothness + path clearance + obstacle spacing. 1.0 = wide open space, 0.0 = impassable."
       }
     }
   },
-  "odd_summary": "Quadruped robot designed for indoor office environments with smooth floors, controlled lighting, and low obstacle density. Maximum speed 1.5 m/s with low collision risk tolerance."
+  "odd_summary": "Quadruped robot designed for indoor office environments with smooth floors, controlled lighting, and moderate obstacle density. Maximum horizontal acceleration 10 m/s² during agile maneuvers."
 }
 ```
+
+**Key Changes (Phase 1.3):**
+- **Simplified numeric constraints**: 3-zone model (in_odd/boundary/out_odd) → simple max/min limits
+- **Semantic context added**: 
+  - `description`: Human-readable explanation of what the metric represents
+  - `measurement_guidance`: Specific instructions for agents on how to measure consistently
+- **Collision removed**: `collision_risk` is operational outcome, not environmental constraint
+  - Binary `collision_detected` flag handled separately (not part of ODD)
+- **Shared vocabulary**: Description + guidance create consistency across Perception, Motion, COD, Evaluator agents
 
 ### Prompting Strategy
 
@@ -90,58 +96,69 @@ The agent uses **expert heuristics** to convert vague descriptions into precise 
 
 #### Speed Interpretation
 ```
-"slow"     → IN_ODD: 0.0-0.5 m/s, BOUNDARY: 0.5-1.0, OUT_ODD: >1.0
-"moderate" → IN_ODD: 0.0-1.5 m/s, BOUNDARY: 1.5-2.0, OUT_ODD: >2.0
-"fast"     → IN_ODD: 0.0-2.5 m/s, BOUNDARY: 2.5-3.5, OUT_ODD: >3.5
+"slow"     → max: 0.5 m/s (design limit)
+"moderate" → max: 1.5 m/s (design limit)
+"fast"     → max: 2.5 m/s (design limit)
 
-If max speed mentioned: Use as IN_ODD upper bound, add 30% for BOUNDARY
+If max speed explicitly mentioned: Use as max limit directly
 ```
 
 #### Obstacle Density (0.0-1.0 scale)
 ```
-"sparse/low"  → IN_ODD: 0.0-0.4, BOUNDARY: 0.4-0.6, OUT_ODD: 0.6-1.0
-"moderate"    → IN_ODD: 0.0-0.6, BOUNDARY: 0.6-0.8, OUT_ODD: 0.8-1.0
-"dense/high"  → Prohibited (OUT_ODD > 0.8)
+"sparse/low"  → max: 0.4 (normalized density on 0-1 scale)
+"moderate"    → max: 0.6 (normalized density on 0-1 scale)
+"dense/high"  → max: 0.8 (normalized density on 0-1 scale)
 ```
 
 #### Traversability (0.0-1.0 scale, higher = better)
 ```
-"good/clear"     → IN_ODD: 0.5-1.0, BOUNDARY: 0.3-0.5, OUT_ODD: 0.0-0.3
-"challenging"    → IN_ODD: 0.3-0.8, BOUNDARY: 0.2-0.3, OUT_ODD: 0.0-0.2
+"good/clear"     → min: 0.5 (minimum acceptable navigability)
+"challenging"    → min: 0.3 (lower threshold for difficult terrain)
 ```
 
-#### Collision Risk (0.0-1.0 scale, higher = worse)
+#### Acceleration (m/s²)
 ```
-"low/safe"  → IN_ODD: 0.0-0.3, BOUNDARY: 0.3-0.5, OUT_ODD: 0.5-1.0
-"moderate"  → IN_ODD: 0.0-0.5, BOUNDARY: 0.5-0.7, OUT_ODD: 0.7-1.0
-
-Any mention of "safety" → Use conservative thresholds (0.3 boundary)
-```
-
-#### Platform Stability (roll/pitch angles)
-```
-"stable/flat"  → IN_ODD: 0-15°, BOUNDARY: 15-20°, OUT_ODD: >20°
-"slopes ok"    → IN_ODD: 0-20°, BOUNDARY: 20-25°, OUT_ODD: >25°
+"low/gentle"   → max: 2.0 m/s²
+"moderate"     → max: 5.0 m/s²
+"high/agile"   → max: 10.0 m/s²
 ```
 
-#### Default Assumptions
+**Phase 1.3 Note**: collision_risk removed from ODD spec (operational outcome, not environmental constraint). Binary collision_detected flag handled separately.
+
+#### Default Assumptions (Phase 1.3)
 If a constraint is not mentioned, the agent uses conservative defaults:
 ```json
 {
-  "max_accel_mps2": {"in_odd": [0.0, 2.0], "boundary": [2.0, 5.0], "out_odd": [5.0, "inf"]},
-  "obstacle_density": {"in_odd": [0.0, 0.6], "boundary": [0.6, 0.8], "out_odd": [0.8, 1.0]},
-  "traversability_score": {"in_odd": [0.5, 1.0], "boundary": [0.3, 0.5], "out_odd": [0.0, 0.3]},
-  "collision_risk": {"in_odd": [0.0, 0.3], "boundary": [0.3, 0.5], "out_odd": [0.5, 1.0]}
+  "max_accel_mps2": {
+    "max": 10.0,
+    "description": "Maximum horizontal acceleration during agile maneuvers",
+    "measurement_guidance": "Extract peak magnitude from IMU linear_acceleration (x,y) during window"
+  },
+  "obstacle_density": {
+    "max": 0.6,
+    "description": "Normalized obstacle density (0-1 scale, higher = more cluttered)",
+    "measurement_guidance": "Count valid obstacles / total grid cells in BEV projection"
+  },
+  "traversability_score": {
+    "min": 0.5,
+    "description": "Minimum navigability score (0-1 scale, higher = more navigable)",
+    "measurement_guidance": "Weighted combination: terrain smoothness + clearance + stability"
+  }
 }
 ```
 
-### Key Instruction Patterns
+**Semantic Context Fields (Phase 1.3)**:
+- `description`: Human-readable explanation of what the metric represents
+- `measurement_guidance`: Specific instructions for agents to ensure consistent measurement across perception/motion/COD
+
+### Key Instruction Patterns (Phase 1.3)
 
 1. **Extract categorical constraints** from mentions of environment types, lighting, terrain
-2. **Infer numerical ranges** using the heuristics above
-3. **Define three zones** for each numeric constraint (safety-critical design)
+2. **Infer numerical limits** using the heuristics above (max/min only, no 3-zone)
+3. **Add semantic context** for each numeric constraint (description + measurement_guidance)
 4. **Return ONLY valid JSON** - no explanations outside the schema
 5. **Include summary** - brief human-readable description of the ODD
+6. **DO NOT include collision_risk** - operational outcome, not environmental constraint
 
 ### Model Selection
 
@@ -164,17 +181,16 @@ If a constraint is not mentioned, the agent uses conservative defaults:
 
 ### Example Outputs
 
-#### Example 1: Indoor Office Robot
+#### Example 1: Indoor Office Robot (Phase 1.3)
 **Input:**
 ```
 Quadruped robot designed for indoor office navigation.
 - Designed for: smooth floors, bright/dim lighting, low obstacles
 - Prohibited: outdoor, stairs, dark environments, dense clutter
-- Speed limit: 0-1.5 m/s
-- Collision risk threshold: <0.3 (low risk only)
+- Speed limit: 0-1.5 m/s (maximum horizontal velocity)
 ```
 
-**Output:**
+**Output (Phase 1.3):**
 ```json
 {
   "odd_specification": {
@@ -194,32 +210,27 @@ Quadruped robot designed for indoor office navigation.
     },
     "numeric_constraints": {
       "max_accel_mps2": {
-        "in_odd": [0.0, 2.0],
-        "boundary": [2.0, 5.0],
-        "out_odd": [5.0, "inf"]
+        "max": 2.0,
+        "description": "Maximum horizontal acceleration during navigation (gentle acceleration for indoor safety)",
+        "measurement_guidance": "Extract peak magnitude from IMU linear_acceleration (x,y) during window"
       },
       "obstacle_density": {
-        "in_odd": [0.0, 0.6],
-        "boundary": [0.6, 0.8],
-        "out_odd": [0.8, 1.0]
+        "max": 0.6,
+        "description": "Normalized obstacle density (0-1 scale) - low density for office environment",
+        "measurement_guidance": "Count valid obstacles / total grid cells in BEV projection"
       },
       "traversability_score": {
-        "in_odd": [0.5, 1.0],
-        "boundary": [0.3, 0.5],
-        "out_odd": [0.0, 0.3]
-      },
-      "collision_risk": {
-        "in_odd": [0.0, 0.3],
-        "boundary": [0.3, 0.5],
-        "out_odd": [0.5, 1.0]
+        "min": 0.5,
+        "description": "Minimum navigability score (0-1 scale, higher = more navigable) - require good clearance",
+        "measurement_guidance": "Weighted combination: terrain smoothness + clearance + stability"
       }
     }
   },
-  "odd_summary": "Quadruped robot designed for indoor office environments with smooth floors, controlled lighting, and low obstacle density. Maximum speed 1.5 m/s with strict low collision risk tolerance (<0.3)."
+  "odd_summary": "Quadruped robot designed for indoor office environments with smooth floors, controlled lighting (bright/dim), and low obstacle density. Maximum acceleration 2.0 m/s² for safe indoor navigation."
 }
 ```
 
-#### Example 2: Outdoor Delivery Robot
+#### Example 2: Outdoor Delivery Robot (Phase 1.3)
 **Input:**
 ```
 Delivery robot for outdoor sidewalk navigation.
@@ -230,7 +241,7 @@ Delivery robot for outdoor sidewalk navigation.
 - Weather: dry conditions only
 ```
 
-**Output:**
+**Output (Phase 1.3):**
 ```json
 {
   "odd_specification": {
@@ -250,17 +261,24 @@ Delivery robot for outdoor sidewalk navigation.
     },
     "numeric_constraints": {
       "max_accel_mps2": {
-        "in_odd": [0.0, 3.0],
-        "boundary": [3.0, 5.0],
-        "out_odd": [5.0, "inf"]
+        "max": 5.0,
+        "description": "Maximum horizontal acceleration for outdoor maneuvers",
+        "measurement_guidance": "Extract peak magnitude from IMU linear_acceleration (x,y) during window"
       },
       "obstacle_density": {
-        "in_odd": [0.0, 0.6],
-        "boundary": [0.6, 0.8],
-        "out_odd": [0.8, 1.0]
+        "max": 0.6,
+        "description": "Normalized obstacle density (0-1 scale) - moderate density for pedestrian areas",
+        "measurement_guidance": "Count valid obstacles / total grid cells in BEV projection"
       },
       "traversability_score": {
-        "in_odd": [0.3, 1.0],
+        "min": 0.3,
+        "description": "Minimum navigability score (0-1 scale) - tolerate moderate slopes",
+        "measurement_guidance": "Weighted combination: terrain smoothness + clearance + stability"
+      }
+    }
+  },
+  "odd_summary": "Delivery robot for outdoor urban sidewalk navigation with moderate terrain tolerance. Maximum acceleration 5.0 m/s² for faster outdoor speeds. Requires daylight conditions (bright/dim), dry weather only."
+}
         "boundary": [0.2, 0.3],
         "out_odd": [0.0, 0.2]
       },
