@@ -149,10 +149,184 @@ ground_threshold = 0.10  # meters (10cm)
 
 ## Changelog
 
+**Version 1.2** (2025-11-25) - DEFERRED
+- **CRITICAL ISSUE DISCOVERED**: Ground filtering implementation exists but doesn't work correctly
+- Ground plane still visible in occupancy maps despite 10cm threshold
+- Root cause: Complex sensor mounting geometry (180° roll, 15° pitch tilt, dynamic robot motion)
+- Multiple approaches attempted (see "Attempted Solutions" below)
+- **DECISION**: Reverted to original implementation, deferring proper fix to future work
+- Production data still uses all-points occupancy (includes ground)
+
 **Version 1.1** (2025-11-23)
-- Added ground threshold filtering (10cm)
+- Added ground threshold filtering (10cm) - **NON-FUNCTIONAL, SEE v1.2**
 - Updated perception agent prompt to clarify filtered occupancy
 - Documentation created
 
 **Version 1.0** (Initial)
 - All-points occupancy map (ground included)
+
+---
+
+## CRITICAL: Ground Filtering Implementation Issues
+
+### Problem Discovery (Nov 25, 2025)
+
+Visual inspection of production BEV occupancy maps revealed that **ground plane is still visible** despite the implemented 10cm height threshold. The ground filtering code exists in `extract_windows.py` but is **not effective**.
+
+### Root Cause Analysis
+
+The LiDAR sensor has a **complex mounting geometry**:
+
+1. **Static Transform** (from TF data in rosbag):
+   - `base_link → UnitreeL1_link`:
+     - Translation: `[0.293, 0.0, -0.08]`
+     - Rotation (quaternion): `[0.0, 0.991, 0.0, 0.131]`
+   - Euler angles: **Roll=180°, Pitch=15°, Yaw=180°**
+   - Sensor is mounted **upside-down and tilted forward**
+
+2. **Dynamic Transform**:
+   - Robot pitches/rolls significantly during walking (~5-15° variation)
+   - Ground plane orientation **changes relative to sensor** in each frame
+   - Static TF alone insufficient for ground alignment
+
+3. **Coordinate Frame Implications**:
+   - In sensor frame: `-Z` points "up" (due to 180° roll)
+   - Ground plane is **tilted 29.49° from horizontal** (measured via RANSAC)
+   - Simple `z > 0.10m` threshold filters wrong points
+   - CloudCompare visualization confirmed ground plane NOT aligned with XY plane
+
+### Attempted Solutions (All Unsuccessful)
+
+#### Approach 1: TF-Only Transform
+**Method**: Apply `base_link → UnitreeL1_link` inverse transform
+```python
+# Transform point cloud to base_link frame
+points_base = rot_inv.apply(points) + translation_sensor_to_base
+ground_mask = points_base[:, 2] > 0.10
+```
+**Result**: ❌ Ground still tilted 29.49° from horizontal
+**Why failed**: Static TF doesn't account for robot's dynamic pitch/roll during walking
+
+#### Approach 2: CloudCompare Level Tool
+**Method**: Manually computed transform to align ground with XY plane
+```
+Transform matrix (from CloudCompare):
+[ 0.552897  0.820041 -0.147777  2.551939]
+[ 0.794451 -0.572282 -0.203325 -1.469287]
+[-0.251304 -0.004983 -0.967896  0.340201]
+```
+**Result**: ❌ Works for single frame but not generalizable (robot orientation changes)
+**Why failed**: Transform specific to one robot pose, doesn't adapt to motion
+
+#### Approach 3: RANSAC Plane Fitting
+**Method**: Fit ground plane per point cloud using RANSAC
+```python
+# Fit plane: z = ax + by + c
+ransac.fit(points[:, :2], points[:, 2])
+distances = |ax + by - z + c| / sqrt(a² + b² + 1)
+ground_mask = distances > 0.10
+```
+**Result**: ❌ Too slow (~500ms per frame), unreliable convergence
+**Why failed**: Computational cost, sensitive to outliers, inconsistent plane fitting
+
+#### Approach 4: Point Cloud Normals
+**Method**: Compute surface normals, cluster to find dominant ground normal
+```python
+# Find ground normal cluster (largest cluster)
+ground_normal = [0.4146, -0.0902, 0.9055]  # in sensor frame
+```
+**Result**: ❌ Normal computation expensive, doesn't solve alignment problem
+**Why failed**: Still need rotation to align, no clear advantage over TF approach
+
+#### Approach 5: Pitch Correction Only
+**Method**: Use robot pitch from odometry to correct Z-axis alignment
+```python
+# Get pitch from IMU/odom at LiDAR timestamp
+cos_p = np.cos(-robot_pitch)
+sin_p = np.sin(-robot_pitch)
+rotation_matrix = [[cos_p, 0, sin_p], [0, 1, 0], [-sin_p, 0, cos_p]]
+points_corrected = rotation_matrix @ points.T
+```
+**Result**: ❌ Improved but still issues (occupancy 4-11% instead of expected 1-3%)
+**Why failed**: Only corrects pitch, ignores roll and sensor's 180° flip
+
+### Forgotten Approach: Multi-Frame Transform Chain
+
+**RECOMMENDED FOR FUTURE**: Transform through complete chain:
+```
+sensor_frame → base_link → odom_frame
+```
+
+**Rationale**:
+- `sensor → base_link`: Static TF (accounts for mounting)
+- `base_link → odom`: Dynamic TF (accounts for robot orientation)
+- `odom_frame`: Gravity-aligned (Z is vertical)
+
+**Implementation**:
+```python
+# Read both transforms from rosbag
+tf_sensor_to_base = get_tf("base_link", "UnitreeL1_link", timestamp)
+tf_base_to_odom = get_tf("odom", "base_link", timestamp)
+
+# Compose transforms
+T_sensor_to_odom = T_base_to_odom @ T_sensor_to_base
+
+# Apply to point cloud
+points_odom = (T_sensor_to_odom @ points_homogeneous.T).T
+
+# Filter ground in odom frame (where Z is truly vertical)
+ground_mask = points_odom[:, 2] > (ground_z + 0.10)
+```
+
+**Advantages**:
+- Leverages existing TF data in rosbag
+- Accounts for both static mounting and dynamic robot motion
+- Odom frame is gravity-aligned by design
+- Generalizes across all frames
+
+**Challenges**:
+- Requires TF message parsing from rosbag
+- Need to handle TF interpolation for timestamp alignment
+- Additional computational overhead
+
+### Current Status
+
+**Production Data**: Uses **unfiltered occupancy** (all points, including ground)
+
+**Code State**: 
+- Ground filtering code **removed/reverted**
+- `scripts/extract_windows.py` back to original all-points implementation
+- Test files cleaned up
+
+**Workaround**: 
+- Agents **instructed in prompt** that occupancy includes ground
+- Perception analysis considers "high occupancy on flat floor" as normal
+- Works acceptably for current use cases
+
+### Future Work (Phase TBD)
+
+**Recommended Solution**: Multi-frame transform chain (`sensor → base_link → odom`)
+
+**Implementation Plan**:
+1. Add TF message parsing to `extract_windows.py`
+2. Read `odom → base_link` transform at each LiDAR timestamp
+3. Compose with static `base_link → UnitreeL1_link` transform
+4. Apply combined transform before ground filtering
+5. Validate on multiple scenarios (walking, turning, slopes)
+6. Regenerate all production BEV data
+
+**Estimated Effort**: 2-3 days
+- Day 1: TF parsing infrastructure
+- Day 2: Integration and validation
+- Day 3: Production data regeneration
+
+**Alternative**: Accept current limitation, document in agent prompts
+
+---
+
+## References
+
+- **Implementation**: `scripts/extract_windows.py` (ground filtering currently disabled)
+- **TF Data**: Available in rosbag `/tf` topic
+- **Investigation**: `data/development/bev_ground_filter_analysis/` (deleted after cleanup)
+- **CloudCompare**: External tool used for coordinate frame validation

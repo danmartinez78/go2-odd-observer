@@ -4,6 +4,7 @@ Extracted from odd_workflow_full.py (reference implementation).
 """
 
 import json
+import time
 from pathlib import Path
 from typing import Optional, Dict, Any
 from google.adk.agents import SequentialAgent
@@ -11,6 +12,8 @@ from google.adk.runners import InMemoryRunner
 from google.genai import Client
 
 from .utils import extract_json_block
+from .metadata import hash_text, extract_pipeline_metadata, build_agent_registry
+from .agent_prompts import get_all_prompts
 from .agents import (
     create_odd_spec_agent,
     create_perception_loop_agent,
@@ -22,6 +25,7 @@ from .agents import (
     create_cod_classifier_agent,
     create_odd_compliance_agent,
     create_report_agent,
+    AGENT_VERSIONS,
 )
 
 
@@ -96,7 +100,7 @@ async def run_odd_workflow(
     model_cod: str = "gemini-2.0-flash-lite",
     model_report: str = "gemini-2.0-flash-lite",
 ) -> Optional[Dict[str, Any]]:
-    """Run the complete ODD analysis workflow.
+    """Run the complete ODD analysis workflow with metadata tracking.
 
     Args:
         scenario_path: Path to the scenario directory (e.g., "data/processed/runs/sim_run_new")
@@ -106,7 +110,12 @@ async def run_odd_workflow(
         model_*: Model names for each agent (defaults to gemini-2.0-flash-exp)
 
     Returns:
-        Dictionary containing the final analysis report, or None if failed.
+        Dictionary containing:
+        - report: Final analysis report
+        - full_analysis: Complete agent outputs
+        - pipeline_metadata: Execution metadata (versions, models, tokens, timing)
+
+        Returns None if failed.
     """
     scenario_path_obj = Path(scenario_path)
     scenario_name = scenario_path_obj.name
@@ -127,7 +136,7 @@ async def run_odd_workflow(
         )
 
     print("\n" + "=" * 80)
-    print(f"ODD WORKFLOW - FULL PIPELINE")
+    print(f"ODD WORKFLOW - FULL PIPELINE (v2.0.0 with metadata tracking)")
     print(f"Scenario: {scenario_name}")
     print(f"ODD Description: {nl_odd_description[:100]}...")
     print("=" * 80)
@@ -135,6 +144,21 @@ async def run_odd_workflow(
     user_query = (
         f"Analyze scenario '{scenario_name}' against this ODD specification:\n\n"
         f"{nl_odd_description}"
+    )
+
+    # Build agent registry for metadata tracking
+    # Extract actual prompts from agent factory functions
+    agent_prompts = get_all_prompts()
+
+    agent_registry = build_agent_registry(
+        agent_versions=AGENT_VERSIONS,
+        agent_prompts=agent_prompts,
+        model_perception=model_perception,
+        model_motion=model_motion,
+        model_collision=model_collision,
+        model_odd_spec=model_odd_spec,
+        model_cod=model_cod,
+        model_report=model_report,
     )
 
     # Create fresh workflow instance
@@ -150,8 +174,13 @@ async def run_odd_workflow(
         model_report=model_report,
     )
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
-    events = await runner.run_debug(user_query)
 
+    # Run workflow and track timing
+    pipeline_start = time.time()
+    events = await runner.run_debug(user_query)
+    pipeline_duration = time.time() - pipeline_start
+
+    # Extract report
     report = extract_final_report(events)
 
     if report:
@@ -163,7 +192,44 @@ async def run_odd_workflow(
         with open(output_file, 'w') as f:
             json.dump(report, f, indent=2)
         print(f"\n📄 Report saved to: {output_file}")
+
+        # Extract pipeline metadata from events
+        pipeline_metadata = extract_pipeline_metadata(
+            events=events,
+            agent_registry=agent_registry,
+            pipeline_start_time=pipeline_start,
+            pipeline_duration=pipeline_duration,
+            odd_spec_hash=hash_text(nl_odd_description),
+            scenario_path=scenario_path,
+        )
+
+        # Compute lightweight analysis metadata for reports
+        total_tokens = sum(
+            exec_data.get('token_usage', {}).get('total_tokens', 0)
+            for exec_data in pipeline_metadata['agent_executions'].values()
+        )
+
+        # Gemini pricing (as of Nov 2024): ~$0.00001/token for flash, ~$0.00003/token for pro
+        # Use weighted average based on model distribution
+        avg_price_per_token = 0.00002  # Conservative estimate
+        estimated_cost = total_tokens * avg_price_per_token
+
+        analysis_metadata = {
+            'pipeline_version': pipeline_metadata['pipeline_version'],
+            'analysis_timestamp': pipeline_metadata['pipeline_start_time'],
+            'analysis_duration_seconds': round(pipeline_metadata['pipeline_duration_seconds'], 2),
+            'total_agents_executed': len(pipeline_metadata['agent_executions']),
+            'total_tokens_used': total_tokens,
+            'estimated_cost_usd': round(estimated_cost, 4),
+        }
+
+        # Return report + metadata
+        return {
+            'report': report.get('report', {}),
+            'full_analysis': report.get('full_analysis', {}),
+            'analysis_metadata': analysis_metadata,
+            'pipeline_metadata': pipeline_metadata,
+        }
     else:
         print("\n❌ No valid report generated")
-
-    return report
+        return None

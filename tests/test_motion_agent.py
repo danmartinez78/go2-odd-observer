@@ -55,7 +55,7 @@ def _extract_result(events: List[Any], agent_name: str = "MotionSummaryAgent") -
 
 
 async def test_motion_agent(
-    scenario_path: str = "data/processed/test_data/sim/sim_run_test",
+    scenario_path: str = "data/test/sim_test_w010_w011",
     model: str = "gemini-2.5-flash",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
