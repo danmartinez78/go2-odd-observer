@@ -410,12 +410,122 @@ pytest tests/ -v
 
 ---
 
+## ⚠️ Limitations and Future Work
+
+### Current System Limitations
+
+**1. Fixed Window Sampling May Miss Critical Events**
+
+**Limitation:** The current system uses **programmatic window selection** (e.g., every 5 seconds) with a single camera frame and LiDAR scan per window. This approach optimizes compute costs but may miss important transient events:
+
+- 💡 **Sudden lighting changes** (bright room → shadow → bright) may be averaged to "moderate"
+- 🚨 **Brief collision moments** occurring between sample points go undetected
+- 🎯 **Near-miss events** (obstacle appears then disappears) lost in sparse sampling
+- 📊 **Rapid regime changes** (clear hallway → sudden clutter) underrepresented
+
+**Impact:** Analysis may underestimate violations or miss safety-critical moments that occur between observation windows.
+
+**Example:**
+```
+60-second scenario with 5-second sampling:
+✅ Captures: 12 windows (general behavior trends)
+❌ Misses: Collision at t=17.3s (falls between t=15s and t=20s samples)
+❌ Misses: Brief dark hallway t=32-34s (sampled at t=30s in bright room)
+```
+
+### Proposed Solution: Intelligent Data Selection Agent
+
+**Multi-Stage Adaptive Pipeline** (Future Phase 5+):
+
+```mermaid
+graph TB
+    A[Full Scenario Data] --> B[Triage Agent<br/>Low-Cost Scan]
+    B --> C{Event Scoring}
+    C -->|ROUTINE| D[Sparse Sampling<br/>1 per 10s]
+    C -->|INTERESTING| E[Standard Sampling<br/>1 per 5s]
+    C -->|CRITICAL| F[Dense Sampling<br/>1-2s + multi-frame]
+    D --> G[Detail Analysis<br/>Main Pipeline]
+    E --> G
+    F --> G
+    
+    style A fill:#e3f2fd,stroke:#333,stroke-width:2px,color:#000
+    style B fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
+    style C fill:#ffccbc,stroke:#333,stroke-width:2px,color:#000
+    style D fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
+    style E fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
+    style F fill:#ffccbc,stroke:#333,stroke-width:2px,color:#000
+    style G fill:#f8bbd0,stroke:#333,stroke-width:2px,color:#000
+```
+
+**Approach:**
+1. **Quick Scan** (gemini-flash-lite, low-cost):
+   - Downsample all camera frames to 128×128 thumbnails
+   - Load full IMU time series (low token cost)
+   - Generate low-res BEV overview
+   
+2. **Triage Classification**:
+   - Detect regime changes (lighting, obstacle density, motion patterns)
+   - Identify anomalies (acceleration spikes, sudden stops, near-misses)
+   - Score windows: **ROUTINE** / **INTERESTING** / **CRITICAL**
+   
+3. **Adaptive Sampling**:
+   - ROUTINE: 1 window per 10 seconds (sparse)
+   - INTERESTING: 1 window per 5 seconds (current standard)
+   - CRITICAL: 1-2 second cadence with multiple frames
+
+**Expected Benefits:**
+- ✅ **Better violation detection** - Don't miss transient safety events
+- ⚡ **Improved compute efficiency** - Focus expensive analysis on important data
+- 🎯 **Adaptive fidelity** - Match analysis depth to scenario complexity
+- 📊 **Post-incident investigation** - Automatic zoom-in on anomalies
+
+**Example Impact:**
+```
+60-second scenario analysis:
+Current:   12 windows × $0.02 = $0.24 (may miss events)
+Triage:    8 windows × $0.02 + $0.01 triage = $0.17
+           ↑ 30% cost savings + better event coverage
+```
+
+**Technical Challenges:**
+- Downsampling while maintaining event detectability
+- Triage agent prompt design (what signals "interesting"?)
+- Confidence calibration (avoiding false negatives on subtle violations)
+
+**Timeline:** Phase 5+ or post-Kaggle capstone research project
+
+📚 **Detailed Design:** See [TODO.md § Future Research: Intelligent Data Selection Agent](TODO.md#future-research-intelligent-data-selection-agent)
+
+### Other Known Limitations
+
+**2. BEV Ground Filtering Sensitivity**
+- Current 10cm threshold may miss low obstacles (furniture legs, cables)
+- Sensor fusion gap: Camera detects obstacles LiDAR filters out
+- **Mitigation:** Phase 1.4 will add cross-validation between camera and BEV
+
+**3. No Velocity Estimation**
+- Robot odometry not available in current data
+- Cannot distinguish stationary vs. slow motion
+- **Planned:** Phase 2 will add visual/LiDAR odometry computation
+
+**4. Single-Window Collision Detection**
+- Thresholds checked per window (may miss gradual degradation)
+- No temporal correlation between consecutive windows
+- **Future:** Multi-window trend analysis for early warning
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-**Ideas for contributions:**
-- � Fix Plotly chart rendering in HTML reports (currently deferred)
+**High-Priority Contributions:**
+- 🎯 **Intelligent triage agent** - Multi-stage adaptive sampling (see above)
+- 📊 Fix Plotly chart rendering in HTML reports (currently deferred)
+- 🔍 BEV/camera cross-validation for ground filtering tuning
+- 🏃 Visual/LiDAR odometry integration (Phase 2)
+
+**Other Ideas:**
 - 📡 Add support for new sensor modalities (GPS, ultrasonic, radar)
 - 🤖 Generalize for other robot platforms (drones, warehouse AMRs, cars)
 - 🎨 Interactive dashboard for batch analysis visualization

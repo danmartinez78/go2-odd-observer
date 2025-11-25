@@ -109,12 +109,6 @@ NOT designed for:
 - Outdoor terrain (gravel, grass, dirt, uneven ground)
 - Unstable surfaces (sand, loose materials)
 
-COLLISION EXPECTATIONS:
-In furniture-dense environments (living rooms, dining areas), proximity to obstacles 
-is unavoidable and normal. Collision risk scores up to 0.75 are acceptable when 
-navigating through furnished spaces. The robot should maintain awareness and avoid 
-actual contact, but close proximity (<0.5m to obstacles) is expected.
-
 DEFINITELY NOT DESIGNED FOR:
 - Outdoor environments (weather exposure, GPS reliance, rough terrain)
 - Dark rooms where camera sensors cannot function

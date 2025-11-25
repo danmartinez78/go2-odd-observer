@@ -2,9 +2,22 @@
 
 ## Overview
 
-The **OddComplianceAgent** performs the critical safety function of comparing the robot's **Current Operating Domain (COD)** against its **Operational Design Domain (ODD)** specification to detect violations and warnings.
+**⚠️ PHASE 1.3 STATUS: This agent is being redesigned as the Evaluator Agent in Phase 1.4**
 
-**Safety-Critical Function**: This agent determines if the robot is operating within its design parameters, approaching limits, or violating safety constraints.
+The **OddComplianceAgent** (becoming **Evaluator** in Phase 1.4) performs the critical safety function of comparing the robot's **Current Operating Domain (COD)** against its **Operational Design Domain (ODD)** specification to detect violations and calculate distance from design limits.
+
+**Safety-Critical Function**: This agent determines if the robot is operating within its design parameters and quantifies how far beyond limits violations extend.
+
+**Phase 1.3 Changes:**
+- Removed `collision_risk` from numeric compliance checks (collision is operational outcome, not environmental constraint)
+- Binary `collision_detected` flag handled separately as safety event
+
+**Phase 1.4 Planned Changes:**
+- Rename: OddComplianceAgent → Evaluator
+- Region-based comparison: Compare COD min/max ranges vs ODD limits
+- Distance calculation: Quantify violation magnitude (e.g., 15 m/s² vs 10 m/s² limit = 50% overage)
+- Severity scoring: Based on magnitude × frequency of violations
+- Per-window compliance tracking: No violations lost to averaging
 
 ---
 
@@ -33,25 +46,43 @@ Compares COD (actual conditions) against ODD (design specifications) and classif
       "terrain_type": {"allowed": [...], "prohibited": [...]}
     },
     "numeric_constraints": {
-      "obstacle_density": {"in_odd": [0.0, 0.6], "boundary": [0.6, 0.8], "out_odd": [0.8, 1.0]},
-      "traversability_score": {"in_odd": [0.5, 1.0], "boundary": [0.3, 0.5], "out_odd": [0.0, 0.3]},
-      "collision_risk": {"in_odd": [0.0, 0.3], "boundary": [0.3, 0.5], "out_odd": [0.5, 1.0]}
+      "max_accel_mps2": {
+        "max": 10.0,
+        "description": "Maximum horizontal acceleration during agile maneuvers",
+        "measurement_guidance": "Extract peak magnitude from IMU linear_acceleration (x,y)"
+      },
+      "obstacle_density": {
+        "max": 0.6,
+        "description": "Normalized obstacle density (0-1 scale)",
+        "measurement_guidance": "Count valid obstacles / total grid cells in BEV"
+      },
+      "traversability_score": {
+        "min": 0.5,
+        "description": "Minimum navigability score (0-1 scale, higher = more navigable)",
+        "measurement_guidance": "Weighted combination: terrain smoothness + clearance + stability"
+      }
     }
   }
 }
 
-// COD Classification
+// COD Classification (Phase 1.3 - Region-Based)
 {
-  "cod_classification": {
+  "cod_region": {
     "categorical": {
-      "environment_type": "indoor_office",
-      "lighting_conditions": "bright",
-      "terrain_type": "smooth"
+      "environment_type": ["indoor_office"],
+      "lighting_conditions": ["bright", "dim"],
+      "terrain_type": ["smooth"]
     },
     "numeric": {
-      "obstacle_density": 0.53,
-      "traversability_score": 0.38,
-      "collision_risk": 0.412
+      "max_accel_mps2": {"min": 0.85, "max": 1.23},
+      "obstacle_density": {"min": 0.35, "max": 0.62},
+      "traversability_score": {"min": 0.38, "max": 0.65}
+    }
+  },
+  "statistics": {
+    "total_windows": 3,
+    "categorical_distribution": {
+      "lighting_conditions": {"bright": 2, "dim": 1}
     }
   }
 }
@@ -61,30 +92,28 @@ Compares COD (actual conditions) against ODD (design specifications) and classif
 
 **Output Key:** `temp:odd_compliance`
 
-**Schema:**
+**Schema (Phase 1.3 - Simple In/Out Compliance):**
 ```json
 {
   "odd_compliance": {
     "categorical_compliance": {
-      "environment_type": "IN_ODD",
-      "lighting_conditions": "IN_ODD",
-      "terrain_type": "IN_ODD",
-      "motion_smoothness": "IN_ODD"
+      "environment_type": "IN_ODD",  // All values in allowed list
+      "lighting_conditions": "IN_ODD",  // All values in allowed list
+      "terrain_type": "IN_ODD"  // All values in allowed list
     },
     "numeric_compliance": {
-      "obstacle_density": "IN_ODD",
-      "traversability_score": "OUT_ODD",
-      "collision_risk": "ODD_BOUNDARY"
+      "max_accel_mps2": "IN_ODD",  // max <= ODD max limit
+      "obstacle_density": "OUT_ODD",  // max > ODD max limit (0.62 > 0.6)
+      "traversability_score": "OUT_ODD"  // min < ODD min limit (0.38 < 0.5)
     },
     "overall_compliance": "OUT_ODD",
     "violations": [
-      "traversability_score: 0.38 is below the minimum allowed value of 0.5"
+      "obstacle_density: max 0.62 exceeds limit 0.6 (violation in window w002)",
+      "traversability_score: min 0.38 below limit 0.5 (violation in window w003)"
     ],
-    "warnings": [
-      "collision_risk: 0.412 is within the boundary zone [0.3, 0.5]"
-    ],
-    "compliance_summary": "Robot is OUT_ODD due to low traversability score. Operating in constrained navigation space with elevated collision risk approaching safety boundary. Environment and lighting conditions are compliant."
-  }
+    "compliance_summary": "Robot is OUT_ODD due to obstacle density spike (0.62 vs 0.6 limit) and low traversability point (0.38 vs 0.5 limit). Operating in constrained navigation space. Environment and lighting conditions compliant."
+  },
+  "collision_detected": true  // Binary flag handled separately (not part of ODD compliance)
 }
 ```
 
@@ -92,88 +121,136 @@ Compares COD (actual conditions) against ODD (design specifications) and classif
 
 The agent uses **explicit comparison logic** for each constraint type:
 
-#### Categorical Compliance
+#### Categorical Compliance (Phase 1.3 - Set Containment)
 
 **Logic:**
 ```python
-if cod.categorical.X in odd.categorical_constraints.X.allowed:
-    compliance = "IN_ODD"
-elif cod.categorical.X in odd.categorical_constraints.X.prohibited:
-    compliance = "OUT_ODD"
+# Phase 1.3: Check if ALL observed values are in allowed list
+cod_values = cod.categorical.X  # List of values (e.g., ["indoor_office", "indoor_corridor"])
+allowed = odd.categorical_constraints.X.allowed  # List of allowed values
+prohibited = odd.categorical_constraints.X.prohibited  # List of prohibited values
+
+if any(v in prohibited for v in cod_values):
+    compliance = "OUT_ODD"  # Any prohibited value = violation
+elif all(v in allowed for v in cod_values):
+    compliance = "IN_ODD"  # All values allowed = compliant
 else:
-    compliance = "IN_ODD"  # Not prohibited = allowed by default
+    compliance = "OUT_ODD"  # Any value not in allowed list = violation
 ```
 
-**Example:**
+**Examples:**
 ```
+# Example 1: Single environment (compliant)
 ODD: environment_type.allowed = ["indoor_office", "indoor_corridor"]
-COD: environment_type = "indoor_office"
-Result: "IN_ODD" ✅
+COD: environment_type = ["indoor_office"]
+Result: "IN_ODD" ✅ (all values in allowed list)
+
+# Example 2: Multiple environments (compliant)
+ODD: environment_type.allowed = ["indoor_office", "indoor_corridor"]
+COD: environment_type = ["indoor_office", "indoor_corridor"]
+Result: "IN_ODD" ✅ (all values in allowed list)
+
+# Example 3: Prohibited environment (violation)
+ODD: environment_type.prohibited = ["outdoor_urban"]
+COD: environment_type = ["indoor_office", "outdoor_urban"]
+Result: "OUT_ODD" ❌ (outdoor_urban is prohibited)
+
+# Example 4: Unexpected environment (violation)
+ODD: environment_type.allowed = ["indoor_office"]
+COD: environment_type = ["indoor_office", "indoor_residential"]
+Result: "OUT_ODD" ❌ (indoor_residential not in allowed list)
 ```
 
-#### Numeric Compliance
+#### Numeric Compliance (Phase 1.3 - Range Checking)
 
 **Logic:**
 ```python
-value = cod.numeric.X
-in_odd_range = odd.numeric_constraints.X.in_odd
-boundary_range = odd.numeric_constraints.X.boundary
-out_odd_range = odd.numeric_constraints.X.out_odd
+# Phase 1.3: Check if COD range violates ODD limits
+cod_min = cod.numeric.X.min
+cod_max = cod.numeric.X.max
 
-if in_odd_range[0] <= value <= in_odd_range[1]:
+# Check max limit (if defined in ODD)
+if "max" in odd.numeric_constraints.X:
+    odd_max = odd.numeric_constraints.X.max
+    if cod_max > odd_max:
+        compliance = "OUT_ODD"  # Exceeded upper limit
+
+# Check min limit (if defined in ODD)
+if "min" in odd.numeric_constraints.X:
+    odd_min = odd.numeric_constraints.X.min
+    if cod_min < odd_min:
+        compliance = "OUT_ODD"  # Below lower limit
+
+# If no violations
+if no violations:
     compliance = "IN_ODD"
-elif boundary_range[0] <= value <= boundary_range[1]:
-    compliance = "ODD_BOUNDARY"
-elif out_odd_range[0] <= value <= out_odd_range[1]:
-    compliance = "OUT_ODD"
 ```
 
-**Example:**
+**Examples:**
 ```
-ODD: obstacle_density = {in_odd: [0.0, 0.6], boundary: [0.6, 0.8], out_odd: [0.8, 1.0]}
-COD: obstacle_density = 0.53
-Result: "IN_ODD" ✅ (0.53 is in [0.0, 0.6])
+# Example 1: Within limits (compliant)
+ODD: obstacle_density.max = 0.6
+COD: obstacle_density = {"min": 0.35, "max": 0.58}
+Result: "IN_ODD" ✅ (0.58 <= 0.6)
 
-ODD: traversability_score = {in_odd: [0.5, 1.0], boundary: [0.3, 0.5], out_odd: [0.0, 0.3]}
-COD: traversability_score = 0.38
-Result: "ODD_BOUNDARY" ⚠️ (0.38 is in [0.3, 0.5])
+# Example 2: Exceeds max limit (violation)
+ODD: obstacle_density.max = 0.6
+COD: obstacle_density = {"min": 0.35, "max": 0.62}
+Result: "OUT_ODD" ❌ (0.62 > 0.6, overage = 3.3%)
 
-ODD: collision_risk = {in_odd: [0.0, 0.3], boundary: [0.3, 0.5], out_odd: [0.5, 1.0]}
-COD: collision_risk = 0.68
-Result: "OUT_ODD" ❌ (0.68 is in [0.5, 1.0])
+# Example 3: Below min limit (violation)
+ODD: traversability_score.min = 0.5
+COD: traversability_score = {"min": 0.38, "max": 0.72}
+Result: "OUT_ODD" ❌ (0.38 < 0.5, shortfall = 24%)
+
+# Example 4: Both limits violated (violation)
+ODD: max_accel_mps2.max = 10.0
+COD: max_accel_mps2 = {"min": 0.5, "max": 12.3}
+Result: "OUT_ODD" ❌ (12.3 > 10.0, overage = 23%)
 ```
 
-#### Overall Compliance
+**Phase 1.4 Enhancement (Planned):**
+- Distance calculation: `(cod_max - odd_max) / odd_max * 100` = percentage overage
+- Severity scoring: `overage_percentage × violation_frequency`
+- Per-window tracking: Identify which specific windows violated (from per_window_measurements)
+
+#### Overall Compliance (Phase 1.3 - Binary In/Out)
 
 **Logic:**
 ```python
 if any constraint is "OUT_ODD":
     overall = "OUT_ODD"
-elif any constraint is "ODD_BOUNDARY":
-    overall = "ODD_BOUNDARY"
 else:
     overall = "IN_ODD"
 ```
 
-**Rationale**: Single violation triggers OUT_ODD (conservative safety approach).
+**Rationale**: Single violation triggers OUT_ODD (conservative safety approach). Phase 1.3 removed ODD_BOUNDARY zone (now simple max/min limits).
 
-#### Violations and Warnings
+**Phase 1.4 Enhancement**: Overall compliance will include severity score based on violation magnitude and frequency.
 
-**Violations (OUT_ODD conditions):**
+#### Violations (Phase 1.3 - Range-Based)
+
+**Format:**
 ```json
-[
-  "traversability_score: 0.38 is below the minimum allowed value of 0.5",
-  "environment_type: outdoor_urban is prohibited (allowed: indoor_office, indoor_corridor)"
-]
+{
+  "violations": [
+    "obstacle_density: max 0.62 exceeds limit 0.6 (3.3% overage, window w002)",
+    "traversability_score: min 0.38 below limit 0.5 (24% shortfall, window w003)",
+    "environment_type: outdoor_urban not in allowed list [indoor_office, indoor_corridor]"
+  ]
+}
 ```
 
-**Warnings (ODD_BOUNDARY conditions):**
-```json
-[
-  "collision_risk: 0.412 is within the boundary zone [0.3, 0.5]",
-  "obstacle_density: 0.65 is approaching the boundary limit of 0.6"
-]
-```
+**Key Elements:**
+1. **Metric name**: Which constraint violated
+2. **Observed value**: COD min or max that violated
+3. **Limit value**: ODD threshold that was exceeded/undershot
+4. **Magnitude**: Percentage overage/shortfall (numeric only)
+5. **Window ID**: Which window(s) violated (from per_window_measurements)
+
+**Phase 1.3 Note**: Percentage calculations currently manual in compliance_summary; Phase 1.4 will formalize in distance calculation.
+
+**No Warnings in Phase 1.3**: Boundary zone removed, violations are binary (in/out only).
 
 ### Key Instruction Patterns
 
