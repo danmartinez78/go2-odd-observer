@@ -1,10 +1,36 @@
 # BEV Transformation Status & Next Steps
 
-**Date:** November 24, 2025  
+**Date:** November 25, 2025  
 **Branch:** `feature/phase1.1-bev-enhancement`  
-**Status:** ⚠️ BLOCKED - Waiting for per-scan LiDAR data
+**Status:** ✅ WORKING for sim data | ⚠️ BLOCKED for real data (needs per-scan LiDAR)
 
-## Problem Summary
+## Current Solution (Sim Data)
+
+### Working Configuration
+```bash
+python scripts/extract_windows.py \
+  --rosbag data/raw_rosbags/sim/1/sim_1_0.db3 \
+  --output data/processed/production \
+  --data-source sim \
+  --bev-rotation 90 \
+  --bev-flip-horizontal
+```
+
+**Transformations Applied (sim only):**
+1. **Rotation**: 90° clockwise (fixes orientation)
+2. **Flip**: Horizontal flip (fixes left/right mirror)
+3. **Auto-crop**: Preserves all obstacles, reduces size 65-72%
+
+**Result:** Clean, correctly oriented BEVs with robot centered and forward=up
+
+### Production Data Generated
+- **Sim data**: `data/processed/production/sim_1_0/` (62 windows)
+  - Window length: 2.0s, stride: 1.0s
+  - BEV channels: occupancy, height, density, roughness
+  - Transformations: 90° rotation + horizontal flip + auto-crop
+  - Status: ✅ Complete
+
+## Problem Summary (Real Data)
 
 We need robot-centered BEVs for both sim and real robot data, but real robot uses accumulated point clouds which create severe aliasing when transformed.
 
@@ -67,15 +93,29 @@ A point cloud topic that publishes **individual LiDAR scans** in `base_link` fra
 
 ## Code Status
 
-### Working Code (Keep)
+### Working Code (Sim Data Ready) ✅
 - `odd_agents/utils.py`: `auto_crop_bev()` function
 - `tests/test_bev_cropping.py`: Full test suite (13 tests, all passing)
-- `scripts/extract_windows.py`: Auto-crop integration (lines 432-435)
+- `scripts/extract_windows.py`: 
+  - `--bev-rotation` parameter (0, 90, 180, 270)
+  - `--bev-flip-horizontal` flag
+  - Auto-crop integration
+  - Transformation order: rotation → flip → crop
 
-### Code to Update (When per-scan data available)
-**File:** `scripts/extract_windows.py`
+### Production Data
+- **Generated**: `data/processed/production/sim_1_0/` (62 windows)
+- **Command used**:
+  ```bash
+  python scripts/extract_windows.py \
+    --rosbag data/raw_rosbags/sim/1/sim_1_0.db3 \
+    --output data/processed/production \
+    --window-length 2.0 --stride 1.0 \
+    --data-source sim \
+    --bev-rotation 90 --bev-flip-horizontal
+  ```
 
-**Lines 70-85:** Update TOPIC_MAPS
+### Code to Update (When per-scan real data available)
+**Lines 70-85:** Update TOPIC_MAPS (when per-scan topic identified)
 ```python
 TOPIC_MAPS = {
     'real': {
@@ -89,25 +129,9 @@ TOPIC_MAPS = {
 }
 ```
 
-**Lines 530-650:** Remove transformation code
-- Delete `_get_robot_pose()` method (lines 463-487)
-- Delete `_transform_point_odom_to_baselink()` method (lines 489-513)
-- In `_render_bev_from_pointcloud()`:
-  - Remove `robot_pose` parameter
-  - Remove transformation block (lines 630-664)
-  - Keep simple rendering as-is
+**Transformation settings:** Once real per-scan data is available, determine if any rotation/flip is needed via testing, then apply appropriate flags.
 
-**Line 469:** Update extraction call
-```python
-# Current (with transformation):
-robot_pose = self._get_robot_pose(center_time)
-bev_features = self._render_bev_from_pointcloud(pc_msg, robot_pose)
-
-# Change to (no transformation needed):
-bev_features = self._render_bev_from_pointcloud(pc_msg)
-```
-
-## Testing Plan (Once Fixed)
+## Testing Plan (Once Real Per-Scan Data Available)
 
 1. **Verify per-scan data:**
    ```bash
@@ -121,17 +145,25 @@ bev_features = self._render_bev_from_pointcloud(pc_msg)
    ```bash
    python scripts/extract_windows.py \
      --rosbag data/raw_rosbags/real/NEW_BAG.db3 \
-     --output data/test_perscan \
+     --output data/test_real_perscan \
      --data-source real
    ```
 
-4. **Visual inspection:**
-   - Check BEV height images for aliasing
+4. **Check orientation and apply fixes if needed:**
+   - Compare camera image vs BEV occupancy
+   - If mirrored or rotated wrong, add appropriate flags:
+     - `--bev-rotation 90` (or 180, 270)
+     - `--bev-flip-horizontal`
+   - Re-test until BEV matches camera orientation
+5. **Visual inspection:**
+   - Check BEV images for aliasing (should be clean with per-scan data)
    - Verify robot centered in images
-   - Compare with original clean sim BEVs
+   - Verify forward=up, not mirrored (compare with camera)
+   - Compare with sim BEVs for consistency
 
-5. **Regenerate all data:**
+6. **Regenerate all data:**
    ```bash
+   # Update regenerate script with correct transformation flags
    ./scripts/regenerate_all_data.sh
    ```
 
@@ -139,16 +171,20 @@ bev_features = self._render_bev_from_pointcloud(pc_msg)
 
 ### Core Implementation
 - `odd_agents/utils.py`: Auto-crop function (+121 lines)
-- `scripts/extract_windows.py`: Transformation attempts (+130 lines to remove)
-- `tests/test_bev_cropping.py`: Comprehensive test suite (new file, 171 lines)
+- `scripts/extract_windows.py`: BEV transformation parameters (+50 lines)
+  - `--bev-rotation` (0, 90, 180, 270)
+  - `--bev-flip-horizontal` flag
+  - Data-source specific transformation pipeline
+- `tests/test_bev_cropping.py`: Comprehensive test suite (171 lines)
 
-### Test Data
-- `tests/fixtures/bev_samples/`: 4 real robot BEV samples
-- `data/test_crop_fix/`: Validation images (BEV_Test_1/2)
-- `data/test_transform/`: Latest transformation test output (has aliasing)
+### Production Data
+- `data/processed/production/sim_1_0/`: 62 windows with corrected BEVs
+
+### Test Data (Cleaned Up)
+- Removed: `data/test_sim_rotation/`, `data/test_transform/`, `data/test_crop_fix/`
 
 ### Documentation
-- This file
+- This file (updated with current status)
 
 ## Performance Notes
 
@@ -195,12 +231,22 @@ bev_features = self._render_bev_from_pointcloud(pc_msg)
 **Git History:**
 ```bash
 git log --oneline feature/phase1.1-bev-enhancement
+b3ce805 feat: Add horizontal flip parameter for sim data orientation fix
+d5c7ac1 feat: Add configurable BEV rotation for sim data orientation
+5bb8ac0 docs: Add comprehensive status doc for BEV transformation work
 c9ccfcb wip: Attempted BEV transformations - needs per-scan LiDAR data
-e3445fe refactor: Transform BEV images instead of point clouds to eliminate aliasing
-12e19aa fix: Eliminate BEV aliasing artifacts with vectorized transform and proper rounding
-d004b10 feat: Add odom->base_link transformation for real robot accumulated point clouds
-93f7db3 fix: CRITICAL - Preserve ALL obstacles in BEV cropping
-f267abe fix: CRITICAL - Preserve robot center position in BEV cropping
+e3445fe refactor: Transform BEV images instead of point clouds (FAILED - aliasing)
+12e19aa fix: Eliminate BEV aliasing with vectorized transform (FAILED - still aliasing)
+d004b10 feat: Add odom->base_link transformation (FAILED - aliasing)
+93f7db3 fix: CRITICAL - Preserve ALL obstacles in BEV cropping (WORKING ✅)
+f267abe fix: CRITICAL - Preserve robot center position in BEV cropping (WORKING ✅)
 ```
+
+**Key Learnings:**
+- ❌ Transforming accumulated/voxelized point clouds causes severe aliasing
+- ❌ Transforming rendered BEV images (even with high-quality interpolation) causes aliasing on sparse data
+- ✅ Auto-crop works perfectly, preserves 100% of obstacles
+- ✅ Simple rotation + flip on clean single-scan data works well (sim proven)
+- ⏳ Need per-scan LiDAR data for real robot to avoid aliasing
 
 **Contact:** Check with robot team for LiDAR configuration and available topics
