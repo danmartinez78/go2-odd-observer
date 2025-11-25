@@ -13,6 +13,7 @@ from google.genai import types
 from google import genai
 
 from ..utils import extract_json_block
+from .common import get_window_file_paths
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -39,10 +40,10 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
         relies solely on IMU (accelerometer + gyroscope) and camera-based velocity estimation.
         """
         try:
-            scenario_name = scenario_path.name
-            motion_file = scenario_path / \
-                f"motion_{scenario_name}_w{window_id}.json"
-            cam_file = scenario_path / f"cam_{scenario_name}_w{window_id}.png"
+            # Get file paths from CSV index
+            file_paths = get_window_file_paths(scenario_path, window_id)
+            motion_file = file_paths["motion"]
+            cam_file = file_paths["camera"]
 
             if not motion_file.exists():
                 return {"status": "error", "window_id": window_id, "message": "Motion file not found"}

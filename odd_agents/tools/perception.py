@@ -11,6 +11,7 @@ from google.genai import types
 from google import genai
 
 from ..utils import build_image_path, ensure_image_bytes, extract_json_block
+from .common import list_available_windows, get_window_file_paths
 
 
 def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -31,64 +32,42 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
 
     async def list_windows_tool() -> Dict[str, Any]:
         """Tool: list available window IDs for the scenario."""
-        import pandas as pd
-
-        if not scenario_path.exists():
-            return {"status": "error", "message": "Scenario directory not found"}
-
-        index_files = sorted(scenario_path.glob("index_*.csv"))
-        if not index_files:
-            return {"status": "error", "message": "No index CSV found"}
-
-        index_df = pd.read_csv(index_files[0])
-        scenario_name = scenario_path.name
-        windows: List[str] = []
-
-        for _, row in index_df.iterrows():
-            window_id = str(row["window_id"]).zfill(3)
-            motion_file = scenario_path / \
-                f"motion_{scenario_name}_w{window_id}.json"
-            if motion_file.exists():
-                windows.append(window_id)
-
-        return {
-            "status": "success",
-            "windows": windows,
-            "count": len(windows),
-        }
+        try:
+            windows = list_available_windows(
+                scenario_path, require_motion=True)
+            return {
+                "status": "success",
+                "windows": windows,
+                "count": len(windows),
+            }
+        except FileNotFoundError as e:
+            return {"status": "error", "message": str(e)}
 
     async def analyze_window_perception_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
         """Tool: run a direct multimodal Gemini call for one window (camera + 4 BEV channels)."""
         try:
-            # Load camera image
-            camera_path = build_image_path(scenario_path, "cam", window_id)
+            # Get file paths from CSV index
+            file_paths = get_window_file_paths(scenario_path, window_id)
+            camera_path = file_paths["camera"]
+            bev_occupancy_path = file_paths["bev_occupancy"]
+            bev_height_path = file_paths["bev_height"]
+            bev_roughness_path = file_paths["bev_roughness"]
+
+            # Load images
             camera_bytes = ensure_image_bytes(camera_path)
-
-            # Load all 4 BEV channels (pre-cropped during data generation)
-            bev_occupancy_path = build_image_path(
-                scenario_path, "bev_occupancy", window_id)
-            bev_height_path = build_image_path(
-                scenario_path, "bev_height", window_id)
-            bev_density_path = build_image_path(
-                scenario_path, "bev_density", window_id)
-            bev_roughness_path = build_image_path(
-                scenario_path, "bev_roughness", window_id)
-
             bev_occupancy_bytes = ensure_image_bytes(bev_occupancy_path)
             bev_height_bytes = ensure_image_bytes(bev_height_path)
-            bev_density_bytes = ensure_image_bytes(bev_density_path)
             bev_roughness_bytes = ensure_image_bytes(bev_roughness_path)
 
             prompt = f"""
             You are a perception expert analyzing synchronized robot sensors for window {window_id}.
-            You will receive FIVE images:
+            You will receive FOUR images:
             - Image A: RGB camera frame from the robot's forward camera
             - Image B: LiDAR BEV Occupancy (obstacles only, ground filtered out)
             - Image C: LiDAR BEV Height (elevation map)
-            - Image D: LiDAR BEV Density (point cloud density)
-            - Image E: LiDAR BEV Roughness (terrain surface variation)
+            - Image D: LiDAR BEV Roughness (terrain surface variation)
 
-            ALL BEV IMAGES (B-E):
+            ALL BEV IMAGES (B-D):
             - Auto-cropped to remove empty borders (50-75% size reduction)
             - Robot is at CENTER of map, facing upward (top = forward direction)
             - SCALE: 0.05 meters per pixel (20 pixels = 1 meter)
@@ -100,10 +79,8 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
               NOTE: Robot's own body may appear at center - ignore when assessing obstacles.
             - **Height (C)**: Elevation data. Grayscale intensity = height above ground plane.
               CRITICAL FOR terrain_roughness_class - shows elevation variations of the ground surface.
-            - **Density (D)**: Point cloud density. Brighter = more LiDAR points.
-              Indicates sensor quality/coverage (low density = occlusion or max range).
-            - **Roughness (E)**: Terrain surface variation. Brighter = more uneven.
-              Pre-computed metric for surface irregularity.
+            - **Roughness (D)**: Terrain surface variation. Brighter = more uneven.
+              Pre-computed metric for surface irregularity. Combines height variation and surface normals.
 
             IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
             to understand the robot's footprint when assessing traversability and passable gaps.
@@ -166,11 +143,8 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
                     types.Part(text="Image C (BEV Height - Elevation):"),
                     types.Part.from_bytes(
                         data=bev_height_bytes, mime_type="image/png"),
-                    types.Part(text="Image D (BEV Density - Point Cloud):"),
-                    types.Part.from_bytes(
-                        data=bev_density_bytes, mime_type="image/png"),
                     types.Part(
-                        text="Image E (BEV Roughness - Surface Variation):"),
+                        text="Image D (BEV Roughness - Surface Variation):"),
                     types.Part.from_bytes(
                         data=bev_roughness_bytes, mime_type="image/png"),
                 ],

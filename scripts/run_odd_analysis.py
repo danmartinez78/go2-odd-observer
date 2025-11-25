@@ -9,7 +9,7 @@ Usage:
     python scripts/run_odd_analysis.py
 
 Output:
-    data/analysis_results/manual/<timestamp>/<scenario>/
+    data/archive/analysis_results/manual/<timestamp>/<scenario>/
         - full_result.json
         - executive_summary.json
 """
@@ -128,13 +128,12 @@ DEFINITELY NOT DESIGNED FOR:
 def find_scenarios():
     """Find all available scenarios (production + test datasets)."""
     scenarios = []
-    base_dir = project_root / "data" / "processed"
+    data_dir = project_root / "data"
 
-    # Search production/, test_data/real/, test_data/sim/
+    # Search production/ and test/ subdirectories
     search_dirs = [
-        ("production", base_dir / "production"),
-        ("test_data/real", base_dir / "test_data" / "real"),
-        ("test_data/sim", base_dir / "test_data" / "sim"),
+        ("production", data_dir / "production"),
+        ("test", data_dir / "test"),
     ]
 
     for category, search_dir in search_dirs:
@@ -325,7 +324,7 @@ async def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        help="Output directory for results (default: data/analysis_results/manual/<timestamp>)"
+        help="Output directory for results (default: data/archive/analysis_results/manual/<timestamp>)"
     )
     args = parser.parse_args()
 
@@ -428,8 +427,8 @@ async def main():
                 output_dir = output_base / scenario_name
             else:
                 # Use default timestamp-based directory
-                output_base = Path(
-                    scenario_path).parent.parent.parent / "analysis_results" / "manual" / timestamp
+                output_base = project_root / "data" / "archive" / \
+                    "analysis_results" / "manual" / timestamp
                 output_dir = output_base / scenario_name
 
             output_dir.mkdir(parents=True, exist_ok=True)
