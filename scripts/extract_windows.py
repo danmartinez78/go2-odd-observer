@@ -468,7 +468,7 @@ class WindowExtractor:
             for feature_name in bev_features:
                 bev_features[feature_name] = cv2.flip(
                     bev_features[feature_name], 1)
-        
+
         # FINAL ROTATION: Align with camera view (robot center, facing up)
         # For sim data with TF transforms, base_link frame needs 90° CCW rotation
         # This makes forward (x-axis) point up in the image
@@ -539,7 +539,7 @@ class WindowExtractor:
 
         if best_transform:
             return best_transform
-        
+
         # Try inverse transform (target←source means we need source→target inverted)
         for tf_time, transform in self.tf_transforms:
             # Check if we have the inverse
@@ -549,7 +549,7 @@ class WindowExtractor:
                     best_time_diff = time_diff
                     # Invert the transform
                     best_transform = self._invert_transform(transform)
-        
+
         if best_transform:
             return best_transform
 
@@ -569,7 +569,8 @@ class WindowExtractor:
                 for second_hop in transforms_at_t:
                     if second_hop.child_frame_id == intermediate_frame and second_hop.header.frame_id == target_frame:
                         # Compose transforms: T_target_source = T_target_intermediate @ T_intermediate_source
-                        composed = self._compose_transforms(second_hop, intermediate)
+                        composed = self._compose_transforms(
+                            second_hop, intermediate)
                         return composed
 
         return None
@@ -582,12 +583,16 @@ class WindowExtractor:
         Assumes t1.child == t2.parent
         """
         # Extract first transform
-        trans1 = np.array([t1.transform.translation.x, t1.transform.translation.y, t1.transform.translation.z])
-        rot1 = R.from_quat([t1.transform.rotation.x, t1.transform.rotation.y, t1.transform.rotation.z, t1.transform.rotation.w])
+        trans1 = np.array([t1.transform.translation.x,
+                          t1.transform.translation.y, t1.transform.translation.z])
+        rot1 = R.from_quat([t1.transform.rotation.x, t1.transform.rotation.y,
+                           t1.transform.rotation.z, t1.transform.rotation.w])
 
         # Extract second transform
-        trans2 = np.array([t2.transform.translation.x, t2.transform.translation.y, t2.transform.translation.z])
-        rot2 = R.from_quat([t2.transform.rotation.x, t2.transform.rotation.y, t2.transform.rotation.z, t2.transform.rotation.w])
+        trans2 = np.array([t2.transform.translation.x,
+                          t2.transform.translation.y, t2.transform.translation.z])
+        rot2 = R.from_quat([t2.transform.rotation.x, t2.transform.rotation.y,
+                           t2.transform.rotation.z, t2.transform.rotation.w])
 
         # Compose: T = T1 @ T2
         rot_composed = rot1 * rot2  # Quaternion multiplication
@@ -614,13 +619,15 @@ class WindowExtractor:
         Invert a transform: if T is parent→child, return child→parent.
         """
         # Extract transform
-        trans = np.array([transform.transform.translation.x, transform.transform.translation.y, transform.transform.translation.z])
-        rot = R.from_quat([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
-        
+        trans = np.array([transform.transform.translation.x,
+                         transform.transform.translation.y, transform.transform.translation.z])
+        rot = R.from_quat([transform.transform.rotation.x, transform.transform.rotation.y,
+                          transform.transform.rotation.z, transform.transform.rotation.w])
+
         # Invert: R_inv = R^T, t_inv = -R^T * t
         rot_inv = rot.inv()
         trans_inv = -rot_inv.apply(trans)
-        
+
         # Create inverted transform (swap parent and child)
         inverted = TransformStamped()
         inverted.header.frame_id = transform.child_frame_id
@@ -634,7 +641,7 @@ class WindowExtractor:
         inverted.transform.rotation.y = quat_inv[1]
         inverted.transform.rotation.z = quat_inv[2]
         inverted.transform.rotation.w = quat_inv[3]
-        
+
         return inverted
 
     def _apply_transform(self, points: np.ndarray, transform: TransformStamped) -> np.ndarray:
