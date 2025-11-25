@@ -22,8 +22,7 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 
-# Import BEV cropping utility
-import sys
+# Import BEV utilities
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # ROS2 libraries
@@ -92,6 +91,7 @@ class WindowExtractor:
         stride: float = 1.0,
         run_id: Optional[str] = None,
         data_source: Optional[str] = None,
+        bev_rotation: int = 0,
     ):
         """
         Initialize window extractor.
@@ -103,6 +103,8 @@ class WindowExtractor:
             stride: Stride between window starts in seconds
             run_id: Optional run identifier (auto-generated if None)
             data_source: 'real' or 'sim' (auto-detected if None)
+            bev_rotation: Optional rotation to apply to BEVs in degrees (0, 90, 180, 270)
+                         Positive = clockwise. Use 90 for sim data if needed.
 
         IMPORTANT: The output directory name MUST match the run_id.
         Files are created with names like motion_{run_id}_w000.json.
@@ -116,6 +118,9 @@ class WindowExtractor:
             self.run_id = self.rosbag_path.stem
         else:
             self.run_id = run_id
+
+        # Store rotation setting
+        self.bev_rotation = bev_rotation
 
         # CRITICAL: Output directory MUST be named after run_id
         # The workflow uses directory.name to construct filenames
@@ -413,13 +418,9 @@ class WindowExtractor:
             }
         else:
             _, pc_msg = closest
-            # Get robot pose for transforming point cloud to base_link frame
-            robot_pose = self._get_robot_pose(center_time)
-
             # Render multi-channel BEV from point cloud
             try:
-                bev_features = self._render_bev_from_pointcloud(
-                    pc_msg, robot_pose)
+                bev_features = self._render_bev_from_pointcloud(pc_msg)
             except Exception as e:
                 print(f"Warning: Failed to render BEV: {e}")
                 empty = np.zeros((400, 400), dtype=np.uint8)
@@ -430,14 +431,31 @@ class WindowExtractor:
                     'roughness': empty.copy(),
                 }
 
-        # Save each feature as separate PNG (with auto-cropping)
-        for feature_name, feature_img in bev_features.items():
-            # Crop BEV to remove empty borders while preserving robot center
-            cropped_img = auto_crop_bev(feature_img)
+        # Apply rotation if specified (for sim data orientation)
+        if self.bev_rotation != 0:
+            for feature_name in bev_features:
+                if self.bev_rotation == 90:
+                    # Clockwise 90°
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_90_CLOCKWISE)
+                elif self.bev_rotation == 180:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_180)
+                elif self.bev_rotation == 270:
+                    # Clockwise 270° = Counter-clockwise 90°
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
 
+        # Apply auto-crop to preserve obstacles while reducing size
+        for feature_name in bev_features:
+            bev_features[feature_name] = auto_crop_bev(
+                bev_features[feature_name])
+
+        # Save each feature as separate PNG
+        for feature_name, feature_img in bev_features.items():
             bev_path = self.output_dir / \
                 f"bev_{feature_name}_{self.run_id}_w{window_id:03d}.png"
-            cv2.imwrite(str(bev_path), cropped_img)
+            cv2.imwrite(str(bev_path), feature_img)
 
     def _quaternion_to_euler(self, x: float, y: float, z: float, w: float) -> Tuple[float, float, float]:
         """Convert quaternion to Euler angles (roll, pitch, yaw)."""
@@ -460,84 +478,9 @@ class WindowExtractor:
 
         return roll, pitch, yaw
 
-    def _get_robot_pose(self, timestamp: float) -> Optional[Dict[str, float]]:
-        """
-        Get robot pose (position + orientation) at given timestamp from odometry.
-
-        Returns:
-            Dict with keys: x, y, z, roll, pitch, yaw (None if no odom data)
-        """
-        odom_msg_tuple = self._get_closest_message(
-            self.topics['odom'], timestamp)
-        if odom_msg_tuple is None:
-            return None
-
-        _, odom_msg = odom_msg_tuple
-        pos = odom_msg.pose.pose.position
-        ori = odom_msg.pose.pose.orientation
-
-        roll, pitch, yaw = self._quaternion_to_euler(
-            ori.x, ori.y, ori.z, ori.w)
-
-        return {
-            'x': pos.x,
-            'y': pos.y,
-            'z': pos.z,
-            'roll': roll,
-            'pitch': pitch,
-            'yaw': yaw
-        }
-
-    def _transform_point_odom_to_baselink(self, point: Tuple[float, float, float], robot_pose: Dict[str, float]) -> np.ndarray:
-        """
-        Transform a point from odom frame to base_link frame.
-
-        Args:
-            point: (x, y, z) tuple in odom frame
-            robot_pose: Robot pose dict with x, y, z, yaw
-
-        Returns:
-            [x, y, z] in base_link frame
-        """
-        # Convert point to numpy array
-        point_arr = np.array([point[0], point[1], point[2]], dtype=np.float64)
-
-        # Translation: subtract robot position
-        translated = point_arr - \
-            np.array([robot_pose['x'], robot_pose['y'], robot_pose['z']])
-
-        # Rotation: rotate by -yaw around z-axis (inverse transform)
-        yaw = -robot_pose['yaw']  # Negative for inverse transform
-        cos_yaw = np.cos(yaw)
-        sin_yaw = np.sin(yaw)
-
-        # 2D rotation in XY plane
-        x_base = cos_yaw * translated[0] - sin_yaw * translated[1]
-        y_base = sin_yaw * translated[0] + cos_yaw * translated[1]
-        z_base = translated[2]
-
-        return np.array([x_base, y_base, z_base])
-        if abs(sinp) >= 1:
-            pitch = np.copysign(np.pi / 2, sinp)
-        else:
-            pitch = np.arcsin(sinp)
-
-        # Yaw (z-axis rotation)
-        siny_cosp = 2 * (w * z + x * y)
-        cosy_cosp = 1 - 2 * (y * y + z * z)
-        yaw = np.arctan2(siny_cosp, cosy_cosp)
-
-        return roll, pitch, yaw
-
-    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2, robot_pose: Optional[Dict[str, float]] = None) -> Dict[str, np.ndarray]:
+    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2) -> Dict[str, np.ndarray]:
         """
         Render multi-channel bird's-eye-view images from a point cloud.
-
-        Args:
-            pc_msg: PointCloud2 message
-            robot_pose: Optional robot pose dict (x, y, z, yaw) for odom->base_link transform.
-                       If provided, points are transformed from odom frame to base_link frame.
-                       If None, points are assumed to already be in base_link frame (sim data).
 
         Returns:
             Dictionary with keys: 'occupancy', 'height', 'density', 'roughness'
@@ -546,7 +489,7 @@ class WindowExtractor:
         # Extract points from PointCloud2 message
         points = []
         for point in pc2.read_points(pc_msg, field_names=("x", "y", "z"), skip_nans=True):
-            points.append([point[0], point[1], point[2]])
+            points.append(point)
 
         # BEV parameters
         bev_size = 400
@@ -563,7 +506,7 @@ class WindowExtractor:
                 'roughness': empty.copy(),
             }
 
-        points = np.array(points, dtype=np.float64)
+        points = np.array(points)
 
         # Create accumulator grids for feature calculation
         occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
@@ -574,14 +517,13 @@ class WindowExtractor:
         height_min = np.full((bev_size, bev_size), np.inf, dtype=np.float32)
         height_max = np.full((bev_size, bev_size), -np.inf, dtype=np.float32)
 
-        # Project points to BEV and accumulate statistics (in odom frame)
+        # Project points to BEV and accumulate statistics
         for point in points:
             x, y, z = point
 
             # Convert to pixel coordinates (x forward, y left)
-            # Origin at center of image for odom frame
-            pixel_x = int(np.round((x / meters_per_pixel) + bev_size / 2))
-            pixel_y = int(np.round((y / meters_per_pixel) + bev_size / 2))
+            pixel_x = int((x / meters_per_pixel) + bev_size / 2)
+            pixel_y = int((-y / meters_per_pixel) + bev_size / 2)
 
             # Check bounds
             if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
@@ -626,43 +568,6 @@ class WindowExtractor:
         std_dev = np.sqrt(variance)
         # Normalize: 0.5m std = 255 (very rough)
         roughness_img = np.clip(std_dev * 510, 0, 255).astype(np.uint8)
-
-        # If robot pose is provided, transform the BEV images to center the robot
-        if robot_pose is not None:
-            # Calculate robot position in pixel coordinates (in odom frame)
-            robot_pixel_x = robot_pose['x'] / meters_per_pixel + bev_size / 2
-            robot_pixel_y = robot_pose['y'] / meters_per_pixel + bev_size / 2
-            
-            # Create rotation matrix around robot position
-            # Negative yaw because we want to rotate the world, not the robot
-            rotation_matrix = cv2.getRotationMatrix2D(
-                (robot_pixel_y, robot_pixel_x),  # Center of rotation (col, row)
-                np.degrees(-robot_pose['yaw']),   # Angle in degrees
-                1.0                                # Scale
-            )
-            
-            # Add translation to move robot to center of image
-            rotation_matrix[0, 2] += (bev_size / 2 - robot_pixel_y)
-            rotation_matrix[1, 2] += (bev_size / 2 - robot_pixel_x)
-            
-            # Apply transformation to all BEV images using high-quality interpolation
-            # INTER_CUBIC for smooth results on continuous data
-            occupancy_grid = cv2.warpAffine(
-                occupancy_grid, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
-            )
-            height_img = cv2.warpAffine(
-                height_img, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
-            )
-            density_img = cv2.warpAffine(
-                density_img, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
-            )
-            roughness_img = cv2.warpAffine(
-                roughness_img, rotation_matrix, (bev_size, bev_size),
-                flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0
-            )
 
         # Apply slight blur to make features more visible
         occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
@@ -808,6 +713,13 @@ def main():
         default=None,
         help="Data source: 'real' for real robot, 'sim' for simulator (default: auto-detect from path)"
     )
+    parser.add_argument(
+        "--bev-rotation",
+        type=int,
+        choices=[0, 90, 180, 270],
+        default=0,
+        help="Rotation to apply to final BEVs in degrees, clockwise (default: 0). Use 90 for sim data."
+    )
 
     args = parser.parse_args()
 
@@ -819,6 +731,7 @@ def main():
         stride=args.stride,
         run_id=args.run_id,
         data_source=args.data_source,
+        bev_rotation=args.bev_rotation,
     )
 
     # Extract windows
