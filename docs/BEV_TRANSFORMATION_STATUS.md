@@ -10,7 +10,7 @@
 ```bash
 python scripts/extract_windows.py \
   --rosbag data/raw_rosbags/sim/1/sim_1_0.db3 \
-  --output data/processed/production \
+  --output data/production \
   --data-source sim \
   --bev-rotation 90 \
   --bev-flip-horizontal
@@ -24,11 +24,17 @@ python scripts/extract_windows.py \
 **Result:** Clean, correctly oriented BEVs with robot centered and forward=up
 
 ### Production Data Generated
-- **Sim data**: `data/processed/production/sim_1_0/` (62 windows)
+- **Sim data**: `data/production/sim_1_0/` (62 windows)
   - Window length: 2.0s, stride: 1.0s
-  - BEV channels: occupancy, height, density, roughness
+  - BEV channels: **occupancy, height, roughness** (density removed)
   - Transformations: 90° rotation + horizontal flip + auto-crop
   - Status: ✅ Complete
+
+### Test Data Generated
+- **Sim test**: `data/test/sim/` (6 windows)
+  - Windows: w010-011, w030-031, w050-051 (early/middle/late samples)
+  - Same transformations as production
+  - For manual agent testing
 
 ## Problem Summary (Real Data)
 
@@ -103,12 +109,12 @@ A point cloud topic that publishes **individual LiDAR scans** in `base_link` fra
   - Transformation order: rotation → flip → crop
 
 ### Production Data
-- **Generated**: `data/processed/production/sim_1_0/` (62 windows)
+- **Generated**: `data/production/sim_1_0/` (62 windows)
 - **Command used**:
   ```bash
   python scripts/extract_windows.py \
     --rosbag data/raw_rosbags/sim/1/sim_1_0.db3 \
-    --output data/processed/production \
+    --output data/production \
     --window-length 2.0 --stride 1.0 \
     --data-source sim \
     --bev-rotation 90 --bev-flip-horizontal
@@ -171,20 +177,22 @@ TOPIC_MAPS = {
 
 ### Core Implementation
 - `odd_agents/utils.py`: Auto-crop function (+121 lines)
-- `scripts/extract_windows.py`: BEV transformation parameters (+50 lines)
-  - `--bev-rotation` (0, 90, 180, 270)
-  - `--bev-flip-horizontal` flag
+- `scripts/extract_windows.py`: 
+  - BEV transformation parameters (rotation, flip)
+  - Removed density channel (kept occupancy, height, roughness)
   - Data-source specific transformation pipeline
-- `tests/test_bev_cropping.py`: Comprehensive test suite (171 lines)
+- `tests/test_bev_cropping.py`: Comprehensive test suite (13 tests, all passing)
 
-### Production Data
-- `data/processed/production/sim_1_0/`: 62 windows with corrected BEVs
-
-### Test Data (Cleaned Up)
-- Removed: `data/test_sim_rotation/`, `data/test_transform/`, `data/test_crop_fix/`
+### Data Organization
+- **Reorganized**: `data/processed/` → `data/production/`
+- **Production data**: `data/production/sim_1_0/` (62 windows, 3 BEV channels)
+- **Test data**: `data/test/sim/` (6 windows for manual testing)
+- **Archived**: Old analysis results moved to `data/archive/`
 
 ### Documentation
-- This file (updated with current status)
+- `data/README.md`: Updated for new structure
+- `data/DATA_VERSIONS.md`: Version tracking schema
+- `docs/BEV_TRANSFORMATION_STATUS.md`: This file
 
 ## Performance Notes
 
@@ -207,13 +215,13 @@ TOPIC_MAPS = {
 3. [ ] Re-record test bagfiles with new topic
 4. [ ] Verify data structure matches sim data
 
-### Code Updates (After data ready)
-1. [ ] Update TOPIC_MAPS in `extract_windows.py`
-2. [ ] Remove transformation code (3 blocks)
-3. [ ] Test with single bagfile
-4. [ ] Run full test suite
-5. [ ] Regenerate all production data
-6. [ ] Merge to dev
+### Code Updates (After per-scan data ready)
+1. [ ] Update TOPIC_MAPS in `extract_windows.py` (change `/point_cloud2` topic)
+2. [ ] Test BEV orientation with camera comparison
+3. [ ] Apply rotation/flip if needed (may differ from sim)
+4. [ ] Test with single bagfile
+5. [ ] Run full test suite
+6. [ ] Regenerate all real production data
 
 ### Future Enhancements (Optional)
 - [ ] Add BEV size as configurable parameter
