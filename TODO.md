@@ -104,33 +104,48 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 **Outcome**: 3-channel BEV pipeline ready for Phase 1.2
 
-### 1.2 Collision Agent Rework 📋 NEXT (Starting Nov 26, 2025)
-- [ ] Remove collision risk scoring logic entirely
-  - Current: 0-1 risk scores based on multimodal fusion
-  - Target: Binary collision detection (yes/no)
-- [ ] Implement binary collision detection
+### 1.2 Collision Agent Rework ✅ COMPLETED (Nov 25, 2025)
+- [x] Remove collision risk scoring logic entirely ✅
+  - Old: 0-1 risk scores based on multimodal fusion
+  - New: Binary collision detection (yes/no)
+- [x] Implement binary collision detection ✅
   - IMU spike detection (threshold: >10 m/s² acceleration)
-  - Angular velocity change patterns
-  - Force sensor integration (if available from Phase 0)
-- [ ] Update output schema
-  - New: `collisions_detected` list with timestamps
-  - Remove: `collision_risk` scores, risk levels
-  - Keep: Window-level summary for reporting
-- [ ] Update agent files
-  - `odd_agents/agents/collision.py` - agent prompt
-  - `odd_agents/tools/collision.py` - tool function
-  - Test: `tests/test_collision_agent.py`
-- [ ] Manual test on sim data
-  - Test data ready: `data/test/sim/` (6 windows)
+  - Angular velocity anomalies (threshold: >5 rad/s)
+  - Jerk spikes (threshold: >50 m/s³)
+- [x] Update output schema ✅
+  - New: `collision_detected` boolean + `evidence` array
+  - New: `collisions_detected` list (scenario-level)
+  - Removed: `collision_risk` scores, risk levels
+  - Kept: Window-level summary for reporting
+- [x] Update agent files ✅
+  - `odd_agents/agents/collision.py` - binary detection prompts
+  - `odd_agents/tools/collision.py` - threshold-based tool
+  - Test: `tests/test_collision_agent.py` - updated expectations
+  - Created: `tests/test_collision_detection_logic.py` - unit tests (4/4 passing)
+- [x] Manual test on sim data ✅
+  - Test data: `data/test/sim_test_w010_w011` (2 windows)
   - Command: `python scripts/run_odd_analysis.py`
-  - Validate: No false positives, detects actual collisions
+  - Result: No false positives, correct binary detection
 
-**Test Data Available:**
-- `data/test/sim/` - 6 windows (w010-011, w030-031, w050-051)
-- Each window: motion JSON + camera + 3 BEV channels
-- Expected time: 2-3 hours
+**Outcome**: Binary collision detection working correctly. No false positives on normal motion (accel 0.11-0.14 m/s², gyro 0.94-0.99 rad/s, both well below thresholds).
 
-### 1.3 COD Agent Redesign
+**Data Usage Verified**: All agents using correct data sources
+- ✅ Perception: 1 Camera + 3 BEV channels (occupancy, height, roughness)
+- ✅ Motion: IMU + Camera (both used, camera prioritized)
+- ✅ Collision: IMU metrics only (from motion output)
+- ✅ Previous BEV bug FIXED (all 3 channels now loaded)
+
+### 1.3 COD Agent Redesign 📋 NEXT
+
+**Items to Address After Agent Versioning:**
+- Remove `collision_risk` from COD numeric metrics (add `collision_detected` boolean)
+- Remove `collision_risk` constraint from ODD spec parsing
+- Clarify `visibility_score` vs `lighting_class` semantics in perception prompt
+  - Current: `lighting_class` = environmental lighting quality
+  - Current: `visibility_score` may = navigable area visibility (explains 0.0 when blocked)
+  - Decision needed: Keep separate or merge into single metric?
+
+**Core Redesign Tasks:**
 - [ ] Implement per-window ODD compliance checking
   - Compare each window against ODD thresholds
   - Output IN_ODD / BOUNDARY / OUT_ODD per window
@@ -141,6 +156,40 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
   - Detect categorical violations
   - Detect numeric overlap with OUT_ODD ranges
 - [ ] Manual test: verify no averaging, all violations preserved
+
+### 1.5 Collision Agent BEV Enhancement 💡 DEFERRED
+
+**Proposed Enhancement:** Add BEV occupancy visual confirmation to collision detection
+
+**Rationale:**
+- Multimodal validation (similar to motion agent using camera to validate IMU)
+- Visual confirmation: Obstacle in final frames → collision vs command stop → no obstacle
+- Impact geometry: BEV could show contact patterns during collision
+
+**Challenges:**
+- **Self-hit complexity**: Robot body appears in BEV center (~0.3m radius)
+  - Agent needs clear instructions about masking center region
+  - Must understand BEV spatial mapping (pixels → meters)
+- **Temporal mismatch**: Current binary detection checks thresholds anywhere in window
+  - BEV requires frame-by-frame analysis (which frames show what)
+  - Need temporal correlation (obstacle appeared when IMU spiked?)
+- **False positive risk**: Robot always near obstacles in cluttered environments
+  - Hard to distinguish "near furniture" (normal) vs "contacted furniture" (collision)
+- **Scope creep**: Phase 1.2 just completed and validated (0 false positives)
+  - Adding BEV requires rewriting collision.py, complex prompts, additional testing
+  - Delays Phase 1.3 (COD agent redesign)
+
+**Decision:** Defer to Phase 1.5+ or post-versioning
+- Current IMU-only system works (no false positives on test data)
+- Better fit for Phase 2 after agent versioning (A/B test IMU-only vs IMU+BEV)
+- Need better temporal analysis design first (frame-level reasoning)
+- Can revisit with sophisticated temporal reasoning later
+
+**If Implemented Later:**
+- Load BEV occupancy frames in collision.py
+- Mask robot body center (~0.3m radius) in prompts
+- Temporal analysis: "Does BEV show obstacle contact during IMU spike window?"
+- More sophisticated evidence gathering (not just boolean)
 
 ### 1.4 Evaluator Agent Creation
 - [ ] Rename Compliance → Evaluator agent

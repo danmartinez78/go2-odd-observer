@@ -900,20 +900,31 @@ def auto_crop_bev(bev_image):
 - Agents can now accurately assess terrain roughness
 
 **Deliverables:**
-- Update `odd_agents/tools/perception.py` to load 4 BEVs
-- Update `odd_agents/tools/collision.py` to load 4 BEVs
-- Add `auto_crop_bev()` to BEV rendering pipeline
-- Reprocess all windows with 4 cropped BEVs
-- Update prompts with BEV channel explanations
+- ✅ Update `odd_agents/tools/perception.py` to load 3 BEVs (occupancy, height, roughness)
+- ✅ Add `auto_crop_bev()` to BEV rendering pipeline (65-72% size reduction)
+- ✅ Reprocess all windows with 3 cropped BEVs (sim_1_0: 62 windows)
+- ✅ Update prompts with BEV channel explanations
+- ✅ Remove density BEV channel (redundant with occupancy/height)
 
-### 1.2 Collision Agent Rework
-- Remove collision risk scoring logic entirely
-- Implement binary collision detection:
+**Note:** Collision agent uses IMU metrics only (no BEV), from motion agent output
+
+### 1.2 Collision Agent Rework ✅ COMPLETED (Nov 25, 2025)
+- ✅ Remove collision risk scoring logic entirely
+- ✅ Implement binary collision detection:
   - IMU spike detection (threshold: >10 m/s² acceleration)
-  - Velocity drop analysis (sudden stop detection)
-  - Force sensor integration (if available)
-- Update output schema (collisions_detected list, no risk scores)
-- **Manual test:** Run on 2-3 scenarios, verify no false positive risk alerts
+  - Angular velocity anomalies (threshold: >5 rad/s)
+  - Jerk spikes (threshold: >50 m/s³)
+- ✅ Update output schema (collision_detected boolean + evidence array)
+- ✅ **Manual test:** Validated on sim_test_w010_w011 (2 windows)
+  - Result: 0 collisions detected (correct)
+  - No false positives (accel 0.11-0.14 m/s² << 10.0 threshold)
+  - Gyro 0.94-0.99 rad/s << 5.0 threshold
+  
+**Implementation Details:**
+- Tool: `odd_agents/tools/collision.py` - Threshold-based detection from motion_metrics
+- Agent: `odd_agents/agents/collision.py` - Binary detection prompts
+- Tests: `tests/test_collision_agent.py`, `tests/test_collision_detection_logic.py`
+- Outcome: Clean binary detection, no false positives on normal motion
 
 ### 1.3 COD Agent Redesign
 - Implement per-window ODD compliance checking

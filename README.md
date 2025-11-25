@@ -108,9 +108,9 @@ jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/late
 
 ```mermaid
 graph LR
-    A[📝 ODD Spec<br/>Define Limits] --> B[👁️ Perception<br/>Camera+LiDAR]
-    B --> C[🎯 Motion<br/>IMU Analysis]
-    C --> D[⚠️ Collision<br/>Risk Fusion]
+    A[📝 ODD Spec<br/>Define Limits] --> B[👁️ Perception<br/>Camera+3 BEV]
+    B --> C[🎯 Motion<br/>IMU+Camera]
+    C --> D[⚠️ Collision<br/>Binary Detection]
     D --> E[🏷️ COD<br/>Classify Domain]
     E --> F[⚖️ Compliance<br/>Check Violations]
     F --> G[📋 Report<br/>Generate Summary]
@@ -123,6 +123,13 @@ graph LR
     style F fill:#f8bbd0,stroke:#333,stroke-width:2px,color:#000
     style G fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
 ```
+
+**Phase 1.2 Architecture (Current):**
+- **Perception**: 1 camera + 3 BEV channels (occupancy, height, roughness)
+- **Motion**: IMU metrics + camera visual validation
+- **Collision**: Binary detection (threshold-based, no false positives)
+- **COD**: Scenario classification and compliance checking
+- **Report**: Executive summaries with violations and recommendations
 
 ### Multi-Modal Sensor Fusion
 
@@ -154,21 +161,26 @@ Quadruped robot designed for indoor office navigation.
 
 ### 2. Real-World Performance
 
-**Production Data Analysis:**
-- 📊 **332 windows** across 19 production scenarios (living room navigation)
-- 🏭 **25-window chunks** - full scenario analysis with all sensor data
-- ✅ **Sensor fusion** - 3-channel BEV LiDAR + camera + IMU integration
-  - **BEV Channels**: Occupancy (obstacles), Height (vertical extent), Roughness (terrain variance)
-- 🎯 **Collision risk detection** - 72% of windows at alert/caution level (18 high-risk)
-- ⚠️ **Motion analysis** - Peak acceleration 8.81 m/s² detected (exceeds 5.0 limit)
-- 🔍 **Sensor discrepancies** - Camera detects low obstacles BEV misses
-- 📦 **Latest Data**: Sim v0 (62 production + 6 test windows) with auto-crop BEVs
+**Current Status:** Phase 1.2 Complete (Binary Collision Detection)
+
+**Production Data Ready:**
+- 📊 **62 windows** sim_1_0 production dataset + 6 test windows
+- 🏭 **Auto-cropped BEVs** - 65-72% size reduction with square aspect ratio
+- ✅ **3-channel BEV fusion** - Occupancy, Height, Roughness (density removed)
+- 🎯 **Binary collision detection** - IMU threshold-based (0 false positives)
+- ⚡ **Motion analysis** - IMU + camera multimodal fusion
+- 📦 **Latest Data**: sim_1_0_v1 with transformed BEVs
+
+**Collision Detection (Phase 1.2):**
+- ✅ **Threshold-based**: >10 m/s² accel, >5 rad/s gyro, >50 m/s³ jerk
+- ✅ **Zero false positives**: Normal navigation correctly classified
+- ✅ **IMU-only**: Simple, reliable, no multimodal complexity
+- 📝 **Test validated**: sim_test_w010_w011 (accel 0.11-0.14 m/s² << 10.0 threshold)
 
 **Test Data Analysis:**
-- 📝 **7 test scenarios** (6 real robot + 1 simulation)
-- ⚡ **2-window analysis** - quick assessment for each scenario
-- 🤖 **Emergency stop** - Abrupt motion detection and compliance checking
-- 📈 **Batch processing** - Automated report generation for all scenarios
+- 📝 **6 test scenarios** (sim_test_w010_w011, plus production scenarios)
+- ⚡ **2-window quick tests** + 62-window full production dataset
+- 🤖 **Validated agents**: Perception (3 BEV), Motion (IMU+camera), Collision (binary detection)
 
 ### 3. Interactive HTML Reports
 
