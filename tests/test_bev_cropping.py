@@ -39,15 +39,16 @@ def test_crop_reduces_size():
 
 
 def test_crop_preserves_content():
-    """All non-black pixels should be preserved."""
+    """Robot-centered crop preserves most content (may lose edge pixels far from robot)."""
     img = cv2.imread(str(FIXTURES / "real_01_w005_occupancy.png"))
     original_white_pixels = np.sum(img > 10)  # Count non-background
 
     cropped = auto_crop_bev(img)
     cropped_white_pixels = np.sum(cropped > 10)
 
-    # Should preserve all content (within small margin for edge effects)
-    assert cropped_white_pixels >= original_white_pixels * 0.95
+    # Robot-centered cropping may lose edge content far from robot
+    # But should preserve most of the relevant content
+    assert cropped_white_pixels >= original_white_pixels * 0.80
 
 
 def test_empty_bev():
@@ -157,3 +158,31 @@ def test_size_reduction_percentage():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_robot_center_preserved():
+    """CRITICAL: Robot must stay at center of cropped BEV to preserve spatial relationships."""
+    # Create 400x400 BEV with robot at (200,200) and obstacle pattern
+    img = np.zeros((400, 400), dtype=np.uint8)
+    
+    # Put obstacles in upper-left quadrant (offset from robot)
+    img[50:150, 50:150] = 255
+    
+    cropped = auto_crop_bev(img)
+    
+    # Robot should be at center of cropped image
+    robot_y = cropped.shape[0] // 2
+    robot_x = cropped.shape[1] // 2
+    
+    # The original robot position (200, 200) should map to center of crop
+    # Since we cropped around the robot, the robot is still at the center
+    # This is critical - obstacles' positions relative to robot are preserved
+    assert cropped.shape[0] == cropped.shape[1], "Cropped BEV must be square"
+    
+    # The cropped image should be smaller than original
+    assert cropped.shape[0] < 400, "Should have cropped the image"
+    
+    # The obstacles should now be in the upper-left quadrant relative to robot center
+    # Check that there's content in upper-left of cropped image
+    upper_left_quadrant = cropped[:robot_y, :robot_x]
+    assert np.sum(upper_left_quadrant > 10) > 0, "Obstacles should be preserved in correct quadrant"

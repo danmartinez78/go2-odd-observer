@@ -58,54 +58,82 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
         }
 
     async def analyze_window_perception_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
-        """Tool: run a direct multimodal Gemini call for one window (camera + BEV)."""
+        """Tool: run a direct multimodal Gemini call for one window (camera + 4 BEV channels)."""
         try:
+            # Load camera image
             camera_path = build_image_path(scenario_path, "cam", window_id)
-            bev_path = build_image_path(
-                scenario_path, "bev_occupancy", window_id)
-
             camera_bytes = ensure_image_bytes(camera_path)
-            bev_bytes = ensure_image_bytes(bev_path)
+
+            # Load all 4 BEV channels (pre-cropped during data generation)
+            bev_occupancy_path = build_image_path(
+                scenario_path, "bev_occupancy", window_id)
+            bev_height_path = build_image_path(
+                scenario_path, "bev_height", window_id)
+            bev_density_path = build_image_path(
+                scenario_path, "bev_density", window_id)
+            bev_roughness_path = build_image_path(
+                scenario_path, "bev_roughness", window_id)
+
+            bev_occupancy_bytes = ensure_image_bytes(bev_occupancy_path)
+            bev_height_bytes = ensure_image_bytes(bev_height_path)
+            bev_density_bytes = ensure_image_bytes(bev_density_path)
+            bev_roughness_bytes = ensure_image_bytes(bev_roughness_path)
 
             prompt = f"""
             You are a perception expert analyzing synchronized robot sensors for window {window_id}.
-            You will receive two images:
-            - Image A: RGB camera frame from the robot's forward camera.
-            - Image B: LiDAR bird's-eye occupancy map showing OBSTACLES ONLY (ground filtered out, 400x400 pixels).
-              Bright pixels indicate objects/obstacles ABOVE ground level (>10cm height).
-              Dark/black pixels indicate free/navigable space.
-              THE ROBOT IS LOCATED AT THE CENTER OF THE BEV MAP (200, 200).
-              The robot faces upward (top of image = forward direction).
-              SCALE: 0.05 meters per pixel (20 pixels = 1 meter, 40 pixels = 2 meters).
-              Total coverage: 20m x 20m area centered on robot.
-              The upper half shows the forward path, lower half shows behind, left/right sides show lateral areas.
+            You will receive FIVE images:
+            - Image A: RGB camera frame from the robot's forward camera
+            - Image B: LiDAR BEV Occupancy (obstacles only, ground filtered out)
+            - Image C: LiDAR BEV Height (elevation map)
+            - Image D: LiDAR BEV Density (point cloud density)
+            - Image E: LiDAR BEV Roughness (terrain surface variation)
+
+            ALL BEV IMAGES (B-E):
+            - Auto-cropped to remove empty borders (50-75% size reduction)
+            - Robot is at CENTER of map, facing upward (top = forward direction)
+            - SCALE: 0.05 meters per pixel (20 pixels = 1 meter)
+            - Coverage: ~20m x 20m area centered on robot (varies after crop)
+            - Upper half = forward path, lower half = behind, sides = lateral areas
+
+            BEV CHANNEL DETAILS:
+            - **Occupancy (B)**: Binary obstacle map. Bright = obstacles ABOVE ground (>10cm), dark = free space.
               NOTE: Robot's own body may appear at center - ignore when assessing obstacles.
-              
-              IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
-              to understand the robot's footprint when assessing traversability and passable gaps.
+            - **Height (C)**: Elevation data. Grayscale intensity = height above ground plane.
+              CRITICAL FOR terrain_roughness_class - shows elevation variations of the ground surface.
+            - **Density (D)**: Point cloud density. Brighter = more LiDAR points.
+              Indicates sensor quality/coverage (low density = occlusion or max range).
+            - **Roughness (E)**: Terrain surface variation. Brighter = more uneven.
+              Pre-computed metric for surface irregularity.
+
+            IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
+            to understand the robot's footprint when assessing traversability and passable gaps.
 
             **CRITICAL DISTINCTIONS:**
             
-            1. **terrain_roughness_class**: Describes GROUND SURFACE elevation variations, NOT surface texture or objects on the ground.
-               - smooth: Flat floor/ground with minimal elevation changes (includes carpets, rugs, smooth concrete)
-               - moderate: Small bumps, gentle slopes, slightly uneven surfaces
-               - rough: Significant elevation changes, stairs, ramps, rocky/unpaved ground
-               - very_rough: Extreme terrain (large boulders, steep slopes, severely uneven surfaces)
-               NOTE: A rug on a flat floor is "smooth" terrain. Surface texture (plush, high-pile) is NOT terrain roughness.
+            1. **terrain_roughness_class**: Use BEV Height (C) and Roughness (E) channels!
+               Describes GROUND SURFACE elevation variations, NOT surface texture or objects.
+               - smooth: Flat floor with minimal height variation (use Height channel to verify)
+               - moderate: Small bumps, gentle slopes (visible in Height channel)
+               - rough: Significant elevation changes, stairs, ramps (clear in Height/Roughness)
+               - very_rough: Extreme terrain (large height variations, high roughness values)
+               NOTE: A rug on flat floor is "smooth" (Height channel shows flat). Surface texture ≠ terrain roughness.
             
-            2. **occupancy_ratio**: Fraction of BEV grid cells occupied by obstacles (objects ABOVE ground level).
-               - The BEV map already filters ground - bright pixels are obstacles, dark pixels are free space
-               - Estimate the fraction of bright (obstacle) pixels in the navigable area ahead
+            2. **occupancy_ratio**: Use BEV Occupancy (B) channel!
+               Fraction of grid cells occupied by obstacles ABOVE ground level.
+               - Bright pixels in Occupancy = obstacles, dark = free space
+               - Estimate bright pixel fraction in forward navigable area
             
-            3. **obstacle_density**: Concentration/number of distinct obstacles in the forward path.
+            3. **obstacle_density**: Use BEV Occupancy (B) channel!
+               Concentration/number of distinct obstacles in forward path.
                - 0.0 = clear path, no obstacles
                - 0.5 = moderate clutter (a few objects)
-               - 1.0 = densely packed obstacles blocking most of the area
+               - 1.0 = densely packed obstacles
             
-            4. **traversability_score**: Combined assessment considering BOTH terrain AND obstacles.
-               - 0.0 = completely blocked or impassable
-               - 0.5 = partially obstructed but navigable with care
-               - 1.0 = clear, easy path with no obstacles or terrain challenges
+            4. **traversability_score**: Combine ALL channels (B, C, D, E)!
+               - Occupancy (B): Are there obstacles blocking the path?
+               - Height (C) + Roughness (E): Is the terrain passable?
+               - Density (D): Is sensor coverage good enough to trust?
+               Result: 0.0 = impassable, 0.5 = difficult, 1.0 = clear and easy
 
             Provide a JSON object with this EXACT schema:
             {{
@@ -129,12 +157,22 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
                 model=model,
                 contents=[
                     types.Part(text=prompt.strip()),
-                    types.Part(text="Image A (camera):"),
+                    types.Part(text="Image A (Camera):"),
                     types.Part.from_bytes(
                         data=camera_bytes, mime_type="image/png"),
-                    types.Part(text="Image B (LiDAR BEV occupancy):"),
+                    types.Part(text="Image B (BEV Occupancy - Obstacles):"),
                     types.Part.from_bytes(
-                        data=bev_bytes, mime_type="image/png"),
+                        data=bev_occupancy_bytes, mime_type="image/png"),
+                    types.Part(text="Image C (BEV Height - Elevation):"),
+                    types.Part.from_bytes(
+                        data=bev_height_bytes, mime_type="image/png"),
+                    types.Part(text="Image D (BEV Density - Point Cloud):"),
+                    types.Part.from_bytes(
+                        data=bev_density_bytes, mime_type="image/png"),
+                    types.Part(
+                        text="Image E (BEV Roughness - Surface Variation):"),
+                    types.Part.from_bytes(
+                        data=bev_roughness_bytes, mime_type="image/png"),
                 ],
             )
 
