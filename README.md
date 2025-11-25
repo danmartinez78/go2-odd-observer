@@ -157,10 +157,12 @@ Quadruped robot designed for indoor office navigation.
 **Production Data Analysis:**
 - 📊 **332 windows** across 19 production scenarios (living room navigation)
 - 🏭 **25-window chunks** - full scenario analysis with all sensor data
-- ✅ **Sensor fusion** - BEV LiDAR + camera + IMU integration
+- ✅ **Sensor fusion** - 3-channel BEV LiDAR + camera + IMU integration
+  - **BEV Channels**: Occupancy (obstacles), Height (vertical extent), Roughness (terrain variance)
 - 🎯 **Collision risk detection** - 72% of windows at alert/caution level (18 high-risk)
 - ⚠️ **Motion analysis** - Peak acceleration 8.81 m/s² detected (exceeds 5.0 limit)
 - 🔍 **Sensor discrepancies** - Camera detects low obstacles BEV misses
+- 📦 **Latest Data**: Sim v0 (62 production + 6 test windows) with auto-crop BEVs
 
 **Test Data Analysis:**
 - 📝 **7 test scenarios** (6 real robot + 1 simulation)
