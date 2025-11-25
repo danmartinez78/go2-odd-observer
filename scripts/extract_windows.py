@@ -92,6 +92,7 @@ class WindowExtractor:
         run_id: Optional[str] = None,
         data_source: Optional[str] = None,
         bev_rotation: int = 0,
+        bev_flip_horizontal: bool = False,
     ):
         """
         Initialize window extractor.
@@ -104,7 +105,9 @@ class WindowExtractor:
             run_id: Optional run identifier (auto-generated if None)
             data_source: 'real' or 'sim' (auto-detected if None)
             bev_rotation: Optional rotation to apply to BEVs in degrees (0, 90, 180, 270)
-                         Positive = clockwise. Use 90 for sim data if needed.
+                         Positive = clockwise. Sim-specific workaround.
+            bev_flip_horizontal: If True, flip BEV horizontally after rotation.
+                                Sim-specific workaround for coordinate frame issues.
 
         IMPORTANT: The output directory name MUST match the run_id.
         Files are created with names like motion_{run_id}_w000.json.
@@ -119,8 +122,9 @@ class WindowExtractor:
         else:
             self.run_id = run_id
 
-        # Store rotation setting
+        # Store BEV transformation settings (data-source specific workarounds)
         self.bev_rotation = bev_rotation
+        self.bev_flip_horizontal = bev_flip_horizontal
 
         # CRITICAL: Output directory MUST be named after run_id
         # The workflow uses directory.name to construct filenames
@@ -431,20 +435,28 @@ class WindowExtractor:
                     'roughness': empty.copy(),
                 }
 
-        # Apply rotation if specified (for sim data orientation)
+        # Apply data-source specific transformations to match expected BEV format:
+        # - Robot at center
+        # - Forward (x-axis) pointing up in image
+        # - Not mirrored (right is right, left is left)
+        
+        # Rotation (if specified)
         if self.bev_rotation != 0:
             for feature_name in bev_features:
                 if self.bev_rotation == 90:
-                    # Clockwise 90°
                     bev_features[feature_name] = cv2.rotate(
                         bev_features[feature_name], cv2.ROTATE_90_CLOCKWISE)
                 elif self.bev_rotation == 180:
                     bev_features[feature_name] = cv2.rotate(
                         bev_features[feature_name], cv2.ROTATE_180)
                 elif self.bev_rotation == 270:
-                    # Clockwise 270° = Counter-clockwise 90°
                     bev_features[feature_name] = cv2.rotate(
                         bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
+        
+        # Horizontal flip (if specified)
+        if self.bev_flip_horizontal:
+            for feature_name in bev_features:
+                bev_features[feature_name] = cv2.flip(bev_features[feature_name], 1)
 
         # Apply auto-crop to preserve obstacles while reducing size
         for feature_name in bev_features:
@@ -718,7 +730,12 @@ def main():
         type=int,
         choices=[0, 90, 180, 270],
         default=0,
-        help="Rotation to apply to final BEVs in degrees, clockwise (default: 0). Use 90 for sim data."
+        help="Rotation to apply to BEVs in degrees, clockwise (default: 0). Data-source specific."
+    )
+    parser.add_argument(
+        "--bev-flip-horizontal",
+        action="store_true",
+        help="Flip BEV horizontally after rotation. Data-source specific workaround."
     )
 
     args = parser.parse_args()
@@ -732,6 +749,7 @@ def main():
         run_id=args.run_id,
         data_source=args.data_source,
         bev_rotation=args.bev_rotation,
+        bev_flip_horizontal=args.bev_flip_horizontal,
     )
 
     # Extract windows
