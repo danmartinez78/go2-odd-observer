@@ -60,7 +60,7 @@ def _extract_result(events: List[Any], agent_name: str = "CollisionSummaryAgent"
 
 
 async def test_collision_agent(
-    scenario_path: str = "data/production/sim_1_0",
+    scenario_path: str = "data/test/sim_test_w010_w011",
     model: str = "gemini-2.5-flash",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--scenario",
         type=str,
-        default="data/production/sim_1_0",
+        default="data/test/sim_test_w010_w011",
         help="Path to scenario directory"
     )
     parser.add_argument(

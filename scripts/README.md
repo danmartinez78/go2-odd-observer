@@ -41,6 +41,13 @@ SCENARIO METADATA
   • Data source: simulation (confidence: 0.98)
   • Environment: indoor_office
 
+ANALYSIS METADATA
+  • Pipeline version: 2.0.0
+  • Analysis duration: 214.3s
+  • Agents executed: 10
+  • Total tokens: 62,860
+  • Estimated cost: $1.26
+
 ODD COMPLIANCE
   • Overall: ODD_BOUNDARY
   • Violations: 0
@@ -48,6 +55,89 @@ ODD COMPLIANCE
 
 ⚠️  WARNINGS:
     • collision_risk (0.3) is at the ODD boundary
+```
+
+**New in v2.0.0 - Metadata Tracking:**
+
+All analysis results now include comprehensive metadata for reproducibility:
+
+**`analysis_metadata`** (lightweight summary):
+```json
+{
+  "pipeline_version": "2.0.0",
+  "analysis_timestamp": "2025-11-25T18:13:42",
+  "analysis_duration_seconds": 214.3,
+  "total_agents_executed": 10,
+  "total_tokens_used": 62860,
+  "estimated_cost_usd": 1.26
+}
+```
+
+**`pipeline_metadata`** (detailed execution tracking):
+```json
+{
+  "pipeline_version": "2.0.0",
+  "pipeline_start_time": "2025-11-25T18:13:42",
+  "pipeline_duration_seconds": 214.3,
+  "odd_spec_hash": "a3f8d9e2",
+  "scenario_path": "/path/to/scenario",
+  "agent_executions": {
+    "OddSpecAgent": {
+      "version": "2.0.0",
+      "model_declared": "gemini-2.0-flash-lite",
+      "model_actual": "gemini-2.0-flash-lite",
+      "prompt_hash": "a3f8d9e2b1c4",
+      "execution_order": 1,
+      "timestamp": "2025-11-25T18:13:45",
+      "token_usage": {
+        "prompt_tokens": 2100,
+        "completion_tokens": 2100,
+        "total_tokens": 4200
+      }
+    }
+  },
+  "workflow_summary": {
+    "total_agents": 10,
+    "total_tokens": 62860,
+    "total_duration_seconds": 214.3,
+    "agents_executed": ["OddSpecAgent", "PerceptionLoopAgent", ...]
+  }
+}
+```
+
+**Benefits:**
+- **Reproducibility**: Exact prompt versions and model configurations tracked
+- **Debugging**: Per-agent execution details with timing and token usage
+- **Cost tracking**: Estimated costs based on token usage
+- **Drift detection**: Prompt hash changes trigger version updates
+- **Audit trail**: Complete record of analysis pipeline execution
+
+**HTML Report Enhancements:**
+
+Reports now include a metadata footer with:
+- Pipeline version and analysis timestamp
+- Collapsible accordion showing per-agent details:
+  - Agent name, version, model used
+  - Prompt hash (for drift detection)
+  - Expandable table for all 10 agents
+
+**Accessing Metadata:**
+
+```python
+# Load analysis result
+with open('full_result.json') as f:
+    result = json.load(f)
+
+# Lightweight metadata (always present)
+meta = result['analysis_metadata']
+print(f"Analysis took {meta['analysis_duration_seconds']}s")
+print(f"Used {meta['total_tokens_used']} tokens")
+print(f"Cost: ${meta['estimated_cost_usd']}")
+
+# Detailed pipeline metadata
+pipeline = result['pipeline_metadata']
+for agent, details in pipeline['agent_executions'].items():
+    print(f"{agent}: {details['token_usage']['total_tokens']} tokens")
 ```
 
 ---

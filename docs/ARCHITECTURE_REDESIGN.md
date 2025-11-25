@@ -941,7 +941,132 @@ def auto_crop_bev(bev_image):
   - COD region captures all observations
   - Overlap analysis identifies violations correctly
 
-### 1.4 Evaluator Agent Creation
+### 1.4 Agent Versioning & Pipeline Telemetry ✅ COMPLETED (Nov 25, 2025)
+
+**Goal:** Add version tracking and metadata collection for reproducibility and debugging
+
+**Deliverables:**
+- ✅ Agent version registry (`AGENT_VERSIONS` dict in `__init__.py`)
+- ✅ Prompt extraction system (`agent_prompts.py` - 10 extraction functions)
+- ✅ Metadata utilities (`metadata.py` - hash_text, build_agent_registry, extract_pipeline_metadata)
+- ✅ Prompt catalog system (`prompt_catalog.py` - hash-to-description lookup, 24KB JSON)
+- ✅ Event-based metadata extraction (using `runner.run_debug()` events)
+- ✅ Workflow integration (`workflow.py` enhanced with timing and metadata tracking)
+- ✅ Terminal metadata display (`run_odd_analysis.py` - ANALYSIS METADATA section)
+- ✅ JSON metadata output (analysis_metadata + pipeline_metadata in full_result.json)
+- ✅ HTML report metadata (footer with version, timestamp, collapsible agent details table)
+- ✅ Test execution (sim_test_w010_w011: 214s, 62,860 tokens, $1.26, 9 unique prompts)
+
+**Metadata Structure:**
+```json
+{
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-11-25T18:13:42",
+    "analysis_duration_seconds": 214.3,
+    "total_agents_executed": 10,
+    "total_tokens_used": 62860,
+    "estimated_cost_usd": 1.26
+  },
+  "pipeline_metadata": {
+    "agent_executions": {
+      "OddSpecAgent": {
+        "version": "2.0.0",
+        "model_declared": "gemini-2.0-flash-lite",
+        "model_actual": "gemini-2.0-flash-lite",
+        "prompt_hash": "a3f8d9e2b1c4",
+        "token_usage": {"total_tokens": 4200}
+      }
+    }
+  }
+}
+```
+
+**Approach Used:** Event-Based Metadata Extraction (Approach F)
+- ADK `runner.run_debug()` returns `List[Event]` with complete metadata
+- Event attributes: author, timestamp, invocation_id, model_version, usage_metadata
+- Simpler than documented approaches in METADATA_DESIGN.md
+- No callback API exists (google.adk.callbacks not found)
+
+**Results:**
+- All 10 agents tracked successfully
+- 9 unique prompt hashes captured (no empty string hash issues)
+- Token usage: 62,860 total across all agents
+- Model verification: Declared vs actual models match
+- HTML accordion displays per-agent version/model/hash details
+
+### 1.4.1 ODD-Schema Driven Architecture 📋 PLANNED (CRITICAL FIX)
+
+**Problem Discovered:** Agents have hardcoded dimension expectations, preventing generalization
+
+**Current Architectural Flaw:**
+```python
+# ODD Spec Agent generates dynamic structure:
+{
+  "numeric_constraints": {
+    "max_speed_mps": {"max": 2.0},
+    "max_slope_deg": {"max": 15.0}
+  }
+}
+
+# But Perception Agent has HARDCODED expectations:
+"Extract:
+- obstacle_density (0.0-1.0)
+- traversability_score (0.0-1.0)"
+
+# These don't align! ODD wanted slope, agent measured traversability.
+```
+
+**Root Cause:**
+- ODD Spec Agent generates flexible dimension schemas from natural language
+- Downstream agents (Perception, Motion, Collision, COD) have hardcoded measurement schemas
+- COD Agent has hardcoded aggregation logic
+- System only works for ONE specific ODD structure
+- Cannot generalize to different operational constraints
+
+**Impact:**
+- ❌ Cannot adapt to different ODD specifications
+- ❌ Measurements don't align with ODD dimensions
+- ❌ Compliance checking compares mismatched schemas
+- ❌ Blocks true generalization and reasoning
+
+**Proposed Solution:**
+All agents read `{temp:odd_spec?}` to extract dimension schemas:
+
+1. **ODD Spec Agent:** Generate ODD structure (no change)
+2. **Perception/Motion/Collision Agents:**
+   - Read ODD spec to extract expected dimensions
+   - Measure ONLY those dimensions (no hardcoded lists)
+   - Return schema-aligned measurements
+3. **COD Agent:**
+   - Read ODD spec for dimension structure
+   - Aggregate measurements along ODD-defined axes
+   - Build COD region matching ODD schema exactly
+4. **Compliance Agent:**
+   - Compare aligned COD vs ODD schemas
+   - Dimensions guaranteed to match
+
+**Benefits:**
+- ✅ True generalization - works with any ODD structure
+- ✅ Schema alignment - measurements match requirements
+- ✅ Flexibility - add constraints without changing prompts
+- ✅ LLM reasoning - agents adapt dynamically
+
+**Tradeoffs:**
+- More complex agent prompts (schema parsing logic)
+- Higher token usage (ODD spec passed to more agents)
+- More LLM reasoning required
+
+**Deliverables:**
+- [ ] Update Perception agent to extract ODD perception dimensions
+- [ ] Update Motion agent to extract ODD motion dimensions
+- [ ] Update Collision agent to extract ODD collision dimensions
+- [ ] Update COD agent to be fully schema-driven
+- [ ] Create test fixtures with mocked upstream data
+- [ ] Integration testing with varied ODD structures
+- [ ] Documentation of schema-driven architecture
+
+### 1.5 Evaluator Agent Creation 📋 PLANNED (was 1.4)
 - Rename Compliance → Evaluator agent
 - Implement severity calculation from window distribution
   - Formula: `(out_odd × 2.0 + boundary × 0.5) / total × 10`
@@ -958,7 +1083,44 @@ def auto_crop_bev(bev_image):
   - Isolated violation (expect LOW severity, specific flag)
   - Frequent violations (expect HIGH severity, multiple flags)
 
-### 1.5 Manual Validation Suite
+### 1.6 Collision BEV Integration ✅ COMPLETED (Nov 25, 2025)
+
+**Status:** Originally deferred to Phase 1.5+, but completed during Phase 1.4 agent refactoring
+
+**Changes Implemented:**
+- ✅ Collision agent now multimodal (IMU + Camera + 3 BEV channels)
+- ✅ Tool loads: motion.json, camera.png, bev_occupancy.png, bev_height.png, bev_roughness.png
+- ✅ Independent data loading (removed dependency on motion agent output)
+- ✅ Updated prompts with BEV guidance:
+  - BEV scale (0.05m/pixel, 400×400 pixels)
+  - Robot position at center (200, 200)
+  - Self-hit exclusion zone (~15 pixel radius for robot body)
+  - Multimodal reasoning priority (IMU primary, BEV validates, camera confirms)
+- ✅ LLM performs collision reasoning (not hardcoded thresholds)
+- ✅ Evidence structure across all modalities (imu_analysis, camera_analysis, bev_analysis, multimodal_reasoning)
+
+**Test Results (sim_test_w010_w011):**
+- Window 010: No collision detected (confidence 0.98)
+  - IMU: 0.108 m/s² << 10 m/s² threshold
+  - BEV: Obstacle near but not penetrating exclusion zone  
+  - Camera: No blur/impact evidence
+- Window 011: No collision detected (confidence 0.95)
+  - IMU: 0.139 m/s² << 10 m/s² threshold
+  - BEV: Extreme proximity but no penetration
+  - Camera: Stable, no impact
+
+**Architecture Improvement:**
+- Before: Hardcoded thresholds in tool (LLM was glorified for-loop)
+- After: LLM analyzes multimodal evidence and reasons about collision
+- Fixed: Collision agent now loads own data (was trying to parse motion agent output incorrectly)
+
+**Original Deferral Reasoning (Now Resolved):**
+- Self-hit complexity → Solved with exclusion zone guidance
+- Temporal mismatch → Acceptable for current needs
+- False positive risk → Mitigated with proper prompting
+- Scope creep concerns → Justified during refactoring
+
+### 1.7 Manual Validation Suite 📋 PLANNED (was 1.5)
 Select 3-5 representative scenarios:
 1. **Fully compliant**: All windows IN_ODD, expect severity=MINIMAL
 2. **Boundary case**: 9 IN_ODD + 1 BOUNDARY, expect severity=MINIMAL, investigation flag
