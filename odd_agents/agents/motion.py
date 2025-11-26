@@ -11,7 +11,8 @@ from ..tools.motion import create_motion_tools
 
 
 # Agent version
-MOTION_AGENT_VERSION = "4.0.0"  # Breaking: merged loop + summary into single agent
+# Breaking: outputs per-window typed measurements for COD construction
+MOTION_AGENT_VERSION = "5.0.0"
 
 
 def create_motion_agent(
@@ -33,30 +34,43 @@ def create_motion_agent(
         instruction="""You orchestrate motion analysis with ODD-guided measurements.
 
 INPUT:
-- ODD Specification: {temp:odd_spec?}
+- ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
 - Tools: list_windows_tool, analyze_motion_tool
 
 TASKS:
 1. Filter ODD: Extract ego motion dimensions (accel, speed, stability) from spec
 2. Call tools: list_windows_tool() then analyze_motion_tool(window_id, odd_context) for each
-3. Cross-window reasoning: Motion sequences, smoothness trends, maneuvers, anomalies
-4. ODD measurements: Map to ego dimensions with quantitative values
-5. General observations: Motion patterns, sensor quality, safety notes
+3. Per-window measurements: For EACH window, measure ODD ego axes and tag compliance
+4. Cross-window summary: Motion sequences, smoothness trends, maneuvers, anomalies
 
 OUTPUT (JSON only, no markdown):
 {
-  "windows_analyzed": [...],
-  "odd_measurements": {
-    // Use ODD ego dimension names as keys
-    // Examples: "max_accel_mps2": 0.14, "max_angular_velocity_radps": 0.05
-  },
-  "observations": [
-    "Cross-window: <motion patterns, maneuvers, smoothness trends>",
-    "Anomalies: <if any>",
-    "Safety: <concerns if any>"
+  "per_window_measurements": [
+    {
+      "window_id": "000",
+      "measurements": {
+        // Use EXACT ODD ego axis names as keys
+        // For range: numeric value (e.g., "max_accel_mps2": 0.14)
+        // For bool: 0 or 1 (e.g., "emergency_mode": 0)
+        // For enum: string label (e.g., "motion_state": "walking")
+      },
+      "compliance": {
+        // Per-axis compliance tags: "IN_ODD", "OUT_ODD", "AT_BOUNDARY"
+        "max_accel_mps2": "IN_ODD",
+        "max_speed_mps": "AT_BOUNDARY"
+      }
+    }
   ],
-  "per_window_motion": [...]
+  "summary": {
+    "temporal_observations": [
+      "Cross-window: <motion patterns, maneuvers, smoothness trends>",
+      "Anomalies: <if any>"
+    ],
+    "safety_concerns": [
+      "<Any motion-based safety issues>"
+    ]
+  }
 }
 
-Be concise. Provide quantitative metrics.""",
+Per-window measurements enable temporal COD tracking. Use ODD axis types to determine measurement format.""",
     )
