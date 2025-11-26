@@ -44,7 +44,7 @@ def build_agent_registry(
     model_motion: str,
     model_collision: str,
     model_odd_spec: str,
-    model_cod: str,
+    model_evaluator: str,
     model_report: str,
 ) -> Dict[str, Dict[str, Any]]:
     """Build agent registry with versions, models, and prompt hashes.
@@ -64,13 +64,13 @@ def build_agent_registry(
 
     Example:
         >>> registry = build_agent_registry(
-        ...     agent_versions={'CodClassifierAgent': '2.0.0'},
-        ...     agent_prompts={'CodClassifierAgent': 'You are...'},
-        ...     model_cod='gemini-2.5-flash',
+        ...     agent_versions={'EvaluatorAgent': '1.0.0'},
+        ...     agent_prompts={'EvaluatorAgent': 'You are...'},
+        ...     model_evaluator='gemini-2.5-flash',
         ...     ...
         ... )
-        >>> registry['CodClassifierAgent']
-        {'version': '2.0.0', 'model': 'gemini-2.5-flash', 'prompt_hash': 'a1b2c3d4'}
+        >>> registry['EvaluatorAgent']
+        {'version': '1.0.0', 'model': 'gemini-2.5-flash', 'prompt_hash': 'a1b2c3d4'}
     """
     return {
         'OddSpecAgent': {
@@ -93,15 +93,10 @@ def build_agent_registry(
             'model': model_collision,
             'prompt_hash': hash_text(agent_prompts.get('CollisionAgent', '')),
         },
-        'CodMeasurementAgent': {
-            'version': agent_versions.get('CodMeasurementAgent', 'unknown'),
-            'model': model_cod,
-            'prompt_hash': hash_text(agent_prompts.get('CodMeasurementAgent', '')),
-        },
-        'OddComplianceAgent': {
-            'version': agent_versions.get('OddComplianceAgent', 'unknown'),
-            'model': model_cod,
-            'prompt_hash': hash_text(agent_prompts.get('OddComplianceAgent', '')),
+        'EvaluatorAgent': {
+            'version': agent_versions.get('EvaluatorAgent', 'unknown'),
+            'model': model_evaluator,
+            'prompt_hash': hash_text(agent_prompts.get('EvaluatorAgent', '')),
         },
         'ReportAgent': {
             'version': agent_versions.get('ReportAgent', 'unknown'),

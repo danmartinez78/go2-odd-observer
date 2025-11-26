@@ -20,8 +20,7 @@ from .agents import (
     create_perception_agent,
     create_motion_agent,
     create_collision_agent,
-    create_cod_classifier_agent,
-    create_odd_compliance_agent,
+    create_evaluator_agent,
     create_report_agent,
     AGENT_VERSIONS,
 )
@@ -39,10 +38,16 @@ def create_odd_workflow(
     model_motion: str = "gemini-2.0-flash-exp",
     model_collision: str = "gemini-2.0-flash-exp",
     model_odd_spec: str = "gemini-2.0-flash-exp",
-    model_cod: str = "gemini-2.0-flash-exp",
+    model_evaluator: str = "gemini-2.0-flash-exp",
     model_report: str = "gemini-2.0-flash-exp",
 ) -> SequentialAgent:
-    """Create a new ODD workflow instance with fresh agent instances.
+    """Create a new ODD workflow instance with Phase 1.4.4 architecture.
+
+    Phase 1.4.4 - Type-driven COD construction:
+    - ODD Spec v5.0.0: Adds type definitions (range/bool/enum)
+    - Sensor agents v5.0.0: Output per-window typed measurements
+    - Evaluator v1.0.0: Uses Python tools for COD construction
+    - Report v4.0.0: File-reading tool for efficient data access
 
     Args:
         scenario_path: Path to the scenario directory
@@ -53,19 +58,22 @@ def create_odd_workflow(
     Returns:
         SequentialAgent workflow instance
     """
+    from pathlib import Path
+    scenario = Path(scenario_path)
+
     return SequentialAgent(
         name="OddWorkflow",
         sub_agents=[
             create_odd_spec_agent(api_key, model_odd_spec),
             create_perception_agent(
-                scenario_path, genai_client, model_perception, api_key),
+                scenario, genai_client, model_perception, api_key),
             create_motion_agent(
-                scenario_path, genai_client, model_motion, api_key),
+                str(scenario), genai_client, model_motion, api_key),
             create_collision_agent(
-                scenario_path, genai_client, model_collision, api_key),
-            create_cod_classifier_agent(api_key, model_cod),
-            create_odd_compliance_agent(api_key, model_cod),
-            create_report_agent(api_key, model_report),
+                str(scenario), genai_client, model_collision, api_key),
+            create_evaluator_agent(
+                scenario, genai_client, model_evaluator, api_key),
+            create_report_agent(scenario, api_key, model_report),
         ],
     )
 
@@ -92,10 +100,15 @@ async def run_odd_workflow(
     model_motion: str = "gemini-2.0-flash-exp",
     model_collision: str = "gemini-2.0-flash-exp",
     model_odd_spec: str = "gemini-2.0-flash-exp",
-    model_cod: str = "gemini-2.0-flash-exp",
+    model_evaluator: str = "gemini-2.0-flash-exp",
     model_report: str = "gemini-2.0-flash-exp",
 ) -> Optional[Dict[str, Any]]:
-    """Run the complete ODD analysis workflow with metadata tracking.
+    """Run the complete ODD analysis workflow with Phase 1.4.4 architecture.
+
+    Phase 1.4.4 - Type-driven COD construction:
+    - Deterministic Python tools for distance calculations (massive token savings)
+    - Per-window typed measurements enable temporal violation tracking
+    - File-based data handoff reduces blackboard overhead
 
     Args:
         scenario_path: Path to the scenario directory (e.g., "data/processed/runs/sim_run_new")
@@ -131,7 +144,7 @@ async def run_odd_workflow(
         )
 
     print("\n" + "=" * 80)
-    print(f"ODD WORKFLOW - FULL PIPELINE (v2.0.0 with metadata tracking)")
+    print(f"ODD WORKFLOW - PHASE 1.4.4 (Type-Driven COD Construction)")
     print(f"Scenario: {scenario_name}")
     print(f"ODD Description: {nl_odd_description[:100]}...")
     print("=" * 80)
@@ -157,7 +170,7 @@ async def run_odd_workflow(
         model_motion=model_motion,
         model_collision=model_collision,
         model_odd_spec=model_odd_spec,
-        model_cod=model_cod,
+        model_evaluator=model_evaluator,
         model_report=model_report,
     )
 
@@ -170,7 +183,7 @@ async def run_odd_workflow(
         model_motion=model_motion,
         model_collision=model_collision,
         model_odd_spec=model_odd_spec,
-        model_cod=model_cod,
+        model_evaluator=model_evaluator,
         model_report=model_report,
     )
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")

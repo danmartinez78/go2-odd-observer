@@ -63,23 +63,39 @@ def get_collision_prompt():
 
 
 def get_cod_classifier_prompt():
-    """Get COD Classifier agent prompt template."""
-    from .agents.cod_classifier import create_cod_classifier_agent
-    dummy = create_cod_classifier_agent(api_key="dummy", model="dummy")
-    return dummy.instruction
+    """Get COD Classifier agent prompt template (deprecated - Phase 1.4.3)."""
+    return "(deprecated - replaced by Evaluator in Phase 1.4.4)"
 
 
 def get_odd_compliance_prompt():
-    """Get ODD Compliance agent prompt template."""
-    from .agents.compliance import create_odd_compliance_agent
-    dummy = create_odd_compliance_agent(api_key="dummy", model="dummy")
+    """Get ODD Compliance agent prompt template (deprecated - Phase 1.4.3)."""
+    return "(deprecated - replaced by Evaluator in Phase 1.4.4)"
+
+
+def get_evaluator_prompt():
+    """Get Evaluator agent prompt template."""
+    from .agents.evaluator import create_evaluator_agent
+    from pathlib import Path
+    from google.genai import Client
+    # Create dummy instance just to extract prompt
+    dummy = create_evaluator_agent(
+        scenario_path=Path("/tmp/dummy"),
+        genai_client=Client(api_key="dummy"),
+        model="dummy",
+        api_key="dummy"
+    )
     return dummy.instruction
 
 
 def get_report_prompt():
     """Get Report agent prompt template."""
     from .agents.report import create_report_agent
-    dummy = create_report_agent(api_key="dummy", model="dummy")
+    from pathlib import Path
+    dummy = create_report_agent(
+        scenario_path=Path("/tmp/dummy"),
+        api_key="dummy",
+        model="dummy"
+    )
     return dummy.instruction
 
 
@@ -95,8 +111,7 @@ def get_all_prompts():
             'PerceptionAgent': get_perception_prompt(),
             'MotionAgent': get_motion_prompt(),
             'CollisionAgent': get_collision_prompt(),
-            'CodMeasurementAgent': get_cod_classifier_prompt(),
-            'OddComplianceAgent': get_odd_compliance_prompt(),
+            'EvaluatorAgent': get_evaluator_prompt(),
             'ReportAgent': get_report_prompt(),
         })
     return _PROMPT_CACHE
