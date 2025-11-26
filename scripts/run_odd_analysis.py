@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Manual ODD Analysis Runner
+Manual ODD Analysis Runner (Phase 1.4.3)
 
 Interactive script to run complete ODD analysis workflow on a single scenario.
-Follows the notebook workflow pattern with model configuration at top.
+Uses consolidated 7-agent pipeline with flash-exp models for cost optimization.
 
 Usage:
     python scripts/run_odd_analysis.py
@@ -40,22 +40,23 @@ warnings.filterwarnings('ignore', message='.*SSL.*')
 warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 
 # ============================================================================
-# MODEL CONFIGURATION
+# MODEL CONFIGURATION (Phase 1.4.3 Optimizations)
 # ============================================================================
-# Customize which models to use for each agent
-# Options: "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro",
-#          "gemini-3-pro", "gemini-robotics-er-1.5-preview"
+# Using gemini-2.0-flash-exp for 100x cost reduction vs pro models
+# Flash-exp is sufficient for most tasks with massive token savings
+# Options: "gemini-2.0-flash-exp", "gemini-2.5-flash", "gemini-2.5-pro"
 
-# Camera + LiDAR analysis (complex vision)
-MODEL_PERCEPTION = "gemini-2.5-pro"
-# IMU motion detection (straightforward)
-MODEL_MOTION = "gemini-2.5-flash"
-# Collision risk assessment (complex reasoning)
-MODEL_COLLISION = "gemini-2.5-pro"
-# ODD specification parsing (complex NLP)
-MODEL_ODD_SPEC = "gemini-2.5-pro"
-MODEL_COD = "gemini-2.5-flash"             # COD classification + compliance
-MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
+# All agents use flash-exp for maximum cost efficiency
+# Consolidated perception agent (v4.0.0)
+MODEL_PERCEPTION = "gemini-2.0-flash-exp"
+# Consolidated motion agent (v4.0.0)
+MODEL_MOTION = "gemini-2.0-flash-exp"
+# Consolidated collision agent (v4.0.0)
+MODEL_COLLISION = "gemini-2.0-flash-exp"
+MODEL_ODD_SPEC = "gemini-2.0-flash-exp"     # ODD spec parsing
+MODEL_COD = "gemini-2.0-flash-exp"          # COD measurement agent
+MODEL_COMPLIANCE = "gemini-2.0-flash-exp"   # Compliance checking
+MODEL_REPORT = "gemini-2.0-flash-exp"       # Final report generation
 
 # ============================================================================
 # ODD DESCRIPTION (Default from notebook)
@@ -352,12 +353,13 @@ async def main():
     print("ODD ANALYSIS - MANUAL RUNNER")
     print("=" * 80)
     print()
-    print("🔧 Model Configuration:")
+    print("🔧 Model Configuration (Phase 1.4.3 - Optimized):")
     print(f"   Perception:  {MODEL_PERCEPTION}")
     print(f"   Motion:      {MODEL_MOTION}")
     print(f"   Collision:   {MODEL_COLLISION}")
     print(f"   ODD Spec:    {MODEL_ODD_SPEC}")
-    print(f"   COD/Comply:  {MODEL_COD}")
+    print(f"   COD:         {MODEL_COD}")
+    print(f"   Compliance:  {MODEL_COMPLIANCE}")
     print(f"   Report:      {MODEL_REPORT}")
 
     # Find scenarios

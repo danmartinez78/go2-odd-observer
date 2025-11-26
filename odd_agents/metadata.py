@@ -78,40 +78,25 @@ def build_agent_registry(
             'model': model_odd_spec,
             'prompt_hash': hash_text(agent_prompts.get('OddSpecAgent', '')),
         },
-        'PerceptionLoopAgent': {
-            'version': agent_versions.get('PerceptionLoopAgent', 'unknown'),
+        'PerceptionAgent': {
+            'version': agent_versions.get('PerceptionAgent', 'unknown'),
             'model': model_perception,
-            'prompt_hash': hash_text(agent_prompts.get('PerceptionLoopAgent', '')),
+            'prompt_hash': hash_text(agent_prompts.get('PerceptionAgent', '')),
         },
-        'PerceptionSummaryAgent': {
-            'version': agent_versions.get('PerceptionSummaryAgent', 'unknown'),
-            'model': model_perception,
-            'prompt_hash': hash_text(agent_prompts.get('PerceptionSummaryAgent', '')),
-        },
-        'MotionLoopAgent': {
-            'version': agent_versions.get('MotionLoopAgent', 'unknown'),
+        'MotionAgent': {
+            'version': agent_versions.get('MotionAgent', 'unknown'),
             'model': model_motion,
-            'prompt_hash': hash_text(agent_prompts.get('MotionLoopAgent', '')),
+            'prompt_hash': hash_text(agent_prompts.get('MotionAgent', '')),
         },
-        'MotionSummaryAgent': {
-            'version': agent_versions.get('MotionSummaryAgent', 'unknown'),
-            'model': model_motion,
-            'prompt_hash': hash_text(agent_prompts.get('MotionSummaryAgent', '')),
-        },
-        'CollisionLoopAgent': {
-            'version': agent_versions.get('CollisionLoopAgent', 'unknown'),
+        'CollisionAgent': {
+            'version': agent_versions.get('CollisionAgent', 'unknown'),
             'model': model_collision,
-            'prompt_hash': hash_text(agent_prompts.get('CollisionLoopAgent', '')),
+            'prompt_hash': hash_text(agent_prompts.get('CollisionAgent', '')),
         },
-        'CollisionSummaryAgent': {
-            'version': agent_versions.get('CollisionSummaryAgent', 'unknown'),
-            'model': model_collision,
-            'prompt_hash': hash_text(agent_prompts.get('CollisionSummaryAgent', '')),
-        },
-        'CodClassifierAgent': {
-            'version': agent_versions.get('CodClassifierAgent', 'unknown'),
+        'CodMeasurementAgent': {
+            'version': agent_versions.get('CodMeasurementAgent', 'unknown'),
             'model': model_cod,
-            'prompt_hash': hash_text(agent_prompts.get('CodClassifierAgent', '')),
+            'prompt_hash': hash_text(agent_prompts.get('CodMeasurementAgent', '')),
         },
         'OddComplianceAgent': {
             'version': agent_versions.get('OddComplianceAgent', 'unknown'),
