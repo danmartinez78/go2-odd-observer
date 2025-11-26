@@ -116,27 +116,34 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             
             - **Actors**: Humans, animals, other dynamic entities visible in camera or BEV.
 
-            **OUTPUT**: Provide a JSON object with flexible observations:
+            **OUTPUT FORMAT**: Provide ONLY a valid JSON object (no markdown, no explanation):
+            
+            REQUIRED STRUCTURE:
             {{
               "window_id": "{window_id}",
-              "camera_summary": "Natural-language description of what the camera sees",
-              "bev_summary": "Natural-language description of the spatial environment from BEV",
+              "camera_summary": "string - what the camera sees",
+              "bev_summary": "string - spatial environment from BEV",
               "observations": [
-                "Lighting: [describe conditions - bright/dim/dark, quality, shadows]",
-                "Visibility: [describe clarity, obstructions, sensor quality]",
-                "Terrain: [describe surface - smooth/rough, elevation changes, surface type]",
-                "Obstacles: [describe what's present, density, spatial distribution]",
-                "Traversability: [describe path clearance and navigability]",
-                "Actors: [humans/animals detected? locations? activities?]",
-                "Environment type: [indoor/outdoor, setting description]",
-                "Data quality: [sensor issues, artifacts, coverage gaps]",
-                "Safety notes: [any hazards, constraints, concerns]"
+                "string - lighting conditions",
+                "string - visibility and clarity",
+                "string - terrain characteristics",
+                "string - obstacles present",
+                "string - traversability assessment",
+                "string - actors detected (if any)",
+                "string - environment type",
+                "string - data quality notes",
+                "string - safety concerns (if any)"
               ]
             }}
             
-            Provide descriptive, grounded observations. The summary agent will map these to ODD dimensions.
-            Focus on what you can actually observe from the sensor data.
-            No explanations outside the JSON.
+            CRITICAL RULES:
+            1. Output ONLY the JSON object - no ```json markers, no explanations
+            2. Each observation must be a complete descriptive sentence
+            3. Use double quotes for all strings
+            4. Ensure valid JSON syntax (commas, brackets, braces)
+            5. All observations are strings in the array
+            
+            Focus on grounded observations from sensor data. The summary agent will map to ODD dimensions.
             """
 
             response = genai_client.models.generate_content(

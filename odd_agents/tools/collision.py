@@ -185,16 +185,18 @@ The robot's own body appears in the BEV center. DO NOT count the robot body as a
 4. All three agree → High confidence collision
 5. IMU spike alone without BEV/camera support → Possible but verify carefully
 
-**OUTPUT**: JSON object with EXACT schema:
+**OUTPUT FORMAT**: Provide ONLY a valid JSON object (no markdown, no explanation):
+
+REQUIRED STRUCTURE:
 {{
   "window_id": "{window_id}",
-  "collision_detected": true|false,
+  "collision_detected": true or false,
   "confidence": 0.0-1.0,
   "evidence": {{
-    "imu_analysis": "Description of IMU patterns and what they indicate",
-    "camera_analysis": "Visual evidence from camera (blur, impact, scene changes)",
-    "bev_analysis": "BEV occupancy findings (excluding self-hit zone)",
-    "multimodal_reasoning": "How all modalities agree/disagree on collision determination"
+    "imu_analysis": "string - IMU patterns and indicators",
+    "camera_analysis": "string - visual evidence from camera",
+    "bev_analysis": "string - BEV occupancy findings",
+    "multimodal_reasoning": "string - how modalities agree/disagree"
   }},
   "imu_metrics": {{
     "peak_accel_mps2": {peak_accel},
@@ -209,7 +211,13 @@ The robot's own body appears in the BEV center. DO NOT count the robot body as a
   }}
 }}
 
-Focus on ACTUAL collision evidence, not proximity risk.""")]
+CRITICAL RULES:
+1. Output ONLY the JSON object - no ```json markers, no explanations
+2. All string values must use double quotes
+3. Boolean values: true or false (lowercase, no quotes)
+4. Ensure valid JSON syntax (commas, brackets, braces)
+5. Focus on ACTUAL collision evidence, not proximity risk
+""")]
 
             # Add camera image
             if cam_file.exists():

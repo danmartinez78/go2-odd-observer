@@ -217,21 +217,23 @@ If camera shows sharp, clear images BUT IMU shows acceleration:
    - "translation": Camera shows optical flow/blur AND varying acceleration pattern
    - "complex": Camera shows both rotation and translation with corresponding IMU patterns
 
-**OUTPUT**: JSON object with observations (no extra text):
+**OUTPUT FORMAT**: Provide ONLY a valid JSON object (no markdown, no explanation):
+
+REQUIRED STRUCTURE:
 {{
   "window_id": "{window_id}",
-  "motion_summary": "Natural-language description of motion state and characteristics",
+  "motion_summary": "string - motion state and characteristics",
   "observations": [
-    "Motion detected: [yes/no with confidence and evidence]",
-    "Motion type: [stationary/rotation/translation/complex with reasoning]",
-    "Acceleration: [peak {peak_horiz_accel:.3f} m/s², patterns observed]",
-    "Angular velocity: [peak {peak_gyro_z:.3f} rad/s, rotation characteristics]",
-    "Platform stability: [max roll {max_roll:.1f}°, max pitch {max_pitch:.1f}°, stability assessment]",
-    "Speed estimation: [from camera blur/flow if observable]",
-    "Motion smoothness: [jerk {peak_jerk:.1f} m/s³, abruptness assessment]",
-    "IMU-camera correlation: [do visual and inertial evidence agree?]",
-    "Data quality: [sensor gaps, noise, reliability]",
-    "Safety notes: [sudden movements, instabilities, concerns]"
+    "string - motion detection with confidence",
+    "string - motion type with reasoning",
+    "string - acceleration patterns (peak: {peak_horiz_accel:.3f} m/s²)",
+    "string - angular velocity (peak: {peak_gyro_z:.3f} rad/s)",
+    "string - platform stability (roll: {max_roll:.1f}°, pitch: {max_pitch:.1f}°)",
+    "string - speed estimation if observable",
+    "string - motion smoothness (jerk: {peak_jerk:.1f} m/s³)",
+    "string - IMU-camera correlation",
+    "string - data quality assessment",
+    "string - safety notes if any"
   ],
   "metrics": {{
     "peak_horizontal_accel_mps2": {peak_horiz_accel:.3f},
@@ -242,7 +244,13 @@ If camera shows sharp, clear images BUT IMU shows acceleration:
   }}
 }}
 
-Provide descriptive observations grounded in sensor data. Summary agent will map to ODD dimensions.""")]
+CRITICAL RULES:
+1. Output ONLY the JSON object - no ```json markers, no explanations
+2. Each observation must be a complete descriptive sentence
+3. Use double quotes for all strings
+4. Ensure valid JSON syntax (commas, brackets, braces)
+5. All observations are strings in the array
+""")]
 
             # Add camera image if available
             if cam_file.exists():
