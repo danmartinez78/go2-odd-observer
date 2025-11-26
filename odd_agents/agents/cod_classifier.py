@@ -139,4 +139,3 @@ Result COD region: weather_conditions + max_altitude_m, note battery_pct missing
 
 PRIORITY: Build COD structure dynamically from ODD spec. Same agent works for ANY ODD.""",
     )
-
