@@ -122,81 +122,26 @@ Focus on detecting actual collisions using multimodal sensor evidence.
 Motion metrics from IMU:
 - Peak horizontal acceleration: {peak_accel:.2f} m/s²
 - Peak angular velocity: {peak_gyro:.2f} rad/s
-- Peak jerk (smoothness): {peak_jerk:.2f} m/s³
-- Max platform tilt: {max_tilt:.1f}°
+=== IMU DATA ===
+Peak accel: {peak_accel:.2f} m/s², gyro: {peak_gyro:.2f} rad/s, jerk: {peak_jerk:.1f} m/s³, tilt: {max_tilt:.1f}°
 
-Raw acceleration samples (m/s²): {horiz_accel[:15]}
-Raw gyro samples (rad/s): {gyro_z[:15]}
+COLLISION INDICATORS:
+- Accel >10 m/s² OR gyro >5 rad/s OR jerk >50 m/s³ → likely collision
+- BEV: Obstacle penetration into robot zone (exclude 15px center = robot body)
+- Camera: Impact blur, scene discontinuity
 
-=== CAMERA IMAGE ===
-Front camera view - look for:
-- Motion blur patterns indicating sudden impact
-- Sudden scene discontinuities
-- Visual evidence of contact with obstacles
-[See attached image]
+PRIORITY: IMU spikes (primary) → BEV contact → Camera blur
 
-=== BEV OCCUPANCY MAPS ===
-Bird's-eye view obstacle maps - understand these nuances:
-
-**BEV SCALE & GEOMETRY:**
-- Image size: 400×400 pixels
-- Scale: 0.05 meters/pixel (20 pixels = 1 meter)
-- Coverage area: 20m × 20m total
-- Robot position: CENTER of image (200, 200)
-- Robot body footprint: ~13 pixel radius (0.65m length)
-
-**CRITICAL - SELF-HIT EXCLUSION:**
-The robot's own body appears in the BEV center. DO NOT count the robot body as an obstacle!
-- Exclude occupancy within ~15 pixels of center (robot body + small margin)
-- Only obstacles OUTSIDE this exclusion zone are actual environmental obstacles
-- Close proximity (15-30 pixels from center) is normal navigation near furniture
-
-**BEV CHANNELS (see attached images):**
-1. Occupancy: Binary obstacle presence (white = obstacle, black = clear)
-2. Height: Elevation data (brighter = higher obstacles)
-3. Roughness: Terrain surface variation (brighter = rougher terrain)
-
-**COLLISION EVIDENCE FROM BEV:**
-- Look for occupancy OVERLAPPING robot body zone (penetration into exclusion area)
-- Sudden appearance of obstacles in previously clear adjacent cells
-- Visual confirmation of contact (not just proximity)
-
-=== COLLISION REASONING GUIDELINES ===
-
-**COLLISION THRESHOLDS (Context for reasoning, not hard rules):**
-- Acceleration spike: >10 m/s² suggests sudden impact
-- Angular velocity: >5 rad/s suggests severe spin-out/tip
-- Jerk spike: >50 m/s³ suggests violent sudden change
-
-**MULTIMODAL REASONING:**
-1. **IMU Primary**: Acceleration/gyro spikes are strongest collision indicators
-2. **Camera Secondary**: Visual blur/discontinuity confirms impact timing
-3. **BEV Validation**: Check if obstacle contact visible (excluding self-hit)
-
-**AVOID FALSE POSITIVES:**
-- Normal obstacle avoidance: Close proximity (20-40 pixels) is expected
-- Aggressive maneuvering: Accel 2-8 m/s² and gyro 2-4 rad/s is acceptable
-- Self-hit confusion: Always exclude robot body from BEV analysis
-
-**DECISION PRIORITY:**
-1. Strong IMU spike (>10 m/s² or >5 rad/s) → Likely collision
-2. BEV shows obstacle penetration into robot zone → Confirms collision
-3. Camera shows impact blur/scene jump → Supports collision
-4. All three agree → High confidence collision
-5. IMU spike alone without BEV/camera support → Possible but verify carefully
-
-**OUTPUT FORMAT**: Provide ONLY a valid JSON object (no markdown, no explanation):
-
-REQUIRED STRUCTURE:
+OUTPUT (JSON only, no markdown, be CONCISE):
 {{
   "window_id": "{window_id}",
   "collision_detected": true or false,
   "confidence": 0.0-1.0,
   "evidence": {{
-    "imu_analysis": "string - IMU patterns and indicators",
-    "camera_analysis": "string - visual evidence from camera",
-    "bev_analysis": "string - BEV occupancy findings",
-    "multimodal_reasoning": "string - how modalities agree/disagree"
+    "imu_analysis": "1-line summary",
+    "camera_analysis": "1-line summary",
+    "bev_analysis": "1-line summary",
+    "multimodal_reasoning": "1-line conclusion"
   }},
   "imu_metrics": {{
     "peak_accel_mps2": {peak_accel},
@@ -204,12 +149,20 @@ REQUIRED STRUCTURE:
     "peak_jerk_mps3": {peak_jerk},
     "max_tilt_deg": {max_tilt}
   }},
+  "quantitative_metrics": {{
+    "collision_risk_score": 0.0,
+    "proximity_min_distance_m": 0.0
+  }},
   "thresholds_context": {{
     "accel_threshold": 10.0,
     "gyro_threshold": 5.0,
     "jerk_threshold": 50.0
   }}
 }}
+
+QUANTITATIVE METRICS GUIDANCE:
+- collision_risk_score: 0.0-1.0 (0=no risk, 1=definite collision, based on IMU+camera+BEV evidence)
+- proximity_min_distance_m: Minimum distance to nearest obstacle in meters (from BEV occupancy)
 
 CRITICAL RULES:
 1. Output ONLY the JSON object - no ```json markers, no explanations
