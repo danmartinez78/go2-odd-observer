@@ -5,27 +5,12 @@ Evaluator agent - uses Python tools to construct COD and analyze compliance.
 from pathlib import Path
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
+from google.adk.tools import FunctionTool
 from google.genai import Client
-from pydantic import BaseModel, Field
 
 
 # Agent version
 EVALUATOR_AGENT_VERSION = "1.0.0"
-
-
-class ConstructCODInput(BaseModel):
-    """Input for construct_cod_from_sensor_outputs tool."""
-    scenario_path: str = Field(
-        description="Absolute path to scenario directory")
-    odd_spec: dict = Field(
-        description="Full ODD specification with type definitions")
-
-
-class GetWindowInput(BaseModel):
-    """Input for get_window_details tool."""
-    scenario_path: str = Field(
-        description="Absolute path to scenario directory")
-    window_id: str = Field(description="Window ID to inspect (e.g., '007')")
 
 
 def create_evaluator_tools(scenario_path: Path):
@@ -33,7 +18,7 @@ def create_evaluator_tools(scenario_path: Path):
     from ..tools.cod_construction import construct_cod_from_sensor_outputs
     import json
 
-    def construct_cod_tool(scenario_path: str, odd_spec: dict) -> str:
+    async def construct_cod_tool(odd_spec: dict) -> str:
         """
         Construct COD region and compute ODD/COD distance metrics.
 
@@ -45,10 +30,11 @@ def create_evaluator_tools(scenario_path: Path):
 
         Returns JSON with cod_region, time_series, and region_metrics.
         """
-        result = construct_cod_from_sensor_outputs(scenario_path, odd_spec)
+        result = construct_cod_from_sensor_outputs(
+            str(scenario_path), odd_spec)
         return json.dumps(result, indent=2)
 
-    def get_window_details_tool(scenario_path: str, window_id: str) -> str:
+    async def get_window_details_tool(window_id: str) -> str:
         """
         Get detailed measurements for a specific window.
 
@@ -78,24 +64,11 @@ def create_evaluator_tools(scenario_path: Path):
             "sensor_measurements": outputs
         }, indent=2)
 
-    # Create ADK tools with Pydantic models
-    from google.adk.tools import Tool
-
-    construct_cod = Tool(
-        name="construct_cod_from_sensor_outputs",
-        description="Construct COD region and compute ODD/COD distance metrics from sensor outputs",
-        parameters=ConstructCODInput,
-        callable=construct_cod_tool
-    )
-
-    get_window = Tool(
-        name="get_window_details",
-        description="Get detailed measurements for a specific window to investigate violations",
-        parameters=GetWindowInput,
-        callable=get_window_details_tool
-    )
-
-    return [construct_cod, get_window]
+    # Return FunctionTool wrappers
+    return [
+        FunctionTool(func=construct_cod_tool),
+        FunctionTool(func=get_window_details_tool)
+    ]
 
 
 def create_evaluator_agent(
@@ -114,10 +87,10 @@ def create_evaluator_agent(
 INPUT:
 - ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
 - Sensor outputs: Perception, Motion, Collision per-window measurements (in files)
-- Tools: construct_cod_from_sensor_outputs, get_window_details
+- Tools: construct_cod_from_sensor_outputs(odd_spec), get_window_details(window_id)
 
 TASKS:
-1. Call construct_cod_from_sensor_outputs(scenario_path, odd_spec)
+1. Call construct_cod_from_sensor_outputs(odd_spec) with ODD specification
 2. Analyze COD construction results:
    - Overall COD region vs ODD specification
    - Region distance (how far COD diverges from ODD)

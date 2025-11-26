@@ -6,9 +6,7 @@ Uses file-reading tool for efficient data access, LLM for summarization.
 from pathlib import Path
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
-from google.genai import Client
-from google.adk.tools import Tool
-from pydantic import BaseModel, Field
+from google.adk.tools import FunctionTool
 import json
 
 
@@ -17,16 +15,10 @@ import json
 REPORT_AGENT_VERSION = "4.0.0"
 
 
-class ReadAnalysisResultsInput(BaseModel):
-    """Input for read_analysis_results tool."""
-    scenario_path: str = Field(
-        description="Absolute path to scenario directory")
-
-
 def create_report_tools(scenario_path: Path):
     """Create file-reading tool for Report Agent."""
 
-    def read_analysis_results_tool(scenario_path: str) -> str:
+    async def read_analysis_results_tool() -> str:
         """
         Read all analysis results from files.
 
@@ -52,14 +44,8 @@ def create_report_tools(scenario_path: Path):
 
         return json.dumps(results, indent=2)
 
-    read_analysis = Tool(
-        name="read_analysis_results",
-        description="Read all analysis results from files to generate report",
-        parameters=ReadAnalysisResultsInput,
-        callable=read_analysis_results_tool
-    )
-
-    return [read_analysis]
+    # Return FunctionTool wrapper
+    return [FunctionTool(func=read_analysis_results_tool)]
 
 
 def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
@@ -76,7 +62,7 @@ TASK: Produce executive summary and structured report.
 
 INPUT:
 - ODD Specification (v5.0.0): {temp:odd_spec?} (optional, can also read from file)
-- Tool: read_analysis_results(scenario_path) - reads all agent outputs from files
+- Tool: read_analysis_results() - reads all agent outputs from files
 
 STEPS:
 1. Call read_analysis_results() to load all analysis results
