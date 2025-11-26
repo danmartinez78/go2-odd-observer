@@ -5,16 +5,18 @@ ODD Agents - Multi-Agent Operational Design Domain Analysis
 A modular library for analyzing robot sensor data and detecting operational
 design domain (ODD) violations using multi-agent AI pipelines.
 
-Architecture (Phase 1.4.2 - Nov 2025):
-    Three-Tier Intelligence:
+Architecture (Phase 1.4.3 - Nov 2025):
+    Consolidated Two-Tier Intelligence:
     - Tool Agents (Tier 1): Per-window grounded observations from multimodal sensors
-    - Loop Agents (Tier 2): Cross-window temporal pattern recognition
-    - Summary Agents (Tier 3): ODD-aligned structural aggregation
+    - Analysis Agents (Tier 2): Cross-window temporal reasoning + ODD measurements
     
     Key Features:
     - ODD-Schema Driven: Agents adapt to any ODD structure dynamically
     - Flexible Observations: Rich narrative + quantitative metrics
-    - Intelligent ODD Filtering: Loop agents decide relevance
+    - Intelligent ODD Filtering: Analysis agents decide relevance
+    - Agent Consolidation: 9 → 6 agents (eliminated redundant summary layer)
+    - Massive Prompt Compression: 72-79% reduction in tool prompts
+    - Cost Optimization: Flash-exp models for 100x token cost reduction
 
 Core Components:
     - tools: Sensor analysis tool functions (perception, motion, collision)
@@ -35,7 +37,7 @@ Quick Start:
     >>> print(result["report"]["executive_summary"])
 """
 
-__version__ = "1.4.2"  # Phase 1.4.2: Three-Tier Intelligence Architecture
+__version__ = "1.4.3"  # Phase 1.4.3: Cost Optimization & Agent Consolidation
 __author__ = "ODD Observer Team"
 
 # Import main components for convenient access
