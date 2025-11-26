@@ -70,81 +70,40 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             bev_height_bytes = ensure_image_bytes(bev_height_path)
             bev_roughness_bytes = ensure_image_bytes(bev_roughness_path)
 
-            prompt = f"""
-            You are a perception expert analyzing synchronized robot sensors for window {window_id}.
-            You will receive FOUR images:
-            - Image A: RGB camera frame from the robot's forward camera
-            - Image B: LiDAR BEV Occupancy (obstacles only, ground filtered out)
-            - Image C: LiDAR BEV Height (elevation map)
-            - Image D: LiDAR BEV Roughness (terrain surface variation)
+            prompt = f"""Analyze synchronized sensors for window {window_id}. Be CONCISE (1-2 sentences per observation).
 
-            ALL BEV IMAGES (B-D):
-            - Auto-cropped to remove empty borders (50-75% size reduction)
-            - Robot is at CENTER of map, facing upward (top = forward direction)
-            - SCALE: 0.05 meters per pixel (20 pixels = 1 meter)
-            - Coverage: ~20m x 20m area centered on robot (varies after crop)
-            - Upper half = forward path, lower half = behind, sides = lateral areas
+INPUTS:
+- Image A: RGB camera (forward-facing)
+- Image B: LiDAR BEV Occupancy (bright=obstacles, dark=clear, robot at center facing up)
+- Image C: LiDAR BEV Height (grayscale elevation map)
+- Image D: LiDAR BEV Roughness (bright=rough terrain)
 
-            BEV CHANNEL DETAILS:
-            - **Occupancy (B)**: Binary obstacle map. Bright = obstacles ABOVE ground (>10cm), dark = free space.
-              NOTE: Robot's own body may appear at center - ignore when assessing obstacles.
-            - **Height (C)**: Elevation data. Grayscale intensity = height above ground plane.
-              CRITICAL FOR terrain_roughness_class - shows elevation variations of the ground surface.
-            - **Roughness (D)**: Terrain surface variation. Brighter = more uneven.
-              Pre-computed metric for surface irregularity. Combines height variation and surface normals.
+BEV Scale: 0.05m/pixel (20px = 1m), ~20m x 20m coverage, robot-centered.
 
-            **ODD CONTEXT**:
-            The loop agent has provided relevant ODD dimensions to guide your analysis:
-            {json.dumps(odd_context, indent=2) if odd_context else "No ODD context provided"}
-            
-            Use these dimensions as guidance for what to observe, but you are NOT limited to only these.
-            Report any observations relevant to safety, reliability, and operational effectiveness.
+ODD Context (guidance only): {json.dumps(odd_context) if odd_context else "None"}
 
-            **MEASUREMENT GUIDANCE**:
-            
-            - **Terrain Analysis**: Use BEV Height (C) and Roughness (D) channels.
-              Terrain roughness describes GROUND SURFACE elevation variations, NOT surface texture.
-              (Smooth = flat floor, Moderate = bumps/slopes, Rough = stairs/ramps, Very rough = extreme terrain)
-            
-            - **Obstacle Analysis**: Use BEV Occupancy (B) channel.
-              Occupancy = fraction of space with obstacles ABOVE ground (exclude robot body at center).
-              Density = concentration/count of distinct obstacles in forward path.
-            
-            - **Traversability**: Combine all channels - obstacles blocking path + terrain passability.
-            
-            - **Lighting & Visibility**: Camera image quality, clarity, exposure.
-            
-            - **Actors**: Humans, animals, other dynamic entities visible in camera or BEV.
+OUTPUT (JSON only, no markdown):
+{{
+  "window_id": "{window_id}",
+  "camera_summary": "brief scene description",
+  "bev_summary": "brief spatial layout",
+  "observations": [
+    "lighting: <concise>",
+    "terrain: <concise>",
+    "obstacles: <concise>",
+    "traversability: <concise>",
+    "actors: <concise if present>",
+    "safety: <concise if issues>"
+  ],
+  "quantitative_metrics": {{
+    "obstacle_density_ratio": 0.0,
+    "traversability_score": 0.0,
+    "lighting_adequacy_score": 0.0,
+    "terrain_roughness_score": 0.0
+  }}
+}}
 
-            **OUTPUT FORMAT**: Provide ONLY a valid JSON object (no markdown, no explanation):
-            
-            REQUIRED STRUCTURE:
-            {{
-              "window_id": "{window_id}",
-              "camera_summary": "string - what the camera sees",
-              "bev_summary": "string - spatial environment from BEV",
-              "observations": [
-                "string - lighting conditions",
-                "string - visibility and clarity",
-                "string - terrain characteristics",
-                "string - obstacles present",
-                "string - traversability assessment",
-                "string - actors detected (if any)",
-                "string - environment type",
-                "string - data quality notes",
-                "string - safety concerns (if any)"
-              ]
-            }}
-            
-            CRITICAL RULES:
-            1. Output ONLY the JSON object - no ```json markers, no explanations
-            2. Each observation must be a complete descriptive sentence
-            3. Use double quotes for all strings
-            4. Ensure valid JSON syntax (commas, brackets, braces)
-            5. All observations are strings in the array
-            
-            Focus on grounded observations from sensor data. The summary agent will map to ODD dimensions.
-            """
+Metrics: 0.0-1.0 floats. Observations: Max 2 sentences each, essential info only."""
 
             response = genai_client.models.generate_content(
                 model=model,

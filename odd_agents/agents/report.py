@@ -7,6 +7,10 @@ from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
 
+# Agent version
+REPORT_AGENT_VERSION = "3.0.0"
+
+
 def create_report_agent(api_key: str, model: str) -> Agent:
     """Create a new ReportAgent instance."""
     return Agent(

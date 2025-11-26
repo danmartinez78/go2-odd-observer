@@ -38,11 +38,11 @@ odd_agents/
 │   ├── motion.py        # IMU sensor analysis
 │   └── collision.py     # Collision risk assessment
 └── agents/              # Agent definitions
-    ├── perception.py    # Perception loop + summary agents
-    ├── motion.py        # Motion loop + summary agents
-    ├── collision.py     # Collision loop + summary agents
+    ├── perception.py    # Perception agent (consolidated v4.0.0)
+    ├── motion.py        # Motion agent (consolidated v4.0.0)
+    ├── collision.py     # Collision agent (consolidated v4.0.0)
     ├── odd_spec.py      # ODD specification agent
-    ├── cod_classifier.py # COD classification agent
+    ├── cod_classifier.py # COD measurement agent
     ├── compliance.py    # ODD compliance agent
     └── report.py        # Report generation agent
 ```
@@ -61,16 +61,24 @@ result = await run_odd_workflow(
 
 ### 2. Use Individual Agents
 ```python
-from odd_agents import set_scenario
-from odd_agents.agents import perception_loop_agent, perception_summary_agent
+from odd_agents.agents import create_perception_agent, create_motion_agent
 from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
+from google.genai import Client
+from pathlib import Path
 
-set_scenario("sim_run_test")
+genai_client = Client(api_key="your-api-key")
+scenario_path = Path("data/test/sim/sim_test_w010_w011")
+
+perception_agent = create_perception_agent(
+    scenario_path=scenario_path,
+    genai_client=genai_client,
+    model="gemini-2.0-flash-exp"
+)
 
 workflow = SequentialAgent(
     name="CustomWorkflow",
-    sub_agents=[perception_loop_agent, perception_summary_agent]
+    sub_agents=[perception_agent]
 )
 
 runner = InMemoryRunner(agent=workflow, app_name="MyApp")
