@@ -2,40 +2,40 @@
 
 ## Overview
 
-The ODD (Operational Design Domain) Observer uses a **10-agent pipeline** to analyze robot sensor data and determine if the robot is operating within its design specifications. Each agent is specialized for a specific analysis task, working together in a sequential workflow.
+The ODD (Operational Design Domain) Observer uses a **7-agent pipeline** to analyze robot sensor data and determine if the robot is operating within its design specifications. Each agent is specialized for a specific analysis task, working together in a sequential workflow.
+
+**Architecture Update (Phase 1.4.3 - Nov 26, 2025):** Consolidated loop + summary agents into single agents. Loop agents already performed cross-window reasoning and had all necessary data, making separate summary agents redundant.
 
 ## Agent Workflow
 
 ```mermaid
 graph TD
-    A[1. OddSpecAgent] -->|ODD Specification| B[2. PerceptionLoopAgent]
-    B -->|Per-Window Data| C[3. PerceptionSummaryAgent]
-    C -->|Environment Class| D[4. MotionLoopAgent]
-    D -->|Per-Window Motion| E[5. MotionSummaryAgent]
-    E -->|Motion Statistics| F[6. CollisionLoopAgent]
-    F -->|Per-Window Risk| G[7. CollisionSummaryAgent]
-    G -->|Risk Statistics| H[8. CodClassifierAgent]
-    C -.->|Perception Data| H
-    E -.->|Motion Data| H
-    H -->|Current Domain| I[9. OddComplianceAgent]
-    A -.->|ODD Spec| I
-    I -->|Compliance Status| J[10. ReportAgent]
-    A -.->|All Data| J
-    C -.->|All Data| J
-    E -.->|All Data| J
-    G -.->|All Data| J
-    H -.->|All Data| J
+    A[1. OddSpecAgent] -->|ODD Specification| B[2. PerceptionAgent]
+    B -->|Measurements + Observations| C[3. MotionAgent]
+    C -->|Motion Stats| D[4. CollisionAgent]
+    D -->|Collision Stats| E[5. CodMeasurementAgent]
+    A -.->|ODD Spec| B
+    A -.->|ODD Spec| C
+    A -.->|ODD Spec| D
+    B -.->|Perception Data| E
+    C -.->|Motion Data| E
+    D -.->|Collision Data| E
+    E -->|Current Domain| F[6. OddComplianceAgent]
+    A -.->|ODD Spec| F
+    F -->|Compliance Status| G[7. ReportAgent]
+    A -.->|All Data| G
+    B -.->|All Data| G
+    C -.->|All Data| G
+    D -.->|All Data| G
+    E -.->|All Data| G
     
     style A fill:#e3f2fd
     style B fill:#fff9c4
     style C fill:#fff9c4
-    style D fill:#fff9c4
-    style E fill:#fff9c4
-    style F fill:#ffccbc
-    style G fill:#ffccbc
-    style H fill:#f8bbd0
-    style I fill:#f8bbd0
-    style J fill:#c8e6c9
+    style D fill:#ffccbc
+    style E fill:#f8bbd0
+    style F fill:#f8bbd0
+    style G fill:#c8e6c9
 ```
 
 ## Agent Categories
@@ -43,20 +43,17 @@ graph TD
 ### 1. **ODD Specification** (1 agent)
 - **[OddSpecAgent](ODD_SPEC.md)**: Converts natural language ODD description to formal specification
 
-### 2. **Perception Analysis** (2 agents)
-- **[PerceptionLoopAgent](PERCEPTION.md#perceptionloopagent)**: Window-by-window multimodal analysis (camera + LiDAR BEV)
-- **[PerceptionSummaryAgent](PERCEPTION.md#perceptionsummaryagent)**: Aggregates perception statistics and classifies environment
+### 2. **Perception Analysis** (1 agent - consolidated)
+- **[PerceptionAgent](PERCEPTION.md)**: Window-by-window multimodal analysis with cross-window reasoning, ODD-guided measurements, and environment classification
 
-### 3. **Motion Analysis** (2 agents)
-- **[MotionLoopAgent](MOTION.md#motionloopagent)**: IMU-based motion analysis with acceleration and rotation metrics
-- **[MotionSummaryAgent](MOTION.md#motionsummaryagent)**: Aggregates motion statistics and activity assessment
+### 3. **Motion Analysis** (1 agent - consolidated)
+- **[MotionAgent](MOTION.md)**: IMU-based motion analysis with cross-window pattern detection and motion statistics
 
-### 4. **Collision Risk Analysis** (2 agents)
-- **[CollisionLoopAgent](COLLISION.md#collisionloopagent)**: Per-window collision risk assessment using multimodal fusion
-- **[CollisionSummaryAgent](COLLISION.md#collisionsummaryagent)**: Aggregates collision events and risk profiling
+### 4. **Collision Detection** (1 agent - consolidated)
+- **[CollisionAgent](COLLISION.md)**: Per-window collision detection using multimodal fusion with cross-window analysis
 
 ### 5. **Synthesis & Reporting** (3 agents)
-- **[CodClassifierAgent](COD_CLASSIFIER.md)**: Classifies Current Operating Domain from sensor data
+- **[CodMeasurementAgent](COD_CLASSIFIER.md)**: Maps observations to ODD dimensions and builds COD region
 - **[OddComplianceAgent](COMPLIANCE.md)**: Compares COD vs ODD and detects violations
 - **[ReportAgent](REPORT.md)**: Generates final executive summary and recommendations
 
@@ -71,14 +68,12 @@ graph TD
 
 ### Intermediate Outputs
 Each agent passes data to downstream agents via Google ADK's `output_key` mechanism:
-- `temp:odd_spec` → ODD specification
-- `temp:perception_data` → Raw per-window perception
-- `temp:perception_output` → Aggregated perception + environment classification
-- `temp:motion_data` → Raw per-window motion
-- `temp:motion_output` → Aggregated motion statistics
-- `temp:collision_data` → Raw per-window collision risk
-- `temp:collision_output` → Aggregated collision statistics
-- `temp:cod_classification` → Current operating domain classification
+- `temp:odd_spec` → ODD specification (structured JSON schema)
+- `temp:perception_output` → Per-window + cross-window perception analysis with ODD measurements
+- `temp:motion_output` → Per-window + cross-window motion analysis with statistics
+- `temp:collision_output` → Collision detection results across all windows
+- `temp:cod_classification` → Current operating domain (COD region mapped to ODD dimensions)
+- `temp:odd_compliance` → Compliance assessment with violation detection
 - `temp:odd_compliance` → Compliance analysis results
 
 ### Final Output
