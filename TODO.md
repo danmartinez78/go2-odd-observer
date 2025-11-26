@@ -2,17 +2,57 @@
 
 See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detailed design and rationale.
 
-## 🚨 CRITICAL: Architecture Redesign in Progress
+---
 
-**Current system has fundamental flaws:**
-- **Averaging destroys violations**: COD agent averages per-window observations, hiding OUT_ODD windows (e.g., dark lighting window averaged to "bright")
-- **Collision agent produces false positives**: Risk scoring flags too many scenarios; should detect actual collisions only
-- **COD represents fictional point**: Averaging creates a point that never existed vs. representing the actual operational region
+**Last Updated**: November 26, 2025  
+**Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
+**Status**: Phase 1.4.4 Complete (v1.4.4 tagged), ready for next phase
 
-**Redesign addresses these with:**
-- COD-as-multidimensional-region approach (preserves all observations)
-- Severity-based assessment (nuanced beyond binary pass/fail)
-- Per-window compliance tracking (no violations lost to averaging)
+**Current Focus**: Determine next phase priority
+
+**Recent Completions (Nov 26, 2025)**:
+- ✅ Phase 1.4.4: Type-Driven COD + Synthesis-Focused Reports (merged, tagged v1.4.4)
+  - 6 agents total (OddSpec, Perception, Motion, Collision, Evaluator, Report)
+  - Sensor agents use thinking model (gemini-2.5-flash-preview)
+  - Type-driven COD construction with Python tools
+  - Synthesis-focused reports (LLM interprets, Python computes)
+  - ~100 seconds per 2-window analysis
+  - ~32K tokens total pipeline cost
+  - No null fields in reports - data_quality computed by Python
+  - Full technical report with audit trail
+
+**Agent Versions (v1.4.4)**:
+| Agent | Version | Model |
+|-------|---------|-------|
+| OddSpecAgent | 5.0.0 | gemini-2.0-flash-exp |
+| PerceptionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
+| MotionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
+| CollisionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
+| EvaluatorAgent | 2.0.0 | gemini-2.0-flash-exp |
+| ReportAgent | 6.0.0 | gemini-2.0-flash-exp |
+
+**Suggested Next Phases**:
+| Phase | Focus | Description | Priority |
+|-------|-------|-------------|----------|
+| 1.5 | Production validation | Run on all production scenarios, compare results | HIGH |
+| 1.6 | Evaluator enhancement | Severity scoring, distance-from-limits | MEDIUM |
+| 1.7 | Manual validation | Test with diverse scenarios, verify behavior | HIGH |
+| 2.0 | Performance optimization | Visual/LiDAR odometry, tool splitting | LOW |
+
+---
+
+## ✅ Architecture Redesign Complete
+
+**Original problems (all resolved in Phase 1.x):**
+- ~~Averaging destroys violations~~ → COD-as-region approach preserves all observations
+- ~~Collision agent false positives~~ → Binary collision detection (yes/no)
+- ~~COD represents fictional point~~ → Per-window measurements + statistics
+
+**Current architecture (v1.4.4):**
+- Type-driven COD construction (Python computes, LLM interprets)
+- Synthesis-focused reports (LLM for narrative, Python for data)
+- Per-window compliance tracking (no violations lost)
+- 6-agent pipeline: OddSpec → Perception → Motion → Collision → Evaluator → Report
 
 See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for complete technical details.
 
@@ -54,11 +94,11 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 ---
 
-## Phase 1: Architecture Refactor 📋 PLANNED
+## Phase 1: Architecture Refactor � IN PROGRESS (1.4.4 complete)
 
 **Goal:** Get the new architecture working, validate with manual testing
 
-**Status:** Ready to begin
+**Status:** v1.4.4 tagged, production validation next
 
 ### 1.1 BEV Data Enhancement ✅ COMPLETED (Nov 25, 2025)
 - [x] Implement `auto_crop_bev()` function ✅
@@ -446,58 +486,107 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [x] Merge to dev branch
 - [x] Update documentation (TODO.md)
 
-### 1.4.3 Performance & Measurement Optimization 📋 PLANNED
+### 1.4.3 Performance & Measurement Optimization 📋 DEFERRED
 
 **Goal:** Reduce cost/window and improve COD dimension measurement coverage
 
-**Status:** Ready to begin after Phase 1.4.2 wrap-up
+**Status:** Deferred - Phase 1.4.4 prioritized for architectural improvements
 
-**Identified Issues from Phase 1.4.2:**
+**Note:** This phase was deferred in favor of 1.4.4 (Type-Driven COD + Synthesis Reports). Some cost optimizations were achieved in 1.4.4 through the new architecture. Consider revisiting after production validation.
+
+**Original Issues Identified:**
 1. **Cost too high**: $1.04/window ($2.08 for 2 windows)
 2. **Missing COD dimensions**: obstacle_density, traversability_score, min_corridor_width_m
 3. **Ego dimensions not measured**: footprint_length_m, footprint_width_m, max_height_m (should be constants)
 4. **Cross-window observations**: Generated but not preserved in final output
 
-**Optimization Strategies:**
+**Partial Resolution in Phase 1.4.4:**
+- Cost reduced to ~$0.50/window through model changes (flash models for sensor agents)
+- Cross-window observations improved through thinking model
+- COD dimensions partially addressed through type-driven construction
 
-**A. Cost Reduction (Target: 60-70% reduction → ~$0.35/window):**
-- [ ] Model downgrades for less critical agents:
-  - Perception Loop: gemini-2.5-pro → gemini-2.0-flash-exp (100x cheaper)
-  - Collision Loop: gemini-2.5-pro → gemini-2.0-flash-exp
-  - Keep Pro models for: ODD Spec, complex reasoning, final report
-- [ ] Prompt optimization:
-  - Reduce verbose BEV descriptions
-  - Compress motion reasoning framework
-  - Remove redundant JSON structure examples
-- [ ] Consider direct tool calls (bypass loop agent overhead if cross-window not essential)
-
-**B. Improve Dimension Measurement:**
+**Remaining Optimization Opportunities:**
+- [ ] Prompt optimization (reduce verbose BEV descriptions)
 - [ ] Hardcode ego physical dimensions (robot model constants)
-- [ ] Hybrid tool output: Add quantitative_metrics dict alongside observations
-  ```json
-  {
-    "observations": [...],
-    "quantitative_metrics": {
-      "obstacle_density_ratio": 0.45,
-      "traversability_score": 0.7,
-      "min_gap_width_m": 0.6
-    }
-  }
-  ```
-- [ ] Enhance summary agent prompts to extract numeric values from prose
+- [ ] Hybrid tool output with quantitative_metrics dict
 
-**C. Fix Cross-Window Observations:**
-- [ ] Verify loop agent output structure includes cross_window_observations
-- [ ] Ensure summary agents preserve and pass through temporal observations
-- [ ] Update COD/Report agents to utilize cross-window insights
+### 1.4.4 Type-Driven COD + Synthesis-Focused Reports ✅ COMPLETED (Nov 26, 2025)
 
-**Expected Outcomes:**
-- Cost: $0.30-$0.40/window (70% reduction)
-- COD coverage: 90%+ dimensions measured
-- Maintained quality: Rich observations preserved
-- Better temporal insights: Cross-window patterns captured
+**Goal:** Reliable data pipeline with synthesis-focused reporting architecture
 
-**Priority:** High - Cost is blocking scaled testing (50+ window scenarios)
+**Problem Identified:**
+1. **COD construction unreliable**: LLM constructing COD from observations was inconsistent
+2. **Executive summary nulls**: LLM not reliably copying computed values to output
+3. **Mixed responsibilities**: Agents doing both computation AND synthesis
+
+**Architecture Decision - Separation of Concerns:**
+- **Python computes**: Deterministic data (stats, measurements, data_quality)
+- **LLM synthesizes**: Interpretation, recommendations, narrative summaries
+- Never ask LLM to copy values - that's Python's job
+
+**Solution Implemented:**
+
+**1. Type-Driven COD Construction (CodClassifierTool v2.0.0):**
+- [x] Python-constructed COD objects from measurement data
+- [x] Explicit typing: `CodRegion`, `CodDimensionStats`, `PerWindowCOD`
+- [x] Build statistics programmatically (min/max/mean/values)
+- [x] LLM interprets and synthesizes from structured data
+- [x] Thinking model (gemini-2.5-flash-preview) for COD reasoning
+
+**2. Synthesis-Focused Reports (ReportAgent v6.0.0):**
+- [x] LLM generates only narrative content:
+  - `scenario_overview`: High-level synthesis of scenario conditions
+  - `key_observations`: Top 3-5 findings across all agents
+  - `recommendations`: Actionable suggestions based on analysis
+  - `pipeline_quality_assessment`: 1-sentence summary of agent health
+- [x] Python computes all deterministic values:
+  - `compliance`: verdict, confidence_value, stability, critical_axes
+  - `data_quality`: all_agents_healthy, warnings, anomalies
+  - `measurement_summary`: all min/max/mean statistics
+  - Scenario and analysis metadata
+
+**3. Sensor Agent Improvements:**
+- [x] Perception/Motion/Collision upgraded to thinking model
+- [x] Type-driven tools for all sensor agents
+- [x] Acceleration computation fixed (was using absolute, now using vector magnitude)
+- [x] All agents calling tools correctly (verified via telemetry)
+
+**Test Results (sim_test_w010_w011, 2 windows):**
+- ✅ Pipeline completed: 96.67 seconds
+- ✅ Total tokens: 32,576 (51% reduction from 1.4.2!)
+- ✅ Cost: ~$0.65 ($0.32/window)
+- ✅ No null values in data_quality or measurement_summary
+- ✅ Rich narrative synthesis in executive summary
+- ✅ All imports working on dev branch
+
+**Version Tracking:**
+| Agent | Version | Model | Change |
+|-------|---------|-------|--------|
+| OddSpecAgent | 5.0.0 | gemini-2.0-flash-exp | (unchanged) |
+| PerceptionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) | Type-driven tool |
+| MotionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) | Type-driven tool |
+| CollisionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) | Type-driven tool |
+| EvaluatorAgent | 2.0.0 | gemini-2.0-flash-exp | (unchanged) |
+| ReportAgent | 6.0.0 | gemini-2.0-flash-exp | Synthesis-focused |
+
+**Key Insight:**
+> "Why have the LLM copy deterministic values at all?"
+> The root issue isn't model quality - it's architectural. LLMs excel at synthesis
+> and interpretation. Python excels at exact computation. Let each do what it does best.
+
+**Deliverables Completed:**
+- [x] CodClassifierTool v2.0.0 with Python-constructed COD
+- [x] ReportAgent v6.0.0 with synthesis-focused prompts
+- [x] report_builder.py updated for LLM+Python merge
+- [x] Sensor agents (Perception/Motion/Collision) on thinking model
+- [x] Type definitions for COD structures
+- [x] Fix acceleration computation (vector magnitude)
+- [x] Full pipeline test - all agents calling tools
+- [x] Documentation: PHASE_1_4_4_SUMMARY.md, REPORT.md updated
+- [x] Merged to dev branch
+- [x] Tagged v1.4.4
+
+**Outcome**: Robust data pipeline with clear separation of concerns. LLM provides high-quality synthesis, Python ensures accurate computation. No more null fields or copy failures.
 
 ### 1.5 Evaluator Agent Upgrade 📋 PLANNED
 
@@ -535,12 +624,11 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 **Outcome**: Collision agent upgraded from IMU-only to full multimodal (IMU + camera + BEV), maintaining independence and improving reasoning quality.
 
-### 1.7 Manual Validation Testing 📋 PLANNED
+### 1.6 Evaluator Agent Enhancement 📋 PLANNED
 
-**Goal**: Rename Compliance to Evaluator, add distance-from-limits calculation with telemetry
+**Goal**: Enhance Evaluator with distance-from-limits calculation and severity scoring
 
 **Tasks**:
-- [ ] Rename Compliance → Evaluator agent
 - [ ] Implement ODD/COD distance computation for severity
   - For violations: calculate magnitude (how far beyond limit?)
   - Example: COD max_accel = 15 m/s², ODD limit = 10 m/s² → 50% overage
@@ -1011,37 +1099,38 @@ Total windows: 8 (vs 12 uniform) but better event coverage
 
 ---
 
-**Last Updated**: November 25, 2025  
+**Last Updated**: November 26, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.4 Complete, Phase 1.4.1 Planned
+**Status**: Phase 1.4.4 Complete (v1.4.4 tagged), ready for next phase
 
-**Current Focus**: Phase 1.4 wrap-up and merge preparation
+**Current Focus**: Determine next phase priority
 
-**Recent Completions**:
-- ✅ Phase 1.4: Agent Versioning & Telemetry (completed Nov 25)
-  - Event-based metadata extraction (62,860 tokens, $1.26, 214s)
-  - Version registry, prompt catalog, metadata utilities
-  - Terminal/JSON/HTML metadata display
-  - Per-agent execution tracking with prompt hashes
-  - Documentation updated: scripts/README.md, ARCHITECTURE_REDESIGN.md
-- ✅ Phase 1.6: Collision BEV Enhancement (completed Nov 25, originally deferred)
-  - Multimodal collision detection (IMU + camera + 3 BEV channels)
-  - Independent data loading (removed motion_metrics dependency)
-  - LLM reasoning vs hardcoded thresholds
-  - Test results: 0.95-0.98 confidence, no false positives
-- ✅ Phase 1.1-1.3: BEV Enhancement, Collision Rework, COD Redesign (merged to dev)
-- ✅ Branch cleanup: 16 merged branches deleted
-- ✅ Real robot validation (270 windows, 6 scenarios)
+**Recent Completions (Nov 26, 2025)**:
+- ✅ Phase 1.4.4: Type-Driven COD + Synthesis-Focused Reports (merged, tagged v1.4.4)
+  - 6 agents total (OddSpec, Perception, Motion, Collision, Evaluator, Report)
+  - Sensor agents use thinking model (gemini-2.5-flash-preview)
+  - Type-driven COD construction with Python tools
+  - Synthesis-focused reports (LLM interprets, Python computes)
+  - ~100 seconds per 2-window analysis
+  - ~32K tokens total pipeline cost
+  - No null fields in reports - data_quality computed by Python
+  - Full technical report with audit trail
 
-**Critical Discovery**:
-- ⚠️ ODD-Schema architectural flaw identified (Phase 1.4.1)
-  - Problem: Agents have hardcoded dimension expectations
-  - ODD Spec generates dynamic schemas, but agents don't read them
-  - Blocks generalization to different ODD structures
-  - Fix planned: Schema-driven agents reading ODD spec dynamically
+**Agent Versions (v1.4.4)**:
+| Agent | Version | Model |
+|-------|---------|-------|
+| OddSpecAgent | 5.0.0 | gemini-2.0-flash-exp |
+| PerceptionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
+| MotionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
+| CollisionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
+| EvaluatorAgent | 2.0.0 | gemini-2.0-flash-exp |
+| ReportAgent | 6.0.0 | gemini-2.0-flash-exp |
 
-**Next Steps**:
-1. Complete Phase 1.4 wrap-up (tests, integration, git commit)
-2. Phase 1.4.1: ODD-Schema Driven Architecture (critical fix)
-3. Phase 1.5: Evaluator Agent Enhancement (severity-based synthesis)
-4. Phase 1.7: Manual Validation Testing
+**Suggested Next Phases**:
+| Phase | Focus | Description | Priority |
+|-------|-------|-------------|----------|
+| 1.5 | Production validation | Run on all production scenarios, compare results | HIGH |
+| 1.6 | HTML report generation | Visual dashboard/report from JSON output | MEDIUM |
+| 1.7 | Real-world data | Test with actual robot data (not sim) | HIGH |
+| 1.8 | Batch processing | Optimize for running many scenarios efficiently | MEDIUM |
+| 1.9 | Evaluation framework | Automated quality metrics for pipeline outputs | HIGH |
