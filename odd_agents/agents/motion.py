@@ -1,6 +1,6 @@
 """
-Motion analysis agents.
-Extracted from odd_workflow_full.py (reference implementation).
+Motion analysis agents - Version 3.0.0.
+Phase 1.4.1: ODD-schema driven architecture with dual-output structure.
 """
 
 from google.adk.agents import Agent
@@ -8,6 +8,11 @@ from google.adk.models.google_llm import Gemini
 from google.genai import Client
 
 from ..tools.motion import create_motion_tools
+
+
+# Agent versions
+MOTION_LOOP_VERSION = "3.0.0"  # Breaking: ODD-guided + observations structure
+MOTION_SUMMARY_VERSION = "3.0.0"  # Breaking: ODD-guided + observations structure
 
 
 def create_motion_loop_agent(
@@ -47,21 +52,32 @@ def create_motion_summary_agent(api_key: str, model: str) -> Agent:
         name="MotionSummaryAgent",
         model=Gemini(model=model, api_key=api_key),
         output_key="temp:motion_output",
-        instruction="""You finalize the motion analysis report.
+        instruction="""You finalize the motion analysis report with ODD-guided measurements and general observations.
 
-Input data from the previous agent:
-{temp:motion_data?}
+INPUT DATA:
+- ODD Specification: {temp:odd_spec?}
+- Per-window motion: {temp:motion_data?}
 
 If no data is provided, respond with:
 {"error": "missing_motion_data"}
 
-Otherwise:
-1. Read the JSON string carefully.
-2. Calculate overall motion statistics:
-   - Motion detection rate (% windows with motion_detected=true)
-   - Motion type distribution
-   - Peak values across all windows
-3. Produce final JSON:
+Otherwise, extract TWO types of information:
+
+**1. ODD-GUIDED MEASUREMENTS** (for compliance checking):
+- Read the ODD spec's ego section (robot capabilities)
+- For each numeric dimension related to motion, calculate metrics as specified in measurement_guidance
+- Common ego dimensions: max_accel_mps2, max_angular_rate_rad_s, max_speed_mps (when available)
+- Use dimension names from ODD spec as keys
+- Calculate peak values across all windows for max constraints
+
+**2. GENERAL OBSERVATIONS** (for safety/reliability/effectiveness context):
+- Motion patterns: walking gait, stationary periods, turning maneuvers
+- IMU data quality: gaps, noise, anomalies
+- Camera-IMU alignment: visual motion matching inertial readings
+- Unusual patterns: sudden stops, vibrations, irregular movement
+- Any other motion-related context not captured in ODD measurements
+
+OUTPUT STRUCTURE:
 {
   "windows_analyzed": [...],
   "overall_stats": {
@@ -69,11 +85,22 @@ Otherwise:
     "motion_detected_count": <int>,
     "motion_detection_rate": <float 0-1>,
     "motion_type_distribution": {"stationary": X, "translation": Y, ...},
-    "max_horizontal_accel_mps2": <float>,
-    "max_angular_velocity_radps": <float>,
     "overall_assessment": "stationary_scenario|low_activity|moderate_activity|high_activity"
   },
+  "odd_measurements": {
+    // Use ODD dimension names as keys
+    // Calculate peak values for max constraints
+    // Example: "max_accel_mps2": 0.14, "max_angular_rate_rad_s": 0.12
+  },
+  "observations": [
+    "Consistent walking gait pattern across all windows",
+    "No sudden movements or IMU anomalies detected",
+    "Camera shows smooth forward motion matching IMU data"
+    // Add any safety/reliability/performance notes
+  ],
   "per_window_motion": [...]
 }
-Only output JSON.""",
+Only output JSON.
+
+PRIORITY: Capture both ODD-aligned measurements AND broader motion context.""",
     )
