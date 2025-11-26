@@ -14,14 +14,12 @@ from google.genai import Client
 from .utils import extract_json_block
 from .metadata import hash_text, extract_pipeline_metadata, build_agent_registry
 from .agent_prompts import get_all_prompts
+from .robot_specs import get_robot_specs
 from .agents import (
     create_odd_spec_agent,
-    create_perception_loop_agent,
-    create_perception_summary_agent,
-    create_motion_loop_agent,
-    create_motion_summary_agent,
-    create_collision_loop_agent,
-    create_collision_summary_agent,
+    create_perception_agent,
+    create_motion_agent,
+    create_collision_agent,
     create_cod_classifier_agent,
     create_odd_compliance_agent,
     create_report_agent,
@@ -37,12 +35,12 @@ def create_odd_workflow(
     scenario_path: str,
     genai_client: Client,
     api_key: str,
-    model_perception: str = "gemini-2.5-pro",
-    model_motion: str = "gemini-2.0-flash-lite",
-    model_collision: str = "gemini-2.0-flash-lite",
-    model_odd_spec: str = "gemini-2.0-flash-lite",
-    model_cod: str = "gemini-2.0-flash-lite",
-    model_report: str = "gemini-2.0-flash-lite",
+    model_perception: str = "gemini-2.0-flash-exp",
+    model_motion: str = "gemini-2.0-flash-exp",
+    model_collision: str = "gemini-2.0-flash-exp",
+    model_odd_spec: str = "gemini-2.0-flash-exp",
+    model_cod: str = "gemini-2.0-flash-exp",
+    model_report: str = "gemini-2.0-flash-exp",
 ) -> SequentialAgent:
     """Create a new ODD workflow instance with fresh agent instances.
 
@@ -59,15 +57,12 @@ def create_odd_workflow(
         name="OddWorkflow",
         sub_agents=[
             create_odd_spec_agent(api_key, model_odd_spec),
-            create_perception_loop_agent(
+            create_perception_agent(
                 scenario_path, genai_client, model_perception, api_key),
-            create_perception_summary_agent(api_key, model_perception),
-            create_motion_loop_agent(
+            create_motion_agent(
                 scenario_path, genai_client, model_motion, api_key),
-            create_motion_summary_agent(api_key, model_motion),
-            create_collision_loop_agent(
+            create_collision_agent(
                 scenario_path, genai_client, model_collision, api_key),
-            create_collision_summary_agent(api_key, model_collision),
             create_cod_classifier_agent(api_key, model_cod),
             create_odd_compliance_agent(api_key, model_cod),
             create_report_agent(api_key, model_report),
@@ -93,12 +88,12 @@ async def run_odd_workflow(
     genai_client: Client,
     api_key: str,
     nl_odd_description: Optional[str] = None,
-    model_perception: str = "gemini-2.0-flash-lite",
-    model_motion: str = "gemini-2.0-flash-lite",
-    model_collision: str = "gemini-2.0-flash-lite",
-    model_odd_spec: str = "gemini-2.0-flash-lite",
-    model_cod: str = "gemini-2.0-flash-lite",
-    model_report: str = "gemini-2.0-flash-lite",
+    model_perception: str = "gemini-2.0-flash-exp",
+    model_motion: str = "gemini-2.0-flash-exp",
+    model_collision: str = "gemini-2.0-flash-exp",
+    model_odd_spec: str = "gemini-2.0-flash-exp",
+    model_cod: str = "gemini-2.0-flash-exp",
+    model_report: str = "gemini-2.0-flash-exp",
 ) -> Optional[Dict[str, Any]]:
     """Run the complete ODD analysis workflow with metadata tracking.
 
@@ -141,9 +136,14 @@ async def run_odd_workflow(
     print(f"ODD Description: {nl_odd_description[:100]}...")
     print("=" * 80)
 
+    # Get robot specs (for context, not part of ODD)
+    robot_specs = get_robot_specs("go2")
+
     user_query = (
         f"Analyze scenario '{scenario_name}' against this ODD specification:\n\n"
-        f"{nl_odd_description}"
+        f"{nl_odd_description}\n\n"
+        f"Robot Platform Specifications (for context only, NOT part of ODD):\n"
+        f"{robot_specs}"
     )
 
     # Build agent registry for metadata tracking

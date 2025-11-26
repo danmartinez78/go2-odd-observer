@@ -132,108 +132,30 @@ The loop agent has provided relevant ODD dimensions (typically ego vehicle capab
 
 Use these to guide what motion characteristics to observe, but report any motion-related observations.
 
-=== IMU ACCELEROMETER DATA ===
-Body-frame linear acceleration (gravity-compensated):
-- Valid samples: {len(horiz_accel)} (after filtering sensor gaps)
-- Peak horizontal accel: {peak_horiz_accel:.4f} m/s²
-- Average horizontal accel: {avg_horiz_accel:.4f} m/s²
-- Median horizontal accel: {median_horiz_accel:.4f} m/s²
-- Acceleration samples (m/s²): {horiz_accel[:15]} {'...' if len(horiz_accel) > 15 else ''}
+=== IMU DATA (gravity-compensated) ===
+Horizontal accel: peak={peak_horiz_accel:.3f} m/s², avg={avg_horiz_accel:.3f} m/s²
+Angular velocity: peak yaw={peak_gyro_z:.3f} rad/s
+Platform tilt: roll={max_roll:.1f}°, pitch={max_pitch:.1f}°
+Jerk (smoothness): peak={peak_jerk:.1f} m/s³
 
-=== JERK ANALYSIS (Smoothness) ===
-Rate of change of acceleration:
-- Peak jerk: {peak_jerk:.2f} m/s³
-- Average jerk: {avg_jerk:.2f} m/s³
-- High jerk (>5 m/s³) indicates abrupt starts/stops
+ODD Context: {json.dumps(odd_context) if odd_context else "None"}
 
-=== IMU GYROSCOPE DATA ===
-Angular velocities in body frame:
-- Yaw rate (gyro_z): peak {peak_gyro_z:.4f} rad/s, avg {avg_gyro_z:.4f} rad/s
-- Roll rate (gyro_x): peak {peak_gyro_x:.4f} rad/s
-- Pitch rate (gyro_y): peak {peak_gyro_y:.4f} rad/s
-- Yaw samples (rad/s): {gyro_z_valid[:10]} {'...' if len(gyro_z_valid) > 10 else ''}
+ANALYSIS PRIORITIES:
+1. Camera (attached image) - primary motion indicator (blur=moving, sharp=stationary)
+2. IMU patterns - varying=motion, constant=likely artifact/tilt
+3. Constant small accel (<1.0 m/s²) + tilt = gravity leakage, not motion
 
-=== PLATFORM ORIENTATION ===
-Current attitude angles:
-- Max roll: {max_roll:.1f}°
-- Max pitch: {max_pitch:.1f}°
-
-=== CAMERA IMAGE ===
-Front camera view (use for visual odometry estimation):
-[See attached image]
-
-**ANALYSIS GUIDELINES**:
-
-**MOTION REASONING FRAMEWORK**:
-Determine if the robot is actually moving by considering ALL evidence holistically.
-
-1. IMU Accelerometer Context:
-   - Small constant acceleration (<1.0 m/s²) combined with platform tilt often indicates gravity leakage, NOT motion
-   - Reference: 1° of tilt contributes approximately 0.17 m/s² to horizontal acceleration
-   - True translational motion typically shows VARYING acceleration patterns, not constant values
-   - Stationary robots on tilted platforms will show steady horizontal acceleration from gravity
-
-2. Camera Visual Evidence (PRIMARY MOTION INDICATOR):
-   - Sharp textures, clear edges, no motion blur → Robot is stationary or moving very slowly
-   - Blurred edges, motion streaks, smeared textures → Robot is moving at significant speed
-   - Visible optical flow or scene shift between frames → Active translation
-   - Stable, static scene → Robot is stationary
-   - Camera evidence OVERRIDES IMU when they conflict
-
-3. IMU Gyroscope Analysis:
-   - Very small gyro values (<0.05 rad/s) are typically sensor noise or drift, not actual rotation
-   - Sustained angular velocity with varying magnitude indicates genuine rotation
-   - Constant low gyro values suggest stationary robot with sensor bias
-
-4. Platform Tilt Consideration:
-   - Check current roll/pitch angles - tilt causes horizontal gravity components
-   - Example: pitch=1.25° and roll=-0.74° could contribute ~0.21 m/s² horizontal acceleration
-   - If acceleration magnitude matches expected gravity component from tilt → likely stationary
-
-5. Temporal Pattern Analysis:
-   - Genuine motion: acceleration varies over time (starts, stops, changes)
-   - IMU artifacts: constant or slowly drifting values throughout window
-   - High jerk (>10 m/s³) suggests actual dynamic maneuvers
-
-**DECISION PRIORITY** (in order of reliability):
-1. Camera visual evidence (most reliable for determining actual motion)
-2. Temporal patterns in IMU (varying = motion, constant = artifact)
-3. Gyroscope for rotation detection
-4. Accelerometer magnitude (only after accounting for gravity/tilt)
-
-**CRITICAL REASONING RULE**:
-If camera shows sharp, clear images BUT IMU shows acceleration:
-→ Check if acceleration is constant and small (<1.0 m/s²)
-→ Check if platform has tilt that explains the acceleration
-→ If yes to both: Classify as STATIONARY (IMU artifact from gravity leakage)
-
-3. Platform Stability Assessment:
-   - Roll/pitch > 15°: Unstable (climbing, descending, or on incline)
-   - Roll/pitch < 15°: Stable (on flat or gently sloped terrain)
-   
-4. Motion Type Classification Guidelines:
-   - "stationary": No visual motion in camera AND (low varying accel OR constant accel matching tilt)
-   - "rotation": Sustained gyro activity with camera showing scene rotation but no translation
-   - "translation": Camera shows optical flow/blur AND varying acceleration pattern
-   - "complex": Camera shows both rotation and translation with corresponding IMU patterns
-
-**OUTPUT FORMAT**: Provide ONLY a valid JSON object (no markdown, no explanation):
-
-REQUIRED STRUCTURE:
+OUTPUT (JSON only, no markdown, be CONCISE):
 {{
   "window_id": "{window_id}",
-  "motion_summary": "string - motion state and characteristics",
+  "motion_summary": "brief motion state",
   "observations": [
-    "string - motion detection with confidence",
-    "string - motion type with reasoning",
-    "string - acceleration patterns (peak: {peak_horiz_accel:.3f} m/s²)",
-    "string - angular velocity (peak: {peak_gyro_z:.3f} rad/s)",
-    "string - platform stability (roll: {max_roll:.1f}°, pitch: {max_pitch:.1f}°)",
-    "string - speed estimation if observable",
-    "string - motion smoothness (jerk: {peak_jerk:.1f} m/s³)",
-    "string - IMU-camera correlation",
-    "string - data quality assessment",
-    "string - safety notes if any"
+    "motion detected: <yes/no with 1-line reasoning>",
+    "type: <stationary/rotation/translation/complex>",
+    "accel: peak {peak_horiz_accel:.3f} m/s²",
+    "gyro: peak {peak_gyro_z:.3f} rad/s",
+    "tilt: {max_roll:.1f}°/{max_pitch:.1f}°",
+    "smoothness: jerk {peak_jerk:.1f} m/s³"
   ],
   "metrics": {{
     "peak_horizontal_accel_mps2": {peak_horiz_accel:.3f},
@@ -241,8 +163,15 @@ REQUIRED STRUCTURE:
     "max_roll_deg": {max_roll:.1f},
     "max_pitch_deg": {max_pitch:.1f},
     "peak_jerk_mps3": {peak_jerk:.1f}
+  }},
+  "quantitative_metrics": {{
+    "estimated_speed_mps": 0.0,
+    "motion_smoothness_score": 0.0,
+    "stability_score": 0.0
   }}
 }}
+
+Observations: Max 1 sentence each, essential only.
 
 CRITICAL RULES:
 1. Output ONLY the JSON object - no ```json markers, no explanations
