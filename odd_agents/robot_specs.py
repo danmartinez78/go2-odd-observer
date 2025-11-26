@@ -15,7 +15,8 @@ GO2_ROBOT_SPECS = {
     "physical_dimensions": {
         "footprint_length_m": 0.646,  # Body length: 646mm
         "footprint_width_m": 0.280,   # Body width: 280mm
-        "max_height_m": 0.400,        # Standing height: ~400mm (varies with leg posture)
+        # Standing height: ~400mm (varies with leg posture)
+        "max_height_m": 0.400,
         "weight_kg": 15.0,            # Approximate weight: 15kg
     },
     "sensor_suite": {
@@ -29,10 +30,10 @@ GO2_ROBOT_SPECS = {
 
 def get_robot_specs(robot_type: str = "go2") -> dict:
     """Get robot specifications by type.
-    
+
     Args:
         robot_type: Robot platform identifier (default: "go2")
-        
+
     Returns:
         Dictionary of robot specifications
     """

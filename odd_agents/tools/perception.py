@@ -104,9 +104,6 @@ OUTPUT (JSON only, no markdown):
 }}
 
 Metrics: 0.0-1.0 floats. Observations: Max 2 sentences each, essential info only."""
-            
-            Focus on grounded observations from sensor data. The summary agent will map to ODD dimensions.
-            """
 
             response = genai_client.models.generate_content(
                 model=model,

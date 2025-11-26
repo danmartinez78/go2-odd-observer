@@ -17,12 +17,9 @@ from .agent_prompts import get_all_prompts
 from .robot_specs import get_robot_specs
 from .agents import (
     create_odd_spec_agent,
-    create_perception_loop_agent,
-    create_perception_summary_agent,
-    create_motion_loop_agent,
-    create_motion_summary_agent,
-    create_collision_loop_agent,
-    create_collision_summary_agent,
+    create_perception_agent,
+    create_motion_agent,
+    create_collision_agent,
     create_cod_classifier_agent,
     create_odd_compliance_agent,
     create_report_agent,
@@ -60,15 +57,12 @@ def create_odd_workflow(
         name="OddWorkflow",
         sub_agents=[
             create_odd_spec_agent(api_key, model_odd_spec),
-            create_perception_loop_agent(
+            create_perception_agent(
                 scenario_path, genai_client, model_perception, api_key),
-            create_perception_summary_agent(api_key, model_perception),
-            create_motion_loop_agent(
+            create_motion_agent(
                 scenario_path, genai_client, model_motion, api_key),
-            create_motion_summary_agent(api_key, model_motion),
-            create_collision_loop_agent(
+            create_collision_agent(
                 scenario_path, genai_client, model_collision, api_key),
-            create_collision_summary_agent(api_key, model_collision),
             create_cod_classifier_agent(api_key, model_cod),
             create_odd_compliance_agent(api_key, model_cod),
             create_report_agent(api_key, model_report),
