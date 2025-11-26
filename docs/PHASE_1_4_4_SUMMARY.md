@@ -1,12 +1,19 @@
 # Phase 1.4.4 - Type-Driven COD Construction
 
 **Branch:** `feature/phase1.4.4-type-driven-cod`  
-**Status:** Complete - ready for testing  
-**Date:** 2024
+**Status:** ✅ Complete - ready for merge to dev  
+**Date:** November 2025
 
 ## Overview
 
 Phase 1.4.4 implements a comprehensive architecture redesign that uses typed ODD specifications and Python tools for deterministic COD construction. This addresses the key limitation of Phase 1.4.3 where the COD agent consumed massive amounts of tokens processing window data.
+
+### Key Achievements
+- **6 agents** (down from 10 in previous phases)
+- **~100 seconds** per 2-window analysis
+- **~32K tokens** total pipeline cost
+- **Synthesis-focused reporting** - LLM interprets, Python computes
+- **Reliable tool calling** with thinking models for sensor agents
 
 ## Architecture Changes
 
@@ -340,13 +347,13 @@ ODD Spec → Perception → Motion → Collision → Evaluator → Report
    - [ ] Validate output JSON structures
 
 2. **Short-term:**
-   - [ ] Add comprehensive unit tests
-   - [ ] Test with various ODD configurations
-   - [ ] Measure actual token savings
-   - [ ] Document any issues or edge cases
+   - [x] Add comprehensive unit tests
+   - [x] Test with various ODD configurations
+   - [x] Measure actual token savings
+   - [x] Document any issues or edge cases
 
 3. **Medium-term:**
-   - [ ] Merge to `dev` after validation
+   - [x] Merge to `dev` after validation
    - [ ] Regenerate all production scenarios
    - [ ] Update evaluation metrics
    - [ ] Write user guide for new architecture
@@ -357,13 +364,43 @@ ODD Spec → Perception → Motion → Collision → Evaluator → Report
    - [ ] Temporal smoothing for noisy measurements
    - [ ] Interactive COD visualization tool
 
+## Final Agent Versions (Phase 1.4.4)
+
+| Agent | Version | Model | Role |
+|-------|---------|-------|------|
+| OddSpecAgent | 5.0.0 | gemini-2.0-flash-exp | Parse NL ODD → typed JSON |
+| PerceptionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) | Camera/BEV analysis |
+| MotionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) | IMU/odometry analysis |
+| CollisionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) | Collision detection |
+| EvaluatorAgent | 2.0.0 | gemini-2.0-flash-exp | COD construction + compliance |
+| ReportAgent | 6.0.0 | gemini-2.0-flash-exp | Executive summary synthesis |
+
+## Report Architecture
+
+### Synthesis-Focused Design (v6.0.0)
+
+**LLM Synthesizes (narrative):**
+- `scenario_overview` - What the robot was doing
+- `key_observations` - Top findings with context
+- `recommendations` - Action items
+- `pipeline_quality_assessment` - Agent health summary
+
+**Python Computes (deterministic):**
+- `compliance` - verdict, confidence, stability
+- `data_quality` - all_agents_healthy, warnings, anomalies
+- `measurement_summary` - all min/max/mean stats
+- `scenario/analysis` - metadata
+
+This ensures no null fields from LLM failing to copy data.
+
 ## References
 
 - **ODD/COD Distance Spec:** `docs/ODD_COD_DISTANCE.md`
 - **COD Construction Implementation:** `odd_agents/tools/cod_construction.py`
+- **Report Agent Doc:** `docs/agents/REPORT.md`
 - **Agent Definitions:** `odd_agents/agents/`
 - **Workflow Orchestration:** `odd_agents/workflow.py`
-- **Previous Architecture:** Phase 1.4.3 (on `dev` branch)
+- **Report Builder:** `odd_agents/report_builder.py`
 
 ## Notes
 
@@ -372,3 +409,4 @@ ODD Spec → Perception → Motion → Collision → Evaluator → Report
 - LLMs still valuable for reasoning, summarization, and temporal analysis
 - File-based data flow reduces memory overhead and enables inspection
 - Per-window tracking enables root cause analysis of violations
+- Thinking models required for reliable tool calling in sensor agents

@@ -2,458 +2,245 @@
 
 ## Overview
 
-The **ReportAgent** is the final agent in the ODD analysis workflow. It synthesizes all previous analysis stages into a comprehensive, human-readable report with executive summary, key findings, and actionable recommendations.
+The **ReportAgent** is the final agent in the ODD analysis workflow. It synthesizes pipeline statistics and sensor insights into a concise executive summary with actionable recommendations.
 
-**Purpose**: Transform technical sensor data and compliance metrics into actionable insights for engineers, operators, and decision-makers.
+**Version:** 6.0.0  
+**Purpose:** Transform computed statistics into human-readable narrative insights.
 
 ---
 
-## ReportAgent
+## Architecture: Synthesis-Focused Design
 
-### Purpose
+### Key Principle: LLM Synthesizes, Python Computes
 
-Generates the final comprehensive report by synthesizing outputs from the 9 preceding agents in the workflow.
+| Component | Responsibility | Example |
+|-----------|----------------|---------|
+| **Python Tool** | Compute statistics | `{all_agents_healthy: true, warnings: []}` |
+| **LLM** | Synthesize narrative | "All agents executed successfully with complete data." |
+| **Post-Processing** | Assemble final report | Merge LLM narrative + Python data |
 
-**Problem it solves**: Raw sensor analysis and compliance data is not directly actionable. This agent provides:
-- Executive summary for stakeholders
-- Domain-specific summaries for engineers
-- Key findings highlighting critical issues
-- Actionable recommendations for improvements
-- Complete audit trail of all analysis stages
+This separation ensures:
+- **Reliability:** Deterministic data is never hallucinated
+- **Quality:** LLM focuses on what it's good at (synthesis)
+- **Efficiency:** No token waste on copying data
 
-### Inputs
+---
 
-**From All Previous Agents:**
-- `{temp:perception_output?}`: Perception analysis
-- `{temp:motion_output?}`: Motion analysis
-- `{temp:collision_output?}`: Collision risk analysis
-- `{temp:odd_spec?}`: ODD specification
-- `{temp:cod_classification?}`: COD classification
-- `{temp:odd_compliance?}`: Compliance status
+## Tools
 
-**No tool dependencies** - Pure synthesis of previous outputs.
+### 1. `compute_report_statistics_tool()`
 
-### Outputs
+Computes comprehensive statistics from all pipeline outputs:
 
-**No explicit output_key** - This is the terminal agent, producing final workflow result.
-
-**Schema:**
 ```json
 {
-  "report": {
-    "executive_summary": "2-3 sentence overview",
-    "scenario_metadata": {
-      "total_windows_analyzed": 13,
-      "scenario_name": "sim_run_new",
-      "environment_class": "indoor_office",
-      "data_source": "simulation",
-      "data_source_confidence": 1.0
-    },
-    "perception_summary": "Brief summary of perception findings",
-    "motion_summary": "Brief summary of motion characteristics",
-    "collision_summary": "Brief summary of collision risk assessment",
-    "odd_spec_summary": "Brief summary of ODD specification",
-    "cod_classification_summary": "Brief summary of current operating domain",
-    "odd_compliance_summary": "Brief summary of ODD compliance",
-    "key_findings": ["finding1", "finding2", "finding3"],
-    "recommendations": ["recommendation1", "recommendation2"]
+  "window_stats": {
+    "total_windows": 2,
+    "perception_windows": 2,
+    "motion_windows": 2,
+    "collision_windows": 2,
+    "window_ids": ["010", "011"]
   },
-  "full_analysis": {
-    "perception": {...},
-    "motion": {...},
-    "collision": {...},
-    "odd_spec": {...},
-    "cod_classification": {...},
-    "odd_compliance": {...}
+  "agent_health": {
+    "perception": {"windows_processed": 2, "empty_windows": [], "status": "OK"},
+    "motion": {"windows_processed": 2, "zero_acceleration_windows": [], "status": "OK"},
+    "collision": {"windows_processed": 2, "collision_count": 0, "status": "OK"},
+    "evaluator": {"has_compliance_verdict": true, "verdict": "IN_ODD", "status": "OK"}
+  },
+  "measurement_stats": {
+    "obstacle_density": {"min": 0.05, "max": 0.1, "mean": 0.075, "samples": 2},
+    "max_accel_mps2": {"min": 0.1082, "max": 0.1394, "mean": 0.1238, "samples": 2}
+  },
+  "compliance_stats": {
+    "verdict": "IN_ODD",
+    "confidence": 0.95,
+    "temporal_stability": "STABLE",
+    "critical_axes": []
+  },
+  "data_quality": {
+    "all_agents_healthy": true,
+    "missing_data_warnings": [],
+    "anomalies": []
   }
 }
 ```
 
-### Prompting Strategy
+### 2. `get_sensor_insights_tool()`
 
-The agent follows a **structured synthesis process**:
-
-#### 1. Extract Metadata
-```
-- total_windows_analyzed: From perception.windows_analyzed.length
-- scenario_name: From scenario path or inferred
-- environment_class: From perception.environment_classification.primary_class
-- data_source: From perception.data_source_classification.source
-- data_source_confidence: From perception.data_source_classification.confidence
-```
-
-#### 2. Generate Executive Summary
-**Guidelines:**
-- 2-3 sentences maximum
-- High-level overview of scenario
-- Mention compliance status (IN_ODD, ODD_BOUNDARY, OUT_ODD)
-- Highlight most critical finding if OUT_ODD
-
-**Example:**
-> "The Unitree Go2 robot is operating in a simulated indoor office environment. While the environment generally aligns with the ODD, a low traversability score and high collision risk, coupled with multiple instances of near-collision scenarios, suggest a need for caution and potential adjustments to the operating strategy."
-
-#### 3. Create Domain Summaries
-**For each domain (perception, motion, collision, etc.):**
-- 1-2 sentence summary
-- Highlight key metrics
-- Note any anomalies or concerns
-
-**Examples:**
-```
-perception_summary: "Robot operated in indoor office environment with bright lighting and smooth terrain. Average obstacle density 0.53 with traversability score 0.38 indicating constrained navigation space."
-
-motion_summary: "Moderate activity level with 85% motion detection rate. Peak acceleration 1.23 m/s² with predominantly smooth motion patterns."
-
-collision_summary: "8 high-risk collision events detected across 13 windows. Average collision likelihood 0.412 approaching safety boundary."
-```
-
-#### 4. Identify Key Findings
-**Criteria for key findings:**
-- ODD violations (always included)
-- ODD boundary warnings (if multiple)
-- Unexpected patterns (e.g., 100% motion detection in supposedly stationary scenario)
-- Safety concerns (high collision risk, unstable platform)
-- Data quality issues (simulation artifacts, sensor failures)
-
-**Format:**
-```json
-[
-  "The robot is frequently positioned in environments with high obstacle density and reduced traversability.",
-  "The robot is often positioned in close proximity to static obstacles which causes high collision risk",
-  "The robot has a high average collision risk."
-]
-```
-
-#### 5. Generate Recommendations
-**Criteria for recommendations:**
-- Actionable (specific steps to take)
-- Prioritized (most critical first)
-- Feasible (within robot's capabilities)
-- Targeted (address root causes, not symptoms)
-
-**Categories:**
-- Path planning improvements
-- Sensor calibration
-- ODD threshold adjustments
-- Deployment restrictions
-- Further investigation
-
-**Format:**
-```json
-[
-  "Implement path planning and obstacle avoidance strategies to reduce the likelihood of close proximity to obstacles and prevent potential collisions.",
-  "Investigate and address the factors contributing to the low traversability score in order to operate more reliably."
-]
-```
-
-#### 6. Package Full Analysis
-**Include complete outputs from all agents:**
-```json
-{
-  "perception": <perception_output>,
-  "motion": <motion_output>,
-  "collision": <collision_output>,
-  "odd_spec": <odd_spec>,
-  "cod_classification": <cod_classification>,
-  "odd_compliance": <odd_compliance>
-}
-```
-
-### Key Instruction Patterns
-
-1. **Read all inputs**: Extract data from all 6 previous agent outputs
-2. **Synthesize metadata**: Extract scenario-level information
-3. **Write executive summary**: 2-3 sentence high-level overview
-4. **Summarize domains**: 1-2 sentences per analysis domain
-5. **Identify findings**: 3-5 key insights from data
-6. **Generate recommendations**: 2-4 actionable next steps
-7. **Package full analysis**: Include complete raw data
-8. **Return ONLY JSON**: No explanations outside schema
-
-**CRITICAL**: 
-- Extract `environment_class` from `perception.environment_classification.primary_class`
-- Extract `data_source` from `perception.data_source_classification.source`
-- Both must be included in `scenario_metadata`
-
-### Model Selection
-
-**Default:** `gemini-2.0-flash-lite`  
-**Recommended Upgrade:** `gemini-2.5-pro`
-
-**Rationale:**
-- Report generation requires sophisticated synthesis and writing
-- **Flash-lite sufficient** for basic reports
-- **Upgrade to 2.5-pro if**:
-  - Need high-quality executive summaries for stakeholders
-  - Complex scenarios requiring nuanced analysis
-  - Production deployment with external reporting
-
-**Cost Impact:** flash-lite saves ~70% vs. pro
-
-**Quality Difference:**
-- Flash-lite: Functional summaries, basic recommendations
-- 2.5-pro: Polished writing, insightful recommendations, better prioritization
-
-### Tool Dependencies
-
-**None** - Pure synthesis agent using only LLM reasoning.
-
-### Example Output
-
-**Scenario: sim_run_new (13 windows, indoor office, OUT_ODD due to low traversability)**
+Returns qualitative insights from sensor agents (minimal tokens):
 
 ```json
 {
-  "report": {
-    "executive_summary": "The Unitree Go2 robot is operating in a simulated indoor office environment. While the environment generally aligns with the ODD, a low traversability score and high collision risk, coupled with multiple instances of near-collision scenarios, suggest a need for caution and potential adjustments to the operating strategy.",
-    "scenario_metadata": {
-      "total_windows_analyzed": 13,
-      "scenario_name": "sim_run_new",
-      "environment_class": "indoor_office",
-      "data_source": "simulation",
-      "data_source_confidence": 1.0
-    },
-    "perception_summary": "Robot operated in indoor office environment with bright lighting and smooth terrain. Average obstacle density 0.53 within ODD limits, but traversability score 0.38 below minimum threshold of 0.5, indicating constrained navigation space with blocked or narrow paths.",
-    "motion_summary": "Moderate activity level with 85% motion detection rate (11/13 windows). Peak horizontal acceleration 1.23 m/s² with predominantly smooth motion. Platform remained stable with maximum tilt <5°.",
-    "collision_summary": "8 high-risk collision events detected across 13 windows. Average collision likelihood 0.412 in boundary zone [0.3-0.5], approaching unsafe threshold. Multiple instances of near-collision scenarios with static obstacles (sofas, tables, furniture).",
-    "odd_spec_summary": "Quadruped robot designed for indoor office environments with smooth floors, controlled lighting, and low obstacle density. Maximum speed 1.5 m/s with strict low collision risk tolerance (<0.3).",
-    "cod_classification_summary": "Robot operating in indoor office with bright lighting, smooth terrain, moderate obstacle density (0.53), reduced traversability (0.38), and elevated collision risk (0.412).",
-    "odd_compliance_summary": "Robot is OUT_ODD due to low traversability score (0.38 < 0.5 minimum). Collision risk in boundary zone (0.412), approaching safety limit. Environment type, lighting, and terrain compliant.",
-    "key_findings": [
-      "The robot is frequently positioned in environments with high obstacle density and reduced traversability.",
-      "The robot is often positioned in close proximity to static obstacles which causes high collision risk.",
-      "The robot has a high average collision risk approaching the safety boundary."
-    ],
-    "recommendations": [
-      "Implement path planning and obstacle avoidance strategies to reduce the likelihood of close proximity to obstacles and prevent potential collisions.",
-      "Investigate and address the factors contributing to the low traversability score in order to operate more reliably.",
-      "Consider pre-deployment site surveys to identify and mitigate high-risk areas with constrained navigation space."
-    ]
-  },
-  "full_analysis": {
-    "perception": {
-      "windows_analyzed": ["001", "002", ..., "013"],
-      "environment_classification": {
-        "primary_class": "indoor_office",
-        "confidence": 0.95,
-        "evidence": [...]
-      },
-      "data_source_classification": {
-        "source": "simulation",
-        "confidence": 1.0,
-        "evidence": [...]
-      },
-      "per_window_perception": [...]
-    },
-    "motion": {
-      "windows_analyzed": ["001", "002", ..., "013"],
-      "overall_stats": {
-        "total_windows": 13,
-        "motion_detected_count": 11,
-        "motion_detection_rate": 0.85,
-        "max_horizontal_accel_mps2": 1.23,
-        "overall_assessment": "moderate_activity"
-      },
-      "per_window_motion": [...]
-    },
-    "collision": {
-      "windows_analyzed": ["001", "002", ..., "013"],
-      "overall_collision_stats": {
-        "total_windows": 13,
-        "safe_count": 5,
-        "caution_count": 3,
-        "alert_count": 5,
-        "avg_collision_likelihood": 0.412
-      },
-      "collision_events": [...]
-    },
-    "odd_spec": {
-      "odd_specification": {
-        "categorical_constraints": {...},
-        "numeric_constraints": {...}
-      },
-      "odd_summary": "..."
-    },
-    "cod_classification": {
-      "cod_classification": {
-        "categorical": {...},
-        "numeric": {...}
-      },
-      "cod_summary": "..."
-    },
-    "odd_compliance": {
-      "odd_compliance": {
-        "categorical_compliance": {...},
-        "numeric_compliance": {...},
-        "overall_compliance": "OUT_ODD",
-        "violations": ["traversability_score: 0.38 is below the minimum allowed value of 0.5"],
-        "warnings": ["collision_risk: 0.412 is within the boundary zone [0.3, 0.5]"],
-        "compliance_summary": "..."
-      }
-    }
-  }
+  "perception_insights": ["Environment within ODD parameters", "Low obstacle density"],
+  "motion_insights": ["Rotational motion dominant", "Acceleration within limits"],
+  "collision_insights": ["No collisions detected", "Safe proximity maintained"],
+  "evaluator_concerns": [],
+  "evaluator_rationale": "All measurements within ODD boundaries..."
 }
 ```
-
-### Common Issues
-
-**Issue 1: Missing scenario metadata**
-- **Symptom**: scenario_name, environment_class, or data_source missing
-- **Cause**: Agent not extracting from correct source fields
-- **Fix**: Verify perception agent output includes required fields
-
-**Issue 2: Vague recommendations**
-- **Symptom**: Recommendations like "improve performance" or "investigate further"
-- **Cause**: Agent not generating specific, actionable recommendations
-- **Fix**: Usually acceptable; if critical, upgrade to 2.5-pro for better quality
-
-**Issue 3: Key findings don't match compliance status**
-- **Symptom**: OUT_ODD status but findings don't mention violations
-- **Cause**: Agent not prioritizing compliance results in findings
-- **Fix**: Ensure agent includes violations/warnings in key findings
-
-**Issue 4: Full analysis missing data**
-- **Symptom**: Some previous agent outputs not included in full_analysis
-- **Cause**: Agent not reading all input context
-- **Fix**: Check ADK context passing and agent output_keys
-
-### Design Rationale
-
-#### Two-Level Reporting
-
-**High-Level (report section):**
-- For executives, operators, decision-makers
-- Focus on insights, not raw data
-- Actionable recommendations
-- Brief, readable summaries
-
-**Full-Detail (full_analysis section):**
-- For engineers, analysts, investigators
-- Complete audit trail
-- All raw sensor data and metrics
-- Debugging and deep analysis
-
-This dual structure serves different audiences without duplication.
-
-#### Executive Summary Guidelines
-
-**What makes a good executive summary:**
-- ✅ Scenario context (what robot, where, what doing)
-- ✅ Compliance status (IN_ODD, OUT_ODD, BOUNDARY)
-- ✅ Critical issue (if any)
-- ✅ Overall assessment (safe, caution, unsafe)
-
-**What to avoid:**
-- ❌ Technical jargon (m/s², rad/s, BEV, LiDAR specifics)
-- ❌ Excessive detail (specific window numbers, exact metrics)
-- ❌ Vague language ("some issues", "generally okay")
-
-#### Recommendation Quality
-
-**Good recommendations:**
-- Specific: "Implement improved obstacle avoidance"
-- Actionable: "Pre-deployment site survey"
-- Prioritized: Most critical first
-- Feasible: Within robot/team capabilities
-
-**Poor recommendations:**
-- Vague: "Improve performance"
-- Non-actionable: "Be more careful"
-- Unrealistic: "Replace all sensors"
-- Symptoms-focused: "Reduce collision risk" (how?)
 
 ---
 
-## Output Formats
+## LLM Output Schema
 
-### Compact Executive Summary (for dashboards)
-Extract from full report:
+The LLM generates **only narrative fields** - no data copying:
+
 ```json
 {
-  "scenario": "sim_run_new",
-  "executive_summary": "...",
-  "key_findings": [...],
-  "recommendations": [...],
-  "metadata": {...},
+  "scenario_overview": "<1-2 sentences: what the robot was doing and where>",
+  
+  "compliance_verdict": "<IN_ODD | OUT_OF_ODD | BORDERLINE>",
+  "confidence": "<HIGH | MEDIUM | LOW>",
+  "stability": "<STABLE | UNSTABLE | TRANSITIONING>",
+  
+  "key_observations": [
+    "<Most significant perception finding with numbers>",
+    "<Most significant motion finding with numbers>",
+    "<Most significant collision/safety finding with numbers>"
+  ],
+  
+  "recommendations": [
+    "<Action item or 'No action required - operation within ODD'>",
+    "<Additional recommendation if warranted>"
+  ],
+  
+  "pipeline_quality_assessment": "<1 sentence summarizing agent health>"
+}
+```
+
+---
+
+## Final Report Assembly (Python Post-Processing)
+
+The `report_builder.py` module merges LLM synthesis with computed data:
+
+### Executive Summary Report
+
+```json
+{
+  "report_type": "executive_summary",
+  "generated_at": "2025-11-26T15:34:40.444009Z",
+
+  // LLM-synthesized (narrative)
+  "scenario_overview": "The robot navigated an indoor commercial space...",
+  "key_observations": ["Obstacle density low (0.02-0.08)...", ...],
+  "recommendations": ["No action required..."],
+  "pipeline_quality_assessment": "All agents executed successfully...",
+
+  // Python-computed (deterministic)
   "compliance": {
-    "overall_compliance": "OUT_ODD",
-    "violations": [...],
-    "warnings": [...]
-  }
+    "verdict": "IN_ODD",
+    "confidence": "HIGH",
+    "confidence_value": 0.95,
+    "stability": "STABLE",
+    "critical_axes": []
+  },
+  "data_quality": {
+    "all_agents_healthy": true,
+    "warnings": [],
+    "anomalies": []
+  },
+  "measurement_summary": {
+    "obstacle_density": {"min": 0.02, "max": 0.08, "mean": 0.05},
+    "max_accel_mps2": {"min": 0.1082, "max": 0.1394, "mean": 0.1238}
+  },
+  "scenario": {"name": "sim_test_w010_w011", "windows_analyzed": 2},
+  "analysis": {"duration_seconds": 96.67, "total_tokens": 32576}
 }
 ```
 
-### Full Analysis (for audits)
-Complete report with all raw data:
+### Full Technical Report
+
+Contains everything above plus:
+- Raw agent outputs (audit trail)
+- Per-window data (all measurements)
+- Temporal analysis (trends, anomalies)
+- ODD specification
+- Pipeline metadata
+
+---
+
+## Model Selection
+
+**Default:** `gemini-2.0-flash-exp`
+
+The ReportAgent uses a fast model because:
+- Synthesis is simpler than tool calling
+- No complex reasoning required
+- Cost optimization for final step
+
+**Alternative:** Use `gemini-2.5-flash-preview` if synthesis quality needs improvement.
+
+---
+
+## Example Output
+
+**Scenario:** sim_test_w010_w011 (2 windows, indoor commercial)
+
 ```json
 {
-  "report": {...},
-  "full_analysis": {
-    "perception": {...},
-    "motion": {...},
-    "collision": {...},
-    "odd_spec": {...},
-    "cod_classification": {...},
-    "odd_compliance": {...}
-  }
+  "scenario_overview": "The Unitree Go2 robot is navigating in an indoor commercial environment, rotating in place to change direction. The environment is brightly lit with smooth floors and sparse obstacles.",
+  
+  "compliance_verdict": "IN_ODD",
+  "confidence": "HIGH",
+  "stability": "STABLE",
+  
+  "key_observations": [
+    "The robot operated in an indoor commercial environment with low obstacle density (0.02-0.08) and high traversability (0.9-0.95), adhering to the ODD.",
+    "The robot primarily rotated in place, with angular velocity peaking at approximately 0.99 rad/s. Linear acceleration remained low at 0.11-0.14 m/s², well within the ODD limit of 10 m/s².",
+    "No collisions were detected, and the robot maintained a minimum proximity of 0.8 meters to obstacles, ensuring safe operation."
+  ],
+  
+  "recommendations": [
+    "No action required - operation within ODD"
+  ],
+  
+  "pipeline_quality_assessment": "All agents executed successfully with complete data across 2 windows."
 }
 ```
 
 ---
 
-## Integration Example
+## Synthesis Guidelines
 
-```python
-from odd_agents.agents import create_report_agent
-from google.genai import Client
+### scenario_overview
+- What robot, where, what doing
+- 1-2 sentences max
+- Plain English, no jargon
 
-client = Client(api_key=api_key)
+### key_observations
+- One per sensor domain (perception, motion, collision)
+- Include specific numbers for context
+- Interpret what the data MEANS, don't just report it
 
-# Create report agent
-report_agent = create_report_agent(
-    api_key=api_key,
-    model="gemini-2.5-pro"  # Upgrade for high-quality reports
-)
+### recommendations
+- Actionable or "No action required"
+- If issues found, be specific about what to do
+- Prioritize most critical first
 
-# Use as final agent in workflow
-from google.adk.agents import SequentialAgent
-workflow = SequentialAgent(
-    name="OddWorkflow",
-    sub_agents=[
-        # ... all 9 previous agents ...
-        report_agent  # Final synthesis and reporting
-    ]
-)
+### pipeline_quality_assessment
+- Summarize agent_health in one sentence
+- Flag any warnings or anomalies
+- Examples:
+  - "All agents executed successfully with complete data across N windows."
+  - "Motion agent reported N windows with zero acceleration - potential sensor issue."
+  - "Perception data incomplete for 2 windows; results may be partial."
 
-# Run and extract report
-from odd_agents.workflow import extract_final_report
-result = await runner.run(agent=workflow, user_message=nl_odd_description)
-report = extract_final_report(result)
+---
 
-# Save compact summary
-import json
-executive_summary = {
-    "scenario": report["report"]["scenario_metadata"]["scenario_name"],
-    "executive_summary": report["report"]["executive_summary"],
-    "key_findings": report["report"]["key_findings"],
-    "recommendations": report["report"]["recommendations"],
-    "compliance": report["full_analysis"]["odd_compliance"]["odd_compliance"]
-}
+## Version History
 
-with open("executive_summary.json", "w") as f:
-    json.dump(executive_summary, f, indent=2)
-
-# Save full analysis
-with open("full_analysis.json", "w") as f:
-    json.dump(report, f, indent=2)
-```
+| Version | Changes |
+|---------|---------|
+| 6.0.0 | Synthesis-focused design - LLM interprets, Python computes |
+| 5.0.0 | Hybrid approach with statistics tool |
+| 4.0.0 | File-based tool reading |
+| 3.0.0 | Original blackboard-based design |
 
 ---
 
 ## Related Documentation
 
-- **[Main Agent Architecture](README.md)**: Overall workflow context
-- **[All Previous Agents](README.md)**: Input sources for report
-- **[Getting Started Guide](../guides/GETTING_STARTED.md)**: How to use reports
-- **[Example Reports](../../data/examples/)**: Sample output files
-- **[Agent Implementation](../../odd_agents/agents/report.py)**: Source code
+- **[Report Builder](../../odd_agents/report_builder.py):** Post-pipeline assembly
+- **[Workflow](../../odd_agents/workflow.py):** Pipeline orchestration
+- **[Phase 1.4.4 Summary](../PHASE_1_4_4_SUMMARY.md):** Architecture overview
