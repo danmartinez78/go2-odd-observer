@@ -20,8 +20,7 @@ from .agents import (
     create_perception_agent,
     create_motion_agent,
     create_collision_agent,
-    create_cod_classifier_agent,
-    create_odd_compliance_agent,
+    create_evaluator_agent,
     create_report_agent,
     AGENT_VERSIONS,
 )
@@ -39,10 +38,16 @@ def create_odd_workflow(
     model_motion: str = "gemini-2.0-flash-exp",
     model_collision: str = "gemini-2.0-flash-exp",
     model_odd_spec: str = "gemini-2.0-flash-exp",
-    model_cod: str = "gemini-2.0-flash-exp",
+    model_evaluator: str = "gemini-2.0-flash-exp",
     model_report: str = "gemini-2.0-flash-exp",
 ) -> SequentialAgent:
-    """Create a new ODD workflow instance with fresh agent instances.
+    """Create a new ODD workflow instance with Phase 1.4.4 architecture.
+
+    Phase 1.4.4 - Type-driven COD construction:
+    - ODD Spec v5.0.0: Adds type definitions (range/bool/enum)
+    - Sensor agents v5.0.0: Output per-window typed measurements
+    - Evaluator v1.0.0: Uses Python tools for COD construction
+    - Report v4.0.0: File-reading tool for efficient data access
 
     Args:
         scenario_path: Path to the scenario directory
@@ -53,19 +58,22 @@ def create_odd_workflow(
     Returns:
         SequentialAgent workflow instance
     """
+    from pathlib import Path
+    scenario = Path(scenario_path)
+
     return SequentialAgent(
         name="OddWorkflow",
         sub_agents=[
             create_odd_spec_agent(api_key, model_odd_spec),
             create_perception_agent(
-                scenario_path, genai_client, model_perception, api_key),
+                scenario, genai_client, model_perception, api_key),
             create_motion_agent(
-                scenario_path, genai_client, model_motion, api_key),
+                str(scenario), genai_client, model_motion, api_key),
             create_collision_agent(
-                scenario_path, genai_client, model_collision, api_key),
-            create_cod_classifier_agent(api_key, model_cod),
-            create_odd_compliance_agent(api_key, model_cod),
-            create_report_agent(api_key, model_report),
+                str(scenario), genai_client, model_collision, api_key),
+            create_evaluator_agent(
+                scenario, genai_client, model_evaluator, api_key),
+            create_report_agent(scenario, api_key, model_report),
         ],
     )
 
@@ -83,6 +91,42 @@ def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     return None
 
 
+def extract_agent_output(events: list, agent_name: str) -> Optional[Dict[str, Any]]:
+    """Extract output from a specific agent."""
+    for event in events:
+        if event.author == agent_name and event.content:
+            for part in event.content.parts:
+                if part.text:
+                    try:
+                        return extract_json_block(part.text)
+                    except Exception:
+                        continue
+    return None
+
+
+def save_sensor_outputs(events: list, scenario_path: Path):
+    """Save sensor agent outputs to files for Evaluator/Report access."""
+    import json
+
+    # Extract and save each sensor agent output
+    for agent_name in ["PerceptionAgent", "MotionAgent", "CollisionAgent"]:
+        output = extract_agent_output(events, agent_name)
+        if output:
+            output_file = scenario_path / \
+                f"{agent_name.lower().replace('agent', '')}_output.json"
+            with open(output_file, 'w') as f:
+                json.dump(output, f, indent=2)
+            print(f"📝 Saved {agent_name} output to {output_file.name}")
+
+    # Also save ODD spec for reference
+    odd_spec = extract_agent_output(events, "OddSpecAgent")
+    if odd_spec:
+        output_file = scenario_path / "odd_spec.json"
+        with open(output_file, 'w') as f:
+            json.dump(odd_spec, f, indent=2)
+        print(f"📝 Saved ODD specification to {output_file.name}")
+
+
 async def run_odd_workflow(
     scenario_path: str,
     genai_client: Client,
@@ -92,10 +136,15 @@ async def run_odd_workflow(
     model_motion: str = "gemini-2.0-flash-exp",
     model_collision: str = "gemini-2.0-flash-exp",
     model_odd_spec: str = "gemini-2.0-flash-exp",
-    model_cod: str = "gemini-2.0-flash-exp",
+    model_evaluator: str = "gemini-2.0-flash-exp",
     model_report: str = "gemini-2.0-flash-exp",
 ) -> Optional[Dict[str, Any]]:
-    """Run the complete ODD analysis workflow with metadata tracking.
+    """Run the complete ODD analysis workflow with Phase 1.4.4 architecture.
+
+    Phase 1.4.4 - Type-driven COD construction:
+    - Deterministic Python tools for distance calculations (massive token savings)
+    - Per-window typed measurements enable temporal violation tracking
+    - File-based data handoff reduces blackboard overhead
 
     Args:
         scenario_path: Path to the scenario directory (e.g., "data/processed/runs/sim_run_new")
@@ -131,7 +180,7 @@ async def run_odd_workflow(
         )
 
     print("\n" + "=" * 80)
-    print(f"ODD WORKFLOW - FULL PIPELINE (v2.0.0 with metadata tracking)")
+    print(f"ODD WORKFLOW - PHASE 1.4.4 (Type-Driven COD Construction)")
     print(f"Scenario: {scenario_name}")
     print(f"ODD Description: {nl_odd_description[:100]}...")
     print("=" * 80)
@@ -157,7 +206,7 @@ async def run_odd_workflow(
         model_motion=model_motion,
         model_collision=model_collision,
         model_odd_spec=model_odd_spec,
-        model_cod=model_cod,
+        model_evaluator=model_evaluator,
         model_report=model_report,
     )
 
@@ -170,7 +219,7 @@ async def run_odd_workflow(
         model_motion=model_motion,
         model_collision=model_collision,
         model_odd_spec=model_odd_spec,
-        model_cod=model_cod,
+        model_evaluator=model_evaluator,
         model_report=model_report,
     )
     runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
@@ -223,12 +272,39 @@ async def run_odd_workflow(
             'estimated_cost_usd': round(estimated_cost, 4),
         }
 
+        # Extract evaluator output for full_analysis
+        evaluator_output = extract_agent_output(events, "EvaluatorAgent")
+
+        # =====================================================================
+        # POST-PIPELINE REPORT GENERATION
+        # =====================================================================
+        # Use report_builder to generate comprehensive reports from all outputs
+        from .report_builder import extract_all_agent_outputs, generate_reports
+
+        # Extract all agent outputs for full report
+        all_agent_outputs = extract_all_agent_outputs(events)
+
+        # Generate both executive summary and full technical report
+        reports = generate_reports(
+            events=events,
+            pipeline_metadata=pipeline_metadata,
+            output_dir=scenario_path_obj,  # Save to scenario directory
+        )
+
         # Return report + metadata
+        # Phase 1.4.4: Report is flat, evaluator output goes in full_analysis
         return {
-            'report': report.get('report', {}),
-            'full_analysis': report.get('full_analysis', {}),
+            'report': report,  # From ReportAgent (executive summary)
+            'full_analysis': evaluator_output or {},  # COD + compliance
             'analysis_metadata': analysis_metadata,
             'pipeline_metadata': pipeline_metadata,
+            # New: comprehensive reports from post-processing
+            'reports': {
+                'executive_summary': reports['executive_summary'],
+                'full_technical': reports['full_report'],
+            },
+            # New: all raw agent outputs for debugging
+            'agent_outputs': all_agent_outputs,
         }
     else:
         print("\n❌ No valid report generated")

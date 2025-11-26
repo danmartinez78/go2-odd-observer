@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Union
 from google.adk.tools import FunctionTool
-from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
 
@@ -16,7 +15,8 @@ from .common import list_available_windows, get_window_file_paths
 
 
 # Tool agent version
-PERCEPTION_TOOL_AGENT_VERSION = "3.0.0"
+# v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
+PERCEPTION_TOOL_AGENT_VERSION = "4.0.0"
 
 
 def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -48,13 +48,12 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
         except FileNotFoundError as e:
             return {"status": "error", "message": str(e)}
 
-    async def analyze_window_perception_tool(window_id: str, odd_context: dict, tool_context: ToolContext) -> Dict[str, Any]:
+    async def analyze_window_perception_tool(window_id: str, odd_context: dict) -> Dict[str, Any]:
         """Tool: run a direct multimodal Gemini call for one window (camera + 4 BEV channels).
 
         Args:
             window_id: Window identifier
             odd_context: Filtered ODD specification from loop agent (relevant dimensions only)
-            tool_context: ADK tool context
         """
         try:
             # Get file paths from CSV index
@@ -70,7 +69,7 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             bev_height_bytes = ensure_image_bytes(bev_height_path)
             bev_roughness_bytes = ensure_image_bytes(bev_roughness_path)
 
-            prompt = f"""Analyze synchronized sensors for window {window_id}. Be CONCISE (1-2 sentences per observation).
+            prompt = f"""Analyze synchronized sensors for window {window_id}.
 
 INPUTS:
 - Image A: RGB camera (forward-facing)
@@ -80,30 +79,35 @@ INPUTS:
 
 BEV Scale: 0.05m/pixel (20px = 1m), ~20m x 20m coverage, robot-centered.
 
-ODD Context (guidance only): {json.dumps(odd_context) if odd_context else "None"}
+ODD CONTEXT (use these axis names in odd_measurements):
+{json.dumps(odd_context, indent=2) if odd_context else "No ODD context - use default perception metrics"}
 
 OUTPUT (JSON only, no markdown):
 {{
   "window_id": "{window_id}",
-  "camera_summary": "brief scene description",
-  "bev_summary": "brief spatial layout",
-  "observations": [
-    "lighting: <concise>",
-    "terrain: <concise>",
-    "obstacles: <concise>",
-    "traversability: <concise>",
-    "actors: <concise if present>",
-    "safety: <concise if issues>"
+  "odd_measurements": {{
+    // STRICT: Use EXACT axis names from ODD context above
+    // For range axes: numeric value (e.g., "obstacle_density": 0.35)
+    // For enum axes: string label (e.g., "lighting_conditions": "bright")
+    // For bool axes: 0 or 1 (e.g., "stairs_present": 0)
+  }},
+  "explanation": "1-2 sentence reasoning for the measurements above",
+  "key_insights": [
+    "Interesting observation not captured in ODD (if any)",
+    "Safety concern or anomaly (if any)"
   ],
-  "quantitative_metrics": {{
-    "obstacle_density_ratio": 0.0,
-    "traversability_score": 0.0,
-    "lighting_adequacy_score": 0.0,
-    "terrain_roughness_score": 0.0
-  }}
+  "camera_summary": "Brief scene description from RGB camera",
+  "bev_summary": "Brief spatial layout from LiDAR BEV"
 }}
 
-Metrics: 0.0-1.0 floats. Observations: Max 2 sentences each, essential info only."""
+MEASUREMENT GUIDANCE:
+- lighting_conditions: "bright" (well-lit), "moderate" (mixed), "dim" (low light)
+- terrain_type: "smooth" (flat floor), "slightly_rough" (minor variation), "rough" (significant texture)
+- obstacle_density: 0.0-1.0 (fraction of BEV with obstacles, exclude robot center)
+- traversability_score: 0.0-1.0 (ease of navigation, higher=easier)
+- stairs_present: 0 (no stairs visible) or 1 (stairs detected)
+
+Be CONCISE. Each field should be minimal but informative."""
 
             response = genai_client.models.generate_content(
                 model=model,

@@ -46,17 +46,22 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 # Flash-exp is sufficient for most tasks with massive token savings
 # Options: "gemini-2.0-flash-exp", "gemini-2.5-flash", "gemini-2.5-pro"
 
-# All agents use flash-exp for maximum cost efficiency
-# Consolidated perception agent (v4.0.0)
-MODEL_PERCEPTION = "gemini-2.0-flash-exp"
-# Consolidated motion agent (v4.0.0)
-MODEL_MOTION = "gemini-2.0-flash-exp"
-# Consolidated collision agent (v4.0.0)
-MODEL_COLLISION = "gemini-2.0-flash-exp"
-MODEL_ODD_SPEC = "gemini-2.0-flash-exp"     # ODD spec parsing
-MODEL_COD = "gemini-2.0-flash-exp"          # COD measurement agent
-MODEL_COMPLIANCE = "gemini-2.0-flash-exp"   # Compliance checking
-MODEL_REPORT = "gemini-2.0-flash-exp"       # Final report generation
+# Phase 1.4.4 - Type-driven COD construction
+# Using 2.5 pro for perception (multimodal tool calling more reliable)
+# Flash-exp for other agents (sufficient for text-only tasks)
+# Perception agent (v5.0.0) - needs reliable tool calling
+# NOTE: All sensor agents need thinking model for reliable tool calling
+MODEL_PERCEPTION = "gemini-2.0-flash-thinking-exp-01-21"
+# Motion agent - needs tool calling
+MODEL_MOTION = "gemini-2.0-flash-thinking-exp-01-21"
+# Collision agent - needs tool calling
+MODEL_COLLISION = "gemini-2.0-flash-thinking-exp-01-21"
+# ODD spec parsing (v5.0.0) - no tools
+MODEL_ODD_SPEC = "gemini-2.0-flash-exp"
+# Evaluator agent (v1.0.0) - simple tool
+MODEL_EVALUATOR = "gemini-2.0-flash-exp"
+# Final report generation (v4.0.0) - simple tool
+MODEL_REPORT = "gemini-2.0-flash-exp"
 
 # ============================================================================
 # ODD DESCRIPTION (Default from notebook)
@@ -203,12 +208,23 @@ def select_scenario(scenarios):
 
 
 def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract compliance data, handling potential double nesting."""
-    compliance = result['full_analysis']['odd_compliance']
-    # Handle double nesting if present
-    if 'odd_compliance' in compliance:
-        return compliance['odd_compliance']
-    return compliance
+    """Extract compliance data from evaluator output (Phase 1.4.4)."""
+    # Phase 1.4.4: Check report.compliance_summary first (new flat structure)
+    if 'report' in result and 'compliance_summary' in result['report']:
+        return result['report']['compliance_summary']
+
+    # Fallback: Check full_analysis.compliance_verdict (evaluator output)
+    if 'full_analysis' in result and 'compliance_verdict' in result['full_analysis']:
+        return result['full_analysis']['compliance_verdict']
+
+    # Old Phase 1.4.3 structure
+    if 'full_analysis' in result and 'odd_compliance' in result['full_analysis']:
+        compliance = result['full_analysis']['odd_compliance']
+        if 'odd_compliance' in compliance:
+            return compliance['odd_compliance']
+        return compliance
+
+    return {}
 
 
 def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, source_path: str = None) -> Path:
@@ -230,14 +246,22 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, sou
     # Save executive summary separately
     summary_path = output_base / "executive_summary.json"
     compliance_data = get_compliance_data(result)
+
+    # Extract compliance summary (Phase 1.4.4 compatible)
+    overall_compliance = compliance_data.get('overall', 'UNKNOWN')
+    violations = []  # Phase 1.4.4: critical_axes become violations
+    if compliance_data.get('critical_axes'):
+        violations = [
+            f"Critical axis: {axis}" for axis in compliance_data['critical_axes']]
+
     summary_data = {
         'executive_summary': result['report'].get('executive_summary', ''),
         'key_findings': result['report'].get('key_findings', []),
         'recommendations': result['report'].get('recommendations', []),
         'scenario_metadata': result['report'].get('scenario_metadata', {}),
-        'overall_compliance': compliance_data.get('overall_compliance', ''),
-        'violations': compliance_data.get('violations', []),
-        'warnings': compliance_data.get('warnings', [])
+        'overall_compliance': overall_compliance,
+        'violations': violations,
+        'rationale': compliance_data.get('rationale', '')
     }
     with open(summary_path, 'w') as f:
         json.dump(summary_data, f, indent=2)
@@ -247,8 +271,12 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, sou
 
 def display_summary(result: Dict[str, Any]):
     """Display executive summary and compliance status."""
-    report = result['report']
-    # Handle potential double nesting in compliance data
+    # Phase 1.4.4: handle both flat structure and old nested structure
+    if 'report' in result:
+        report = result['report']
+    else:
+        report = result  # Flat structure from Phase 1.4.4
+
     compliance_data = get_compliance_data(result)
     metadata = report.get('scenario_metadata', {})
     analysis_meta = result.get('analysis_metadata', {})
@@ -297,23 +325,24 @@ def display_summary(result: Dict[str, Any]):
     print("=" * 80)
     print("ODD COMPLIANCE")
     print("=" * 80)
-    print(f"  • Overall: {compliance_data.get('overall_compliance', 'N/A')}")
-    print(f"  • Violations: {len(compliance_data.get('violations', []))}")
-    print(f"  • Warnings: {len(compliance_data.get('warnings', []))}")
+    # Phase 1.4.4: compliance uses 'verdict' not 'overall'
+    overall = compliance_data.get(
+        'verdict', compliance_data.get('overall', 'UNKNOWN'))
+    rationale = compliance_data.get('rationale', 'N/A')
+    critical_axes = compliance_data.get('critical_axes', [])
+    temporal_stability = compliance_data.get('temporal_stability', 'N/A')
 
-    violations = compliance_data.get('violations', [])
-    if violations:
-        print()
-        print("❌ VIOLATIONS:")
-        for v in violations:
-            print(f"    • {v}")
+    print(f"  • Overall: {overall}")
+    print(f"  • Temporal Stability: {temporal_stability}")
+    print(f"  • Critical Axes: {len(critical_axes)}")
+    if rationale != 'N/A':
+        print(f"  • Rationale: {rationale}")
 
-    warnings_list = compliance_data.get('warnings', [])
-    if warnings_list:
+    if critical_axes:
         print()
-        print("⚠️  WARNINGS:")
-        for w in warnings_list:
-            print(f"    • {w}")
+        print("⚠️  CRITICAL AXES (Violations):")
+        for axis in critical_axes:
+            print(f"    • {axis}")
 
     print()
     print("=" * 80)
@@ -353,13 +382,12 @@ async def main():
     print("ODD ANALYSIS - MANUAL RUNNER")
     print("=" * 80)
     print()
-    print("🔧 Model Configuration (Phase 1.4.3 - Optimized):")
+    print("🔧 Model Configuration (Phase 1.4.4 - Type-Driven COD):")
     print(f"   Perception:  {MODEL_PERCEPTION}")
     print(f"   Motion:      {MODEL_MOTION}")
     print(f"   Collision:   {MODEL_COLLISION}")
     print(f"   ODD Spec:    {MODEL_ODD_SPEC}")
-    print(f"   COD:         {MODEL_COD}")
-    print(f"   Compliance:  {MODEL_COMPLIANCE}")
+    print(f"   Evaluator:   {MODEL_EVALUATOR}")
     print(f"   Report:      {MODEL_REPORT}")
 
     # Find scenarios
@@ -429,7 +457,7 @@ async def main():
             model_motion=MODEL_MOTION,
             model_collision=MODEL_COLLISION,
             model_odd_spec=MODEL_ODD_SPEC,
-            model_cod=MODEL_COD,
+            model_evaluator=MODEL_EVALUATOR,
             model_report=MODEL_REPORT,
         )
 

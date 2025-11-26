@@ -8,7 +8,6 @@ import math
 from pathlib import Path
 from typing import Any, Dict, Union
 from google.adk.tools import FunctionTool
-from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
 
@@ -17,7 +16,8 @@ from .common import get_window_file_paths
 
 
 # Tool agent version
-COLLISION_TOOL_AGENT_VERSION = "3.0.0"
+# v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
+COLLISION_TOOL_AGENT_VERSION = "4.0.0"
 
 
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -38,15 +38,13 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
 
     async def analyze_collision_tool(
         window_id: str,
-        odd_context: dict,
-        tool_context: ToolContext
+        odd_context: dict
     ) -> Dict[str, Any]:
         """Tool: Multimodal collision detection using IMU + camera + BEV.
 
         Args:
             window_id: Window identifier
             odd_context: Filtered ODD specification from loop agent (minimal context needed)
-            tool_context: ADK tool context
 
         Analyzes collision evidence from:
         - IMU data (acceleration spikes, angular velocity anomalies)
@@ -111,66 +109,36 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
             # Build multimodal prompt
             prompt_parts = [types.Part(text=f"""You are analyzing window {window_id} for collision detection.
 
-**TASK**: Determine if an actual collision occurred using ALL available evidence.
+=== PRE-COMPUTED IMU METRICS ===
+- peak_accel: {peak_accel:.4f} m/s²
+- peak_gyro: {peak_gyro:.4f} rad/s
+- peak_jerk: {peak_jerk:.4f} m/s³
+- max_tilt: {max_tilt:.2f}°
 
-**ODD CONTEXT** (if provided):
-{json.dumps(odd_context, indent=2) if odd_context else "Collision detection typically requires minimal ODD context."}
-
-Focus on detecting actual collisions using multimodal sensor evidence.
-
-=== IMU SENSOR DATA ===
-Motion metrics from IMU:
-- Peak horizontal acceleration: {peak_accel:.2f} m/s²
-- Peak angular velocity: {peak_gyro:.2f} rad/s
-=== IMU DATA ===
-Peak accel: {peak_accel:.2f} m/s², gyro: {peak_gyro:.2f} rad/s, jerk: {peak_jerk:.1f} m/s³, tilt: {max_tilt:.1f}°
-
-COLLISION INDICATORS:
+COLLISION THRESHOLDS:
 - Accel >10 m/s² OR gyro >5 rad/s OR jerk >50 m/s³ → likely collision
 - BEV: Obstacle penetration into robot zone (exclude 15px center = robot body)
 - Camera: Impact blur, scene discontinuity
 
-PRIORITY: IMU spikes (primary) → BEV contact → Camera blur
-
-OUTPUT (JSON only, no markdown, be CONCISE):
+OUTPUT (JSON only, no markdown):
 {{
   "window_id": "{window_id}",
   "collision_detected": true or false,
   "confidence": 0.0-1.0,
-  "evidence": {{
-    "imu_analysis": "1-line summary",
-    "camera_analysis": "1-line summary",
-    "bev_analysis": "1-line summary",
-    "multimodal_reasoning": "1-line conclusion"
-  }},
-  "imu_metrics": {{
-    "peak_accel_mps2": {peak_accel},
-    "peak_gyro_radps": {peak_gyro},
-    "peak_jerk_mps3": {peak_jerk},
-    "max_tilt_deg": {max_tilt}
-  }},
-  "quantitative_metrics": {{
-    "collision_risk_score": 0.0,
-    "proximity_min_distance_m": 0.0
-  }},
-  "thresholds_context": {{
-    "accel_threshold": 10.0,
-    "gyro_threshold": 5.0,
-    "jerk_threshold": 50.0
-  }}
+  "explanation": "1-2 sentence collision assessment",
+  "key_insights": [
+    "Notable collision evidence or safety concern (if any)"
+  ],
+  "proximity_estimate_m": 0.0
 }}
 
-QUANTITATIVE METRICS GUIDANCE:
-- collision_risk_score: 0.0-1.0 (0=no risk, 1=definite collision, based on IMU+camera+BEV evidence)
-- proximity_min_distance_m: Minimum distance to nearest obstacle in meters (from BEV occupancy)
+ANALYSIS RULES:
+1. IMU spikes are primary collision indicator
+2. BEV shows obstacle contact (ignore 15px robot center)
+3. Camera blur/discontinuity supports collision hypothesis
+4. proximity_estimate_m: Nearest obstacle distance from BEV (estimate)
 
-CRITICAL RULES:
-1. Output ONLY the JSON object - no ```json markers, no explanations
-2. All string values must use double quotes
-3. Boolean values: true or false (lowercase, no quotes)
-4. Ensure valid JSON syntax (commas, brackets, braces)
-5. Focus on ACTUAL collision evidence, not proximity risk
-""")]
+Be CONCISE. Focus on collision YES/NO with reasoning.""")]
 
             # Add camera image
             if cam_file.exists():
@@ -206,8 +174,23 @@ CRITICAL RULES:
                 contents=prompt_parts,
             )
 
-            data = extract_json_block(response.text or "")
-            data["window_id"] = window_id
+            llm_data = extract_json_block(response.text or "")
+
+            # === DETERMINISTIC ODD-ALIGNED MEASUREMENTS ===
+            # collision_detected is bool (0/1 for COD)
+            collision_detected = llm_data.get("collision_detected", False)
+
+            data = {
+                "window_id": window_id,
+                "odd_measurements": {
+                    "collision_detected": 1 if collision_detected else 0,
+                    "min_proximity_m": llm_data.get("proximity_estimate_m", 0.0),
+                },
+                "explanation": llm_data.get("explanation", "Collision analysis from multimodal data"),
+                "key_insights": llm_data.get("key_insights", []),
+                "collision_detected": collision_detected,
+                "confidence": llm_data.get("confidence", 0.0),
+            }
 
             return data
 
@@ -216,8 +199,11 @@ CRITICAL RULES:
                 "status": "error",
                 "window_id": window_id,
                 "message": str(err),
+                "odd_measurements": {"collision_detected": 0, "min_proximity_m": 0.0},
+                "explanation": f"Error: {err}",
+                "key_insights": [],
                 "collision_detected": False,
-                "evidence": {"error": f"Error during collision detection: {err}"}
+                "confidence": 0.0,
             }
 
     # Return FunctionTool wrapper

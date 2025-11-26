@@ -1,13 +1,13 @@
 # ODD Observer Architecture Redesign
 
 **Date:** November 24, 2025  
-**Status:** Phase 1.4.3 Complete (Nov 26, 2025) - Agent Consolidation
+**Status:** Phase 1.4.4 Complete (Nov 26, 2025) - Type-Driven COD Construction
 
 ## Executive Summary
 
 This document outlines a fundamental redesign of the ODD compliance evaluation system to fix critical architectural flaws discovered during production use.
 
-**✅ COMPLETED (Phase 1.4.1, 1.4.2, 1.4.3):**
+**✅ COMPLETED (Phase 1.4.1 - 1.4.4):**
 - ODD-schema driven architecture (agents adapt to any ODD structure)
 - Intelligent two-tier architecture (tool agents → analysis agents)
 - Dynamic COD dimension mapping (auto-aligns with ODD spec)
@@ -16,12 +16,16 @@ This document outlines a fundamental redesign of the ODD compliance evaluation s
 - Cross-window temporal reasoning integrated into analysis agents
 - Agent consolidation: 9 → 6 agents (eliminated redundant summary layer)
 - Massive prompt compression (72-79% reduction in tool prompts)
+- **Type-driven COD construction** (range/enum/bool types)
+- **Python tools for deterministic COD building** (no LLM hallucination)
+- **Blackboard pattern with ToolContext** (token-efficient data flow)
+- **Cleaner ODD specs** (no static robot dimensions, no measurement_guidance)
 - Tested: Ground robots + drones (generalization validated)
 
 **⏳ REMAINING (Future Phases):**
-- COD as multidimensional region (currently per-window, not range-based)
 - Severity-based assessment (currently binary IN_ODD/OUT_ODD)
-- Full cross-window temporal analysis preservation
+- Full cross-window temporal analysis visualization
+- Automated report generation with charts
 
 **Core Issues with Current System:**
 1. **Averaging destroys critical violations**: COD agent averages per-window observations, hiding OUT_ODD windows (e.g., dark lighting window averaged to "bright")
