@@ -3,6 +3,7 @@ Perception analysis tools.
 Factory functions that create tools with specific configuration.
 """
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Union
 from google.adk.tools import FunctionTool
@@ -12,6 +13,10 @@ from google import genai
 
 from ..utils import build_image_path, ensure_image_bytes, extract_json_block
 from .common import list_available_windows, get_window_file_paths
+
+
+# Tool agent version
+PERCEPTION_TOOL_AGENT_VERSION = "3.0.0"
 
 
 def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -43,8 +48,14 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
         except FileNotFoundError as e:
             return {"status": "error", "message": str(e)}
 
-    async def analyze_window_perception_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
-        """Tool: run a direct multimodal Gemini call for one window (camera + 4 BEV channels)."""
+    async def analyze_window_perception_tool(window_id: str, odd_context: dict, tool_context: ToolContext) -> Dict[str, Any]:
+        """Tool: run a direct multimodal Gemini call for one window (camera + 4 BEV channels).
+
+        Args:
+            window_id: Window identifier
+            odd_context: Filtered ODD specification from loop agent (relevant dimensions only)
+            tool_context: ADK tool context
+        """
         try:
             # Get file paths from CSV index
             file_paths = get_window_file_paths(scenario_path, window_id)
@@ -82,52 +93,50 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
             - **Roughness (D)**: Terrain surface variation. Brighter = more uneven.
               Pre-computed metric for surface irregularity. Combines height variation and surface normals.
 
-            IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
-            to understand the robot's footprint when assessing traversability and passable gaps.
+            **ODD CONTEXT**:
+            The loop agent has provided relevant ODD dimensions to guide your analysis:
+            {json.dumps(odd_context, indent=2) if odd_context else "No ODD context provided"}
+            
+            Use these dimensions as guidance for what to observe, but you are NOT limited to only these.
+            Report any observations relevant to safety, reliability, and operational effectiveness.
 
-            **CRITICAL DISTINCTIONS:**
+            **MEASUREMENT GUIDANCE**:
             
-            1. **terrain_roughness_class**: Use BEV Height (C) and Roughness (E) channels!
-               Describes GROUND SURFACE elevation variations, NOT surface texture or objects.
-               - smooth: Flat floor with minimal height variation (use Height channel to verify)
-               - moderate: Small bumps, gentle slopes (visible in Height channel)
-               - rough: Significant elevation changes, stairs, ramps (clear in Height/Roughness)
-               - very_rough: Extreme terrain (large height variations, high roughness values)
-               NOTE: A rug on flat floor is "smooth" (Height channel shows flat). Surface texture ≠ terrain roughness.
+            - **Terrain Analysis**: Use BEV Height (C) and Roughness (D) channels.
+              Terrain roughness describes GROUND SURFACE elevation variations, NOT surface texture.
+              (Smooth = flat floor, Moderate = bumps/slopes, Rough = stairs/ramps, Very rough = extreme terrain)
             
-            2. **occupancy_ratio**: Use BEV Occupancy (B) channel!
-               Fraction of grid cells occupied by obstacles ABOVE ground level.
-               - Bright pixels in Occupancy = obstacles, dark = free space
-               - Estimate bright pixel fraction in forward navigable area
+            - **Obstacle Analysis**: Use BEV Occupancy (B) channel.
+              Occupancy = fraction of space with obstacles ABOVE ground (exclude robot body at center).
+              Density = concentration/count of distinct obstacles in forward path.
             
-            3. **obstacle_density**: Use BEV Occupancy (B) channel!
-               Concentration/number of distinct obstacles in forward path.
-               - 0.0 = clear path, no obstacles
-               - 0.5 = moderate clutter (a few objects)
-               - 1.0 = densely packed obstacles
+            - **Traversability**: Combine all channels - obstacles blocking path + terrain passability.
             
-            4. **traversability_score**: Combine ALL channels (B, C, D, E)!
-               - Occupancy (B): Are there obstacles blocking the path?
-               - Height (C) + Roughness (E): Is the terrain passable?
-               - Density (D): Is sensor coverage good enough to trust?
-               Result: 0.0 = impassable, 0.5 = difficult, 1.0 = clear and easy
+            - **Lighting & Visibility**: Camera image quality, clarity, exposure.
+            
+            - **Actors**: Humans, animals, other dynamic entities visible in camera or BEV.
 
-            Provide a JSON object with this EXACT schema:
+            **OUTPUT**: Provide a JSON object with flexible observations:
             {{
               "window_id": "{window_id}",
-              "camera_summary": "concise natural-language observation of what the camera sees",
-              "bev_summary": "concise description of obstacles visible in the LiDAR occupancy map",
-              "lighting_class": "bright|dim|dark",
-              "visibility_score": 0.0-1.0,
-              "terrain_roughness_class": "smooth|moderate|rough|very_rough",
-              "occupancy_ratio": 0.0-1.0,
-              "obstacle_density": 0.0-1.0,
-              "traversability_score": 0.0-1.0,
-              "humans_detected": true|false,
-              "environmental_constraints": ["list", "of", "observed", "constraints"]
+              "camera_summary": "Natural-language description of what the camera sees",
+              "bev_summary": "Natural-language description of the spatial environment from BEV",
+              "observations": [
+                "Lighting: [describe conditions - bright/dim/dark, quality, shadows]",
+                "Visibility: [describe clarity, obstructions, sensor quality]",
+                "Terrain: [describe surface - smooth/rough, elevation changes, surface type]",
+                "Obstacles: [describe what's present, density, spatial distribution]",
+                "Traversability: [describe path clearance and navigability]",
+                "Actors: [humans/animals detected? locations? activities?]",
+                "Environment type: [indoor/outdoor, setting description]",
+                "Data quality: [sensor issues, artifacts, coverage gaps]",
+                "Safety notes: [any hazards, constraints, concerns]"
+              ]
             }}
-
-            No explanations, just the JSON.
+            
+            Provide descriptive, grounded observations. The summary agent will map these to ODD dimensions.
+            Focus on what you can actually observe from the sensor data.
+            No explanations outside the JSON.
             """
 
             response = genai_client.models.generate_content(
