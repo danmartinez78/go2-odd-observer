@@ -201,16 +201,22 @@ def select_scenario(scenarios):
 
 def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
     """Extract compliance data from evaluator output (Phase 1.4.4)."""
-    # Phase 1.4.4: evaluator output contains compliance_verdict
-    evaluator = result['full_analysis'].get('evaluator', {})
-    if 'compliance_verdict' in evaluator:
-        return evaluator['compliance_verdict']
-    # Fallback for old structure
-    if 'odd_compliance' in result['full_analysis']:
-        compliance = result['full_analysis']['odd_compliance']
-        if 'odd_compliance' in compliance:
-            return compliance['odd_compliance']
-        return compliance
+    # Phase 1.4.4: Check if we have the new flat structure from report
+    if 'compliance_summary' in result:
+        return result['compliance_summary']
+    
+    # Check in full_analysis.evaluator (if present)
+    if 'full_analysis' in result:
+        evaluator = result['full_analysis'].get('evaluator', {})
+        if 'compliance_verdict' in evaluator:
+            return evaluator['compliance_verdict']
+        # Fallback for old structure
+        if 'odd_compliance' in result['full_analysis']:
+            compliance = result['full_analysis']['odd_compliance']
+            if 'odd_compliance' in compliance:
+                return compliance['odd_compliance']
+            return compliance
+    
     return {}
 
 
@@ -258,8 +264,12 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, sou
 
 def display_summary(result: Dict[str, Any]):
     """Display executive summary and compliance status."""
-    report = result['report']
-    # Handle potential double nesting in compliance data
+    # Phase 1.4.4: handle both flat structure and old nested structure
+    if 'report' in result:
+        report = result['report']
+    else:
+        report = result  # Flat structure from Phase 1.4.4
+    
     compliance_data = get_compliance_data(result)
     metadata = report.get('scenario_metadata', {})
     analysis_meta = result.get('analysis_metadata', {})
@@ -312,7 +322,7 @@ def display_summary(result: Dict[str, Any]):
     rationale = compliance_data.get('rationale', 'N/A')
     critical_axes = compliance_data.get('critical_axes', [])
     temporal_stability = compliance_data.get('temporal_stability', 'N/A')
-    
+
     print(f"  • Overall: {overall}")
     print(f"  • Temporal Stability: {temporal_stability}")
     print(f"  • Critical Axes: {len(critical_axes)}")
