@@ -47,16 +47,13 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 # Options: "gemini-2.0-flash-exp", "gemini-2.5-flash", "gemini-2.5-pro"
 
 # All agents use flash-exp for maximum cost efficiency
-# Consolidated perception agent (v4.0.0)
-MODEL_PERCEPTION = "gemini-2.0-flash-exp"
-# Consolidated motion agent (v4.0.0)
-MODEL_MOTION = "gemini-2.0-flash-exp"
-# Consolidated collision agent (v4.0.0)
-MODEL_COLLISION = "gemini-2.0-flash-exp"
-MODEL_ODD_SPEC = "gemini-2.0-flash-exp"     # ODD spec parsing
-MODEL_COD = "gemini-2.0-flash-exp"          # COD measurement agent
-MODEL_COMPLIANCE = "gemini-2.0-flash-exp"   # Compliance checking
-MODEL_REPORT = "gemini-2.0-flash-exp"       # Final report generation
+# Phase 1.4.4 - Type-driven COD construction
+MODEL_PERCEPTION = "gemini-2.0-flash-exp"   # Perception agent (v5.0.0)
+MODEL_MOTION = "gemini-2.0-flash-exp"       # Motion agent (v5.0.0)
+MODEL_COLLISION = "gemini-2.0-flash-exp"    # Collision agent (v5.0.0)
+MODEL_ODD_SPEC = "gemini-2.0-flash-exp"     # ODD spec parsing (v5.0.0)
+MODEL_EVALUATOR = "gemini-2.0-flash-exp"    # Evaluator agent (v1.0.0)
+MODEL_REPORT = "gemini-2.0-flash-exp"       # Final report generation (v4.0.0)
 
 # ============================================================================
 # ODD DESCRIPTION (Default from notebook)
@@ -353,13 +350,12 @@ async def main():
     print("ODD ANALYSIS - MANUAL RUNNER")
     print("=" * 80)
     print()
-    print("🔧 Model Configuration (Phase 1.4.3 - Optimized):")
+    print("🔧 Model Configuration (Phase 1.4.4 - Type-Driven COD):")
     print(f"   Perception:  {MODEL_PERCEPTION}")
     print(f"   Motion:      {MODEL_MOTION}")
     print(f"   Collision:   {MODEL_COLLISION}")
     print(f"   ODD Spec:    {MODEL_ODD_SPEC}")
-    print(f"   COD:         {MODEL_COD}")
-    print(f"   Compliance:  {MODEL_COMPLIANCE}")
+    print(f"   Evaluator:   {MODEL_EVALUATOR}")
     print(f"   Report:      {MODEL_REPORT}")
 
     # Find scenarios
@@ -429,7 +425,7 @@ async def main():
             model_motion=MODEL_MOTION,
             model_collision=MODEL_COLLISION,
             model_odd_spec=MODEL_ODD_SPEC,
-            model_cod=MODEL_COD,
+            model_evaluator=MODEL_EVALUATOR,
             model_report=MODEL_REPORT,
         )
 
