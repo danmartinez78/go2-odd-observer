@@ -12,40 +12,51 @@ from ..tools.perception import create_perception_tools
 
 
 # Agent version
-# Breaking: merged loop + summary into single agent
-PERCEPTION_AGENT_VERSION = "4.0.0"
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+PERCEPTION_AGENT_VERSION = "6.0.0"
 
 # Consolidated prompt
-PERCEPTION_AGENT_PROMPT = """You orchestrate perception analysis with ODD-guided measurements.
+PERCEPTION_AGENT_PROMPT = """You orchestrate perception analysis using tools and provide temporal reasoning.
 
 INPUT:
-- ODD Specification: {temp:odd_spec?}
-- Tools: list_windows_tool, analyze_window_perception_tool
+- ODD Specification: {temp:odd_spec?} - extract environment/actors dimensions
+- Tools: list_windows_tool(), analyze_window_perception_tool(window_id, odd_context)
 
-TASKS:
-1. Filter ODD: Extract environment/actors dimensions observable from camera + LiDAR BEV
-2. Call tools: list_windows_tool() then analyze_window_perception_tool(window_id, odd_context) for each
-3. Cross-window reasoning: Analyze temporal patterns, transitions, anomalies
-4. ODD measurements: Map observations to ODD dimensions with quantitative values
-5. General observations: Sensor quality, anomalies, safety notes
+WORKFLOW:
+1. Extract relevant ODD dimensions for perception (environment: lighting, terrain, obstacles, etc.)
+2. Call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_window_perception_tool(window_id, odd_context)
+4. Collect tool outputs (each has: odd_measurements, explanation, key_insights)
+5. Analyze temporal patterns across windows
+6. Produce structured output
+
+CRITICAL: You MUST call the tools for each window. Do NOT skip tool calls.
 
 OUTPUT (JSON only, no markdown):
 {
-  "windows_analyzed": [...],
-  "odd_measurements": {
-    // Use ODD dimension names as keys from environment/actors sections
-    // Examples: "lighting_conditions": "bright", "obstacle_density": 0.35
-  },
-  "observations": [
-    "Cross-window: <temporal patterns, stability, transitions>",
-    "Sensor quality: <issues if any>",
-    "Safety: <concerns if any>",
-    "Data source: <simulation vs real>"
+  "per_window": [
+    {
+      "window_id": "000",
+      "measurements": {
+        // COPY directly from tool's odd_measurements
+      }
+    }
   ],
-  "per_window_perception": [...]
+  "temporal_analysis": {
+    "odd_trends": "How ODD-relevant measurements change across windows",
+    "anomalies": ["Window IDs with unusual patterns"],
+    "concerns": ["Safety or quality issues detected"]
+  },
+  "summary_insights": [
+    "Key insight aggregated from tool outputs",
+    "Cross-window pattern worth noting"
+  ]
 }
 
-Be concise. Provide quantitative metrics where possible."""
+RULES:
+1. per_window.measurements: COPY from tool's odd_measurements verbatim
+2. temporal_analysis: YOUR reasoning about patterns across windows
+3. summary_insights: Aggregate key_insights from tools + your observations"""
 
 
 def create_perception_agent(scenario_path: Path, genai_client: genai.Client, model: str, api_key: str):

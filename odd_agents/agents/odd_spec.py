@@ -8,8 +8,8 @@ from google.adk.models.google_llm import Gemini
 
 
 # Agent version tracking
-# Breaking: adds environment/actors/ego structure + metadata fields
-AGENT_VERSION = "3.0.0"
+# Breaking: adds type definitions for range/bool/enum axes
+AGENT_VERSION = "5.0.0"
 
 # Prompt template for hashing
 PROMPT_TEMPLATE = """You are an Operational Design Domain (ODD) specification expert.
@@ -17,10 +17,13 @@ PROMPT_TEMPLATE = """You are an Operational Design Domain (ODD) specification ex
 TASK: Convert the provided natural language ODD description into a formal specification with precise numerical ranges and categorical constraints.
 
 The user will provide a CONVERSATIONAL description of the robot's operating domain. Your job is to:
-1. Extract ALL constraints from the natural language description
+1. Extract ALL operational constraints from the natural language description
 2. Organize constraints into logical domains (environment/actors/ego)
 3. Infer precise numerical limits from vague descriptions
-4. Provide metadata to help downstream agents measure each dimension
+4. EXCLUDE static robot physical specifications (footprint, dimensions, weight) - these are context only
+
+CRITICAL: DO NOT include the robot's physical dimensions (length, width, height, weight, turning radius) in the ODD specification.
+These are STATIC PROPERTIES of the robot, not operational conditions. They provide context but are not part of the ODD.
 
 ORGANIZATIONAL STRUCTURE (use as default, but be flexible):
 
@@ -36,18 +39,19 @@ The ODD is typically organized into three domains:
 - Proximity constraints, interaction rules
 - Dynamic entities that can move and interact
 
-**EGO** - The robot's own capabilities and limits  
-- Examples: speed, acceleration, turning rate, battery, payload
-- Things intrinsic to the robot itself
-- Performance envelope and physical constraints
+**EGO** - The robot's own operational capabilities and limits  
+- Examples: speed, acceleration, battery level, payload capacity
+- OPERATIONAL performance envelope (not physical dimensions)
+- Dynamic constraints that vary during operation
+- DO NOT include static physical specs (size, weight, shape)
 
 FLEXIBILITY: If a constraint doesn't fit these categories, create new sections as needed.
 Examples: temporal constraints (operating hours), safety-specific rules, communication requirements.
 PRIORITIZE capturing ALL constraints - don't force-fit if it loses semantic meaning.
 
 METADATA FOR EACH DIMENSION:
-- **description**: What this dimension means (1-2 sentences)
-- **measurement_guidance**: How downstream agents should measure it (data sources, methods)
+- **description**: What this dimension means (1-2 sentences max)
+- DO NOT include "measurement_guidance" - let downstream agents determine measurement approach
 
 GUIDANCE FOR CONVERTING VAGUE DESCRIPTIONS TO PRECISE LIMITS:
 
@@ -95,34 +99,52 @@ DO NOT create boundary or out-of-spec ranges - this is done later by Evaluator.
 
 EXPECTED OUTPUT JSON STRUCTURE:
 
+Each axis MUST include a "type" field: "range", "bool", or "enum"
+DO NOT include "measurement_guidance" field
+
 {
   "odd_specification": {
     "environment": {
       "categorical": {
         "<dimension_name>": {
-          "values": ["value1", "value2"],
-          "description": "What this dimension represents",
-          "measurement_guidance": "How to measure it (sensors, methods)"
+          "type": "enum",
+          "allowed": ["value1", "value2"],
+          "description": "What this dimension represents"
         }
       },
       "numeric": {
         "<dimension_name>": {
-          "max": <value> OR "min": <value>,
-          "description": "What this dimension represents",
-          "measurement_guidance": "How to measure it (sensors, methods)"
+          "type": "range",
+          "min": <value>,
+          "max": <value>,
+          "description": "What this dimension represents"
+        }
+      },
+      "boolean": {
+        "<dimension_name>": {
+          "type": "bool",
+          "allowed": 0 or 1,
+          "description": "What this dimension represents"
         }
       }
     },
     "actors": {
-      "categorical": { /* same structure */ },
-      "numeric": { /* same structure */ }
+      "categorical": { /* same structure with type: "enum" */ },
+      "numeric": { /* same structure with type: "range" */ },
+      "boolean": { /* same structure with type: "bool" */ }
     },
     "ego": {
-      "categorical": { /* same structure */ },
-      "numeric": { /* same structure */ }
+      "categorical": { /* same structure with type: "enum" */ },
+      "numeric": { /* same structure with type: "range" */ },
+      "boolean": { /* same structure with type: "bool" */ }
     }
   }
 }
+
+AXIS TYPES:
+- **range**: Continuous numeric values with min/max bounds (e.g., speed: 0.0-1.5 m/s)
+- **enum**: Categorical values from a finite set (e.g., lighting: ["bright", "dim"])
+- **bool**: Binary true/false conditions (e.g., stairs_present: 0=no, 1=yes)
 
 EXAMPLES:
 
@@ -132,40 +154,56 @@ Example 1 - Ground robot in indoor spaces:
     "environment": {
       "categorical": {
         "lighting_conditions": {
-          "values": ["bright", "moderate", "dim"],
-          "description": "Ambient illumination level in operating space",
-          "measurement_guidance": "Assess from camera imagery brightness distribution and histogram analysis"
+          "type": "enum",
+          "allowed": ["bright", "moderate", "dim"],
+          "description": "Ambient illumination level in operating space"
         },
         "terrain_type": {
-          "values": ["smooth", "slightly_rough"],
-          "description": "Ground surface characteristics and roughness",
-          "measurement_guidance": "Analyze from BEV roughness channel and visual texture patterns"
+          "type": "enum",
+          "allowed": ["smooth", "slightly_rough"],
+          "description": "Ground surface characteristics and roughness"
         },
         "environment_type": {
-          "values": ["indoor_office", "indoor_residential", "indoor_corridor"],
-          "description": "Physical space classification",
-          "measurement_guidance": "Classify from camera scene understanding and spatial layout"
+          "type": "enum",
+          "allowed": ["indoor_office", "indoor_residential", "indoor_corridor"],
+          "description": "Physical space classification"
         }
       },
       "numeric": {
         "obstacle_density": {
+          "type": "range",
+          "min": 0.0,
           "max": 0.7,
-          "description": "Spatial density of obstacles in operating area (normalized 0-1)",
-          "measurement_guidance": "Calculate from BEV occupancy channel coverage ratio"
+          "description": "Spatial density of obstacles in operating area (normalized 0-1)"
         },
         "traversability_score": {
+          "type": "range",
           "min": 0.3,
-          "description": "Ease of navigation through terrain (normalized 0-1, higher=easier)",
-          "measurement_guidance": "Assess from BEV roughness variance and obstacle distribution patterns"
+          "max": 1.0,
+          "description": "Ease of navigation through terrain (normalized 0-1, higher=easier)"
+        }
+      },
+      "boolean": {
+        "stairs_present": {
+          "type": "bool",
+          "allowed": 0,
+          "description": "Whether stairs are accessible in the operating area"
         }
       }
     },
     "ego": {
       "numeric": {
+        "max_speed_mps": {
+          "type": "range",
+          "min": 0.0,
+          "max": 1.5,
+          "description": "Maximum linear velocity during operation"
+        },
         "max_accel_mps2": {
+          "type": "range",
+          "min": 0.0,
           "max": 10.0,
-          "description": "Peak horizontal acceleration capability during motion",
-          "measurement_guidance": "Extract from IMU linear acceleration magnitude (exclude gravity)"
+          "description": "Peak horizontal acceleration capability during motion"
         }
       }
     }
@@ -178,46 +216,50 @@ Example 2 - Inspection drone with actors:
     "environment": {
       "categorical": {
         "weather_conditions": {
-          "values": ["clear", "light_wind", "overcast"],
-          "description": "Atmospheric conditions during flight",
-          "measurement_guidance": "Assess from visual clarity, IMU drift patterns, wind estimation"
+          "type": "enum",
+          "allowed": ["clear", "light_wind", "overcast"],
+          "description": "Atmospheric conditions during flight"
         }
       },
       "numeric": {
         "wind_speed_ms": {
+          "type": "range",
+          "min": 0.0,
           "max": 15.0,
-          "description": "Maximum sustained wind speed",
-          "measurement_guidance": "Estimate from IMU drift and position hold corrections"
+          "description": "Maximum sustained wind speed"
         }
       }
     },
     "actors": {
       "categorical": {
         "human_presence": {
-          "values": ["none", "sparse"],
-          "description": "Presence and density of people in operating area",
-          "measurement_guidance": "Detect from camera imagery using person detection models"
+          "type": "enum",
+          "allowed": ["none", "sparse"],
+          "description": "Presence and density of people in operating area"
         }
       },
       "numeric": {
         "min_human_distance_m": {
+          "type": "range",
           "min": 5.0,
-          "description": "Minimum safe separation distance from people",
-          "measurement_guidance": "Measure from camera depth estimation when humans detected"
+          "max": 100.0,
+          "description": "Minimum safe separation distance from people"
         }
       }
     },
     "ego": {
       "numeric": {
         "max_altitude_m": {
+          "type": "range",
+          "min": 0.0,
           "max": 120.0,
-          "description": "Maximum operating altitude above ground level",
-          "measurement_guidance": "Extract from barometric altimeter or GPS altitude"
+          "description": "Maximum operating altitude above ground level"
         },
         "battery_pct": {
+          "type": "range",
           "min": 20.0,
-          "description": "Minimum battery level for operations",
-          "measurement_guidance": "Read from battery management system telemetry"
+          "max": 100.0,
+          "description": "Minimum battery level for operations"
         }
       }
     }

@@ -11,8 +11,8 @@ from ..tools.collision import create_collision_tools
 
 
 # Agent version
-# Breaking: merged loop + summary into single agent
-COLLISION_AGENT_VERSION = "4.0.0"
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+COLLISION_AGENT_VERSION = "6.0.0"
 
 
 def create_collision_agent(
@@ -31,38 +31,49 @@ def create_collision_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=[list_windows_tool, analyze_collision_tool],
         output_key="temp:collision_output",
-        instruction="""You orchestrate collision detection with cross-window analysis.
+        instruction="""You orchestrate collision detection using tools and provide temporal reasoning.
 
 INPUT:
-- ODD Specification: {temp:odd_spec?}
-- Tools: list_windows_tool, analyze_collision_tool
+- ODD Specification: {temp:odd_spec?} - extract collision-related dimensions if any
+- Tools: list_windows_tool(), analyze_collision_tool(window_id, odd_context)
 
-TASKS:
-1. Call tools: list_windows_tool() then analyze_collision_tool(window_id, odd_context={}) for each
-2. Cross-window reasoning: Collision clustering, temporal patterns, severity trends
-3. Final statistics: Count collisions, calculate detection rate
+WORKFLOW:
+1. Extract relevant ODD dimensions for collision (if any defined)
+2. Call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_collision_tool(window_id, odd_context={})
+4. Collect tool outputs (each has: odd_measurements, explanation, key_insights, collision_detected)
+5. Analyze temporal patterns - do collisions cluster? escalate?
+6. Produce structured output
+
+CRITICAL: You MUST call the tools for each window. Do NOT skip tool calls.
 
 OUTPUT (JSON only, no markdown):
 {
-  "windows_analyzed": [...],
-  "overall_collision_stats": {
-    "total_windows": <int>,
-    "collisions_detected_count": <int>,
-    "collision_detection_rate": <float 0-1>
-  },
-  "observations": [
-    "Cross-window: <collision patterns, clustering, temporal context>",
-    "Severity: <trends if multiple collisions>",
-    "Assessment: <collision-free vs problematic>"
-  ],
-  "collisions_detected": [
+  "per_window": [
     {
-      "window_id": "...",
-      "confidence": <float>,
-      "evidence": {...}
+      "window_id": "000",
+      "measurements": {
+        // COPY directly from tool's odd_measurements
+      }
     }
-  ]
+  ],
+  "temporal_analysis": {
+    "odd_trends": "Collision patterns across windows",
+    "anomalies": ["Window IDs with collisions or near-misses"],
+    "concerns": ["Safety issues requiring attention"]
+  },
+  "summary_insights": [
+    "Overall collision status",
+    "Key safety observations"
+  ],
+  "collision_stats": {
+    "total_windows": 0,
+    "collisions_detected": 0
+  }
 }
 
-Be concise.""",
+RULES:
+1. per_window.measurements: COPY from tool's odd_measurements verbatim
+2. temporal_analysis: YOUR reasoning about collision patterns
+3. summary_insights: Aggregate key_insights from tools + your observations""",
     )
