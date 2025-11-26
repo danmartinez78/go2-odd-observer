@@ -91,6 +91,41 @@ def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     return None
 
 
+def extract_agent_output(events: list, agent_name: str) -> Optional[Dict[str, Any]]:
+    """Extract output from a specific agent."""
+    for event in events:
+        if event.author == agent_name and event.content:
+            for part in event.content.parts:
+                if part.text:
+                    try:
+                        return extract_json_block(part.text)
+                    except Exception:
+                        continue
+    return None
+
+
+def save_sensor_outputs(events: list, scenario_path: Path):
+    """Save sensor agent outputs to files for Evaluator/Report access."""
+    import json
+    
+    # Extract and save each sensor agent output
+    for agent_name in ["PerceptionAgent", "MotionAgent", "CollisionAgent"]:
+        output = extract_agent_output(events, agent_name)
+        if output:
+            output_file = scenario_path / f"{agent_name.lower().replace('agent', '')}_output.json"
+            with open(output_file, 'w') as f:
+                json.dump(output, f, indent=2)
+            print(f"📝 Saved {agent_name} output to {output_file.name}")
+    
+    # Also save ODD spec for reference
+    odd_spec = extract_agent_output(events, "OddSpecAgent")
+    if odd_spec:
+        output_file = scenario_path / "odd_spec.json"
+        with open(output_file, 'w') as f:
+            json.dump(odd_spec, f, indent=2)
+        print(f"📝 Saved ODD specification to {output_file.name}")
+
+
 async def run_odd_workflow(
     scenario_path: str,
     genai_client: Client,

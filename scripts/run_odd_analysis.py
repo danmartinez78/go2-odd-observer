@@ -204,7 +204,7 @@ def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
     # Phase 1.4.4: Check if we have the new flat structure from report
     if 'compliance_summary' in result:
         return result['compliance_summary']
-    
+
     # Check in full_analysis.evaluator (if present)
     if 'full_analysis' in result:
         evaluator = result['full_analysis'].get('evaluator', {})
@@ -216,7 +216,7 @@ def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
             if 'odd_compliance' in compliance:
                 return compliance['odd_compliance']
             return compliance
-    
+
     return {}
 
 
@@ -269,7 +269,7 @@ def display_summary(result: Dict[str, Any]):
         report = result['report']
     else:
         report = result  # Flat structure from Phase 1.4.4
-    
+
     compliance_data = get_compliance_data(result)
     metadata = report.get('scenario_metadata', {})
     analysis_meta = result.get('analysis_metadata', {})
