@@ -200,12 +200,18 @@ def select_scenario(scenarios):
 
 
 def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract compliance data, handling potential double nesting."""
-    compliance = result['full_analysis']['odd_compliance']
-    # Handle double nesting if present
-    if 'odd_compliance' in compliance:
-        return compliance['odd_compliance']
-    return compliance
+    """Extract compliance data from evaluator output (Phase 1.4.4)."""
+    # Phase 1.4.4: evaluator output contains compliance_verdict
+    evaluator = result['full_analysis'].get('evaluator', {})
+    if 'compliance_verdict' in evaluator:
+        return evaluator['compliance_verdict']
+    # Fallback for old structure
+    if 'odd_compliance' in result['full_analysis']:
+        compliance = result['full_analysis']['odd_compliance']
+        if 'odd_compliance' in compliance:
+            return compliance['odd_compliance']
+        return compliance
+    return {}
 
 
 def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, source_path: str = None) -> Path:
@@ -227,14 +233,22 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, sou
     # Save executive summary separately
     summary_path = output_base / "executive_summary.json"
     compliance_data = get_compliance_data(result)
+
+    # Extract compliance summary (Phase 1.4.4 compatible)
+    overall_compliance = compliance_data.get('overall', 'UNKNOWN')
+    violations = []  # Phase 1.4.4: critical_axes become violations
+    if compliance_data.get('critical_axes'):
+        violations = [
+            f"Critical axis: {axis}" for axis in compliance_data['critical_axes']]
+
     summary_data = {
         'executive_summary': result['report'].get('executive_summary', ''),
         'key_findings': result['report'].get('key_findings', []),
         'recommendations': result['report'].get('recommendations', []),
         'scenario_metadata': result['report'].get('scenario_metadata', {}),
-        'overall_compliance': compliance_data.get('overall_compliance', ''),
-        'violations': compliance_data.get('violations', []),
-        'warnings': compliance_data.get('warnings', [])
+        'overall_compliance': overall_compliance,
+        'violations': violations,
+        'rationale': compliance_data.get('rationale', '')
     }
     with open(summary_path, 'w') as f:
         json.dump(summary_data, f, indent=2)
@@ -294,23 +308,21 @@ def display_summary(result: Dict[str, Any]):
     print("=" * 80)
     print("ODD COMPLIANCE")
     print("=" * 80)
-    print(f"  • Overall: {compliance_data.get('overall_compliance', 'N/A')}")
-    print(f"  • Violations: {len(compliance_data.get('violations', []))}")
-    print(f"  • Warnings: {len(compliance_data.get('warnings', []))}")
+    overall = compliance_data.get('overall', 'UNKNOWN')
+    rationale = compliance_data.get('rationale', 'N/A')
+    critical_axes = compliance_data.get('critical_axes', [])
+    temporal_stability = compliance_data.get('temporal_stability', 'N/A')
+    
+    print(f"  • Overall: {overall}")
+    print(f"  • Temporal Stability: {temporal_stability}")
+    print(f"  • Critical Axes: {len(critical_axes)}")
+    print(f"  • Rationale: {rationale}")
 
-    violations = compliance_data.get('violations', [])
-    if violations:
+    if critical_axes:
         print()
-        print("❌ VIOLATIONS:")
-        for v in violations:
-            print(f"    • {v}")
-
-    warnings_list = compliance_data.get('warnings', [])
-    if warnings_list:
-        print()
-        print("⚠️  WARNINGS:")
-        for w in warnings_list:
-            print(f"    • {w}")
+        print("⚠️  CRITICAL AXES (Violations):")
+        for axis in critical_axes:
+            print(f"    • {axis}")
 
     print()
     print("=" * 80)
