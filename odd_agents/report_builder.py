@@ -168,11 +168,48 @@ def compute_statistics(agent_outputs: Dict[str, Any]) -> Dict[str, Any]:
         "critical_axes": compliance_verdict.get("critical_axes", []),
     }
 
+    # Data quality (computed, not from LLM)
+    warnings = []
+    anomalies = []
+
+    # Check for missing/empty data
+    if not perception_windows:
+        warnings.append("No perception data available")
+    if not motion_windows:
+        warnings.append("No motion data available")
+    if not collision_windows:
+        warnings.append("No collision data available")
+    if perception_empty:
+        warnings.append(f"Perception: {len(perception_empty)} empty windows")
+    if motion_empty:
+        warnings.append(f"Motion: {len(motion_empty)} empty windows")
+    if zero_accel and len(zero_accel) == len(motion_windows):
+        warnings.append(
+            "All windows show zero acceleration - possible sensor issue")
+
+    # Check for anomalies
+    if collision_detected:
+        anomalies.append(
+            f"Collisions detected in {len(collision_detected)} windows: {collision_detected}")
+
+    all_healthy = (
+        agent_health["perception"]["status"] == "OK" and
+        agent_health["motion"]["status"] == "OK" and
+        agent_health["collision"]["status"] == "OK"
+    )
+
+    data_quality = {
+        "all_agents_healthy": all_healthy,
+        "warnings": warnings if warnings else [],
+        "anomalies": anomalies if anomalies else [],
+    }
+
     return {
         "window_stats": window_stats,
         "agent_health": agent_health,
         "measurement_stats": measurement_stats,
         "compliance_stats": compliance_stats,
+        "data_quality": data_quality,
     }
 
 
@@ -187,37 +224,59 @@ def build_executive_summary_report(
     """
     Build a concise executive summary report.
 
+    Combines LLM synthesis (narrative) with Python-computed data (statistics).
     This is what stakeholders see - high-level compliance status and key findings.
     """
     report_output = agent_outputs.get("ReportAgent", {})
-    evaluator_output = agent_outputs.get("EvaluatorAgent", {})
     stats = compute_statistics(agent_outputs)
+
+    # Map confidence value to category if LLM didn't provide it
+    confidence_val = stats["compliance_stats"]["confidence"]
+    confidence_category = report_output.get("confidence")
+    if not confidence_category:
+        if confidence_val >= 0.8:
+            confidence_category = "HIGH"
+        elif confidence_val >= 0.5:
+            confidence_category = "MEDIUM"
+        else:
+            confidence_category = "LOW"
 
     return {
         "report_type": "executive_summary",
         "generated_at": datetime.utcnow().isoformat() + "Z",
 
-        # From ReportAgent
-        "executive_summary": report_output.get("executive_summary", ""),
-        "key_findings": report_output.get("key_findings", []),
+        # =====================================================================
+        # LLM-SYNTHESIZED SECTIONS (narrative, interpretation)
+        # =====================================================================
+        "scenario_overview": report_output.get("scenario_overview", ""),
+        "key_observations": report_output.get("key_observations", []),
         "recommendations": report_output.get("recommendations", []),
+        "pipeline_quality_assessment": report_output.get("pipeline_quality_assessment", ""),
 
-        # From statistics
+        # =====================================================================
+        # PYTHON-COMPUTED SECTIONS (deterministic data)
+        # =====================================================================
         "compliance": {
             "verdict": stats["compliance_stats"]["verdict"],
-            "confidence": stats["compliance_stats"]["confidence"],
-            "temporal_stability": stats["compliance_stats"]["temporal_stability"],
+            "confidence": confidence_category,
+            "confidence_value": stats["compliance_stats"]["confidence"],
+            "stability": stats["compliance_stats"]["temporal_stability"],
             "critical_axes": stats["compliance_stats"]["critical_axes"],
         },
 
-        # Data quality from report
-        "data_quality": report_output.get("data_quality", {}),
+        "data_quality": stats.get("data_quality", {
+            "all_agents_healthy": True,
+            "warnings": [],
+            "anomalies": [],
+        }),
 
-        # Metadata
+        "measurement_summary": stats.get("measurement_stats", {}),
+
         "scenario": {
             "name": pipeline_metadata.get("scenario_info", {}).get("scenario_name", ""),
             "windows_analyzed": stats["window_stats"]["total_windows"],
         },
+
         "analysis": {
             "duration_seconds": round(pipeline_metadata.get("pipeline_duration_seconds", 0), 2),
             "total_tokens": sum(
@@ -254,14 +313,21 @@ def build_full_technical_report(
         "pipeline_version": pipeline_metadata.get("pipeline_version", "2.0.0"),
 
         # =====================================================================
-        # SECTION 1: EXECUTIVE SUMMARY (from report agent)
+        # SECTION 1: EXECUTIVE SUMMARY (LLM synthesis + Python data)
         # =====================================================================
         "executive_summary": {
-            "summary": report.get("executive_summary", ""),
-            "key_findings": report.get("key_findings", []),
+            # LLM-synthesized narrative
+            "scenario_overview": report.get("scenario_overview", ""),
+            "key_observations": report.get("key_observations", []),
             "recommendations": report.get("recommendations", []),
-            "data_quality": report.get("data_quality", {}),
-            "measurement_summary": report.get("measurement_summary", {}),
+            "pipeline_quality_assessment": report.get("pipeline_quality_assessment", ""),
+            # Python-computed data
+            "data_quality": stats.get("data_quality", {
+                "all_agents_healthy": True,
+                "warnings": [],
+                "anomalies": [],
+            }),
+            "measurement_summary": stats.get("measurement_stats", {}),
         },
 
         # =====================================================================

@@ -12,7 +12,8 @@ import json
 
 # Agent version
 # v5.0.0: Hybrid approach - Python statistics tool + LLM synthesis
-REPORT_AGENT_VERSION = "5.0.0"
+# v6.0.0: Synthesis-focused - LLM interprets/synthesizes, no copying data
+REPORT_AGENT_VERSION = "6.0.0"
 
 
 def create_report_tools(scenario_path: Path):
@@ -278,68 +279,53 @@ def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
         name="ReportAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=tools,
-        instruction="""You generate analysis reports using computed statistics and sensor insights.
+        instruction="""You generate executive summary reports by SYNTHESIZING insights from computed statistics.
 
-HYBRID APPROACH: Python tools compute statistics, you synthesize insights.
+YOUR ROLE: Interpret and synthesize - DO NOT copy raw data fields.
 
 TOOLS:
-1. compute_report_statistics_tool() - Returns comprehensive statistics:
-   - window_stats: counts, window IDs
-   - agent_health: per-agent status, empty windows, warnings
+1. compute_report_statistics_tool() - Returns:
+   - window_stats: how many windows analyzed
+   - agent_health: per-agent status (OK/WARNING), empty windows, issues
    - measurement_stats: min/max/mean for numeric measurements
-   - compliance_stats: verdict, confidence, violations
-   - data_quality: flags, warnings, anomalies
-   - temporal_summary: trends and concerns from sensor agents
+   - compliance_stats: verdict, confidence, stability
+   - data_quality: flags for missing data, anomalies
+   - temporal_summary: trends and concerns
 
-2. get_sensor_insights_tool() - Returns high-level insights (not raw data):
-   - perception_insights, motion_insights, collision_insights
-   - evaluator_concerns, evaluator_rationale
+2. get_sensor_insights_tool() - Returns qualitative insights from each sensor agent
 
 WORKFLOW:
 1. Call compute_report_statistics_tool() first
 2. Call get_sensor_insights_tool() for qualitative context
-3. Synthesize executive summary from statistics + insights
-4. Generate key findings based on data quality flags and anomalies
-5. Provide recommendations based on compliance status
+3. SYNTHESIZE (don't copy) the information into your output
 
 OUTPUT (JSON only, no markdown):
 {
-  "executive_summary": "<2-3 sentences: scenario overview, compliance verdict, key observation>",
-  "scenario_metadata": {
-    "total_windows_analyzed": <from window_stats.total_windows>,
-    "scenario_name": "<from context>",
-    "data_source": "simulation|real_world"
-  },
-  "compliance_summary": {
-    "verdict": "<from compliance_stats.verdict>",
-    "confidence": <from compliance_stats.confidence>,
-    "temporal_stability": "<from compliance_stats.temporal_stability>",
-    "critical_axes": <from compliance_stats.critical_axes>,
-    "violation_count": <from compliance_stats.violation_count>
-  },
-  "key_findings": [
-    "<Finding from perception insights or measurement_stats>",
-    "<Finding from motion/collision stats>",
-    "<Finding from data quality flags or anomalies>"
+  "scenario_overview": "<1-2 sentences describing what the robot was doing and where>",
+  
+  "compliance_verdict": "<IN_ODD | OUT_OF_ODD | BORDERLINE>",
+  "confidence": "<HIGH | MEDIUM | LOW based on confidence value: >0.8=HIGH, 0.5-0.8=MEDIUM, <0.5=LOW>",
+  "stability": "<STABLE | UNSTABLE | TRANSITIONING based on temporal_stability>",
+  
+  "key_observations": [
+    "<Most significant finding from perception - synthesize, include relevant numbers>",
+    "<Most significant finding from motion - synthesize, include relevant numbers>",
+    "<Most significant finding from collision/safety - synthesize, include relevant numbers>"
   ],
+  
   "recommendations": [
-    "<Based on compliance status and concerns>",
-    "<Based on data quality issues if any>"
+    "<Action item if issues found, OR 'No action required - operation within ODD' if compliant>",
+    "<Additional recommendation if warranted>"
   ],
-  "data_quality": {
-    "all_agents_healthy": <from data_quality>,
-    "warnings": <from data_quality.missing_data_warnings>,
-    "anomalies": <from data_quality.anomalies>
-  },
-  "measurement_summary": {
-    "<key_metric>": {"min": x, "max": y, "mean": z}
-  }
+  
+  "pipeline_quality_assessment": "<1 sentence summarizing agent health and data quality. Examples: 'All agents executed successfully with complete data across N windows.' OR 'Motion agent reported N windows with zero acceleration - potential sensor issue.'>"
 }
 
-RULES:
-1. Use EXACT values from statistics - don't estimate or round differently
-2. Flag any data quality issues prominently in findings
-3. If collisions detected, highlight in executive summary
-4. Include measurement ranges in findings (e.g., "obstacle density ranged 0.08-0.15")
-5. Keep executive summary to 2-3 sentences max""",
+SYNTHESIS RULES:
+1. scenario_overview: Describe the scene and robot behavior in plain English
+2. key_observations: Interpret the data - what does it MEAN? Include specific numbers for context
+3. recommendations: What should the operator DO based on findings?
+4. pipeline_quality_assessment: Summarize agent_health and data_quality in one sentence
+5. DO NOT include raw data structures - Python post-processing adds those
+6. Keep total output concise - this is an EXECUTIVE summary""",
     )
