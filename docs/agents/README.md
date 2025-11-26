@@ -2,194 +2,144 @@
 
 ## Overview
 
-The ODD (Operational Design Domain) Observer uses a **7-agent pipeline** to analyze robot sensor data and determine if the robot is operating within its design specifications. Each agent is specialized for a specific analysis task, working together in a sequential workflow.
+The ODD (Operational Design Domain) Observer uses a **6-agent pipeline** to analyze robot sensor data and determine if the robot is operating within its design specifications. Each agent is specialized for a specific analysis task, working together in a sequential workflow.
 
-**Architecture Update (Phase 1.4.3 - Nov 26, 2025):** Consolidated loop + summary agents into single agents. Loop agents already performed cross-window reasoning and had all necessary data, making separate summary agents redundant.
+**Architecture Update (Phase 1.4.4 - Nov 26, 2025):** 
+- Type-driven COD construction with Python tools
+- Evaluator Agent replaces COD Measurement + Compliance agents
+- Tools read from blackboard via ToolContext (token-efficient)
+- ODD specs exclude static robot dimensions and measurement_guidance
 
 ## Agent Workflow
 
 ```mermaid
 graph TD
     A[1. OddSpecAgent] -->|ODD Specification| B[2. PerceptionAgent]
-    B -->|Measurements + Observations| C[3. MotionAgent]
-    C -->|Motion Stats| D[4. CollisionAgent]
-    D -->|Collision Stats| E[5. CodMeasurementAgent]
-    A -.->|ODD Spec| B
-    A -.->|ODD Spec| C
-    A -.->|ODD Spec| D
-    B -.->|Perception Data| E
-    C -.->|Motion Data| E
-    D -.->|Collision Data| E
-    E -->|Current Domain| F[6. OddComplianceAgent]
-    A -.->|ODD Spec| F
-    F -->|Compliance Status| G[7. ReportAgent]
-    A -.->|All Data| G
-    B -.->|All Data| G
-    C -.->|All Data| G
-    D -.->|All Data| G
-    E -.->|All Data| G
+    B -->|Measurements| C[3. MotionAgent]
+    C -->|Measurements| D[4. CollisionAgent]
+    D -->|Measurements| E[5. EvaluatorAgent]
+    A -.->|ODD Spec| E
+    B -.->|via blackboard| E
+    C -.->|via blackboard| E
+    D -.->|via blackboard| E
+    E -->|COD + Compliance| F[6. ReportAgent]
+    A -.->|All Data| F
     
     style A fill:#e3f2fd
     style B fill:#fff9c4
     style C fill:#fff9c4
     style D fill:#ffccbc
     style E fill:#f8bbd0
-    style F fill:#f8bbd0
-    style G fill:#c8e6c9
+    style F fill:#c8e6c9
 ```
 
 ## Agent Categories
 
 ### 1. **ODD Specification** (1 agent)
-- **[OddSpecAgent](ODD_SPEC.md)**: Converts natural language ODD description to formal specification
+- **[OddSpecAgent](ODD_SPEC.md)** v5.0.0: Converts natural language ODD description to typed specification
+  - Output includes type definitions: `range`, `enum`, `bool`
+  - Excludes static robot dimensions (informational only)
+  - No measurement_guidance (agents determine approach)
 
-### 2. **Perception Analysis** (1 agent - consolidated)
-- **[PerceptionAgent](PERCEPTION.md)**: Window-by-window multimodal analysis with cross-window reasoning, ODD-guided measurements, and environment classification
+### 2. **Sensor Agents** (3 agents)
+- **[PerceptionAgent](PERCEPTION.md)** v5.0.0: Multimodal analysis with per-window typed measurements
+- **[MotionAgent](MOTION.md)** v5.0.0: IMU-based motion analysis with per-window typed measurements
+- **[CollisionAgent](COLLISION.md)** v5.0.0: Collision detection with per-window typed measurements
 
-### 3. **Motion Analysis** (1 agent - consolidated)
-- **[MotionAgent](MOTION.md)**: IMU-based motion analysis with cross-window pattern detection and motion statistics
-
-### 4. **Collision Detection** (1 agent - consolidated)
-- **[CollisionAgent](COLLISION.md)**: Per-window collision detection using multimodal fusion with cross-window analysis
-
-### 5. **Synthesis & Reporting** (3 agents)
-- **[CodMeasurementAgent](COD_CLASSIFIER.md)**: Maps observations to ODD dimensions and builds COD region
-- **[OddComplianceAgent](COMPLIANCE.md)**: Compares COD vs ODD and detects violations
-- **[ReportAgent](REPORT.md)**: Generates final executive summary and recommendations
+### 3. **Synthesis & Reporting** (2 agents)
+- **[EvaluatorAgent](COMPLIANCE.md)** v1.0.0: Python tools for deterministic COD construction + compliance
+- **[ReportAgent](REPORT.md)** v4.0.0: Generates executive summary and recommendations
 
 ## Data Flow
+
+### Blackboard Keys
+Agents communicate via Google ADK's blackboard mechanism:
+- `temp:odd_spec` → ODD specification with type definitions
+- `temp:perception_output` → Per-window perception measurements
+- `temp:motion_output` → Per-window motion measurements  
+- `temp:collision_output` → Per-window collision measurements
+- `temp:evaluator_output` → COD region + compliance verdict
+
+### Token Optimization
+**Phase 1.4.4 Key Innovation:** Tools read from blackboard via `ToolContext.get_value()`:
+- Sensor outputs stay on blackboard (not in LLM prompts)
+- Evaluator LLM calls tool with minimal params: `construct_cod_tool(odd_spec)`
+- Tool internally fetches sensor data from blackboard
+- **Result:** Massive token savings on Evaluator agent
 
 ### Input Data
 - **Natural Language ODD**: User-provided description of robot's design parameters
 - **Sensor Data**: Time-windowed camera images, LiDAR BEV maps, IMU readings
-  - **Camera**: RGB images from forward-facing camera (egocentric view)
-  - **LiDAR BEV**: Bird's-eye occupancy maps with 10cm ground filtering (obstacles only)
-  - **IMU**: Acceleration and angular velocity from go2_interfaces custom message type
-
-### Intermediate Outputs
-Each agent passes data to downstream agents via Google ADK's `output_key` mechanism:
-- `temp:odd_spec` → ODD specification (structured JSON schema)
-- `temp:perception_output` → Per-window + cross-window perception analysis with ODD measurements
-- `temp:motion_output` → Per-window + cross-window motion analysis with statistics
-- `temp:collision_output` → Collision detection results across all windows
-- `temp:cod_classification` → Current operating domain (COD region mapped to ODD dimensions)
-- `temp:odd_compliance` → Compliance assessment with violation detection
-- `temp:odd_compliance` → Compliance analysis results
+  - **Camera**: RGB images from forward-facing camera
+  - **LiDAR BEV**: Bird's-eye occupancy, height, and roughness maps
+  - **IMU**: Acceleration and angular velocity measurements
 
 ### Final Output
 The ReportAgent produces a comprehensive JSON report containing:
-- Executive summary and scenario metadata
-- Per-domain summaries (perception, motion, collision)
-- ODD compliance status with violations and warnings
-- Key findings and actionable recommendations
-- Full analysis from all agents
+- Executive summary
+- Compliance verdict (IN_ODD/OUT_ODD/BOUNDARY)
+- Region metrics (distance, fraction_outside)
+- Key findings and recommendations
+- Temporal stability assessment
 
-## Agent Design Principles
+## Phase 1.4.4 Architecture
 
-### 1. **Parameterized Factory Functions**
-All agents are created via factory functions that accept configuration:
-```python
-def create_perception_loop_agent(
-    scenario_path: Path,
-    genai_client: genai.Client,
-    model: str,
-    api_key: str
-) -> Agent:
-    ...
-```
+### Type-Driven COD Construction
 
-### 2. **No Global State**
-- Each workflow run creates fresh agent instances
-- Enables parallel execution and testing
-- Prevents cross-contamination between scenarios
+ODD axes have explicit types that drive measurement and evaluation:
 
-### 3. **Model Flexibility**
-- Default: `gemini-2.0-flash-lite` for cost optimization (~70% cheaper)
-- Override per-agent for quality requirements (e.g., `gemini-2.5-pro` for vision)
-- See [MODEL_SELECTION_GUIDE.md](../MODEL_SELECTION_GUIDE.md)
+| Type | Example | COD Construction |
+|------|---------|------------------|
+| `range` | `max_speed_mps: [0, 1.5]` | Compute min/max from measurements |
+| `enum` | `lighting: ["bright", "dim"]` | Collect observed values |
+| `bool` | `stairs_present: 0` | Any 1 = OUT_ODD |
 
-### 4. **Tool-Based Architecture**
-Loop agents use ADK FunctionTools for:
-- **List windows**: Discover available time windows in scenario
-- **Analyze window**: Process sensor data for single window
-Summary agents synthesize tool outputs using pure LLM reasoning
+### Python Tools for Deterministic Evaluation
 
-### 5. **Structured JSON Output**
-All agents produce strict JSON schemas for:
-- Reliable parsing and validation
-- Easy integration with downstream systems
-- Consistent error handling
+The Evaluator Agent uses Python tools (not LLM reasoning) for:
+- **COD Region Construction**: `_build_cod_region()` computes envelope from measurements
+- **Distance Calculations**: `_compute_region_metrics()` calculates distance to ODD boundary
+- **Time Series Analysis**: `_compute_time_series_metrics()` tracks per-window violations
 
-## Common Patterns
+This ensures **reproducible, deterministic** compliance verdicts.
 
-### Loop-Summary Pattern
-Perception, Motion, and Collision agents follow a two-stage pattern:
-1. **Loop Agent**: Iterates over time windows, calls tools, collects raw data
-2. **Summary Agent**: Aggregates statistics, calculates metrics, produces final output
+## Model Configuration
 
-This separation enables:
-- Parallel processing of windows (future optimization)
-- Easier debugging of individual windows
-- Clear separation of tool calls vs. synthesis
-
-### Multimodal Fusion
-Vision-capable agents (Perception, Collision) receive:
-- Camera image (RGB, egocentric view)
-- LiDAR BEV occupancy map (top-down, obstacle detection with 10cm ground filtering)
-- Motion context (from previous stages)
-
-The LLM performs implicit sensor fusion, combining:
-- Visual scene understanding (objects, lighting, terrain)
-- Spatial obstacle mapping (distance, density)
-- Kinematic state (motion, stability)
+| Agent | Recommended Model | Reason |
+|-------|------------------|--------|
+| PerceptionAgent | `gemini-2.0-flash-thinking-exp` | Reliable multimodal tool calling |
+| MotionAgent | `gemini-2.0-flash-exp` | Text-only tools work fine |
+| CollisionAgent | `gemini-2.0-flash-exp` | Text-only tools work fine |
+| OddSpecAgent | `gemini-2.0-flash-exp` | JSON reasoning |
+| EvaluatorAgent | `gemini-2.0-flash-exp` | Simple tool orchestration |
+| ReportAgent | `gemini-2.0-flash-exp` | Report synthesis |
 
 ## Performance Characteristics
 
+### Typical Execution
+- **2-window scenario**: ~25-30 seconds, ~22k tokens, ~$0.40
+- **10-window scenario**: ~60-90 seconds, ~40k tokens, ~$0.80
+- **62-window scenario**: Use chunking script to split into 10-window batches
+
 ### Cost Optimization
-| Agent Category | Typical Cost | Optimization |
-|---------------|-------------|--------------|
-| Vision Agents (Perception, Collision) | Higher | Use flash-lite by default, upgrade to pro only when needed |
-| Synthesis Agents (ODD Spec, COD, Compliance, Report) | Lower | flash-lite sufficient for JSON reasoning |
-| Motion Agents | Medium | Pure data analysis, flash-lite works well |
+- Flash models for most agents (100x cheaper than Pro)
+- Thinking model only for perception (multimodal tool reliability)
+- Tools read from blackboard (not LLM prompts) to reduce tokens
 
-**Example**: Full 13-window analysis costs ~$0.05 with flash-lite defaults
+## Scripts
 
-### Execution Time
-- **Sequential workflow**: ~30-60 seconds for 13 windows (flash-lite)
-- **Bottleneck**: Perception and Collision multimodal analysis
-- **Optimization**: Future parallel processing of windows
+### Running Analysis
+```bash
+python scripts/run_odd_analysis.py --scenario sim_test_w010_w011
+```
 
-### Quality Metrics
-- **Motion detection**: 100% accuracy with IMU-based analysis
-- **Environment classification**: 95%+ confidence
-- **Collision risk**: High precision, tunable thresholds
-
-## Agent Documentation
-
-For detailed documentation on each agent:
-
-| Document | Agents Covered |
-|----------|---------------|
-| [ODD_SPEC.md](ODD_SPEC.md) | OddSpecAgent |
-| [PERCEPTION.md](PERCEPTION.md) | PerceptionLoopAgent, PerceptionSummaryAgent |
-| [MOTION.md](MOTION.md) | MotionLoopAgent, MotionSummaryAgent |
-| [COLLISION.md](COLLISION.md) | CollisionLoopAgent, CollisionSummaryAgent |
-| [COD_CLASSIFIER.md](COD_CLASSIFIER.md) | CodClassifierAgent |
-| [COMPLIANCE.md](COMPLIANCE.md) | OddComplianceAgent |
-| [REPORT.md](REPORT.md) | ReportAgent |
+### Chunking Large Scenarios
+```bash
+python scripts/chunk_large_scenario.py data/production/sim_1_0 --chunk-size 10
+```
 
 ## Related Documentation
 
 - **[Getting Started Guide](../guides/GETTING_STARTED.md)**: Setup and usage
+- **[Architecture Redesign](../ARCHITECTURE_REDESIGN.md)**: Full design rationale
 - **[Model Selection Guide](../MODEL_SELECTION_GUIDE.md)**: Cost optimization strategies
-- **[Motion Analysis Improvements](../MOTION_ANALYSIS_IMPROVEMENTS.md)**: IMU-based motion detection
-- **[Workflow API](../../odd_agents/README.md)**: Programmatic usage
-
-## Contributing
-
-When adding new agents or modifying existing ones:
-1. Follow the parameterized factory function pattern
-2. Maintain strict JSON output schemas
-3. Update this documentation with purpose, inputs, outputs
-4. Add example outputs and known edge cases
-5. Include unit tests in `tests/`

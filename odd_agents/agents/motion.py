@@ -11,8 +11,8 @@ from ..tools.motion import create_motion_tools
 
 
 # Agent version
-# Breaking: outputs per-window typed measurements for COD construction
-MOTION_AGENT_VERSION = "5.0.0"
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+MOTION_AGENT_VERSION = "6.0.0"
 
 
 def create_motion_agent(
@@ -31,46 +31,45 @@ def create_motion_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=[list_windows_tool, analyze_motion_tool],
         output_key="temp:motion_output",
-        instruction="""You orchestrate motion analysis with ODD-guided measurements.
+        instruction="""You orchestrate motion analysis using tools and provide temporal reasoning.
 
 INPUT:
-- ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
-- Tools: list_windows_tool, analyze_motion_tool
+- ODD Specification: {temp:odd_spec?} - extract ego motion dimensions
+- Tools: list_windows_tool(), analyze_motion_tool(window_id, odd_context)
 
-TASKS:
-1. Filter ODD: Extract ego motion dimensions (accel, speed, stability) from spec
-2. Call tools: list_windows_tool() then analyze_motion_tool(window_id, odd_context) for each
-3. Per-window measurements: For EACH window, measure ODD ego axes and tag compliance
-4. Cross-window summary: Motion sequences, smoothness trends, maneuvers, anomalies
+WORKFLOW:
+1. Extract relevant ODD dimensions for motion (ego: speed, accel, stability, etc.)
+2. Call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_motion_tool(window_id, odd_context)
+4. Collect tool outputs (each has: odd_measurements, explanation, key_insights, motion_state)
+5. Analyze temporal patterns across windows
+6. Produce structured output
+
+CRITICAL: You MUST call the tools for each window. Do NOT skip tool calls.
 
 OUTPUT (JSON only, no markdown):
 {
-  "per_window_measurements": [
+  "per_window": [
     {
       "window_id": "000",
       "measurements": {
-        // Use EXACT ODD ego axis names as keys
-        // For range: numeric value (e.g., "max_accel_mps2": 0.14)
-        // For bool: 0 or 1 (e.g., "emergency_mode": 0)
-        // For enum: string label (e.g., "motion_state": "walking")
-      },
-      "compliance": {
-        // Per-axis compliance tags: "IN_ODD", "OUT_ODD", "AT_BOUNDARY"
-        "max_accel_mps2": "IN_ODD",
-        "max_speed_mps": "AT_BOUNDARY"
+        // COPY directly from tool's odd_measurements
       }
     }
   ],
-  "summary": {
-    "temporal_observations": [
-      "Cross-window: <motion patterns, maneuvers, smoothness trends>",
-      "Anomalies: <if any>"
-    ],
-    "safety_concerns": [
-      "<Any motion-based safety issues>"
-    ]
-  }
+  "temporal_analysis": {
+    "odd_trends": "How motion measurements change across windows",
+    "anomalies": ["Window IDs with unusual motion patterns"],
+    "concerns": ["Safety or stability issues detected"]
+  },
+  "summary_insights": [
+    "Key motion pattern from tool outputs",
+    "Cross-window motion trend"
+  ]
 }
 
-Per-window measurements enable temporal COD tracking. Use ODD axis types to determine measurement format.""",
+RULES:
+1. per_window.measurements: COPY from tool's odd_measurements verbatim
+2. temporal_analysis: YOUR reasoning about motion patterns across windows
+3. summary_insights: Aggregate key_insights from tools + your observations""",
     )

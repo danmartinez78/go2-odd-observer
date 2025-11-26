@@ -8,7 +8,6 @@ import math
 from pathlib import Path
 from typing import Any, Dict, Union
 from google.adk.tools import FunctionTool
-from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
 
@@ -17,7 +16,8 @@ from .common import get_window_file_paths
 
 
 # Tool agent version
-MOTION_TOOL_AGENT_VERSION = "3.0.0"
+# v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
+MOTION_TOOL_AGENT_VERSION = "4.0.0"
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -36,14 +36,13 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
     scenario_path = Path(scenario_path) if isinstance(
         scenario_path, str) else scenario_path
 
-    async def analyze_motion_tool(window_id: str, odd_context: dict, tool_context: ToolContext) -> Dict[str, Any]:
+    async def analyze_motion_tool(window_id: str, odd_context: dict) -> Dict[str, Any]:
         """
         Tool: Analyze robot motion using IMU sensor data and optional camera visual odometry.
 
         Args:
             window_id: Window identifier
             odd_context: Filtered ODD specification from loop agent (relevant ego dimensions)
-            tool_context: ADK tool context
 
         NOTE: Odometry data from wheel encoders is unreliable/unavailable. This analysis
         relies solely on IMU (accelerometer + gyroscope) and camera-based velocity estimation.
@@ -124,62 +123,34 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             # Build multimodal prompt with IMU + camera
             prompt_parts = [types.Part(text=f"""You are a robotics motion analyst for window {window_id}.
 
-**IMPORTANT CONTEXT**: Wheel odometry is UNAVAILABLE/UNRELIABLE. Use only IMU and camera evidence.
+**IMPORTANT**: Wheel odometry is UNAVAILABLE. Use only IMU and camera evidence.
 
-**ODD CONTEXT**:
-The loop agent has provided relevant ODD dimensions (typically ego vehicle capabilities):
-{json.dumps(odd_context, indent=2) if odd_context else "No ODD context provided"}
+=== PRE-COMPUTED IMU METRICS (use these for odd_measurements) ===
+- peak_horiz_accel: {peak_horiz_accel:.4f} m/s²
+- peak_gyro_z: {peak_gyro_z:.4f} rad/s
+- max_roll: {max_roll:.2f}°, max_pitch: {max_pitch:.2f}°
+- peak_jerk: {peak_jerk:.4f} m/s³
 
-Use these to guide what motion characteristics to observe, but report any motion-related observations.
+ODD CONTEXT (use these axis names if present):
+{json.dumps(odd_context, indent=2) if odd_context else "No ODD context - use default motion metrics"}
 
-=== IMU DATA (gravity-compensated) ===
-Horizontal accel: peak={peak_horiz_accel:.3f} m/s², avg={avg_horiz_accel:.3f} m/s²
-Angular velocity: peak yaw={peak_gyro_z:.3f} rad/s
-Platform tilt: roll={max_roll:.1f}°, pitch={max_pitch:.1f}°
-Jerk (smoothness): peak={peak_jerk:.1f} m/s³
-
-ODD Context: {json.dumps(odd_context) if odd_context else "None"}
-
-ANALYSIS PRIORITIES:
-1. Camera (attached image) - primary motion indicator (blur=moving, sharp=stationary)
-2. IMU patterns - varying=motion, constant=likely artifact/tilt
-3. Constant small accel (<1.0 m/s²) + tilt = gravity leakage, not motion
-
-OUTPUT (JSON only, no markdown, be CONCISE):
+OUTPUT (JSON only, no markdown):
 {{
   "window_id": "{window_id}",
-  "motion_summary": "brief motion state",
-  "observations": [
-    "motion detected: <yes/no with 1-line reasoning>",
-    "type: <stationary/rotation/translation/complex>",
-    "accel: peak {peak_horiz_accel:.3f} m/s²",
-    "gyro: peak {peak_gyro_z:.3f} rad/s",
-    "tilt: {max_roll:.1f}°/{max_pitch:.1f}°",
-    "smoothness: jerk {peak_jerk:.1f} m/s³"
+  "explanation": "1-2 sentence motion state assessment based on IMU + camera",
+  "key_insights": [
+    "Notable motion pattern or anomaly (if any)",
+    "Safety concern (if any)"
   ],
-  "metrics": {{
-    "peak_horizontal_accel_mps2": {peak_horiz_accel:.3f},
-    "peak_angular_velocity_radps": {peak_gyro_z:.3f},
-    "max_roll_deg": {max_roll:.1f},
-    "max_pitch_deg": {max_pitch:.1f},
-    "peak_jerk_mps3": {peak_jerk:.1f}
-  }},
-  "quantitative_metrics": {{
-    "estimated_speed_mps": 0.0,
-    "motion_smoothness_score": 0.0,
-    "stability_score": 0.0
-  }}
+  "motion_state": "stationary|moving|rotating|complex"
 }}
 
-Observations: Max 1 sentence each, essential only.
+ANALYSIS RULES:
+1. Camera blur = motion, sharp = stationary
+2. Small constant accel (<0.5 m/s²) + tilt = gravity leakage, NOT motion
+3. Focus on WHAT the robot is doing, not raw numbers
 
-CRITICAL RULES:
-1. Output ONLY the JSON object - no ```json markers, no explanations
-2. Each observation must be a complete descriptive sentence
-3. Use double quotes for all strings
-4. Ensure valid JSON syntax (commas, brackets, braces)
-5. All observations are strings in the array
-""")]
+Be CONCISE. The pre-computed metrics will be added programmatically.""")]
 
             # Add camera image if available
             if cam_file.exists():
@@ -196,14 +167,25 @@ CRITICAL RULES:
                 contents=prompt_parts,
             )
 
-            data = extract_json_block(response.text or "")
-            data["window_id"] = window_id
+            llm_data = extract_json_block(response.text or "")
 
-            # Ensure backward compatibility
-            if "estimated_speed_mps" not in data:
-                data["estimated_speed_mps"] = None
-            if "motion_smoothness" not in data:
-                data["motion_smoothness"] = "moderate"
+            # === DETERMINISTIC ODD-ALIGNED MEASUREMENTS ===
+            # These are computed directly from sensor data, not LLM output
+            # Maps raw metrics to ODD axis names for COD construction
+            data = {
+                "window_id": window_id,
+                "odd_measurements": {
+                    "max_accel_mps2": round(peak_horiz_accel, 4),
+                    "max_speed_mps": 0.0,  # Cannot estimate from IMU alone
+                    "max_angular_velocity_radps": round(peak_gyro_z, 4),
+                    "max_roll_deg": round(max_roll, 2),
+                    "max_pitch_deg": round(max_pitch, 2),
+                    "peak_jerk_mps3": round(peak_jerk, 4),
+                },
+                "explanation": llm_data.get("explanation", "Motion analysis from IMU data"),
+                "key_insights": llm_data.get("key_insights", []),
+                "motion_state": llm_data.get("motion_state", "unknown"),
+            }
 
             return data
 

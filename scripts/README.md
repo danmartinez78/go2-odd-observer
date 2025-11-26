@@ -2,149 +2,94 @@
 
 Executable scripts for the Go2 ODD Observer project.
 
+**Phase 1.4.4 (Nov 26, 2025):** 6-agent pipeline with type-driven COD construction.
+
 ---
 
 ## 🎯 Core Production Scripts
 
-### `run_odd_analysis.py` - **Manual Interactive Runner**
+### `run_odd_analysis.py` - **Interactive Analyzer**
 
 **Purpose**: Interactive single-scenario ODD analysis with scenario selection.
 
 **Usage**:
 ```bash
+# Interactive mode
 python scripts/run_odd_analysis.py
+
+# Specify scenario directly
+python scripts/run_odd_analysis.py --scenario sim_test_w010_w011
 ```
 
 **What it does**:
 - Scans data/production/ and data/test/ for available scenarios
 - Interactive scenario selection with window counts
-- Runs complete ODD workflow
+- Runs complete 6-agent ODD workflow
 - Displays executive summary and compliance status
 - Saves results to `data/archive/analysis_results/manual/<timestamp>/<scenario>/`
-  - `full_result.json` - Complete analysis data
-  - `executive_summary.json` - Key findings and recommendations
 
-**Model Configuration** (edit at top of script):
+**Model Configuration** (Phase 1.4.4):
 ```python
-MODEL_PERCEPTION = "gemini-2.5-pro"       # Camera + LiDAR analysis
-MODEL_MOTION = "gemini-2.5-flash"         # IMU motion detection
-MODEL_COLLISION = "gemini-2.5-pro"        # Collision risk assessment
-MODEL_ODD_SPEC = "gemini-2.5-pro"         # ODD specification parsing
-MODEL_COD = "gemini-2.5-flash"            # COD classification
-MODEL_REPORT = "gemini-2.5-flash"         # Report generation
+MODEL_PERCEPTION = "gemini-2.0-flash-thinking-exp"  # Multimodal tool calling
+MODEL_MOTION = "gemini-2.0-flash-exp"               # IMU motion detection
+MODEL_COLLISION = "gemini-2.0-flash-exp"            # Collision detection
+MODEL_ODD_SPEC = "gemini-2.0-flash-exp"             # ODD specification parsing
+MODEL_EVALUATOR = "gemini-2.0-flash-exp"            # COD + compliance
+MODEL_REPORT = "gemini-2.0-flash-exp"               # Report generation
 ```
 
 **Output Example**:
 ```
-SCENARIO METADATA
-  • Windows analyzed: 2
-  • Data source: simulation (confidence: 0.98)
-  • Environment: indoor_office
-
 ANALYSIS METADATA
   • Pipeline version: 2.0.0
-  • Analysis duration: 214.3s
-  • Agents executed: 10
-  • Total tokens: 62,860
-  • Estimated cost: $1.26
+  • Duration: 25.47 seconds
+  • Agents executed: 6
+  • Total tokens: 21,731
+  • Estimated cost: $0.43
 
 ODD COMPLIANCE
-  • Overall: ODD_BOUNDARY
-  • Violations: 0
-  • Warnings: 1
-
-⚠️  WARNINGS:
-    • collision_risk (0.3) is at the ODD boundary
-```
-
-**New in v2.0.0 - Metadata Tracking:**
-
-All analysis results now include comprehensive metadata for reproducibility:
-
-**`analysis_metadata`** (lightweight summary):
-```json
-{
-  "pipeline_version": "2.0.0",
-  "analysis_timestamp": "2025-11-25T18:13:42",
-  "analysis_duration_seconds": 214.3,
-  "total_agents_executed": 10,
-  "total_tokens_used": 62860,
-  "estimated_cost_usd": 1.26
-}
-```
-
-**`pipeline_metadata`** (detailed execution tracking):
-```json
-{
-  "pipeline_version": "2.0.0",
-  "pipeline_start_time": "2025-11-25T18:13:42",
-  "pipeline_duration_seconds": 214.3,
-  "odd_spec_hash": "a3f8d9e2",
-  "scenario_path": "/path/to/scenario",
-  "agent_executions": {
-    "OddSpecAgent": {
-      "version": "2.0.0",
-      "model_declared": "gemini-2.0-flash-lite",
-      "model_actual": "gemini-2.0-flash-lite",
-      "prompt_hash": "a3f8d9e2b1c4",
-      "execution_order": 1,
-      "timestamp": "2025-11-25T18:13:45",
-      "token_usage": {
-        "prompt_tokens": 2100,
-        "completion_tokens": 2100,
-        "total_tokens": 4200
-      }
-    }
-  },
-  "workflow_summary": {
-    "total_agents": 10,
-    "total_tokens": 62860,
-    "total_duration_seconds": 214.3,
-    "agents_executed": ["OddSpecAgent", "PerceptionLoopAgent", ...]
-  }
-}
-```
-
-**Benefits:**
-- **Reproducibility**: Exact prompt versions and model configurations tracked
-- **Debugging**: Per-agent execution details with timing and token usage
-- **Cost tracking**: Estimated costs based on token usage
-- **Drift detection**: Prompt hash changes trigger version updates
-- **Audit trail**: Complete record of analysis pipeline execution
-
-**HTML Report Enhancements:**
-
-Reports now include a metadata footer with:
-- Pipeline version and analysis timestamp
-- Collapsible accordion showing per-agent details:
-  - Agent name, version, model used
-  - Prompt hash (for drift detection)
-  - Expandable table for all 10 agents
-
-**Accessing Metadata:**
-
-```python
-# Load analysis result
-with open('full_result.json') as f:
-    result = json.load(f)
-
-# Lightweight metadata (always present)
-meta = result['analysis_metadata']
-print(f"Analysis took {meta['analysis_duration_seconds']}s")
-print(f"Used {meta['total_tokens_used']} tokens")
-print(f"Cost: ${meta['estimated_cost_usd']}")
-
-# Detailed pipeline metadata
-pipeline = result['pipeline_metadata']
-for agent, details in pipeline['agent_executions'].items():
-    print(f"{agent}: {details['token_usage']['total_tokens']} tokens")
+  • Overall: IN_ODD
+  • Temporal Stability: STABLE
+  • Critical Axes: 0
 ```
 
 ---
 
-### `run_odd_batch_analysis.py` - **Automated Batch Processor**
+### `chunk_large_scenario.py` - **Scenario Chunker** (NEW)
 
-**Purpose**: Process all production scenarios and generate aggregate report.
+**Purpose**: Split large scenarios into manageable chunks for processing.
+
+**Usage**:
+```bash
+# Default 10-window chunks
+python scripts/chunk_large_scenario.py data/production/sim_1_0 --chunk-size 10
+
+# Custom chunk size
+python scripts/chunk_large_scenario.py data/production/sim_1_0 --chunk-size 5
+```
+
+**What it does**:
+- Splits large scenarios (e.g., 62 windows) into smaller chunks
+- Creates standalone scenarios with their own index CSVs
+- Copies all necessary files (motion, camera, BEV)
+- Enables processing large datasets in batches
+
+**Output Example** (62 windows → 7 chunks):
+```
+sim_1_0_chunk_000_009/  (10 windows)
+sim_1_0_chunk_010_019/  (10 windows)
+sim_1_0_chunk_020_029/  (10 windows)
+sim_1_0_chunk_030_039/  (10 windows)
+sim_1_0_chunk_040_049/  (10 windows)
+sim_1_0_chunk_050_059/  (10 windows)
+sim_1_0_chunk_060_061/  (2 windows)
+```
+
+---
+
+### `run_odd_batch_analysis.py` - **Batch Processor**
+
+**Purpose**: Process all production scenarios automatically.
 
 **Usage**:
 ```bash
@@ -153,37 +98,9 @@ python scripts/run_odd_batch_analysis.py
 
 **What it does**:
 - Auto-discovers all scenarios in `data/production/`
-- Processes each sequentially with progress bars
-- Exits on first error (saves API costs)
-- Saves individual results to `data/archive/analysis_results/automated/<timestamp>/<scenario>/`
+- Processes each sequentially
 - Generates aggregate report combining all scenarios
-
-**Features**:
-- 📊 Progress tracking with tqdm
-- 🛑 Fail-fast on errors
-- 📈 Aggregate statistics across all scenarios
-- 💾 Individual + combined reports
-
-**Output Structure**:
-```
-data/archive/analysis_results/automated/20251123_150000/
-├── sim_1_0/
-│   ├── full_result.json
-│   └── executive_summary.json
-├── real_01_173442/
-│   ├── full_result.json
-│   └── executive_summary.json
-├── ...
-└── aggregate_report.json              # Combined analysis
-```
-
-**Aggregate Report Includes**:
-- Batch metadata (timestamp, scenario counts)
-- Compliance distribution (IN_ODD, BOUNDARY, VIOLATION)
-- Violation type frequencies
-- Environment distribution
-- Data source distribution
-- Per-scenario summaries
+- Saves to `data/archive/analysis_results/automated/<timestamp>/`
 
 ---
 

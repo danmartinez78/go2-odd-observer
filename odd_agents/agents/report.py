@@ -17,30 +17,23 @@ REPORT_AGENT_VERSION = "4.0.0"
 
 def create_report_tools(scenario_path: Path):
     """Create file-reading tool for Report Agent."""
+    from google.adk.tools.tool_context import ToolContext
+    import json
 
-    async def read_analysis_results_tool() -> str:
+    async def read_analysis_results_tool(tool_context: ToolContext) -> str:
         """
-        Read all analysis results from files.
+        Read all analysis results from blackboard.
 
         Returns JSON with ODD spec, sensor outputs, and evaluator output.
-        Avoids loading massive data onto blackboard.
+        No file I/O needed - reads directly from blackboard.
         """
-        from pathlib import Path
-        import json
-
-        scenario = Path(scenario_path)
-        results = {}
-
-        # Read all agent outputs
-        for agent_file in ["odd_spec.json", "perception_output.json",
-                           "motion_output.json", "collision_output.json",
-                           "evaluator_output.json"]:
-            file_path = scenario / agent_file
-            if file_path.exists():
-                with open(file_path, 'r') as f:
-                    agent_name = agent_file.replace(
-                        "_output.json", "").replace(".json", "")
-                    results[agent_name] = json.load(f)
+        results = {
+            "odd_spec": tool_context.get_value("temp:odd_spec") or {},
+            "perception": tool_context.get_value("temp:perception_output") or {},
+            "motion": tool_context.get_value("temp:motion_output") or {},
+            "collision": tool_context.get_value("temp:collision_output") or {},
+            "evaluator": tool_context.get_value("temp:evaluator_output") or {},
+        }
 
         return json.dumps(results, indent=2)
 
@@ -61,11 +54,11 @@ def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
 TASK: Produce executive summary and structured report.
 
 INPUT:
-- ODD Specification (v5.0.0): {temp:odd_spec?} (optional, can also read from file)
-- Tool: read_analysis_results() - reads all agent outputs from files
+- ODD Specification (v5.0.0): {temp:odd_spec?} (optional, can also read via tool)
+- Tool: read_analysis_results() - reads all agent outputs from blackboard
 
 STEPS:
-1. Call read_analysis_results() to load all analysis results
+1. Call read_analysis_results() to load all analysis results from blackboard
 2. Extract key findings from:
    - ODD spec: designed operating conditions
    - Sensor outputs: what was observed per window

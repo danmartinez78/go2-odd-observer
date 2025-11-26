@@ -99,17 +99,21 @@ def _combine_sensor_outputs(
     ]
     """
     # Extract per-window data from each agent
-    # Assuming sensor agents output format:
+    # Sensor agents output format:
     # {
     #   "per_window": [
     #     {"window_id": "000", "measurements": {...}},
     #     ...
     #   ]
     # }
+    # Fallback to "per_window_measurements" for backward compatibility
 
-    perception_windows = perception_output.get("per_window", [])
-    motion_windows = motion_output.get("per_window", [])
-    collision_windows = collision_output.get("per_window", [])
+    perception_windows = perception_output.get(
+        "per_window", perception_output.get("per_window_measurements", []))
+    motion_windows = motion_output.get(
+        "per_window", motion_output.get("per_window_measurements", []))
+    collision_windows = collision_output.get(
+        "per_window", collision_output.get("per_window_measurements", []))
 
     # Create index by window_id
     combined = {}

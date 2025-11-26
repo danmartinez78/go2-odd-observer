@@ -10,41 +10,64 @@ from google.genai import Client
 
 
 # Agent version
-EVALUATOR_AGENT_VERSION = "1.0.0"
+# v2.0.0: Input is ODD + insights only. Tools read blackboard for measurements.
+EVALUATOR_AGENT_VERSION = "2.0.0"
 
 
 def create_evaluator_tools(scenario_path: Path):
     """Create Python tools for Evaluator Agent."""
-    from ..tools.cod_construction import construct_cod_from_sensor_outputs
+    from google.adk.tools.tool_context import ToolContext
     import json
 
-    async def construct_cod_tool(odd_spec: dict, perception_output: dict, motion_output: dict, collision_output: dict) -> str:
+    async def construct_cod_tool(odd_spec: dict, tool_context: ToolContext) -> str:
         """
         Construct COD region and compute ODD/COD distance metrics.
 
-        Takes sensor outputs from blackboard and constructs:
+        Reads sensor outputs from blackboard and constructs:
         - Overall COD region (envelope of all measurements)
         - Time series: per-window violation distances and margins
         - Region metrics: aggregate distance, fraction-outside per axis, flagged windows
 
         Returns JSON with cod_region, time_series, and region_metrics.
         """
-        # Save outputs temporarily for the tool to read
-        # (tool expects to read from files)
-        import tempfile
-        import os
-        
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir_path = Path(tmpdir)
-            
-            # Write sensor outputs to temp files
-            for name, data in [("perception", perception_output), ("motion", motion_output), ("collision", collision_output)]:
-                with open(tmpdir_path / f"{name}_output.json", 'w') as f:
-                    json.dump(data, f)
-            
-            # Call the COD construction function
-            result = construct_cod_from_sensor_outputs(tmpdir, odd_spec)
-        
+        # Read sensor outputs from blackboard via tool_context
+        perception_output = tool_context.get_value(
+            "temp:perception_output") or {}
+        motion_output = tool_context.get_value("temp:motion_output") or {}
+        collision_output = tool_context.get_value(
+            "temp:collision_output") or {}
+
+        # Call the COD construction function directly with the data from blackboard
+        from ..tools.cod_construction import (
+            _combine_sensor_outputs,
+            _build_cod_region,
+            _compute_time_series_metrics,
+            _compute_region_metrics
+        )
+
+        # Combine per-window measurements from all sensors
+        combined_windows = _combine_sensor_outputs(
+            perception_output,
+            motion_output,
+            collision_output
+        )
+
+        # Build overall COD region
+        cod_region = _build_cod_region(combined_windows, odd_spec)
+
+        # Compute time series metrics (per-window)
+        time_series = _compute_time_series_metrics(combined_windows, odd_spec)
+
+        # Compute region metrics (aggregate)
+        region_metrics = _compute_region_metrics(
+            cod_region, odd_spec, combined_windows)
+
+        result = {
+            "cod_region": cod_region,
+            "time_series": time_series,
+            "region_metrics": region_metrics
+        }
+
         return json.dumps(result, indent=2)
 
     async def get_window_details_tool(window_id: str) -> str:
@@ -95,51 +118,48 @@ def create_evaluator_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=tools,
         output_key="temp:evaluator_output",
-        instruction="""You analyze ODD compliance using Python tools for COD construction.
+        instruction="""You evaluate ODD compliance using Python tools for COD computation and LLM reasoning for insights.
 
-INPUT:
-- ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
-- Perception Output: {temp:perception_output?} - per-window measurements
-- Motion Output: {temp:motion_output?} - per-window measurements
-- Collision Output: {temp:collision_output?} - per-window measurements
-- Tools: construct_cod_from_sensor_outputs, get_window_details
+INPUT (text summaries only - raw window data is in blackboard, accessed by tools):
+- ODD Specification: {temp:odd_spec?}
+- Perception insights: {temp:perception_output.temporal_analysis?} {temp:perception_output.summary_insights?}
+- Motion insights: {temp:motion_output.temporal_analysis?} {temp:motion_output.summary_insights?}
+- Collision insights: {temp:collision_output.temporal_analysis?} {temp:collision_output.summary_insights?}
 
-TASKS:
-1. Call construct_cod_from_sensor_outputs(odd_spec, perception_output, motion_output, collision_output)
-2. Analyze COD construction results:
-   - Overall COD region vs ODD specification
-   - Region distance (how far COD diverges from ODD)
-   - Per-axis fraction-outside (which dimensions violate most)
-   - Time series: when violations occur, margins over time
-3. Investigate violations:
-   - Identify flagged windows from region_metrics
-   - Use get_window_details(window_id) to inspect specific violations
-   - Analyze temporal patterns (do violations cluster? trend worse?)
-4. Compliance assessment:
-   - Overall verdict: IN_ODD, OUT_ODD, or BOUNDARY
-   - Critical violations vs minor excursions
-   - Temporal stability of compliance
+TOOLS (read raw measurements from blackboard):
+- construct_cod_tool(odd_spec): Reads per_window measurements from blackboard, computes COD region + metrics
+
+WORKFLOW:
+1. Call construct_cod_tool(odd_spec) - this reads sensor measurements from blackboard
+2. Analyze tool output: COD region, violation distances, fraction-outside per axis
+3. Interpret sensor insights (temporal_analysis, summary_insights) for context
+4. Determine compliance verdict with reasoning
 
 OUTPUT (JSON only, no markdown):
 {
   "cod_region": {
-    // From construct_cod tool - overall envelope
+    // From construct_cod tool - overall measurement envelope
   },
   "region_metrics": {
     // From construct_cod tool - aggregate distance and fractions
   },
-  "time_series_analysis": {
-    "violation_patterns": "<temporal clustering, trends, stability>",
-    "critical_windows": ["<window_ids with significant violations>"],
-    "margin_trends": "<how close to boundary over time>"
-  },
   "compliance_verdict": {
-    "overall": "IN_ODD" | "OUT_ODD" | "BOUNDARY",
-    "rationale": "<reasoning based on region distance and violations>",
-    "critical_axes": ["<axes with largest fraction-outside>"],
+    "verdict": "IN_ODD" | "OUT_ODD" | "BOUNDARY",
+    "confidence": 0.0-1.0,
+    "rationale": "Reasoning combining COD metrics + sensor insights",
+    "critical_axes": ["Axes with largest violations"],
     "temporal_stability": "STABLE" | "DEGRADING" | "IMPROVING"
-  }
+  },
+  "key_concerns": [
+    "Issues identified from sensor insights + COD analysis"
+  ]
 }
 
-Use Python tools for computation. Focus on interpreting results and providing actionable insights.""",
+RULES:
+1. Tool computes COD metrics - you interpret them
+2. Sensor insights provide context for violations
+3. Verdict based on region_distance and fraction_outside metrics
+4. IN_ODD: region_distance < 0.1, no critical violations
+5. BOUNDARY: region_distance 0.1-0.3, minor excursions
+6. OUT_ODD: region_distance > 0.3, significant violations""",
     )

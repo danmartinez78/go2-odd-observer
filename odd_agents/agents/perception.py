@@ -12,53 +12,51 @@ from ..tools.perception import create_perception_tools
 
 
 # Agent version
-# Breaking: outputs per-window typed measurements for COD construction
-PERCEPTION_AGENT_VERSION = "5.0.0"
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+PERCEPTION_AGENT_VERSION = "6.0.0"
 
 # Consolidated prompt
-PERCEPTION_AGENT_PROMPT = """You orchestrate perception analysis with ODD-guided measurements.
+PERCEPTION_AGENT_PROMPT = """You orchestrate perception analysis using tools and provide temporal reasoning.
 
 INPUT:
-- ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
-- Tools: list_windows_tool, analyze_window_perception_tool
+- ODD Specification: {temp:odd_spec?} - extract environment/actors dimensions
+- Tools: list_windows_tool(), analyze_window_perception_tool(window_id, odd_context)
 
-TASKS:
-1. Filter ODD: Extract environment/actors dimensions observable from camera + LiDAR BEV
-2. Call tools: list_windows_tool() then analyze_window_perception_tool(window_id, odd_context) for each
-3. Per-window measurements: For EACH window, measure ODD axes and tag compliance
-4. Cross-window summary: Analyze temporal patterns, transitions, safety concerns
+WORKFLOW:
+1. Extract relevant ODD dimensions for perception (environment: lighting, terrain, obstacles, etc.)
+2. Call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_window_perception_tool(window_id, odd_context)
+4. Collect tool outputs (each has: odd_measurements, explanation, key_insights)
+5. Analyze temporal patterns across windows
+6. Produce structured output
+
+CRITICAL: You MUST call the tools for each window. Do NOT skip tool calls.
 
 OUTPUT (JSON only, no markdown):
 {
-  "per_window_measurements": [
+  "per_window": [
     {
       "window_id": "000",
       "measurements": {
-        // Use EXACT ODD axis names as keys
-        // For range: numeric value (e.g., "obstacle_density": 0.35)
-        // For enum: string label (e.g., "lighting_conditions": "bright")
-        // For bool: 0 or 1 (e.g., "stairs_present": 0)
-      },
-      "compliance": {
-        // Per-axis compliance tags: "IN_ODD", "OUT_ODD", "AT_BOUNDARY"
-        "obstacle_density": "IN_ODD",
-        "lighting_conditions": "IN_ODD"
+        // COPY directly from tool's odd_measurements
       }
     }
   ],
-  "summary": {
-    "temporal_observations": [
-      "Cross-window: <patterns, stability, transitions>",
-      "Sensor quality: <issues if any>",
-      "Data source: <simulation vs real>"
-    ],
-    "safety_concerns": [
-      "<Any perception-based safety issues>"
-    ]
-  }
+  "temporal_analysis": {
+    "odd_trends": "How ODD-relevant measurements change across windows",
+    "anomalies": ["Window IDs with unusual patterns"],
+    "concerns": ["Safety or quality issues detected"]
+  },
+  "summary_insights": [
+    "Key insight aggregated from tool outputs",
+    "Cross-window pattern worth noting"
+  ]
 }
 
-Per-window measurements enable temporal COD tracking. Use ODD axis types to determine measurement format."""
+RULES:
+1. per_window.measurements: COPY from tool's odd_measurements verbatim
+2. temporal_analysis: YOUR reasoning about patterns across windows
+3. summary_insights: Aggregate key_insights from tools + your observations"""
 
 
 def create_perception_agent(scenario_path: Path, genai_client: genai.Client, model: str, api_key: str):
