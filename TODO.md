@@ -397,21 +397,107 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 
 **Outcome**: Complete three-tier architecture where each tier adds distinct value - tools provide grounded observations, loops add temporal context, summaries create ODD-aligned structure.
 
+**Testing Results:**
+
+**Test - Full Pipeline (sim_test_w010_w011, 2 windows):**
+- ✅ All 9 agents executed successfully
+- ✅ Tool agents producing flexible narrative observations
+- ✅ Loop agents performing intelligent ODD filtering (observed in logs)
+- ✅ Summary agents mapping observations to ODD dimensions correctly
+- ✅ Rich, grounded observations captured:
+  - "LiDAR data is very sparse... could pose a safety risk"
+  - "IMU gyroscope reported high angular velocity while robot was stationary"
+  - Camera evidence correctly prioritized over IMU (intelligent reasoning)
+- ⚠️ Cross-window observations not preserved in final structure (minor issue)
+
+**Performance Metrics:**
+- Duration: 358.69 seconds (~6 minutes)
+- Total tokens: 104,176 (+18% vs Phase 1.4.1)
+- Cost: $2.08 USD ($1.04/window)
+- Token increase: Expected due to flexible observations + cross-window reasoning
+
+**Quality Improvements:**
+- ✅ Sensor anomalies detected automatically (sparse LiDAR, IMU drift)
+- ✅ Multimodal reasoning working (IMU vs camera correlation)
+- ✅ Safety implications identified proactively
+- ✅ Much richer observations than rigid v2.0.0 schemas
+
+**Known Issues for Future Optimization:**
+- Cost: $1.04/window is high - optimization pass needed
+- Missing dimensions: Some COD dimensions not measured (obstacle_density, traversability_score)
+- Ego physical dimensions should be hardcoded constants, not measured
+- Cross-window observations need better preservation in output structure
+
+**Outcome**: Three-tier architecture working successfully. Tool agents provide grounded observations, loop agents add temporal context (though not fully captured), summary agents create ODD-aligned structure. Quality of observations significantly improved over rigid schemas.
+
 **Deliverables Completed:**
 - [x] Add tool agent versioning (PERCEPTION_TOOL_AGENT_VERSION, etc.)
 - [x] Update tool agent signatures to accept odd_context parameter
 - [x] Restructure tool agent prompts for flexible observations
 - [x] Update loop agents for intelligent ODD filtering
 - [x] Add cross-window reasoning to loop agents
-- [x] Test perception agent with new architecture
+- [x] Fix JSON output format issues (markdown markers, bracket placeholders)
+- [x] Test full pipeline on sim_test_w010_w011
 - [x] Validate intelligent ODD filtering working
-- [x] Validate cross-window observations generated
+- [x] Validate flexible observations generated
+- [x] Measure performance metrics (tokens, cost, duration)
+- [x] Document known issues for optimization
 - [x] Commit changes to feature/phase1.4.2-three-tier-intelligence branch
+- [x] Merge to dev branch
 - [x] Update documentation (TODO.md)
-- [x] Update COD agent v3.0.0 for dynamic schema (reads ODD spec)
-- [x] Test with current ground robot ODD (baseline validation)
-- [x] Test with alternate drone ODD (generalization validation)
-- [x] Documentation updates in TODO.md
+
+### 1.4.3 Performance & Measurement Optimization 📋 PLANNED
+
+**Goal:** Reduce cost/window and improve COD dimension measurement coverage
+
+**Status:** Ready to begin after Phase 1.4.2 wrap-up
+
+**Identified Issues from Phase 1.4.2:**
+1. **Cost too high**: $1.04/window ($2.08 for 2 windows)
+2. **Missing COD dimensions**: obstacle_density, traversability_score, min_corridor_width_m
+3. **Ego dimensions not measured**: footprint_length_m, footprint_width_m, max_height_m (should be constants)
+4. **Cross-window observations**: Generated but not preserved in final output
+
+**Optimization Strategies:**
+
+**A. Cost Reduction (Target: 60-70% reduction → ~$0.35/window):**
+- [ ] Model downgrades for less critical agents:
+  - Perception Loop: gemini-2.5-pro → gemini-2.0-flash-exp (100x cheaper)
+  - Collision Loop: gemini-2.5-pro → gemini-2.0-flash-exp
+  - Keep Pro models for: ODD Spec, complex reasoning, final report
+- [ ] Prompt optimization:
+  - Reduce verbose BEV descriptions
+  - Compress motion reasoning framework
+  - Remove redundant JSON structure examples
+- [ ] Consider direct tool calls (bypass loop agent overhead if cross-window not essential)
+
+**B. Improve Dimension Measurement:**
+- [ ] Hardcode ego physical dimensions (robot model constants)
+- [ ] Hybrid tool output: Add quantitative_metrics dict alongside observations
+  ```json
+  {
+    "observations": [...],
+    "quantitative_metrics": {
+      "obstacle_density_ratio": 0.45,
+      "traversability_score": 0.7,
+      "min_gap_width_m": 0.6
+    }
+  }
+  ```
+- [ ] Enhance summary agent prompts to extract numeric values from prose
+
+**C. Fix Cross-Window Observations:**
+- [ ] Verify loop agent output structure includes cross_window_observations
+- [ ] Ensure summary agents preserve and pass through temporal observations
+- [ ] Update COD/Report agents to utilize cross-window insights
+
+**Expected Outcomes:**
+- Cost: $0.30-$0.40/window (70% reduction)
+- COD coverage: 90%+ dimensions measured
+- Maintained quality: Rich observations preserved
+- Better temporal insights: Cross-window patterns captured
+
+**Priority:** High - Cost is blocking scaled testing (50+ window scenarios)
 
 ### 1.5 Evaluator Agent Upgrade 📋 PLANNED
 
