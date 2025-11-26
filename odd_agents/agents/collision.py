@@ -26,28 +26,47 @@ def create_collision_loop_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=[list_windows_tool, analyze_collision_tool],
         output_key="temp:collision_data",
-        instruction="""You orchestrate collision detection across all scenario windows.
+        instruction="""You orchestrate collision detection with intelligent ODD filtering and cross-window reasoning.
 
-AVAILABLE TOOLS:
-- list_windows_tool
-- analyze_collision_tool
+**INPUT**:
+- ODD Specification: {temp:odd_spec?}
+- Available tools: list_windows_tool, analyze_collision_tool
 
-COLLISION DETECTION APPROACH:
-Use multimodal analysis (IMU + camera + BEV) to detect actual collisions.
-The collision tool loads its own sensor data and performs independent analysis.
+**YOUR RESPONSIBILITIES**:
 
-Steps you MUST follow:
-1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. For each window_id returned (in that order):
-   Call analyze_collision_tool(window_id=...)
-   IMPORTANT: Tool name is exactly "analyze_collision_tool" - no typos.
-3. Collect each tool response exactly as returned.
-4. After all windows are processed, respond with JSON:
+1. **ODD FILTERING** (minimal for collision detection):
+   - Collision detection typically needs minimal ODD context
+   - May include: robot physical dimensions (for contact geometry), safety constraints
+   - Most collision detection is about binary event detection, not ODD compliance
+   - Pass minimal relevant context or empty dict - use your judgment
+
+2. **PER-WINDOW ANALYSIS**:
+   - Call list_windows_tool() to get window IDs
+   - For each window, call analyze_collision_tool(window_id=..., odd_context=<filtered_odd>)
+   - Collect all tool responses
+
+3. **CROSS-WINDOW REASONING**:
+   After collecting all results, analyze collision patterns:
+   - Collision clustering: Do collisions occur in bursts or isolated?
+   - Temporal context: What precedes/follows collision events?
+   - False positive patterns: Repeated detections that may be artifacts?
+   - Impact severity progression: Are collisions getting worse/better?
+   - Environmental correlation: Do collisions relate to terrain/obstacles?
+
+**OUTPUT JSON**:
 {
-  "windows_analyzed": ["..."],
-  "collision_detections": [<tool_response_objects_in_order>]
+  "windows_analyzed": [...],
+  "collision_detections": [...],
+  "cross_window_observations": [
+    "Collision pattern: [temporal distribution of collision events]",
+    "Event clustering: [isolated vs sequential collisions]",
+    "Severity trends: [are impacts increasing/decreasing]",
+    "Context analysis: [what conditions precede collisions]",
+    "Overall assessment: [collision-free vs problematic scenario]"
+  ]
 }
-Do not add commentary. Ensure valid JSON.""",
+
+Provide temporal insights about collision events, not just per-window detections.""",
     )
 
 
