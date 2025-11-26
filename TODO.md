@@ -298,6 +298,116 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [x] Update ODD Spec agent v3.0.0 with environment/actors/ego structure
 - [x] Update Perception agent v3.0.0 to read ODD spec dimensions
 - [x] Update Motion agent v3.0.0 to read ODD spec dimensions
+- [x] Update COD v3.0.0 to build dynamic schema from ODD spec
+- [x] Test with ground robot ODD (baseline validation)
+- [x] Test with drone ODD (generalization validation)
+- [x] Measure token impact (+41%)
+- [x] Update documentation (TODO.md, ARCHITECTURE_REDESIGN.md)
+- [x] Merge to dev branch
+
+### 1.4.2 Three-Tier Intelligence Architecture ✅ COMPLETED (Nov 26, 2025)
+
+**Problem Identified**: Tool agents (not loop agents) are the real workers but missed in Phase 1.4.1
+
+**Discovery:**
+- Phase 1.4.1 made summary agents ODD-schema driven ✅
+- BUT: Tool agents (the actual multimodal workers) still had hardcoded schemas ❌
+- Loop agents were just "dumb iterators" - calling tools N times without adding intelligence ❌
+
+**Architecture Insight - Three-Tier Intelligence:**
+
+1. **Tool Agents** (per-window deep analysis):
+   - Perception tool: Camera + 3 BEV channels → multimodal reasoning
+   - Motion tool: IMU data + camera → motion state detection
+   - Collision tool: Multimodal → binary collision detection
+   - These agents do the REAL work (grounded observations)
+
+2. **Loop Agents** (cross-window pattern recognition):
+   - Currently: Dumb iterators (call tool N times, collect responses)
+   - Should: Temporal reasoning (transitions, trends, anomalies)
+   - Should: Intelligently filter ODD spec to pass only relevant portions to tools
+
+3. **Summary Agents** (aggregation + ODD mapping):
+   - Already working well from Phase 1.4.1
+   - Read tool outputs + ODD spec → map to ODD dimensions
+   - Build structured odd_measurements + pass observations to Evaluator
+
+**Solution Implemented:**
+
+**1. Tool Agent Changes (v3.0.0):**
+- [x] Added versioning constants:
+  - `PERCEPTION_TOOL_AGENT_VERSION = "3.0.0"`
+  - `MOTION_TOOL_AGENT_VERSION = "3.0.0"`
+  - `COLLISION_TOOL_AGENT_VERSION = "3.0.0"`
+- [x] Updated tool signatures to accept `odd_context: dict` parameter
+- [x] Replaced rigid schemas with flexible observation structures
+- [x] Tool agents produce narrative observations, not hardcoded fields
+- [x] Summary agents handle ODD mapping (separation of concerns)
+
+**2. Loop Agent Changes:**
+- [x] Intelligent ODD filtering (not hardcoded rules):
+  - Loop agent reads full ODD spec
+  - Uses its intelligence to determine what's relevant to its tool
+  - Perception: typically environment + actors
+  - Motion: typically ego dimensions
+  - Collision: minimal context needed
+  - Agent decides dynamically based on ODD structure
+- [x] Cross-window reasoning added:
+  - Environmental stability/transitions
+  - Temporal patterns and trends
+  - Anomaly detection across windows
+  - Overall scenario assessment
+- [x] Output structure: `{"per_window": [...], "cross_window_observations": [...]}`
+
+**Design Philosophy:**
+- **Intelligent filtering**: Loop agents decide ODD relevance, not hardcoded rules
+- **Guidance not contract**: ODD context guides tool agents, doesn't constrain
+- **Separation of concerns**: Tools observe, summaries map to ODD structure
+- **Three-tier intelligence**: Tool (grounded) → Loop (temporal) → Summary (structural)
+
+**Testing Results:**
+
+**Test - Perception Agent (sim_test_w010_w011):**
+- ✅ Loop agent intelligently filtered ODD: "I'll exclude ego-vehicle dynamics and operational policies"
+- ✅ Tool agent produced flexible observations (not rigid schema)
+- ✅ Cross-window reasoning working: "Environmental stability: consistent across both windows"
+- ✅ Summary agent mapped observations to odd_measurements
+- ✅ Pipeline completed successfully
+
+**Architectural Benefits Achieved:**
+- ✅ **Tool agent versioning**: Can now track tool agent changes in metadata
+- ✅ **Flexible observations**: Tool agents produce rich narratives, not limited schemas
+- ✅ **Temporal intelligence**: Loop agents add cross-window reasoning
+- ✅ **Intelligent filtering**: Loop agents decide ODD relevance dynamically
+- ✅ **Token efficiency**: Pass only relevant ODD portions to tools
+- ✅ **Future-proof**: Works with any ODD structure without code changes
+
+**Version Tracking:**
+- Perception Tool Agent: v3.0.0 (new: versioning, odd_context, flexible output)
+- Motion Tool Agent: v3.0.0 (new: versioning, odd_context, flexible output)
+- Collision Tool Agent: v3.0.0 (new: versioning, odd_context, flexible output)
+- Perception Loop: 3.0.0 (enhanced: intelligent ODD filtering, cross-window reasoning)
+- Motion Loop: 3.0.0 (enhanced: intelligent ODD filtering, cross-window reasoning)
+- Collision Loop: (enhanced: minimal ODD filtering, cross-window collision patterns)
+
+**Implementation Summary:**
+- Files modified: 6 (3 tool agents + 3 loop agents)
+- Lines changed: +222 insertions, -91 deletions
+- Design pattern: Intelligence-guided filtering + flexible observations + temporal reasoning
+
+**Outcome**: Complete three-tier architecture where each tier adds distinct value - tools provide grounded observations, loops add temporal context, summaries create ODD-aligned structure.
+
+**Deliverables Completed:**
+- [x] Add tool agent versioning (PERCEPTION_TOOL_AGENT_VERSION, etc.)
+- [x] Update tool agent signatures to accept odd_context parameter
+- [x] Restructure tool agent prompts for flexible observations
+- [x] Update loop agents for intelligent ODD filtering
+- [x] Add cross-window reasoning to loop agents
+- [x] Test perception agent with new architecture
+- [x] Validate intelligent ODD filtering working
+- [x] Validate cross-window observations generated
+- [x] Commit changes to feature/phase1.4.2-three-tier-intelligence branch
+- [x] Update documentation (TODO.md)
 - [x] Update COD agent v3.0.0 for dynamic schema (reads ODD spec)
 - [x] Test with current ground robot ODD (baseline validation)
 - [x] Test with alternate drone ODD (generalization validation)

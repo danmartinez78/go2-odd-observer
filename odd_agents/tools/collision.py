@@ -16,6 +16,10 @@ from ..utils import extract_json_block
 from .common import get_window_file_paths
 
 
+# Tool agent version
+COLLISION_TOOL_AGENT_VERSION = "3.0.0"
+
+
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
     """
     Create collision detection tools for a specific scenario.
@@ -34,9 +38,15 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
 
     async def analyze_collision_tool(
         window_id: str,
+        odd_context: dict,
         tool_context: ToolContext
     ) -> Dict[str, Any]:
         """Tool: Multimodal collision detection using IMU + camera + BEV.
+
+        Args:
+            window_id: Window identifier
+            odd_context: Filtered ODD specification from loop agent (minimal context needed)
+            tool_context: ADK tool context
 
         Analyzes collision evidence from:
         - IMU data (acceleration spikes, angular velocity anomalies)
@@ -102,6 +112,11 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
             prompt_parts = [types.Part(text=f"""You are analyzing window {window_id} for collision detection.
 
 **TASK**: Determine if an actual collision occurred using ALL available evidence.
+
+**ODD CONTEXT** (if provided):
+{json.dumps(odd_context, indent=2) if odd_context else "Collision detection typically requires minimal ODD context."}
+
+Focus on detecting actual collisions using multimodal sensor evidence.
 
 === IMU SENSOR DATA ===
 Motion metrics from IMU:
