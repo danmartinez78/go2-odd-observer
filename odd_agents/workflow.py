@@ -275,14 +275,36 @@ async def run_odd_workflow(
         # Extract evaluator output for full_analysis
         evaluator_output = extract_agent_output(events, "EvaluatorAgent")
 
+        # =====================================================================
+        # POST-PIPELINE REPORT GENERATION
+        # =====================================================================
+        # Use report_builder to generate comprehensive reports from all outputs
+        from .report_builder import extract_all_agent_outputs, generate_reports
+
+        # Extract all agent outputs for full report
+        all_agent_outputs = extract_all_agent_outputs(events)
+
+        # Generate both executive summary and full technical report
+        reports = generate_reports(
+            events=events,
+            pipeline_metadata=pipeline_metadata,
+            output_dir=scenario_path_obj,  # Save to scenario directory
+        )
+
         # Return report + metadata
         # Phase 1.4.4: Report is flat, evaluator output goes in full_analysis
         return {
-            'report': report,  # Flat structure from ReportAgent
-            # COD + compliance from EvaluatorAgent
-            'full_analysis': evaluator_output or {},
+            'report': report,  # From ReportAgent (executive summary)
+            'full_analysis': evaluator_output or {},  # COD + compliance
             'analysis_metadata': analysis_metadata,
             'pipeline_metadata': pipeline_metadata,
+            # New: comprehensive reports from post-processing
+            'reports': {
+                'executive_summary': reports['executive_summary'],
+                'full_technical': reports['full_report'],
+            },
+            # New: all raw agent outputs for debugging
+            'agent_outputs': all_agent_outputs,
         }
     else:
         print("\n❌ No valid report generated")
