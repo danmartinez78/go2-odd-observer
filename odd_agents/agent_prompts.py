@@ -20,13 +20,13 @@ def get_odd_spec_prompt():
     return dummy.instruction
 
 
-def get_perception_loop_prompt():
-    """Get Perception Loop agent prompt template."""
-    from .agents.perception import create_perception_loop_agent
+def get_perception_prompt():
+    """Get Perception agent prompt template (consolidated)."""
+    from .agents.perception import create_perception_agent
     from pathlib import Path
     from google.genai import Client
     # Create dummy agent to extract instruction
-    dummy = create_perception_loop_agent(
+    dummy = create_perception_agent(
         scenario_path=Path("."),
         genai_client=None,  # Won't be used
         model="dummy",
@@ -35,19 +35,12 @@ def get_perception_loop_prompt():
     return dummy.instruction
 
 
-def get_perception_summary_prompt():
-    """Get Perception Summary agent prompt template."""
-    from .agents.perception import create_perception_summary_agent
-    dummy = create_perception_summary_agent(api_key="dummy", model="dummy")
-    return dummy.instruction
-
-
-def get_motion_loop_prompt():
-    """Get Motion Loop agent prompt template."""
-    from .agents.motion import create_motion_loop_agent
+def get_motion_prompt():
+    """Get Motion agent prompt template (consolidated)."""
+    from .agents.motion import create_motion_agent
     from pathlib import Path
     from google.genai import Client
-    dummy = create_motion_loop_agent(
+    dummy = create_motion_agent(
         scenario_path=".",
         genai_client=None,
         model="dummy",
@@ -56,30 +49,16 @@ def get_motion_loop_prompt():
     return dummy.instruction
 
 
-def get_motion_summary_prompt():
-    """Get Motion Summary agent prompt template."""
-    from .agents.motion import create_motion_summary_agent
-    dummy = create_motion_summary_agent(api_key="dummy", model="dummy")
-    return dummy.instruction
-
-
-def get_collision_loop_prompt():
-    """Get Collision Loop agent prompt template."""
-    from .agents.collision import create_collision_loop_agent
+def get_collision_prompt():
+    """Get Collision agent prompt template (consolidated)."""
+    from .agents.collision import create_collision_agent
     from google.genai import Client
-    dummy = create_collision_loop_agent(
+    dummy = create_collision_agent(
         scenario_path=".",
         genai_client=None,
         model="dummy",
         api_key="dummy"
     )
-    return dummy.instruction
-
-
-def get_collision_summary_prompt():
-    """Get Collision Summary agent prompt template."""
-    from .agents.collision import create_collision_summary_agent
-    dummy = create_collision_summary_agent(api_key="dummy", model="dummy")
     return dummy.instruction
 
 
@@ -113,12 +92,9 @@ def get_all_prompts():
     if not _PROMPT_CACHE:
         _PROMPT_CACHE.update({
             'OddSpecAgent': get_odd_spec_prompt(),
-            'PerceptionLoopAgent': get_perception_loop_prompt(),
-            'PerceptionSummaryAgent': get_perception_summary_prompt(),
-            'MotionLoopAgent': get_motion_loop_prompt(),
-            'MotionSummaryAgent': get_motion_summary_prompt(),
-            'CollisionLoopAgent': get_collision_loop_prompt(),
-            'CollisionSummaryAgent': get_collision_summary_prompt(),
+            'PerceptionAgent': get_perception_prompt(),
+            'MotionAgent': get_motion_prompt(),
+            'CollisionAgent': get_collision_prompt(),
             'CodMeasurementAgent': get_cod_classifier_prompt(),
             'OddComplianceAgent': get_odd_compliance_prompt(),
             'ReportAgent': get_report_prompt(),
