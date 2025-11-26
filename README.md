@@ -104,13 +104,13 @@ jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/late
 
 ## 🤖 How It Works
 
-### 7-Agent Pipeline
+### 9-Agent Three-Tier Pipeline
 
 ```mermaid
 graph LR
     A[📝 ODD Spec<br/>Define Limits] --> B[👁️ Perception<br/>Camera+3 BEV]
     B --> C[🎯 Motion<br/>IMU+Camera]
-    C --> D[⚠️ Collision<br/>Binary Detection]
+    C --> D[⚠️ Collision<br/>Multimodal Detection]
     D --> E[🏷️ COD<br/>Classify Domain]
     E --> F[⚖️ Compliance<br/>Check Violations]
     F --> G[📋 Report<br/>Generate Summary]
@@ -124,12 +124,25 @@ graph LR
     style G fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
 ```
 
-**Phase 1.2 Architecture (Current):**
-- **Perception**: 1 camera + 3 BEV channels (occupancy, height, roughness)
-- **Motion**: IMU metrics + camera visual validation
-- **Collision**: Binary detection (threshold-based, no false positives)
-- **COD**: Scenario classification and compliance checking
-- **Report**: Executive summaries with violations and recommendations
+**Phase 1.4.2 Architecture (Current - Nov 2025):**
+
+**Three-Tier Intelligence:**
+- **Tool Agents (Tier 1)**: Per-window grounded observations from multimodal sensors
+  - Perception tool: Camera + 3 BEV channels → flexible observations
+  - Motion tool: IMU + camera → motion state with reasoning
+  - Collision tool: Multimodal fusion → binary collision detection
+- **Loop Agents (Tier 2)**: Cross-window temporal pattern recognition
+  - Intelligent ODD filtering (agent decides relevance)
+  - Detect transitions, trends, anomalies across time windows
+- **Summary Agents (Tier 3)**: ODD-aligned structural aggregation
+  - Map observations to ODD dimensions dynamically
+  - Build structured measurements + preserve rich observations
+  
+**Key Features:**
+- **ODD-Schema Driven**: Agents adapt to any ODD structure (ground robots, drones, etc.)
+- **Dynamic Dimension Mapping**: COD measurements auto-align with ODD spec
+- **Flexible Observations**: Rich narrative descriptions + quantitative metrics
+- **Intelligent Reasoning**: Camera evidence prioritized, sensor anomalies detected
 
 ### Multi-Modal Sensor Fusion
 
@@ -161,21 +174,28 @@ Quadruped robot designed for indoor office navigation.
 
 ### 2. Real-World Performance
 
-**Current Status:** Phase 1.2 Complete (Binary Collision Detection)
+**Current Status:** Phase 1.4.2 Complete (Three-Tier Intelligence Architecture)
 
-**Production Data Ready:**
+**Latest Features (Nov 2025):**
+- ✅ **ODD-Schema Driven** - Agents adapt to any robot domain (tested: ground robots + drones)
+- ✅ **Dynamic COD Mapping** - Measurements auto-align with ODD dimensions
+- ✅ **Three-Tier Intelligence** - Tool agents (grounded) → Loop agents (temporal) → Summary agents (structural)
+- ✅ **Flexible Observations** - Rich narrative + quantitative metrics
+- ✅ **Intelligent ODD Filtering** - Loop agents decide what's relevant, not hardcoded rules
+- ✅ **Sensor Anomaly Detection** - Automatically flags sparse LiDAR, IMU drift, etc.
+- ✅ **Multimodal Collision Detection** - IMU + camera + BEV fusion with LLM reasoning
+
+**Production Data:**
 - 📊 **62 windows** sim_1_0 production dataset + 6 test windows
 - 🏭 **Auto-cropped BEVs** - 65-72% size reduction with square aspect ratio
-- ✅ **3-channel BEV fusion** - Occupancy, Height, Roughness (density removed)
-- 🎯 **Binary collision detection** - IMU threshold-based (0 false positives)
-- ⚡ **Motion analysis** - IMU + camera multimodal fusion
+- ✅ **3-channel BEV fusion** - Occupancy, Height, Roughness (ground-filtered)
 - 📦 **Latest Data**: sim_1_0_v1 with transformed BEVs
 
-**Collision Detection (Phase 1.2):**
-- ✅ **Threshold-based**: >10 m/s² accel, >5 rad/s gyro, >50 m/s³ jerk
-- ✅ **Zero false positives**: Normal navigation correctly classified
-- ✅ **IMU-only**: Simple, reliable, no multimodal complexity
-- 📝 **Test validated**: sim_test_w010_w011 (accel 0.11-0.14 m/s² << 10.0 threshold)
+**Test Results:**
+- ⏱️ **6 minutes** for 2-window analysis (sim_test_w010_w011)
+- 💰 **$2.08** total cost ($1.04/window)
+- 🎯 **9/9 agents** executed successfully
+- 📊 **104K tokens** with rich observations and cross-window reasoning
 
 **Test Data Analysis:**
 - 📝 **6 test scenarios** (sim_test_w010_w011, plus production scenarios)
