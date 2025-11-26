@@ -46,14 +46,22 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 # Flash-exp is sufficient for most tasks with massive token savings
 # Options: "gemini-2.0-flash-exp", "gemini-2.5-flash", "gemini-2.5-pro"
 
-# All agents use flash-exp for maximum cost efficiency
 # Phase 1.4.4 - Type-driven COD construction
-MODEL_PERCEPTION = "gemini-2.0-flash-exp"   # Perception agent (v5.0.0)
-MODEL_MOTION = "gemini-2.0-flash-exp"       # Motion agent (v5.0.0)
-MODEL_COLLISION = "gemini-2.0-flash-exp"    # Collision agent (v5.0.0)
-MODEL_ODD_SPEC = "gemini-2.0-flash-exp"     # ODD spec parsing (v5.0.0)
-MODEL_EVALUATOR = "gemini-2.0-flash-exp"    # Evaluator agent (v1.0.0)
-MODEL_REPORT = "gemini-2.0-flash-exp"       # Final report generation (v4.0.0)
+# Using 2.5 pro for perception (multimodal tool calling more reliable)
+# Flash-exp for other agents (sufficient for text-only tasks)
+# Perception agent (v5.0.0) - needs reliable tool calling
+# NOTE: All sensor agents need thinking model for reliable tool calling
+MODEL_PERCEPTION = "gemini-2.0-flash-thinking-exp-01-21"
+# Motion agent - needs tool calling
+MODEL_MOTION = "gemini-2.0-flash-thinking-exp-01-21"
+# Collision agent - needs tool calling
+MODEL_COLLISION = "gemini-2.0-flash-thinking-exp-01-21"
+# ODD spec parsing (v5.0.0) - no tools
+MODEL_ODD_SPEC = "gemini-2.0-flash-exp"
+# Evaluator agent (v1.0.0) - simple tool
+MODEL_EVALUATOR = "gemini-2.0-flash-exp"
+# Final report generation (v4.0.0) - simple tool
+MODEL_REPORT = "gemini-2.0-flash-exp"
 
 # ============================================================================
 # ODD DESCRIPTION (Default from notebook)
@@ -201,21 +209,20 @@ def select_scenario(scenarios):
 
 def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
     """Extract compliance data from evaluator output (Phase 1.4.4)."""
-    # Phase 1.4.4: Check if we have the new flat structure from report
-    if 'compliance_summary' in result:
-        return result['compliance_summary']
+    # Phase 1.4.4: Check report.compliance_summary first (new flat structure)
+    if 'report' in result and 'compliance_summary' in result['report']:
+        return result['report']['compliance_summary']
 
-    # Check in full_analysis.evaluator (if present)
-    if 'full_analysis' in result:
-        evaluator = result['full_analysis'].get('evaluator', {})
-        if 'compliance_verdict' in evaluator:
-            return evaluator['compliance_verdict']
-        # Fallback for old structure
-        if 'odd_compliance' in result['full_analysis']:
-            compliance = result['full_analysis']['odd_compliance']
-            if 'odd_compliance' in compliance:
-                return compliance['odd_compliance']
-            return compliance
+    # Fallback: Check full_analysis.compliance_verdict (evaluator output)
+    if 'full_analysis' in result and 'compliance_verdict' in result['full_analysis']:
+        return result['full_analysis']['compliance_verdict']
+
+    # Old Phase 1.4.3 structure
+    if 'full_analysis' in result and 'odd_compliance' in result['full_analysis']:
+        compliance = result['full_analysis']['odd_compliance']
+        if 'odd_compliance' in compliance:
+            return compliance['odd_compliance']
+        return compliance
 
     return {}
 
@@ -318,7 +325,9 @@ def display_summary(result: Dict[str, Any]):
     print("=" * 80)
     print("ODD COMPLIANCE")
     print("=" * 80)
-    overall = compliance_data.get('overall', 'UNKNOWN')
+    # Phase 1.4.4: compliance uses 'verdict' not 'overall'
+    overall = compliance_data.get(
+        'verdict', compliance_data.get('overall', 'UNKNOWN'))
     rationale = compliance_data.get('rationale', 'N/A')
     critical_axes = compliance_data.get('critical_axes', [])
     temporal_stability = compliance_data.get('temporal_stability', 'N/A')
@@ -326,7 +335,8 @@ def display_summary(result: Dict[str, Any]):
     print(f"  • Overall: {overall}")
     print(f"  • Temporal Stability: {temporal_stability}")
     print(f"  • Critical Axes: {len(critical_axes)}")
-    print(f"  • Rationale: {rationale}")
+    if rationale != 'N/A':
+        print(f"  • Rationale: {rationale}")
 
     if critical_axes:
         print()

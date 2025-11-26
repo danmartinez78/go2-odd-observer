@@ -107,16 +107,17 @@ def extract_agent_output(events: list, agent_name: str) -> Optional[Dict[str, An
 def save_sensor_outputs(events: list, scenario_path: Path):
     """Save sensor agent outputs to files for Evaluator/Report access."""
     import json
-    
+
     # Extract and save each sensor agent output
     for agent_name in ["PerceptionAgent", "MotionAgent", "CollisionAgent"]:
         output = extract_agent_output(events, agent_name)
         if output:
-            output_file = scenario_path / f"{agent_name.lower().replace('agent', '')}_output.json"
+            output_file = scenario_path / \
+                f"{agent_name.lower().replace('agent', '')}_output.json"
             with open(output_file, 'w') as f:
                 json.dump(output, f, indent=2)
             print(f"📝 Saved {agent_name} output to {output_file.name}")
-    
+
     # Also save ODD spec for reference
     odd_spec = extract_agent_output(events, "OddSpecAgent")
     if odd_spec:
@@ -271,10 +272,15 @@ async def run_odd_workflow(
             'estimated_cost_usd': round(estimated_cost, 4),
         }
 
+        # Extract evaluator output for full_analysis
+        evaluator_output = extract_agent_output(events, "EvaluatorAgent")
+
         # Return report + metadata
+        # Phase 1.4.4: Report is flat, evaluator output goes in full_analysis
         return {
-            'report': report.get('report', {}),
-            'full_analysis': report.get('full_analysis', {}),
+            'report': report,  # Flat structure from ReportAgent
+            # COD + compliance from EvaluatorAgent
+            'full_analysis': evaluator_output or {},
             'analysis_metadata': analysis_metadata,
             'pipeline_metadata': pipeline_metadata,
         }

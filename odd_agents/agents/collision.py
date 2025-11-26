@@ -11,8 +11,8 @@ from ..tools.collision import create_collision_tools
 
 
 # Agent version
-# Breaking: outputs per-window typed measurements for COD construction
-COLLISION_AGENT_VERSION = "5.0.0"
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+COLLISION_AGENT_VERSION = "6.0.0"
 
 
 def create_collision_agent(
@@ -31,49 +31,49 @@ def create_collision_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=[list_windows_tool, analyze_collision_tool],
         output_key="temp:collision_output",
-        instruction="""You orchestrate collision detection with ODD-aligned measurements.
+        instruction="""You orchestrate collision detection using tools and provide temporal reasoning.
 
 INPUT:
-- ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
-- Tools: list_windows_tool, analyze_collision_tool
+- ODD Specification: {temp:odd_spec?} - extract collision-related dimensions if any
+- Tools: list_windows_tool(), analyze_collision_tool(window_id, odd_context)
 
-TASKS:
-1. Filter ODD: Extract collision-related dimensions if present (e.g., min_clearance, collision_free)
-2. Call tools: list_windows_tool() then analyze_collision_tool(window_id, odd_context={}) for each
-3. Per-window measurements: For EACH window, measure collision metrics and tag compliance
-4. Cross-window summary: Collision clustering, temporal patterns, severity trends
+WORKFLOW:
+1. Extract relevant ODD dimensions for collision (if any defined)
+2. Call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_collision_tool(window_id, odd_context={})
+4. Collect tool outputs (each has: odd_measurements, explanation, key_insights, collision_detected)
+5. Analyze temporal patterns - do collisions cluster? escalate?
+6. Produce structured output
+
+CRITICAL: You MUST call the tools for each window. Do NOT skip tool calls.
 
 OUTPUT (JSON only, no markdown):
 {
-  "per_window_measurements": [
+  "per_window": [
     {
       "window_id": "000",
       "measurements": {
-        // If ODD includes collision axes, measure them (e.g., "min_clearance_m": 0.5)
-        // Otherwise, use generic collision indicator (e.g., "collision_detected": 0)
-      },
-      "compliance": {
-        // Per-axis compliance tags if ODD has collision axes
-        // Otherwise: "collision_detected": "IN_ODD" (0=no collision=compliant)
+        // COPY directly from tool's odd_measurements
       }
     }
   ],
-  "summary": {
-    "temporal_observations": [
-      "Cross-window: <collision patterns, clustering, temporal context>",
-      "Severity: <trends if multiple collisions>",
-      "Assessment: <collision-free vs problematic>"
-    ],
-    "safety_concerns": [
-      "<Collision-based safety issues>"
-    ],
-    "overall_stats": {
-      "total_windows": <int>,
-      "collisions_detected_count": <int>,
-      "collision_detection_rate": <float 0-1>
-    }
+  "temporal_analysis": {
+    "odd_trends": "Collision patterns across windows",
+    "anomalies": ["Window IDs with collisions or near-misses"],
+    "concerns": ["Safety issues requiring attention"]
+  },
+  "summary_insights": [
+    "Overall collision status",
+    "Key safety observations"
+  ],
+  "collision_stats": {
+    "total_windows": 0,
+    "collisions_detected": 0
   }
 }
 
-Per-window measurements enable temporal COD tracking. Use ODD axis types to determine measurement format.""",
+RULES:
+1. per_window.measurements: COPY from tool's odd_measurements verbatim
+2. temporal_analysis: YOUR reasoning about collision patterns
+3. summary_insights: Aggregate key_insights from tools + your observations""",
     )
