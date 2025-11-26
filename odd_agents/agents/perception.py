@@ -17,18 +17,49 @@ PERCEPTION_LOOP_VERSION = "3.0.0"  # Breaking: ODD-guided + observations structu
 PERCEPTION_SUMMARY_VERSION = "3.0.0"
 
 # Prompt templates
-PERCEPTION_LOOP_PROMPT = """You orchestrate perception analysis across all scenario windows.
+PERCEPTION_LOOP_PROMPT = """You orchestrate perception analysis with intelligent ODD filtering and cross-window reasoning.
 
-Steps you MUST follow:
-1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. For each window_id returned (in that order), call analyze_window_perception_tool(window_id=...).
-3. Collect each tool response exactly as returned.
-4. After all windows are processed, respond with JSON:
+**INPUT**:
+- ODD Specification: {temp:odd_spec?}
+- Available tools: list_windows_tool, analyze_window_perception_tool
+
+**YOUR RESPONSIBILITIES**:
+
+1. **ODD FILTERING** (use your intelligence, not rigid rules):
+   - Read the full ODD specification
+   - Identify which dimensions are observable from camera + LiDAR BEV data
+   - Common perception domains: environment (lighting, terrain, weather), actors (humans, vehicles)
+   - Typically EXCLUDE: ego vehicle dynamics (that's motion analysis), operational policies
+   - Extract only the relevant portions to pass as odd_context to the tool agent
+   - Let your understanding guide what's relevant - be thoughtful, not mechanical
+
+2. **PER-WINDOW ANALYSIS**:
+   - Call list_windows_tool() to get window IDs
+   - For each window, call analyze_window_perception_tool(window_id=..., odd_context=<filtered_odd>)
+   - Collect all tool responses
+
+3. **CROSS-WINDOW REASONING**:
+   After collecting all per-window results, analyze temporal patterns:
+   - Environmental stability: Do conditions remain consistent or change?
+   - Transitions: Detect shifts in lighting, terrain, obstacle density
+   - Anomalies: Unusual changes, sudden degradations, sensor issues
+   - Progression: Is there a temporal trend (improving/degrading conditions)?
+   - Safety implications: Do changes create new hazards or constraints?
+
+**OUTPUT JSON**:
 {
-  "windows_analyzed": ["..."],
-  "per_window_perception": [<tool_response_objects_in_order>]
+  "windows_analyzed": [...],
+  "per_window_perception": [...],
+  "cross_window_observations": [
+    "Environmental stability: [describe consistency or changes across time]",
+    "Detected transitions: [any significant changes between windows]",
+    "Temporal patterns: [trends, cycles, progressions observed]",
+    "Anomalies: [unusual events, outliers, concerns]",
+    "Overall assessment: [summary of perception across full scenario]"
+  ]
 }
-Do not add commentary. Ensure valid JSON."""
+
+Use your intelligence to provide meaningful temporal insights, not just window-by-window data."""
 
 PERCEPTION_SUMMARY_PROMPT = """You finalize the perception report with ODD-guided measurements and general observations.
 

@@ -31,18 +31,51 @@ def create_motion_loop_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=[list_windows_tool, analyze_motion_tool],
         output_key="temp:motion_data",
-        instruction="""You orchestrate motion analysis across all scenario windows.
+        instruction="""You orchestrate motion analysis with intelligent ODD filtering and cross-window reasoning.
 
-Steps you MUST follow:
-1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. For each window_id returned (in that order), call analyze_motion_tool(window_id=...).
-3. Collect each tool response exactly as returned.
-4. After all windows are processed, respond with JSON:
+**INPUT**:
+- ODD Specification: {temp:odd_spec?}
+- Available tools: list_windows_tool, analyze_motion_tool
+
+**YOUR RESPONSIBILITIES**:
+
+1. **ODD FILTERING** (use your intelligence):
+   - Read the full ODD specification
+   - Identify which dimensions relate to ego vehicle motion capabilities
+   - Common motion domains: acceleration limits, angular rates, speed constraints, platform stability
+   - Typically EXCLUDE: environmental conditions (that's perception), actors
+   - Extract only the relevant ego/motion portions to pass as odd_context to the tool agent
+   - Be thoughtful about what motion analysis can observe from IMU + camera
+
+2. **PER-WINDOW ANALYSIS**:
+   - Call list_windows_tool() to get window IDs
+   - For each window, call analyze_motion_tool(window_id=..., odd_context=<filtered_odd>)
+   - Collect all tool responses
+
+3. **CROSS-WINDOW REASONING**:
+   After collecting all results, analyze motion patterns over time:
+   - Motion sequences: Identify start/stop patterns, maneuvers, gait cycles
+   - Smoothness trends: Is motion becoming more/less smooth over time?
+   - Peak detection: When do maximum accelerations/rotations occur?
+   - Behavioral patterns: Walking, turning, stationary periods
+   - Anomalies: Sudden movements, instabilities, unusual IMU readings
+   - Temporal correlation: How does motion relate to environmental changes?
+
+**OUTPUT JSON**:
 {
-  "windows_analyzed": ["..."],
-  "per_window_motion": [<tool_response_objects_in_order>]
+  "windows_analyzed": [...],
+  "per_window_motion": [...],
+  "cross_window_observations": [
+    "Motion pattern: [describe overall motion behavior across scenario]",
+    "Maneuvers detected: [starts, stops, turns, transitions]",
+    "Smoothness assessment: [temporal trends in motion quality]",
+    "Peak events: [when/where maximum motion occurred]",
+    "Anomalies: [unusual motion, instabilities, concerns]",
+    "Overall assessment: [summary of motion characteristics]"
+  ]
 }
-Do not add commentary. Ensure valid JSON.""",
+
+Provide meaningful temporal insights about motion behavior, not just aggregated stats.""",
     )
 
 

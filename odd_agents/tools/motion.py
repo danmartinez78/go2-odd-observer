@@ -16,6 +16,10 @@ from ..utils import extract_json_block
 from .common import get_window_file_paths
 
 
+# Tool agent version
+MOTION_TOOL_AGENT_VERSION = "3.0.0"
+
+
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
     """
     Create motion analysis tools for a specific scenario.
@@ -32,9 +36,14 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
     scenario_path = Path(scenario_path) if isinstance(
         scenario_path, str) else scenario_path
 
-    async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
+    async def analyze_motion_tool(window_id: str, odd_context: dict, tool_context: ToolContext) -> Dict[str, Any]:
         """
         Tool: Analyze robot motion using IMU sensor data and optional camera visual odometry.
+
+        Args:
+            window_id: Window identifier
+            odd_context: Filtered ODD specification from loop agent (relevant ego dimensions)
+            tool_context: ADK tool context
 
         NOTE: Odometry data from wheel encoders is unreliable/unavailable. This analysis
         relies solely on IMU (accelerometer + gyroscope) and camera-based velocity estimation.
@@ -116,6 +125,12 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             prompt_parts = [types.Part(text=f"""You are a robotics motion analyst for window {window_id}.
 
 **IMPORTANT CONTEXT**: Wheel odometry is UNAVAILABLE/UNRELIABLE. Use only IMU and camera evidence.
+
+**ODD CONTEXT**:
+The loop agent has provided relevant ODD dimensions (typically ego vehicle capabilities):
+{json.dumps(odd_context, indent=2) if odd_context else "No ODD context provided"}
+
+Use these to guide what motion characteristics to observe, but report any motion-related observations.
 
 === IMU ACCELEROMETER DATA ===
 Body-frame linear acceleration (gravity-compensated):
@@ -202,23 +217,32 @@ If camera shows sharp, clear images BUT IMU shows acceleration:
    - "translation": Camera shows optical flow/blur AND varying acceleration pattern
    - "complex": Camera shows both rotation and translation with corresponding IMU patterns
 
-**OUTPUT**: JSON object with EXACT schema (no extra text):
+**OUTPUT**: JSON object with observations (no extra text):
 {{
   "window_id": "{window_id}",
-  "motion_detected": true|false,
-  "motion_type": "stationary|rotation|translation|complex",
-  "peak_horizontal_accel_mps2": <float>,
-  "peak_angular_velocity_radps": <float>,
-  "platform_stability": "stable|unstable",
-  "max_tilt_deg": <float>,
-  "motion_confidence": 0.0-1.0,
-  "estimated_speed_mps": <float or null>,
-  "motion_smoothness": "smooth|moderate|abrupt",
-  "evidence": "Detailed explanation citing camera observations, IMU patterns, tilt compensation, and reasoning process"
+  "motion_summary": "Natural-language description of motion state and characteristics",
+  "observations": [
+    "Motion detected: [yes/no with confidence and evidence]",
+    "Motion type: [stationary/rotation/translation/complex with reasoning]",
+    "Acceleration: [peak {peak_horiz_accel:.3f} m/s², patterns observed]",
+    "Angular velocity: [peak {peak_gyro_z:.3f} rad/s, rotation characteristics]",
+    "Platform stability: [max roll {max_roll:.1f}°, max pitch {max_pitch:.1f}°, stability assessment]",
+    "Speed estimation: [from camera blur/flow if observable]",
+    "Motion smoothness: [jerk {peak_jerk:.1f} m/s³, abruptness assessment]",
+    "IMU-camera correlation: [do visual and inertial evidence agree?]",
+    "Data quality: [sensor gaps, noise, reliability]",
+    "Safety notes: [sudden movements, instabilities, concerns]"
+  ],
+  "metrics": {{
+    "peak_horizontal_accel_mps2": {peak_horiz_accel:.3f},
+    "peak_angular_velocity_radps": {peak_gyro_z:.3f},
+    "max_roll_deg": {max_roll:.1f},
+    "max_pitch_deg": {max_pitch:.1f},
+    "peak_jerk_mps3": {peak_jerk:.1f}
+  }}
 }}
 
-Note: estimated_speed_mps should be your best estimate from camera blur/flow if possible, null if uncertain.
-Focus your evidence on WHY you classified the motion as you did, especially when camera and IMU appear to conflict.""")]
+Provide descriptive observations grounded in sensor data. Summary agent will map to ODD dimensions.""")]
 
             # Add camera image if available
             if cam_file.exists():
