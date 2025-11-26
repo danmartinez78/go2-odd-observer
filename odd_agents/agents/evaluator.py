@@ -18,20 +18,33 @@ def create_evaluator_tools(scenario_path: Path):
     from ..tools.cod_construction import construct_cod_from_sensor_outputs
     import json
 
-    async def construct_cod_tool(odd_spec: dict) -> str:
+    async def construct_cod_tool(odd_spec: dict, perception_output: dict, motion_output: dict, collision_output: dict) -> str:
         """
         Construct COD region and compute ODD/COD distance metrics.
 
-        Reads per-window measurements from sensor agents (perception/motion/collision)
-        and constructs:
+        Takes sensor outputs from blackboard and constructs:
         - Overall COD region (envelope of all measurements)
         - Time series: per-window violation distances and margins
         - Region metrics: aggregate distance, fraction-outside per axis, flagged windows
 
         Returns JSON with cod_region, time_series, and region_metrics.
         """
-        result = construct_cod_from_sensor_outputs(
-            str(scenario_path), odd_spec)
+        # Save outputs temporarily for the tool to read
+        # (tool expects to read from files)
+        import tempfile
+        import os
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            
+            # Write sensor outputs to temp files
+            for name, data in [("perception", perception_output), ("motion", motion_output), ("collision", collision_output)]:
+                with open(tmpdir_path / f"{name}_output.json", 'w') as f:
+                    json.dump(data, f)
+            
+            # Call the COD construction function
+            result = construct_cod_from_sensor_outputs(tmpdir, odd_spec)
+        
         return json.dumps(result, indent=2)
 
     async def get_window_details_tool(window_id: str) -> str:
@@ -86,11 +99,13 @@ def create_evaluator_agent(
 
 INPUT:
 - ODD Specification (v5.0.0): {temp:odd_spec?} - includes type definitions (range/bool/enum)
-- Sensor outputs: Perception, Motion, Collision per-window measurements (in files)
-- Tools: construct_cod_from_sensor_outputs(odd_spec), get_window_details(window_id)
+- Perception Output: {temp:perception_output?} - per-window measurements
+- Motion Output: {temp:motion_output?} - per-window measurements
+- Collision Output: {temp:collision_output?} - per-window measurements
+- Tools: construct_cod_from_sensor_outputs, get_window_details
 
 TASKS:
-1. Call construct_cod_from_sensor_outputs(odd_spec) with ODD specification
+1. Call construct_cod_from_sensor_outputs(odd_spec, perception_output, motion_output, collision_output)
 2. Analyze COD construction results:
    - Overall COD region vs ODD specification
    - Region distance (how far COD diverges from ODD)
