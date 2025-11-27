@@ -6,9 +6,9 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 **Last Updated**: November 27, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.4.5 Complete, production validated
+**Status**: Phase 1.4.5 Complete, HTML reports v2.0 deployed to GitHub Pages
 
-**Current Focus**: Feature branch cleanup, then RAG knowledge base
+**Current Focus**: RAG knowledge base, then production testing
 
 ## 🔥 HIGH PRIORITY: RAG Knowledge Base for Agents
 
@@ -39,7 +39,46 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 - ADK built-in retrieval (if supported)
 - Custom embedding + vector search
 
-**Status:** 📋 PLANNED - Next major feature after current branch merge
+**Status:** 📋 PLANNED - Next major feature
+
+---
+
+## ✅ HTML Reports v2.0 + GitHub Pages Update
+
+**Completed:** November 27, 2025
+
+**Branch:** `feature/html-reports-update` (12 commits) → merged to `dev` → merged to `main`
+
+**Deliverables:**
+- [x] **HTML Generator v2.0** (`scripts/generate_html_report.py`)
+  - Inline SVG charts (spider radar for ODD compliance, donut for cost breakdown)
+  - Even window sampling (max 6 evenly distributed windows displayed)
+  - Phase 1.4.5 schema support (agent_outputs structure)
+  - Data source detection from `agent_outputs.PerceptionAgent.data_source`
+  - Conditional data source footer (only shown if source identified)
+  
+- [x] **Production Reports Generated**
+  - `docs/reports/sim_1_0_chunk_000_009_report.html` (10 windows)
+  - `docs/reports/sim_1_0_chunk_020_029_report.html` (10 windows)
+  - `docs/reports/sim_1_0_chunk_040_049_report.html` (10 windows)
+  
+- [x] **index.html Updates**
+  - ODD/COD explanation section (What is ODD? What is COD?)
+  - Fixed pipeline flow diagram (replaced ASCII art with styled boxes)
+  - Removed test scenario report from visible links
+  - Added 3 production IN_ODD report cards
+  - Added agent reasoning showcase section
+  - Consistent badge styling (version/phase badges same size)
+
+- [x] **Terminology Fixes**
+  - COD = "Current Operating Domain" (not "Conditions of Operation Domain")
+  - BOUNDARY = "at or near edge of ODD limits" (not "minor violations")
+  - Added explicit TERMINOLOGY section to evaluator.py prompt
+  - Fixed compliance.py ODD_BOUNDARY description
+
+**Known Issues Documented:**
+- Token accounting bug: Tool API calls bypass ADK tracking (actual cost 2-3x higher)
+- Getting Started page needs update for Phase 1.4.5
 
 ---
 
@@ -70,19 +109,11 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ## 📚 GitHub Pages & Documentation
 
-### Update Getting Started Guide
+### Add More GitHub Pages Content
 
 **Status:** 📋 TODO
 
-- [ ] Update `docs/guides/getting_started.html` for Phase 1.4.5 changes
-- [ ] Update API examples with new agent interfaces
-- [ ] Add troubleshooting section
-- [ ] Add cost estimation guidance
-
-### Add More GitHub Pages
-
-**Status:** 📋 TODO
-
+- [ ] **Update Getting Started Guide** - Phase 1.4.5 changes, new API examples
 - [ ] **Agent Deep Dive pages** - Individual pages for each agent:
   - OddSpecAgent: Input/output schemas, prompt design
   - PerceptionAgent: Multimodal analysis, BEV interpretation
@@ -1332,38 +1363,33 @@ Total windows: 8 (vs 12 uniform) but better event coverage
 
 ---
 
-**Last Updated**: November 26, 2025  
+**Last Updated**: November 27, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.4.4 Complete (v1.4.4 tagged), ready for next phase
+**Status**: Phase 1.4.5 Complete, HTML Reports v2.0 deployed
 
-**Current Focus**: Determine next phase priority
+**Current Focus**: RAG knowledge base, then production testing
 
-**Recent Completions (Nov 26, 2025)**:
-- ✅ Phase 1.4.4: Type-Driven COD + Synthesis-Focused Reports (merged, tagged v1.4.4)
-  - 6 agents total (OddSpec, Perception, Motion, Collision, Evaluator, Report)
-  - Sensor agents use thinking model (gemini-2.5-flash-preview)
-  - Type-driven COD construction with Python tools
-  - Synthesis-focused reports (LLM interprets, Python computes)
-  - ~100 seconds per 2-window analysis
-  - ~32K tokens total pipeline cost
-  - No null fields in reports - data_quality computed by Python
-  - Full technical report with audit trail
+**Recent Completions (Nov 27, 2025)**:
+- ✅ HTML Reports v2.0: Inline SVG charts, data source detection, Phase 1.4.5 schema
+- ✅ GitHub Pages Update: ODD/COD explanation, pipeline diagram, 3 production reports
+- ✅ Terminology Fixes: COD/BOUNDARY definitions corrected across all agents
+- ✅ Phase 1.4.5: Artifact Handoff, Categorical Reasoning, Data Source Detection
 
-**Agent Versions (v1.4.4)**:
+**Agent Versions (v1.4.5)**:
 | Agent | Version | Model |
 |-------|---------|-------|
-| OddSpecAgent | 5.0.0 | gemini-2.0-flash-exp |
-| PerceptionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
-| MotionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
-| CollisionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
-| EvaluatorAgent | 2.0.0 | gemini-2.0-flash-exp |
-| ReportAgent | 6.0.0 | gemini-2.0-flash-exp |
+| OddSpecAgent | 6.1.0 | gemini-2.5-flash |
+| PerceptionAgent | 7.4.0 | gemini-2.5-flash |
+| MotionAgent | 7.3.0 | gemini-2.5-flash |
+| CollisionAgent | 7.3.0 | gemini-2.5-flash |
+| EvaluatorAgent | 5.0.0 | gemini-2.5-pro |
+| ReportAgent | 9.1.0 | gemini-2.5-flash |
+| CODTool | 1.1.0 | gemini-2.5-flash (categorical micro-agent) |
 
 **Suggested Next Phases**:
 | Phase | Focus | Description | Priority |
 |-------|-------|-------------|----------|
-| 1.5 | Production validation | Run on all production scenarios, compare results | HIGH |
-| 1.6 | HTML report generation | Visual dashboard/report from JSON output | MEDIUM |
-| 1.7 | Real-world data | Test with actual robot data (not sim) | HIGH |
-| 1.8 | Batch processing | Optimize for running many scenarios efficiently | MEDIUM |
-| 1.9 | Evaluation framework | Automated quality metrics for pipeline outputs | HIGH |
+| 1.6 | Test updates | Update unit tests for new API (loop→consolidated agents) | MEDIUM |
+| 1.7 | Full production run | Run on all sim_1_0 chunks (100 windows) | HIGH |
+| 2.0 | Performance optimization | Visual/LiDAR odometry, tool splitting | LOW |
+| 2.1 | Real data validation | Test on real robot data (not sim) | HIGH |
