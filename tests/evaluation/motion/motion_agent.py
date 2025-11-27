@@ -1,33 +1,29 @@
 """
 Motion agent wrapper for ADK evaluation.
-This module exports an 'agent' variable as required by ADK's AgentEvaluator.
+Exports an 'agent' variable as required by ADK's AgentEvaluator.
 """
 
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
-from odd_agents.agents.motion import create_motion_loop_agent
+from odd_agents.agents.motion import create_motion_agent
 
-# Load environment variables from .env
 load_dotenv()
 
-# Setup
-scenario_path = Path("data/processed/runs/sim_run_test")
+scenario_path = Path("data/test/sim/sim_test_w010_w011")
 api_key = os.getenv("GOOGLE_API_KEY")
 
 if not api_key:
-    raise ValueError(
-        "GOOGLE_API_KEY environment variable must be set in .env file"
-    )
+    raise ValueError("GOOGLE_API_KEY environment variable must be set in .env file")
 
-model = "gemini-2.0-flash-lite"
+model = "gemini-2.5-pro"
 genai_client = genai.Client(api_key=api_key)
 
-# Create motion loop agent (the one that gets evaluated)
-agent = create_motion_loop_agent(
+# Export motion agent for evaluation
+agent = create_motion_agent(
     scenario_path=str(scenario_path),
     genai_client=genai_client,
     model=model,
-    api_key=api_key
+    api_key=api_key,
 )

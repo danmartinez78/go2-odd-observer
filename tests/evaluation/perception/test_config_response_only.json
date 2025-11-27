@@ -1,0 +1,8 @@
+{
+  "criteria": {
+    "response_match_score": {
+      "threshold": 0.25,
+      "similarity_metric": "rouge_1"
+    }
+  }
+}

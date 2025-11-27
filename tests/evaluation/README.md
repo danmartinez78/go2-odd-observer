@@ -60,6 +60,11 @@ tests/evaluation/
 
 Each agent has **3 test types** with different speed/coverage tradeoffs:
 
+- **Defaults (this repo):**
+  - Scenario: `data/test/sim/sim_test_w010_w011` (2 windows)
+  - Judge model: `gemini-3-pro` for rubric/hallucination criteria
+  - Agent models (evaluation): `gemini-2.5-pro` for tool-calling reliability
+
 ### 1. Tool Trajectory (~20-25s)
 **Purpose**: Fast validation of orchestration logic
 

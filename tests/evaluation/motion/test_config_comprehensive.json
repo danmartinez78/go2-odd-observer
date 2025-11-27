@@ -1,0 +1,39 @@
+{
+  "criteria": {
+    "tool_trajectory_avg_score": {
+      "threshold": 1.0,
+      "match_type": "IN_ORDER"
+    },
+    "rubric_based_final_response_quality_v1": {
+      "threshold": 0.7,
+      "model": "gemini-3-pro",
+      "num_samples": 1,
+      "rubrics": [
+        {
+          "rubric_id": "json_structure",
+          "rubric_content": {
+            "text_property": "The agent output is valid JSON with required keys: windows_analyzed (int), temporal_analysis (object), summary_insights (list). No prose commentary."
+          }
+        },
+        {
+          "rubric_id": "motion_completeness",
+          "rubric_content": {
+            "text_property": "windows_analyzed reflects both windows in the test scenario (2 windows)."
+          }
+        },
+        {
+          "rubric_id": "summaries_present",
+          "rubric_content": {
+            "text_property": "summary_insights contains at least one motion-related insight derived from the analyses."
+          }
+        }
+      ]
+    },
+    "hallucinations_v1": {
+      "threshold": 1.0,
+      "model": "gemini-3-pro",
+      "grounding_source": "final_response",
+      "num_samples": 1
+    }
+  }
+}
