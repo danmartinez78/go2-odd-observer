@@ -6,13 +6,19 @@ Factory functions that create tools with specific configuration.
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 from google.adk.tools import FunctionTool
-from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
 
 from ..utils import extract_json_block
+from .common import get_window_file_paths
+
+
+# Tool agent version
+# v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
+# v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
+MOTION_TOOL_AGENT_VERSION = "5.0.0"
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -31,18 +37,22 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
     scenario_path = Path(scenario_path) if isinstance(
         scenario_path, str) else scenario_path
 
-    async def analyze_motion_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
+    async def analyze_motion_tool(window_id: str, odd_context: dict) -> Dict[str, Any]:
         """
         Tool: Analyze robot motion using IMU sensor data and optional camera visual odometry.
+
+        Args:
+            window_id: Window identifier
+            odd_context: Filtered ODD specification from loop agent (relevant ego dimensions)
 
         NOTE: Odometry data from wheel encoders is unreliable/unavailable. This analysis
         relies solely on IMU (accelerometer + gyroscope) and camera-based velocity estimation.
         """
         try:
-            scenario_name = scenario_path.name
-            motion_file = scenario_path / \
-                f"motion_{scenario_name}_w{window_id}.json"
-            cam_file = scenario_path / f"cam_{scenario_name}_w{window_id}.png"
+            # Get file paths from CSV index
+            file_paths = get_window_file_paths(scenario_path, window_id)
+            motion_file = file_paths["motion"]
+            cam_file = file_paths["camera"]
 
             if not motion_file.exists():
                 return {"status": "error", "window_id": window_id, "message": "Motion file not found"}
@@ -114,110 +124,34 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             # Build multimodal prompt with IMU + camera
             prompt_parts = [types.Part(text=f"""You are a robotics motion analyst for window {window_id}.
 
-**IMPORTANT CONTEXT**: Wheel odometry is UNAVAILABLE/UNRELIABLE. Use only IMU and camera evidence.
+**IMPORTANT**: Wheel odometry is UNAVAILABLE. Use only IMU and camera evidence.
 
-=== IMU ACCELEROMETER DATA ===
-Body-frame linear acceleration (gravity-compensated):
-- Valid samples: {len(horiz_accel)} (after filtering sensor gaps)
-- Peak horizontal accel: {peak_horiz_accel:.4f} m/s²
-- Average horizontal accel: {avg_horiz_accel:.4f} m/s²
-- Median horizontal accel: {median_horiz_accel:.4f} m/s²
-- Acceleration samples (m/s²): {horiz_accel[:15]} {'...' if len(horiz_accel) > 15 else ''}
+=== PRE-COMPUTED IMU METRICS (use these for odd_measurements) ===
+- peak_horiz_accel: {peak_horiz_accel:.4f} m/s²
+- peak_gyro_z: {peak_gyro_z:.4f} rad/s
+- max_roll: {max_roll:.2f}°, max_pitch: {max_pitch:.2f}°
+- peak_jerk: {peak_jerk:.4f} m/s³
 
-=== JERK ANALYSIS (Smoothness) ===
-Rate of change of acceleration:
-- Peak jerk: {peak_jerk:.2f} m/s³
-- Average jerk: {avg_jerk:.2f} m/s³
-- High jerk (>5 m/s³) indicates abrupt starts/stops
+ODD CONTEXT (use these axis names if present):
+{json.dumps(odd_context, indent=2) if odd_context else "No ODD context - use default motion metrics"}
 
-=== IMU GYROSCOPE DATA ===
-Angular velocities in body frame:
-- Yaw rate (gyro_z): peak {peak_gyro_z:.4f} rad/s, avg {avg_gyro_z:.4f} rad/s
-- Roll rate (gyro_x): peak {peak_gyro_x:.4f} rad/s
-- Pitch rate (gyro_y): peak {peak_gyro_y:.4f} rad/s
-- Yaw samples (rad/s): {gyro_z_valid[:10]} {'...' if len(gyro_z_valid) > 10 else ''}
-
-=== PLATFORM ORIENTATION ===
-Current attitude angles:
-- Max roll: {max_roll:.1f}°
-- Max pitch: {max_pitch:.1f}°
-
-=== CAMERA IMAGE ===
-Front camera view (use for visual odometry estimation):
-[See attached image]
-
-**ANALYSIS GUIDELINES**:
-
-**MOTION REASONING FRAMEWORK**:
-Determine if the robot is actually moving by considering ALL evidence holistically.
-
-1. IMU Accelerometer Context:
-   - Small constant acceleration (<1.0 m/s²) combined with platform tilt often indicates gravity leakage, NOT motion
-   - Reference: 1° of tilt contributes approximately 0.17 m/s² to horizontal acceleration
-   - True translational motion typically shows VARYING acceleration patterns, not constant values
-   - Stationary robots on tilted platforms will show steady horizontal acceleration from gravity
-
-2. Camera Visual Evidence (PRIMARY MOTION INDICATOR):
-   - Sharp textures, clear edges, no motion blur → Robot is stationary or moving very slowly
-   - Blurred edges, motion streaks, smeared textures → Robot is moving at significant speed
-   - Visible optical flow or scene shift between frames → Active translation
-   - Stable, static scene → Robot is stationary
-   - Camera evidence OVERRIDES IMU when they conflict
-
-3. IMU Gyroscope Analysis:
-   - Very small gyro values (<0.05 rad/s) are typically sensor noise or drift, not actual rotation
-   - Sustained angular velocity with varying magnitude indicates genuine rotation
-   - Constant low gyro values suggest stationary robot with sensor bias
-
-4. Platform Tilt Consideration:
-   - Check current roll/pitch angles - tilt causes horizontal gravity components
-   - Example: pitch=1.25° and roll=-0.74° could contribute ~0.21 m/s² horizontal acceleration
-   - If acceleration magnitude matches expected gravity component from tilt → likely stationary
-
-5. Temporal Pattern Analysis:
-   - Genuine motion: acceleration varies over time (starts, stops, changes)
-   - IMU artifacts: constant or slowly drifting values throughout window
-   - High jerk (>10 m/s³) suggests actual dynamic maneuvers
-
-**DECISION PRIORITY** (in order of reliability):
-1. Camera visual evidence (most reliable for determining actual motion)
-2. Temporal patterns in IMU (varying = motion, constant = artifact)
-3. Gyroscope for rotation detection
-4. Accelerometer magnitude (only after accounting for gravity/tilt)
-
-**CRITICAL REASONING RULE**:
-If camera shows sharp, clear images BUT IMU shows acceleration:
-→ Check if acceleration is constant and small (<1.0 m/s²)
-→ Check if platform has tilt that explains the acceleration
-→ If yes to both: Classify as STATIONARY (IMU artifact from gravity leakage)
-
-3. Platform Stability Assessment:
-   - Roll/pitch > 15°: Unstable (climbing, descending, or on incline)
-   - Roll/pitch < 15°: Stable (on flat or gently sloped terrain)
-   
-4. Motion Type Classification Guidelines:
-   - "stationary": No visual motion in camera AND (low varying accel OR constant accel matching tilt)
-   - "rotation": Sustained gyro activity with camera showing scene rotation but no translation
-   - "translation": Camera shows optical flow/blur AND varying acceleration pattern
-   - "complex": Camera shows both rotation and translation with corresponding IMU patterns
-
-**OUTPUT**: JSON object with EXACT schema (no extra text):
+OUTPUT (JSON only, no markdown):
 {{
   "window_id": "{window_id}",
-  "motion_detected": true|false,
-  "motion_type": "stationary|rotation|translation|complex",
-  "peak_horizontal_accel_mps2": <float>,
-  "peak_angular_velocity_radps": <float>,
-  "platform_stability": "stable|unstable",
-  "max_tilt_deg": <float>,
-  "motion_confidence": 0.0-1.0,
-  "estimated_speed_mps": <float or null>,
-  "motion_smoothness": "smooth|moderate|abrupt",
-  "evidence": "Detailed explanation citing camera observations, IMU patterns, tilt compensation, and reasoning process"
+  "explanation": "1-2 sentence motion state assessment based on IMU + camera",
+  "key_insights": [
+    "Notable motion pattern or anomaly (if any)",
+    "Safety concern (if any)"
+  ],
+  "motion_state": "stationary|moving|rotating|complex"
 }}
 
-Note: estimated_speed_mps should be your best estimate from camera blur/flow if possible, null if uncertain.
-Focus your evidence on WHY you classified the motion as you did, especially when camera and IMU appear to conflict.""")]
+ANALYSIS RULES:
+1. Camera blur = motion, sharp = stationary
+2. Small constant accel (<0.5 m/s²) + tilt = gravity leakage, NOT motion
+3. Focus on WHAT the robot is doing, not raw numbers
+
+Be CONCISE. The pre-computed metrics will be added programmatically.""")]
 
             # Add camera image if available
             if cam_file.exists():
@@ -234,19 +168,94 @@ Focus your evidence on WHY you classified the motion as you did, especially when
                 contents=prompt_parts,
             )
 
-            data = extract_json_block(response.text or "")
-            data["window_id"] = window_id
+            llm_data = extract_json_block(response.text or "")
 
-            # Ensure backward compatibility
-            if "estimated_speed_mps" not in data:
-                data["estimated_speed_mps"] = None
-            if "motion_smoothness" not in data:
-                data["motion_smoothness"] = "moderate"
+            # === DETERMINISTIC ODD-ALIGNED MEASUREMENTS ===
+            # These are computed directly from sensor data, not LLM output
+            # Maps raw metrics to ODD axis names for COD construction
+            data = {
+                "window_id": window_id,
+                "odd_measurements": {
+                    "max_accel_mps2": round(peak_horiz_accel, 4),
+                    "max_speed_mps": 0.0,  # Cannot estimate from IMU alone
+                    "max_angular_velocity_radps": round(peak_gyro_z, 4),
+                    "max_roll_deg": round(max_roll, 2),
+                    "max_pitch_deg": round(max_pitch, 2),
+                    "peak_jerk_mps3": round(peak_jerk, 4),
+                },
+                "explanation": llm_data.get("explanation", "Motion analysis from IMU data"),
+                "key_insights": llm_data.get("key_insights", []),
+                "motion_state": llm_data.get("motion_state", "unknown"),
+            }
 
             return data
 
         except Exception as err:
-            return {"status": "error", "window_id": window_id, "message": str(err)}
+            return {
+                "status": "error",
+                "window_id": window_id,
+                "message": str(err),
+                "odd_measurements": {},
+                "explanation": f"Error: {err}",
+                "key_insights": [],
+                "motion_state": "error",
+            }
 
-    # Return FunctionTool wrapper
-    return FunctionTool(func=analyze_motion_tool)
+    async def save_motion_output_tool(
+        per_window: List[Dict[str, Any]],
+        temporal_analysis: Dict[str, Any],
+        summary_insights: List[str],
+        tool_context
+    ) -> Dict[str, Any]:
+        """Save final motion output as artifact for Evaluator to load.
+
+        Args:
+            per_window: List of window results, each with {window_id: str, measurements: dict}
+                        measurements should contain odd_measurements from analyze tool
+            temporal_analysis: Dict with {odd_trends: str, anomalies: list, concerns: list}
+            summary_insights: List of key insight strings
+            tool_context: ADK tool context with artifact service access
+
+        Call this AFTER processing all windows to persist your combined output.
+        """
+        import google.genai.types as gtypes
+
+        print(
+            f"\n🟢 [SAVE_MOTION_OUTPUT] Called with {len(per_window)} windows")
+
+        try:
+            # Build structured output from explicit parameters
+            output_data = {
+                "per_window": per_window,
+                "temporal_analysis": temporal_analysis,
+                "summary_insights": summary_insights
+            }
+
+            # Serialize output to JSON bytes
+            json_bytes = json.dumps(output_data, indent=2).encode('utf-8')
+            artifact = gtypes.Part.from_bytes(
+                data=json_bytes, mime_type="application/json")
+
+            # Save as artifact
+            version = await tool_context.save_artifact(
+                filename="motion_output.json",
+                artifact=artifact
+            )
+
+            print(f"🟢 [SAVE_MOTION_OUTPUT] Saved artifact v{version}")
+
+            return {
+                "status": "saved",
+                "artifact": "motion_output.json",
+                "version": version,
+                "windows_saved": len(per_window)
+            }
+        except Exception as e:
+            print(f"🟢 [SAVE_MOTION_OUTPUT] Error: {e}")
+            return {"status": "error", "message": str(e)}
+
+    # Return FunctionTool wrappers (analyze + save)
+    return (
+        FunctionTool(func=analyze_motion_tool),
+        FunctionTool(func=save_motion_output_tool)
+    )

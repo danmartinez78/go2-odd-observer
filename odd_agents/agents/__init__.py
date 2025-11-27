@@ -1,32 +1,42 @@
 """
 Agent definitions for ODD analysis pipeline.
-Extracted from odd_workflow_full.py (reference implementation).
+Phase 1.4.5 - Artifact-based data handoff for reliable sensor → evaluator communication.
 """
 
-from .perception import create_perception_loop_agent, create_perception_summary_agent
-from .motion import create_motion_loop_agent, create_motion_summary_agent
-from .collision import create_collision_loop_agent, create_collision_summary_agent
-from .odd_spec import create_odd_spec_agent
-from .cod_classifier import create_cod_classifier_agent
-from .compliance import create_odd_compliance_agent
-from .report import create_report_agent
+from .perception import create_perception_agent, PERCEPTION_AGENT_VERSION
+from .motion import create_motion_agent, MOTION_AGENT_VERSION
+from .collision import create_collision_agent, COLLISION_AGENT_VERSION
+from .odd_spec import create_odd_spec_agent, AGENT_VERSION as ODD_SPEC_VERSION
+from .evaluator import create_evaluator_agent, EVALUATOR_AGENT_VERSION
+from .report import create_report_agent, REPORT_AGENT_VERSION
+
+# Import tool versions
+from ..tools.cod_construction import COD_TOOL_VERSION, CATEGORICAL_AGENT_MODEL
+
+# Agent versions for metadata tracking
+AGENT_VERSIONS = {
+    'OddSpecAgent': ODD_SPEC_VERSION,
+    'PerceptionAgent': PERCEPTION_AGENT_VERSION,
+    'MotionAgent': MOTION_AGENT_VERSION,
+    'CollisionAgent': COLLISION_AGENT_VERSION,
+    'EvaluatorAgent': EVALUATOR_AGENT_VERSION,
+    'ReportAgent': REPORT_AGENT_VERSION,
+    # Tool versions (not ADK agents, but use LLM calls)
+    'CODTool': COD_TOOL_VERSION,
+    'CategoricalMicroAgent': f"1.0.0 ({CATEGORICAL_AGENT_MODEL})",
+}
 
 __all__ = [
-    # Perception agents
-    "create_perception_loop_agent",
-    "create_perception_summary_agent",
-
-    # Motion agents
-    "create_motion_loop_agent",
-    "create_motion_summary_agent",
-
-    # Collision agents
-    "create_collision_loop_agent",
-    "create_collision_summary_agent",
+    # Sensor agents (v7.0.0 - artifact-based output for evaluator)
+    "create_perception_agent",
+    "create_motion_agent",
+    "create_collision_agent",
 
     # Analysis agents
     "create_odd_spec_agent",
-    "create_cod_classifier_agent",
-    "create_odd_compliance_agent",
+    "create_evaluator_agent",
     "create_report_agent",
+
+    # Metadata
+    "AGENT_VERSIONS",
 ]

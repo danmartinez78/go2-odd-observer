@@ -3,14 +3,22 @@ Perception analysis tools.
 Factory functions that create tools with specific configuration.
 """
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Union
 from google.adk.tools import FunctionTool
-from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 from google import genai
 
 from ..utils import build_image_path, ensure_image_bytes, extract_json_block
+from .common import list_available_windows, get_window_file_paths
+
+
+# Tool agent version
+# v4.1.0: Added explicit example + anti-pattern to ensure flat output format
+# v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
+# v5.1.0: Added data_source detection (sim vs real) as metadata field
+PERCEPTION_TOOL_AGENT_VERSION = "5.1.0"
 
 
 def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -31,110 +39,109 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
 
     async def list_windows_tool() -> Dict[str, Any]:
         """Tool: list available window IDs for the scenario."""
-        import pandas as pd
-
-        if not scenario_path.exists():
-            return {"status": "error", "message": "Scenario directory not found"}
-
-        index_files = sorted(scenario_path.glob("index_*.csv"))
-        if not index_files:
-            return {"status": "error", "message": "No index CSV found"}
-
-        index_df = pd.read_csv(index_files[0])
-        scenario_name = scenario_path.name
-        windows: List[str] = []
-
-        for _, row in index_df.iterrows():
-            window_id = str(row["window_id"]).zfill(3)
-            motion_file = scenario_path / \
-                f"motion_{scenario_name}_w{window_id}.json"
-            if motion_file.exists():
-                windows.append(window_id)
-
-        return {
-            "status": "success",
-            "windows": windows,
-            "count": len(windows),
-        }
-
-    async def analyze_window_perception_tool(window_id: str, tool_context: ToolContext) -> Dict[str, Any]:
-        """Tool: run a direct multimodal Gemini call for one window (camera + BEV)."""
         try:
-            camera_path = build_image_path(scenario_path, "cam", window_id)
-            bev_path = build_image_path(
-                scenario_path, "bev_occupancy", window_id)
+            windows = list_available_windows(
+                scenario_path, require_motion=True)
+            return {
+                "status": "success",
+                "windows": windows,
+                "count": len(windows),
+            }
+        except FileNotFoundError as e:
+            return {"status": "error", "message": str(e)}
 
+    async def analyze_window_perception_tool(window_id: str, odd_context: dict) -> Dict[str, Any]:
+        """Tool: run a direct multimodal Gemini call for one window (camera + 4 BEV channels).
+
+        Args:
+            window_id: Window identifier
+            odd_context: Filtered ODD specification from loop agent (relevant dimensions only)
+        """
+        try:
+            # Get file paths from CSV index
+            file_paths = get_window_file_paths(scenario_path, window_id)
+            camera_path = file_paths["camera"]
+            bev_occupancy_path = file_paths["bev_occupancy"]
+            bev_height_path = file_paths["bev_height"]
+            bev_roughness_path = file_paths["bev_roughness"]
+
+            # Load images
             camera_bytes = ensure_image_bytes(camera_path)
-            bev_bytes = ensure_image_bytes(bev_path)
+            bev_occupancy_bytes = ensure_image_bytes(bev_occupancy_path)
+            bev_height_bytes = ensure_image_bytes(bev_height_path)
+            bev_roughness_bytes = ensure_image_bytes(bev_roughness_path)
 
-            prompt = f"""
-            You are a perception expert analyzing synchronized robot sensors for window {window_id}.
-            You will receive two images:
-            - Image A: RGB camera frame from the robot's forward camera.
-            - Image B: LiDAR bird's-eye occupancy map showing OBSTACLES ONLY (ground filtered out, 400x400 pixels).
-              Bright pixels indicate objects/obstacles ABOVE ground level (>10cm height).
-              Dark/black pixels indicate free/navigable space.
-              THE ROBOT IS LOCATED AT THE CENTER OF THE BEV MAP (200, 200).
-              The robot faces upward (top of image = forward direction).
-              SCALE: 0.05 meters per pixel (20 pixels = 1 meter, 40 pixels = 2 meters).
-              Total coverage: 20m x 20m area centered on robot.
-              The upper half shows the forward path, lower half shows behind, left/right sides show lateral areas.
-              NOTE: Robot's own body may appear at center - ignore when assessing obstacles.
-              
-              IMPORTANT: Refer to the ODD specification's robot physical specifications (ego vehicle)
-              to understand the robot's footprint when assessing traversability and passable gaps.
+            prompt = f"""Analyze synchronized sensors for window {window_id}.
 
-            **CRITICAL DISTINCTIONS:**
-            
-            1. **terrain_roughness_class**: Describes GROUND SURFACE elevation variations, NOT surface texture or objects on the ground.
-               - smooth: Flat floor/ground with minimal elevation changes (includes carpets, rugs, smooth concrete)
-               - moderate: Small bumps, gentle slopes, slightly uneven surfaces
-               - rough: Significant elevation changes, stairs, ramps, rocky/unpaved ground
-               - very_rough: Extreme terrain (large boulders, steep slopes, severely uneven surfaces)
-               NOTE: A rug on a flat floor is "smooth" terrain. Surface texture (plush, high-pile) is NOT terrain roughness.
-            
-            2. **occupancy_ratio**: Fraction of BEV grid cells occupied by obstacles (objects ABOVE ground level).
-               - The BEV map already filters ground - bright pixels are obstacles, dark pixels are free space
-               - Estimate the fraction of bright (obstacle) pixels in the navigable area ahead
-            
-            3. **obstacle_density**: Concentration/number of distinct obstacles in the forward path.
-               - 0.0 = clear path, no obstacles
-               - 0.5 = moderate clutter (a few objects)
-               - 1.0 = densely packed obstacles blocking most of the area
-            
-            4. **traversability_score**: Combined assessment considering BOTH terrain AND obstacles.
-               - 0.0 = completely blocked or impassable
-               - 0.5 = partially obstructed but navigable with care
-               - 1.0 = clear, easy path with no obstacles or terrain challenges
+INPUTS:
+- Image A: RGB camera (forward-facing)
+- Image B: LiDAR BEV Occupancy (bright=obstacles, dark=clear, robot at center facing up)
+- Image C: LiDAR BEV Height (grayscale elevation map)
+- Image D: LiDAR BEV Roughness (bright=rough terrain)
 
-            Provide a JSON object with this EXACT schema:
-            {{
-              "window_id": "{window_id}",
-              "camera_summary": "concise natural-language observation of what the camera sees",
-              "bev_summary": "concise description of obstacles visible in the LiDAR occupancy map",
-              "lighting_class": "bright|dim|dark",
-              "visibility_score": 0.0-1.0,
-              "terrain_roughness_class": "smooth|moderate|rough|very_rough",
-              "occupancy_ratio": 0.0-1.0,
-              "obstacle_density": 0.0-1.0,
-              "traversability_score": 0.0-1.0,
-              "humans_detected": true|false,
-              "environmental_constraints": ["list", "of", "observed", "constraints"]
-            }}
+BEV Scale: 0.05m/pixel (20px = 1m), ~20m x 20m coverage, robot-centered.
 
-            No explanations, just the JSON.
-            """
+ODD CONTEXT (use these axis names in odd_measurements):
+{json.dumps(odd_context, indent=2) if odd_context else "No ODD context - use default perception metrics"}
+
+OUTPUT FORMAT - FLAT STRUCTURE ONLY:
+{{
+  "window_id": "{window_id}",
+  "odd_measurements": {{
+    "environment_type": "indoor_commercial",
+    "lighting_conditions": "bright",
+    "obstacle_density": 0.35,
+    "terrain_type": "smooth",
+    "traversability_score": 0.8
+  }},
+  "data_source": {{
+    "type": "simulated",
+    "confidence": 0.95,
+    "indicators": ["uniform textures", "synthetic lighting"]
+  }},
+  "explanation": "1-2 sentence reasoning",
+  "key_insights": ["observation 1", "observation 2"],
+  "camera_summary": "Brief scene description",
+  "bev_summary": "Brief spatial layout"
+}}
+
+CRITICAL - odd_measurements must be FLAT (axis_name: value pairs only):
+✓ CORRECT: {{"obstacle_density": 0.35, "lighting_conditions": "bright"}}
+✗ WRONG: {{"environment": {{"categorical": {{}}, "numeric": {{}}}}}}
+✗ WRONG: {{"numeric": {{"obstacle_density": 0.35}}}}
+
+MEASUREMENT GUIDANCE:
+- lighting_conditions: "bright" | "moderate" | "dim"
+- terrain_type: "smooth" | "slightly_rough" | "rough"
+- obstacle_density: 0.0-1.0 (fraction of BEV with obstacles)
+- traversability_score: 0.0-1.0 (ease of navigation, higher=easier)
+- stairs_present: 0 or 1
+
+DATA SOURCE DETECTION (metadata, not ODD):
+Analyze visual characteristics to determine if imagery is from simulation or real-world:
+- "data_source": {{"type": "simulated" or "real", "confidence": 0.0-1.0, "indicators": ["reason1", "reason2"]}}
+Indicators for SIMULATED: perfect textures, uniform lighting, synthetic materials, unrealistic shadows, game-engine artifacts
+Indicators for REAL: natural lighting variation, real-world imperfections, dust/wear, organic textures
+
+Be CONCISE. Output JSON only, no markdown."""
 
             response = genai_client.models.generate_content(
                 model=model,
                 contents=[
                     types.Part(text=prompt.strip()),
-                    types.Part(text="Image A (camera):"),
+                    types.Part(text="Image A (Camera):"),
                     types.Part.from_bytes(
                         data=camera_bytes, mime_type="image/png"),
-                    types.Part(text="Image B (LiDAR BEV occupancy):"),
+                    types.Part(text="Image B (BEV Occupancy - Obstacles):"),
                     types.Part.from_bytes(
-                        data=bev_bytes, mime_type="image/png"),
+                        data=bev_occupancy_bytes, mime_type="image/png"),
+                    types.Part(text="Image C (BEV Height - Elevation):"),
+                    types.Part.from_bytes(
+                        data=bev_height_bytes, mime_type="image/png"),
+                    types.Part(
+                        text="Image D (BEV Roughness - Surface Variation):"),
+                    types.Part.from_bytes(
+                        data=bev_roughness_bytes, mime_type="image/png"),
                 ],
             )
 
@@ -145,8 +152,65 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
         except Exception as err:
             return {"status": "error", "window_id": window_id, "message": str(err)}
 
+    async def save_perception_output_tool(
+        per_window: List[Dict[str, Any]],
+        temporal_analysis: Dict[str, Any],
+        summary_insights: List[str],
+        tool_context
+    ) -> Dict[str, Any]:
+        """Save final perception output as artifact for Evaluator to load.
+
+        Args:
+            per_window: List of window results, each with {window_id: str, measurements: dict}
+                        measurements should contain odd_measurements from analyze tool
+            temporal_analysis: Dict with {odd_trends: str, anomalies: list, concerns: list}
+            summary_insights: List of key insight strings
+            tool_context: ADK tool context with artifact service access
+
+        Call this AFTER processing all windows to persist your combined output.
+        """
+        import google.genai.types as gtypes
+
+        print(
+            f"\n🔵 [SAVE_PERCEPTION_OUTPUT] Called with {len(per_window)} windows")
+
+        try:
+            # Build structured output from explicit parameters
+            output_data = {
+                "per_window": per_window,
+                "temporal_analysis": temporal_analysis,
+                "summary_insights": summary_insights
+            }
+
+            # Serialize output to JSON bytes
+            json_bytes = json.dumps(output_data, indent=2).encode('utf-8')
+            artifact = gtypes.Part.from_bytes(
+                data=json_bytes, mime_type="application/json")
+
+            # Save as artifact
+            version = await tool_context.save_artifact(
+                filename="perception_output.json",
+                artifact=artifact
+            )
+
+            print(f"🔵 [SAVE_PERCEPTION_OUTPUT] Saved artifact v{version}")
+
+            return {
+                "status": "saved",
+                "artifact": "perception_output.json",
+                "version": version,
+                "windows_saved": len(per_window)
+            }
+        except Exception as e:
+            print(f"🔵 [SAVE_PERCEPTION_OUTPUT] Error: {e}")
+            return {"status": "error", "message": str(e)}
+
+    # Import ToolContext for type hint
+    from google.adk.tools.tool_context import ToolContext
+
     # Return FunctionTool wrappers
     return (
         FunctionTool(func=list_windows_tool),
-        FunctionTool(func=analyze_window_perception_tool)
+        FunctionTool(func=analyze_window_perception_tool),
+        FunctionTool(func=save_perception_output_tool)
     )

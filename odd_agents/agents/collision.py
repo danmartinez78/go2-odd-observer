@@ -1,6 +1,6 @@
 """
-Collision risk analysis agents.
-Extracted from odd_workflow_full.py (reference implementation).
+Collision detection agent (consolidated loop + summary).
+Single agent that orchestrates tools AND produces final output.
 """
 
 from google.adk.agents import Agent
@@ -10,77 +10,88 @@ from google.genai import Client
 from ..tools.collision import create_collision_tools
 
 
-def create_collision_loop_agent(
+# Agent version
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+# v7.0.0: Added save_collision_output_tool for artifact-based data handoff
+# v7.1.0: Strengthened prompt to ensure save tool is called
+# v7.2.0: Output summary to state, full data to artifact
+# v7.3.0: Strict tool parameters for save tool - per_window, temporal_analysis, summary_insights, collision_stats
+COLLISION_AGENT_VERSION = "7.3.0"
+
+
+def create_collision_agent(
     scenario_path: str, genai_client: Client, model: str, api_key: str
 ) -> Agent:
-    """Create a new CollisionLoopAgent instance."""
+    """Create consolidated collision agent (loop + summary merged)."""
     from ..tools.perception import create_perception_tools
 
-    list_windows_tool, _ = create_perception_tools(
+    list_windows_tool, _, _ = create_perception_tools(
         scenario_path, genai_client, model)
-    analyze_collision_risk_tool = create_collision_tools(
+    analyze_collision_tool, save_collision_output = create_collision_tools(
         scenario_path, genai_client, model)
 
     return Agent(
-        name="CollisionLoopAgent",
+        name="CollisionAgent",
         model=Gemini(model=model, api_key=api_key),
-        tools=[list_windows_tool, analyze_collision_risk_tool],
-        output_key="temp:collision_data",
-        instruction="""You orchestrate collision risk analysis across all scenario windows.
-
-AVAILABLE TOOLS:
-- list_windows_tool
-- analyze_collision_risk_tool
-
-MOTION DATA AVAILABLE:
-{temp:motion_output?}
-
-Steps you MUST follow:
-1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. Parse the motion data from {temp:motion_output?} to extract per_window_motion array.
-3. For each window_id returned (in that order):
-   a. Find the corresponding motion metrics from per_window_motion (match by window_id)
-   b. Call analyze_collision_risk_tool(window_id=..., motion_metrics=...)
-   IMPORTANT: Tool name is exactly "analyze_collision_risk_tool" - no typos, no extra characters.
-   IMPORTANT: Pass the full motion metrics object for that window.
-4. Collect each tool response exactly as returned.
-5. After all windows are processed, respond with JSON:
-{
-  "windows_analyzed": ["..."],
-  "collision_events": [<tool_response_objects_in_order>]
-}
-Do not add commentary. Ensure valid JSON.""",
-    )
-
-
-def create_collision_summary_agent(api_key: str, model: str) -> Agent:
-    """Create a new CollisionSummaryAgent instance."""
-    return Agent(
-        name="CollisionSummaryAgent",
-        model=Gemini(model=model, api_key=api_key),
+        tools=[list_windows_tool, analyze_collision_tool, save_collision_output],
         output_key="temp:collision_output",
-        instruction="""You finalize the collision risk report.
+        instruction="""You are a collision detection agent. You MUST call tools to analyze windows and save results.
 
-Input data from the previous agent:
-{temp:collision_data?}
+REQUIRED TOOLS (you MUST call all of these):
+1. list_windows_tool() - get available windows
+2. analyze_collision_tool(window_id, odd_context) - analyze each window
+3. save_collision_output_tool(per_window, temporal_analysis, summary_insights, collision_stats) - save for COD
 
-If no data is provided, respond with:
-{"error": "missing_collision_data"}
+INPUT:
+- ODD Specification: {temp:odd_spec?} - extract collision-related dimensions if any
 
-Otherwise:
-1. Read the JSON string carefully.
-2. Calculate overall statistics (count by risk_level, average collision_likelihood_score).
-3. Produce final JSON:
+MANDATORY WORKFLOW:
+1. Extract relevant ODD dimensions for collision (if any defined)
+2. IMMEDIATELY call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_collision_tool(window_id, odd_context={})
+4. Build your data from tool results
+5. Call save_collision_output_tool with EXPLICIT PARAMETERS (see below)
+6. **FINAL STEP**: Output your SUMMARY JSON
+
+CALLING save_collision_output_tool (STRICT PARAMETERS - pass each separately):
+save_collision_output_tool(
+    per_window=[
+        {"window_id": "000", "measurements": {/* from tool's odd_measurements */}},
+        {"window_id": "001", "measurements": {/* from tool's odd_measurements */}}
+    ],
+    temporal_analysis={
+        "odd_trends": "Collision patterns across windows",
+        "anomalies": ["Window IDs with collisions or near-misses"],
+        "concerns": ["Safety issues requiring attention"]
+    },
+    summary_insights=[
+        "Overall collision status",
+        "Key safety observations"
+    ],
+    collision_stats={
+        "total_windows": 2,
+        "collisions_detected": 0
+    }
+)
+
+FINAL OUTPUT (summary for downstream agents - JSON only, no markdown):
 {
-  "windows_analyzed": [...],
-  "overall_collision_stats": {
-    "total_windows": <int>,
-    "safe_count": <int>,
-    "caution_count": <int>,
-    "alert_count": <int>,
-    "avg_collision_likelihood": <float>
+  "windows_analyzed": 2,
+  "collisions_detected": 0,
+  "temporal_analysis": {
+    "odd_trends": "Collision patterns across windows",
+    "anomalies": ["Window IDs with collisions or near-misses"],
+    "concerns": ["Safety issues requiring attention"]
   },
-  "collision_events": [...]
+  "summary_insights": [
+    "Overall collision status",
+    "Key safety observations"
+  ]
 }
-Only output JSON.""",
+
+RULES:
+1. Call save tool FIRST with EXPLICIT parameters (not a single dict!)
+2. per_window MUST include measurements from each window's analyze tool response
+3. Then output summary JSON
+4. Summary goes to state for Evaluator's qualitative reasoning""",
     )

@@ -1,0 +1,807 @@
+{
+  "report": {
+    "result": "{\n  \"compliance\": {\n    \"status\": \"BOUNDARY\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot's operation was on the boundary of the ODD due to the environment being identified as 'indoor_commercial' in 20% of the windows, a category not explicitly defined in the ODD.\"\n  },\n  \"executive_summary\": \"The robot successfully navigated indoor environments, exhibiting controlled motion and maintaining safe distances from obstacles. While largely operating within defined limits, the presence of an 'indoor_commercial' environment, not explicitly listed in the ODD, placed the operation at the ODD boundary, though without any negative impact on performance or safety.\",\n  \"key_findings\": {\n    \"perception\": \"The robot consistently operated in well-lit, smooth indoor environments (offices, workspaces, commercial spaces) with low to moderate obstacle density, encountering clear paths with occasional distant furniture-like obstacles.\",\n    \"motion\": \"The robot exhibited motion patterns ranging from stationary to dynamic, including rotations and complex maneuvers, with maximum acceleration up to 1.0326 m/s\\u00b2 and all pitch and roll angles remaining well within ODD limits.\",\n    \"safety\": \"No collisions were detected throughout the scenario, and the robot consistently maintained safe distances from obstacles, with all sensor data confirming no evidence of impact.\",\n    \"temporal_trends\": \"Environmental conditions remained stable with consistent bright lighting and smooth terrain, and the robot\\u2019s motion transitioned from stationary to more dynamic activity over the windows, all while remaining within ODD limits.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 10,\n    \"environment\": \"Office\",\n    \"data_quality\": \"complete\"\n  },\n  \"issues\": [\n    \"The ODD specification for 'environment_type' may be too narrow, as the robot operated successfully in an 'indoor_commercial' setting not explicitly listed.\"\n  ],\n  \"recommendations\": [\n    \"Consider revising the ODD to include 'indoor_commercial' or similar environments.\"\n  ]\n}"
+  },
+  "full_analysis": {
+    "cod_region": {
+      "environment_type": {
+        "workspace": 0.3,
+        "office": 0.5,
+        "indoor_commercial": 0.2,
+        "type": "enum"
+      },
+      "lighting_conditions": {
+        "bright": 0.9,
+        "moderate": 0.1,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "smooth": 0.8,
+        "smooth_floor": 0.2,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.05,
+        "max": 0.3
+      },
+      "traversability_score": {
+        "type": "range",
+        "min": 0.8,
+        "max": 0.95
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.0175,
+        "max": 1.0326
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 0.39,
+        "max": 4.48
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 0.51,
+        "max": 7.56
+      }
+    },
+    "region_metrics": {
+      "region_distance": 0.2,
+      "fraction_outside_per_axis": {
+        "environment_type": 0.2,
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0,
+        "obstacle_density": 0.0,
+        "traversability_score": 0.0,
+        "max_accel_mps2": 0.0,
+        "max_roll_deg": 0.0,
+        "max_pitch_deg": 0.0
+      },
+      "total_windows": 10,
+      "windows_in_odd": 2,
+      "windows_violated": [
+        "000",
+        "001",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "009"
+      ],
+      "first_violation_window": "000",
+      "categorical_semantic_distances": {
+        "environment_type": 1.0,
+        "terrain_type": 0.0
+      }
+    },
+    "compliance_verdict": {
+      "verdict": "BOUNDARY",
+      "confidence": 0.95,
+      "rationale": "The overall region distance of 0.2 places the operation on the boundary of the ODD. This is driven by a single, persistent, low-level violation on the 'environment_type' axis. Specifically, the perception system identified the environment as 'indoor_commercial' in 20% of the windows, a category not explicitly listed in the ODD's allowed set. While this environment is semantically similar to allowed types like 'office' and did not cause any performance degradation (all numeric axes like acceleration, roll, pitch, and traversability remained well within their ODD limits), it represents a formal mismatch with the specification. The operation was safe and stable, but highlights a potential gap in the ODD's environmental definitions.",
+      "critical_axes": [
+        "environment_type"
+      ],
+      "temporal_stability": "STABLE"
+    },
+    "key_concerns": [
+      "The ODD specification for 'environment_type' may be too narrow. The robot operated successfully in an 'indoor_commercial' setting, suggesting this or similar categories should be considered for inclusion in future ODD revisions."
+    ]
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-11-27T04:05:39.402191+00:00",
+    "analysis_duration_seconds": 509.86,
+    "total_agents_executed": 6,
+    "total_tokens_used": 70124,
+    "estimated_cost_usd": 0.037225,
+    "cost_breakdown": {
+      "total_input_tokens": 63345,
+      "total_output_tokens": 876,
+      "input_cost_usd": 0.034945,
+      "output_cost_usd": 0.00228
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.002097,
+      "PerceptionAgent": 0.000757,
+      "MotionAgent": 0.0025,
+      "CollisionAgent": 0.004071,
+      "EvaluatorAgent": 0.021095,
+      "ReportAgent": 0.006704
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-11-27T04:05:39.402191+00:00",
+    "pipeline_duration_seconds": 509.86,
+    "odd_specification": {
+      "hash": "aa9de8b1bdbd0f27",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/production/sim_1_0_chunk_000_009",
+      "scenario_name": "sim_1_0_chunk_000_009"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "6.1.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "c30c1fabea4715f0",
+        "timestamp": "2025-11-27T04:05:39.411577+00:00",
+        "invocation_id": "e-e4e39421-825d-486b-8fff-0928002713b3",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 3366,
+          "completion_tokens": 435,
+          "total_tokens": 6517
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "7.3.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "c71486fef3dc1a05",
+        "timestamp": "2025-11-27T04:05:56.217866+00:00",
+        "invocation_id": "e-e4e39421-825d-486b-8fff-0928002713b3",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 2425,
+          "completion_tokens": 12,
+          "total_tokens": 2600
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "7.3.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "962a38308af67ec7",
+        "timestamp": "2025-11-27T04:08:54.810414+00:00",
+        "invocation_id": "e-e4e39421-825d-486b-8fff-0928002713b3",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 8232,
+          "completion_tokens": 12,
+          "total_tokens": 8635
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "7.3.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "554bde159783bee9",
+        "timestamp": "2025-11-27T04:11:24.015227+00:00",
+        "invocation_id": "e-e4e39421-825d-486b-8fff-0928002713b3",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 13471,
+          "completion_tokens": 12,
+          "total_tokens": 14210
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "5.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "f7e45b0ed5369578",
+        "timestamp": "2025-11-27T04:12:47.753697+00:00",
+        "invocation_id": "e-e4e39421-825d-486b-8fff-0928002713b3",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 16780,
+          "completion_tokens": 12,
+          "total_tokens": 17526
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "9.0.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "ef37e471bfb310fc",
+        "timestamp": "2025-11-27T04:14:00.707154+00:00",
+        "invocation_id": "e-e4e39421-825d-486b-8fff-0928002713b3",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 19071,
+          "completion_tokens": 393,
+          "total_tokens": 20636
+        }
+      }
+    },
+    "total_agents_executed": 6
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-11-27T04:14:09.272415Z",
+      "scenario_overview": "",
+      "key_observations": [],
+      "recommendations": [],
+      "pipeline_quality_assessment": "",
+      "compliance": {
+        "verdict": "BOUNDARY",
+        "confidence": "HIGH",
+        "confidence_value": 0.95,
+        "stability": "STABLE",
+        "critical_axes": [
+          "environment_type"
+        ]
+      },
+      "data_quality": {
+        "all_agents_healthy": true,
+        "warnings": [
+          "No perception data available",
+          "No motion data available",
+          "No collision data available"
+        ],
+        "anomalies": []
+      },
+      "measurement_summary": {},
+      "scenario": {
+        "name": "sim_1_0_chunk_000_009",
+        "windows_analyzed": 0
+      },
+      "analysis": {
+        "duration_seconds": 509.86,
+        "total_tokens": 70124,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-11-27T04:14:09.272440Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [],
+        "pipeline_quality_assessment": "",
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        },
+        "measurement_summary": {}
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "BOUNDARY",
+          "confidence": 0.95,
+          "rationale": "The overall region distance of 0.2 places the operation on the boundary of the ODD. This is driven by a single, persistent, low-level violation on the 'environment_type' axis. Specifically, the perception system identified the environment as 'indoor_commercial' in 20% of the windows, a category not explicitly listed in the ODD's allowed set. While this environment is semantically similar to allowed types like 'office' and did not cause any performance degradation (all numeric axes like acceleration, roll, pitch, and traversability remained well within their ODD limits), it represents a formal mismatch with the specification. The operation was safe and stable, but highlights a potential gap in the ODD's environmental definitions.",
+          "critical_axes": [
+            "environment_type"
+          ],
+          "temporal_stability": "STABLE"
+        },
+        "cod_region": {
+          "environment_type": {
+            "workspace": 0.3,
+            "office": 0.5,
+            "indoor_commercial": 0.2,
+            "type": "enum"
+          },
+          "lighting_conditions": {
+            "bright": 0.9,
+            "moderate": 0.1,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "smooth": 0.8,
+            "smooth_floor": 0.2,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.05,
+            "max": 0.3
+          },
+          "traversability_score": {
+            "type": "range",
+            "min": 0.8,
+            "max": 0.95
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.0175,
+            "max": 1.0326
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 0.39,
+            "max": 4.48
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 0.51,
+            "max": 7.56
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.2,
+          "fraction_outside_per_axis": {
+            "environment_type": 0.2,
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0,
+            "obstacle_density": 0.0,
+            "traversability_score": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_pitch_deg": 0.0
+          },
+          "total_windows": 10,
+          "windows_in_odd": 2,
+          "windows_violated": [
+            "000",
+            "001",
+            "003",
+            "004",
+            "005",
+            "006",
+            "007",
+            "009"
+          ],
+          "first_violation_window": "000",
+          "categorical_semantic_distances": {
+            "environment_type": 1.0,
+            "terrain_type": 0.0
+          }
+        },
+        "key_concerns": [
+          "The ODD specification for 'environment_type' may be too narrow. The robot operated successfully in an 'indoor_commercial' setting, suggesting this or similar categories should be considered for inclusion in future ODD revisions."
+        ]
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0,
+          "window_ids": []
+        },
+        "agent_health": {
+          "perception": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "status": "OK"
+          },
+          "motion": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "zero_acceleration_windows": [],
+            "status": "OK"
+          },
+          "collision": {
+            "windows_processed": 0,
+            "collision_detected_windows": [],
+            "collision_count": 0,
+            "status": "OK"
+          }
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "BOUNDARY",
+          "confidence": 0.95,
+          "temporal_stability": "STABLE",
+          "critical_axes": [
+            "environment_type"
+          ]
+        },
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        }
+      },
+      "odd_specification": {},
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "odd_trends": "The scenario consistently features brightly lit, smooth indoor environments with low to moderate obstacle density, enabling high traversability. The robot generally encounters clear paths with occasional distant furniture-like obstacles.",
+          "anomalies": [
+            "Window 004 and 006 show slightly higher obstacle density and slightly lower traversability, but remain within ODD specifications.",
+            "Window 009 has 'moderate' lighting, which is a slight variation but within ODD specs."
+          ],
+          "concerns": [
+            "No significant concerns regarding ODD adherence were detected."
+          ]
+        },
+        "motion": {
+          "odd_trends": "The robot's motion transitions from primarily stationary (windows 000, 001) to more dynamic states involving rotations and complex maneuvers (windows 002-009). Maximum acceleration and angular velocity show increasing trends in the middle windows, then decrease towards the end. Pitch and roll values consistently remain well within ODD limits.",
+          "anomalies": [
+            "Windows 003, 004, 005, 006, 007, and 009 show a 'complex' motion state with significant IMU readings (acceleration, angular velocity, jerk) despite the camera image being sharp, which suggests intermittent motion or brief, dynamic adjustments.",
+            "Windows 007, 008, and 009 show higher angular velocities which might indicate turning maneuvers."
+          ],
+          "concerns": [
+            "No significant safety concerns regarding ODD adherence were detected. The maximum acceleration observed (1.0326 m/s^2) is well below the ODD specification (10 m/s^2), and pitch/roll values are within limits."
+          ]
+        },
+        "collision": {
+          "odd_trends": "No collisions were detected across any of the analyzed windows. The robot maintained safe distances from obstacles.",
+          "anomalies": [],
+          "concerns": []
+        }
+      },
+      "summary_insights": {
+        "perception": [
+          "The robot consistently operates in well-lit, smooth indoor environments (offices, workspaces, commercial spaces) as per the ODD.",
+          "Obstacle density remains low to moderate across all windows, with common detection of a 'prominent curved obstacle,' likely furniture or structural elements, not constituting extreme clutter.",
+          "Traversability is consistently high, indicating suitable terrain and clear navigation paths for the Unitree Go2.",
+          "No stairs, outdoor elements, or extreme terrain variations were detected, confirming adherence to environmental constraints."
+        ],
+        "motion": [
+          "The robot's motion is generally characterized by stationary periods, rotations, and brief, complex maneuvers, all within the defined ODD limits for acceleration, pitch, and roll.",
+          "While some windows show 'complex' motion with significant IMU activity, the overall motion appears controlled, and there are no instances of sustained high-speed or aggressive maneuvering.",
+          "Pitch and roll angles consistently remain low, indicating stable operation on flat or gently varied indoor surfaces as per ODD.",
+          "The observed maximum acceleration is significantly lower than the specified ODD limit, indicating the robot is not pushing its acceleration boundaries."
+        ],
+        "collision": [
+          "No collisions were detected throughout the entire scenario, indicating safe operation of the robot.",
+          "The robot consistently maintained a safe distance from obstacles, with minimum proximity measurements well above collision thresholds.",
+          "All IMU, camera, and BEV data consistently showed no evidence of impact, sudden jarring motions, or obstacle penetration."
+        ]
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/production/sim_1_0_chunk_000_009",
+          "scenario_name": "sim_1_0_chunk_000_009"
+        },
+        "odd_spec_hash": "aa9de8b1bdbd0f27",
+        "timing": {
+          "start_time": "2025-11-27T04:05:39.402191+00:00",
+          "duration_seconds": 509.86
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "6.1.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 6517
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "7.3.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 2600
+          },
+          {
+            "name": "MotionAgent",
+            "version": "7.3.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 8635
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "7.3.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 14210
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "5.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 17526
+          },
+          {
+            "name": "ReportAgent",
+            "version": "9.0.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 20636
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 63345,
+          "completion_tokens": 876,
+          "total_tokens": 70124,
+          "estimated_cost_usd": 0.037225,
+          "cost_breakdown": {
+            "total_input_tokens": 63345,
+            "total_output_tokens": 876,
+            "input_cost_usd": 0.034945,
+            "output_cost_usd": 0.00228
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.002097,
+            "PerceptionAgent": 0.000757,
+            "MotionAgent": 0.0025,
+            "CollisionAgent": 0.004071,
+            "EvaluatorAgent": 0.021095,
+            "ReportAgent": 0.006704
+          }
+        }
+      },
+      "raw_agent_outputs": {
+        "odd_spec": {},
+        "perception": {
+          "windows_analyzed": 10,
+          "temporal_analysis": {
+            "odd_trends": "The scenario consistently features brightly lit, smooth indoor environments with low to moderate obstacle density, enabling high traversability. The robot generally encounters clear paths with occasional distant furniture-like obstacles.",
+            "anomalies": [
+              "Window 004 and 006 show slightly higher obstacle density and slightly lower traversability, but remain within ODD specifications.",
+              "Window 009 has 'moderate' lighting, which is a slight variation but within ODD specs."
+            ],
+            "concerns": [
+              "No significant concerns regarding ODD adherence were detected."
+            ]
+          },
+          "summary_insights": [
+            "The robot consistently operates in well-lit, smooth indoor environments (offices, workspaces, commercial spaces) as per the ODD.",
+            "Obstacle density remains low to moderate across all windows, with common detection of a 'prominent curved obstacle,' likely furniture or structural elements, not constituting extreme clutter.",
+            "Traversability is consistently high, indicating suitable terrain and clear navigation paths for the Unitree Go2.",
+            "No stairs, outdoor elements, or extreme terrain variations were detected, confirming adherence to environmental constraints."
+          ]
+        },
+        "motion": {
+          "windows_analyzed": 10,
+          "temporal_analysis": {
+            "odd_trends": "The robot's motion transitions from primarily stationary (windows 000, 001) to more dynamic states involving rotations and complex maneuvers (windows 002-009). Maximum acceleration and angular velocity show increasing trends in the middle windows, then decrease towards the end. Pitch and roll values consistently remain well within ODD limits.",
+            "anomalies": [
+              "Windows 003, 004, 005, 006, 007, and 009 show a 'complex' motion state with significant IMU readings (acceleration, angular velocity, jerk) despite the camera image being sharp, which suggests intermittent motion or brief, dynamic adjustments.",
+              "Windows 007, 008, and 009 show higher angular velocities which might indicate turning maneuvers."
+            ],
+            "concerns": [
+              "No significant safety concerns regarding ODD adherence were detected. The maximum acceleration observed (1.0326 m/s^2) is well below the ODD specification (10 m/s^2), and pitch/roll values are within limits."
+            ]
+          },
+          "summary_insights": [
+            "The robot's motion is generally characterized by stationary periods, rotations, and brief, complex maneuvers, all within the defined ODD limits for acceleration, pitch, and roll.",
+            "While some windows show 'complex' motion with significant IMU activity, the overall motion appears controlled, and there are no instances of sustained high-speed or aggressive maneuvering.",
+            "Pitch and roll angles consistently remain low, indicating stable operation on flat or gently varied indoor surfaces as per ODD.",
+            "The observed maximum acceleration is significantly lower than the specified ODD limit, indicating the robot is not pushing its acceleration boundaries."
+          ]
+        },
+        "collision": {
+          "windows_analyzed": 10,
+          "collisions_detected": 0,
+          "temporal_analysis": {
+            "odd_trends": "No collisions were detected across any of the analyzed windows. The robot maintained safe distances from obstacles.",
+            "anomalies": [],
+            "concerns": []
+          },
+          "summary_insights": [
+            "No collisions were detected throughout the entire scenario, indicating safe operation of the robot.",
+            "The robot consistently maintained a safe distance from obstacles, with minimum proximity measurements well above collision thresholds.",
+            "All IMU, camera, and BEV data consistently showed no evidence of impact, sudden jarring motions, or obstacle penetration."
+          ]
+        },
+        "evaluator": {
+          "cod_region": {
+            "environment_type": {
+              "workspace": 0.3,
+              "office": 0.5,
+              "indoor_commercial": 0.2,
+              "type": "enum"
+            },
+            "lighting_conditions": {
+              "bright": 0.9,
+              "moderate": 0.1,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "smooth": 0.8,
+              "smooth_floor": 0.2,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.05,
+              "max": 0.3
+            },
+            "traversability_score": {
+              "type": "range",
+              "min": 0.8,
+              "max": 0.95
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.0175,
+              "max": 1.0326
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0.39,
+              "max": 4.48
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0.51,
+              "max": 7.56
+            }
+          },
+          "region_metrics": {
+            "region_distance": 0.2,
+            "fraction_outside_per_axis": {
+              "environment_type": 0.2,
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0,
+              "obstacle_density": 0.0,
+              "traversability_score": 0.0,
+              "max_accel_mps2": 0.0,
+              "max_roll_deg": 0.0,
+              "max_pitch_deg": 0.0
+            },
+            "total_windows": 10,
+            "windows_in_odd": 2,
+            "windows_violated": [
+              "000",
+              "001",
+              "003",
+              "004",
+              "005",
+              "006",
+              "007",
+              "009"
+            ],
+            "first_violation_window": "000",
+            "categorical_semantic_distances": {
+              "environment_type": 1.0,
+              "terrain_type": 0.0
+            }
+          },
+          "compliance_verdict": {
+            "verdict": "BOUNDARY",
+            "confidence": 0.95,
+            "rationale": "The overall region distance of 0.2 places the operation on the boundary of the ODD. This is driven by a single, persistent, low-level violation on the 'environment_type' axis. Specifically, the perception system identified the environment as 'indoor_commercial' in 20% of the windows, a category not explicitly listed in the ODD's allowed set. While this environment is semantically similar to allowed types like 'office' and did not cause any performance degradation (all numeric axes like acceleration, roll, pitch, and traversability remained well within their ODD limits), it represents a formal mismatch with the specification. The operation was safe and stable, but highlights a potential gap in the ODD's environmental definitions.",
+            "critical_axes": [
+              "environment_type"
+            ],
+            "temporal_stability": "STABLE"
+          },
+          "key_concerns": [
+            "The ODD specification for 'environment_type' may be too narrow. The robot operated successfully in an 'indoor_commercial' setting, suggesting this or similar categories should be considered for inclusion in future ODD revisions."
+          ]
+        },
+        "report": {}
+      }
+    }
+  },
+  "agent_outputs": {
+    "PerceptionAgent": {
+      "windows_analyzed": 10,
+      "temporal_analysis": {
+        "odd_trends": "The scenario consistently features brightly lit, smooth indoor environments with low to moderate obstacle density, enabling high traversability. The robot generally encounters clear paths with occasional distant furniture-like obstacles.",
+        "anomalies": [
+          "Window 004 and 006 show slightly higher obstacle density and slightly lower traversability, but remain within ODD specifications.",
+          "Window 009 has 'moderate' lighting, which is a slight variation but within ODD specs."
+        ],
+        "concerns": [
+          "No significant concerns regarding ODD adherence were detected."
+        ]
+      },
+      "summary_insights": [
+        "The robot consistently operates in well-lit, smooth indoor environments (offices, workspaces, commercial spaces) as per the ODD.",
+        "Obstacle density remains low to moderate across all windows, with common detection of a 'prominent curved obstacle,' likely furniture or structural elements, not constituting extreme clutter.",
+        "Traversability is consistently high, indicating suitable terrain and clear navigation paths for the Unitree Go2.",
+        "No stairs, outdoor elements, or extreme terrain variations were detected, confirming adherence to environmental constraints."
+      ]
+    },
+    "MotionAgent": {
+      "windows_analyzed": 10,
+      "temporal_analysis": {
+        "odd_trends": "The robot's motion transitions from primarily stationary (windows 000, 001) to more dynamic states involving rotations and complex maneuvers (windows 002-009). Maximum acceleration and angular velocity show increasing trends in the middle windows, then decrease towards the end. Pitch and roll values consistently remain well within ODD limits.",
+        "anomalies": [
+          "Windows 003, 004, 005, 006, 007, and 009 show a 'complex' motion state with significant IMU readings (acceleration, angular velocity, jerk) despite the camera image being sharp, which suggests intermittent motion or brief, dynamic adjustments.",
+          "Windows 007, 008, and 009 show higher angular velocities which might indicate turning maneuvers."
+        ],
+        "concerns": [
+          "No significant safety concerns regarding ODD adherence were detected. The maximum acceleration observed (1.0326 m/s^2) is well below the ODD specification (10 m/s^2), and pitch/roll values are within limits."
+        ]
+      },
+      "summary_insights": [
+        "The robot's motion is generally characterized by stationary periods, rotations, and brief, complex maneuvers, all within the defined ODD limits for acceleration, pitch, and roll.",
+        "While some windows show 'complex' motion with significant IMU activity, the overall motion appears controlled, and there are no instances of sustained high-speed or aggressive maneuvering.",
+        "Pitch and roll angles consistently remain low, indicating stable operation on flat or gently varied indoor surfaces as per ODD.",
+        "The observed maximum acceleration is significantly lower than the specified ODD limit, indicating the robot is not pushing its acceleration boundaries."
+      ]
+    },
+    "CollisionAgent": {
+      "windows_analyzed": 10,
+      "collisions_detected": 0,
+      "temporal_analysis": {
+        "odd_trends": "No collisions were detected across any of the analyzed windows. The robot maintained safe distances from obstacles.",
+        "anomalies": [],
+        "concerns": []
+      },
+      "summary_insights": [
+        "No collisions were detected throughout the entire scenario, indicating safe operation of the robot.",
+        "The robot consistently maintained a safe distance from obstacles, with minimum proximity measurements well above collision thresholds.",
+        "All IMU, camera, and BEV data consistently showed no evidence of impact, sudden jarring motions, or obstacle penetration."
+      ]
+    },
+    "EvaluatorAgent": {
+      "cod_region": {
+        "environment_type": {
+          "workspace": 0.3,
+          "office": 0.5,
+          "indoor_commercial": 0.2,
+          "type": "enum"
+        },
+        "lighting_conditions": {
+          "bright": 0.9,
+          "moderate": 0.1,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "smooth": 0.8,
+          "smooth_floor": 0.2,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.05,
+          "max": 0.3
+        },
+        "traversability_score": {
+          "type": "range",
+          "min": 0.8,
+          "max": 0.95
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.0175,
+          "max": 1.0326
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 0.39,
+          "max": 4.48
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 0.51,
+          "max": 7.56
+        }
+      },
+      "region_metrics": {
+        "region_distance": 0.2,
+        "fraction_outside_per_axis": {
+          "environment_type": 0.2,
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0,
+          "obstacle_density": 0.0,
+          "traversability_score": 0.0,
+          "max_accel_mps2": 0.0,
+          "max_roll_deg": 0.0,
+          "max_pitch_deg": 0.0
+        },
+        "total_windows": 10,
+        "windows_in_odd": 2,
+        "windows_violated": [
+          "000",
+          "001",
+          "003",
+          "004",
+          "005",
+          "006",
+          "007",
+          "009"
+        ],
+        "first_violation_window": "000",
+        "categorical_semantic_distances": {
+          "environment_type": 1.0,
+          "terrain_type": 0.0
+        }
+      },
+      "compliance_verdict": {
+        "verdict": "BOUNDARY",
+        "confidence": 0.95,
+        "rationale": "The overall region distance of 0.2 places the operation on the boundary of the ODD. This is driven by a single, persistent, low-level violation on the 'environment_type' axis. Specifically, the perception system identified the environment as 'indoor_commercial' in 20% of the windows, a category not explicitly listed in the ODD's allowed set. While this environment is semantically similar to allowed types like 'office' and did not cause any performance degradation (all numeric axes like acceleration, roll, pitch, and traversability remained well within their ODD limits), it represents a formal mismatch with the specification. The operation was safe and stable, but highlights a potential gap in the ODD's environmental definitions.",
+        "critical_axes": [
+          "environment_type"
+        ],
+        "temporal_stability": "STABLE"
+      },
+      "key_concerns": [
+        "The ODD specification for 'environment_type' may be too narrow. The robot operated successfully in an 'indoor_commercial' setting, suggesting this or similar categories should be considered for inclusion in future ODD revisions."
+      ]
+    }
+  }
+}

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Manual ODD Analysis Runner
+Manual ODD Analysis Runner (Phase 1.4.3)
 
 Interactive script to run complete ODD analysis workflow on a single scenario.
-Follows the notebook workflow pattern with model configuration at top.
+Uses consolidated 7-agent pipeline with flash-exp models for cost optimization.
 
 Usage:
     python scripts/run_odd_analysis.py
 
 Output:
-    data/analysis_results/manual/<timestamp>/<scenario>/
+    data/archive/analysis_results/manual/<timestamp>/<scenario>/
         - full_result.json
         - executive_summary.json
 """
@@ -40,22 +40,22 @@ warnings.filterwarnings('ignore', message='.*SSL.*')
 warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 
 # ============================================================================
-# MODEL CONFIGURATION
+# MODEL CONFIGURATION (Phase 1.4.3 Optimizations)
 # ============================================================================
-# Customize which models to use for each agent
-# Options: "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro",
-#          "gemini-3-pro", "gemini-robotics-er-1.5-preview"
+# Using gemini-2.0-flash-exp for 100x cost reduction vs pro models
+# Flash-exp is sufficient for most tasks with massive token savings
+# Options: "gemini-2.0-flash-exp", "gemini-2.5-flash", "gemini-2.5-pro"
 
-# Camera + LiDAR analysis (complex vision)
+# Phase 1.4.4 - Type-driven COD construction
+# Using 2.5-flash-lite for all agents (cheaper, testing reliability)
+# NOTE: 2.5-flash-lite may not reliably call tools - monitor carefully
 MODEL_PERCEPTION = "gemini-2.5-pro"
-# IMU motion detection (straightforward)
-MODEL_MOTION = "gemini-2.5-flash"
-# Collision risk assessment (complex reasoning)
+MODEL_MOTION = "gemini-2.5-pro"
 MODEL_COLLISION = "gemini-2.5-pro"
-# ODD specification parsing (complex NLP)
 MODEL_ODD_SPEC = "gemini-2.5-pro"
-MODEL_COD = "gemini-2.5-flash"             # COD classification + compliance
-MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
+MODEL_EVALUATOR = "gemini-2.5-pro"
+# Upgraded from flash-lite for reliable tool calling
+MODEL_REPORT = "gemini-2.5-pro"
 
 # ============================================================================
 # ODD DESCRIPTION (Default from notebook)
@@ -109,12 +109,6 @@ NOT designed for:
 - Outdoor terrain (gravel, grass, dirt, uneven ground)
 - Unstable surfaces (sand, loose materials)
 
-COLLISION EXPECTATIONS:
-In furniture-dense environments (living rooms, dining areas), proximity to obstacles 
-is unavoidable and normal. Collision risk scores up to 0.75 are acceptable when 
-navigating through furnished spaces. The robot should maintain awareness and avoid 
-actual contact, but close proximity (<0.5m to obstacles) is expected.
-
 DEFINITELY NOT DESIGNED FOR:
 - Outdoor environments (weather exposure, GPS reliance, rough terrain)
 - Dark rooms where camera sensors cannot function
@@ -128,13 +122,12 @@ DEFINITELY NOT DESIGNED FOR:
 def find_scenarios():
     """Find all available scenarios (production + test datasets)."""
     scenarios = []
-    base_dir = project_root / "data" / "processed"
+    data_dir = project_root / "data"
 
-    # Search production/, test_data/real/, test_data/sim/
+    # Search production/ and test/ subdirectories
     search_dirs = [
-        ("production", base_dir / "production"),
-        ("test_data/real", base_dir / "test_data" / "real"),
-        ("test_data/sim", base_dir / "test_data" / "sim"),
+        ("production", data_dir / "production"),
+        ("test", data_dir / "test"),
     ]
 
     for category, search_dir in search_dirs:
@@ -209,12 +202,23 @@ def select_scenario(scenarios):
 
 
 def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract compliance data, handling potential double nesting."""
-    compliance = result['full_analysis']['odd_compliance']
-    # Handle double nesting if present
-    if 'odd_compliance' in compliance:
-        return compliance['odd_compliance']
-    return compliance
+    """Extract compliance data from evaluator output (Phase 1.4.4)."""
+    # Phase 1.4.4: Check report.compliance_summary first (new flat structure)
+    if 'report' in result and 'compliance_summary' in result['report']:
+        return result['report']['compliance_summary']
+
+    # Fallback: Check full_analysis.compliance_verdict (evaluator output)
+    if 'full_analysis' in result and 'compliance_verdict' in result['full_analysis']:
+        return result['full_analysis']['compliance_verdict']
+
+    # Old Phase 1.4.3 structure
+    if 'full_analysis' in result and 'odd_compliance' in result['full_analysis']:
+        compliance = result['full_analysis']['odd_compliance']
+        if 'odd_compliance' in compliance:
+            return compliance['odd_compliance']
+        return compliance
+
+    return {}
 
 
 def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, source_path: str = None) -> Path:
@@ -236,14 +240,22 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, sou
     # Save executive summary separately
     summary_path = output_base / "executive_summary.json"
     compliance_data = get_compliance_data(result)
+
+    # Extract compliance summary (Phase 1.4.4 compatible)
+    overall_compliance = compliance_data.get('overall', 'UNKNOWN')
+    violations = []  # Phase 1.4.4: critical_axes become violations
+    if compliance_data.get('critical_axes'):
+        violations = [
+            f"Critical axis: {axis}" for axis in compliance_data['critical_axes']]
+
     summary_data = {
         'executive_summary': result['report'].get('executive_summary', ''),
         'key_findings': result['report'].get('key_findings', []),
         'recommendations': result['report'].get('recommendations', []),
         'scenario_metadata': result['report'].get('scenario_metadata', {}),
-        'overall_compliance': compliance_data.get('overall_compliance', ''),
-        'violations': compliance_data.get('violations', []),
-        'warnings': compliance_data.get('warnings', [])
+        'overall_compliance': overall_compliance,
+        'violations': violations,
+        'rationale': compliance_data.get('rationale', '')
     }
     with open(summary_path, 'w') as f:
         json.dump(summary_data, f, indent=2)
@@ -252,63 +264,207 @@ def save_results(result: Dict[str, Any], scenario_name: str, timestamp: str, sou
 
 
 def display_summary(result: Dict[str, Any]):
-    """Display executive summary and compliance status."""
-    report = result['report']
-    # Handle potential double nesting in compliance data
+    """Display executive summary and compliance status.
+
+    Supports multiple report schema versions:
+    - v9.0.0 (current): compliance, executive_summary, key_findings dict, scenario_metadata dict
+    - v8.x: verdict, narrative dict
+    - Legacy: executive_summary string, key_findings list
+    """
+    # Phase 1.4.4: handle both flat structure and old nested structure
+    if 'report' in result:
+        report = result['report']
+        # Handle nested JSON string from ReportAgent
+        if isinstance(report, dict) and 'result' in report:
+            try:
+                report = json.loads(report['result'])
+            except (json.JSONDecodeError, TypeError):
+                pass
+    else:
+        report = result  # Flat structure from Phase 1.4.4
+
     compliance_data = get_compliance_data(result)
-    metadata = report.get('scenario_metadata', {})
+    analysis_meta = result.get('analysis_metadata', {})
 
     print("\n" + "=" * 80)
     print("EXECUTIVE SUMMARY")
     print("=" * 80)
     print()
-    print(report.get('executive_summary', 'N/A'))
+    # Phase 1.4.6: Support v9.0.0 schema (compliance + executive_summary)
+    if 'executive_summary' in report and report.get('executive_summary'):
+        # v9.0.0: Direct executive_summary field
+        print(report['executive_summary'])
+    elif 'verdict' in report and isinstance(report['verdict'], dict):
+        # v8.x: verdict.summary is the executive summary
+        print(report['verdict'].get('summary', 'N/A'))
+    elif 'compliance' in report and isinstance(report['compliance'], dict):
+        # v9.0.0 fallback: compliance.summary
+        print(report['compliance'].get('summary', 'N/A'))
+    else:
+        print('N/A')
     print()
 
     print("=" * 80)
     print("KEY FINDINGS")
     print("=" * 80)
-    for i, finding in enumerate(report.get('key_findings', []), 1):
-        print(f"\n{i}. {finding}")
+    # Phase 1.4.6: Support v9.0.0 key_findings dict, v8.x narrative, or legacy list
+    if 'key_findings' in report and isinstance(report['key_findings'], dict):
+        # v9.0.0: key_findings is a dict with perception, motion, safety, temporal_trends
+        key_findings = report['key_findings']
+        sections = [
+            ('Perception', key_findings.get('perception')),
+            ('Motion', key_findings.get('motion')),
+            ('Safety', key_findings.get('safety')),
+            ('Temporal Trends', key_findings.get('temporal_trends')),
+        ]
+        for name, content in sections:
+            if content:
+                print(f"\n• {name}: {content}")
+    elif 'narrative' in report and isinstance(report['narrative'], dict):
+        # v8.x: narrative dict
+        narrative = report['narrative']
+        sections = [
+            ('Scenario', narrative.get('scenario')),
+            ('Perception', narrative.get('perception')),
+            ('Motion', narrative.get('motion')),
+            ('Safety', narrative.get('safety')),
+            ('Temporal', narrative.get('temporal')),
+        ]
+        for name, content in sections:
+            if content:
+                print(f"\n• {name}: {content}")
+    elif 'key_findings' in report and isinstance(report['key_findings'], list):
+        # Legacy: key_findings as list
+        for i, finding in enumerate(report['key_findings'], 1):
+            print(f"\n{i}. {finding}")
+    else:
+        print("\nNo key findings available.")
 
     print()
     print("=" * 80)
     print("SCENARIO METADATA")
     print("=" * 80)
-    print(
-        f"  • Windows analyzed: {metadata.get('total_windows_analyzed', 'N/A')}")
-    print(
-        f"  • Data source: {metadata.get('data_source', 'N/A')} (confidence: {metadata.get('data_source_confidence', 'N/A')})")
-    print(f"  • Environment: {metadata.get('environment_class', 'N/A')}")
+
+    # Phase 1.4.6: Try v9.0.0 scenario_metadata first, then fall back to extracting from full_analysis
+    if 'scenario_metadata' in report and isinstance(report['scenario_metadata'], dict):
+        # v9.0.0: scenario_metadata dict
+        scenario_meta = report['scenario_metadata']
+        print(
+            f"  • Windows analyzed: {scenario_meta.get('windows_analyzed', 'N/A')}")
+        print(f"  • Environment: {scenario_meta.get('environment', 'N/A')}")
+        print(f"  • Data Quality: {scenario_meta.get('data_quality', 'N/A')}")
+        # v9.1.0: Data source (sim vs real)
+        data_source = scenario_meta.get('data_source', 'N/A')
+        print(f"  • Data Source: {data_source}")
+    else:
+        # Legacy: extract from full_analysis
+        full_analysis = result.get('full_analysis', {})
+        cod_region = full_analysis.get('cod_region', {})
+        region_metrics = full_analysis.get('region_metrics', {})
+
+        total_windows = region_metrics.get('total_windows', 'N/A')
+        print(f"  • Windows analyzed: {total_windows}")
+
+        # Try to get environment info from COD region
+        env_type = cod_region.get('environment_type', {})
+        if isinstance(env_type, dict):
+            env_labels = [k for k in env_type.keys() if k != 'type']
+            env_str = ', '.join(env_labels) if env_labels else 'N/A'
+        else:
+            env_str = str(env_type) if env_type else 'N/A'
+        print(f"  • Environment: {env_str}")
+
+        lighting = cod_region.get('lighting_conditions', {})
+        if isinstance(lighting, dict):
+            light_labels = [k for k in lighting.keys() if k != 'type']
+            light_str = ', '.join(light_labels) if light_labels else 'N/A'
+        else:
+            light_str = str(lighting) if lighting else 'N/A'
+        print(f"  • Lighting: {light_str}")
+
+    # Display analysis metadata if available
+    if analysis_meta:
+        print()
+        print("=" * 80)
+        print("ANALYSIS METADATA")
+        print("=" * 80)
+        print(
+            f"  • Pipeline version: {analysis_meta.get('pipeline_version', 'N/A')}")
+        print(
+            f"  • Duration: {analysis_meta.get('analysis_duration_seconds', 'N/A')} seconds")
+        print(
+            f"  • Agents executed: {analysis_meta.get('total_agents_executed', 'N/A')}")
+        print(
+            f"  • Total tokens: {analysis_meta.get('total_tokens_used', 'N/A'):,}")
+        print(
+            f"  • Estimated cost: ${analysis_meta.get('estimated_cost_usd', 0):.4f} USD")
 
     print()
     print("=" * 80)
     print("ODD COMPLIANCE")
     print("=" * 80)
-    print(f"  • Overall: {compliance_data.get('overall_compliance', 'N/A')}")
-    print(f"  • Violations: {len(compliance_data.get('violations', []))}")
-    print(f"  • Warnings: {len(compliance_data.get('warnings', []))}")
+    # Phase 1.4.6: Support v9.0.0 compliance object, v8.x verdict, or legacy overall
+    report_compliance = report.get('compliance', {})
+    if isinstance(report_compliance, dict) and report_compliance:
+        # v9.0.0: Use compliance from report
+        overall = report_compliance.get('status', 'UNKNOWN')
+        confidence = report_compliance.get('confidence', 'N/A')
+        summary = report_compliance.get('summary', 'N/A')
+        print(f"  • Status: {overall}")
+        print(f"  • Confidence: {confidence}")
+        if summary != 'N/A':
+            print(f"  • Summary: {summary}")
+    else:
+        # Legacy/v8.x: Use compliance_data from full_analysis
+        overall = compliance_data.get(
+            'verdict', compliance_data.get('overall', 'UNKNOWN'))
+        rationale = compliance_data.get('rationale', 'N/A')
+        temporal_stability = compliance_data.get('temporal_stability', 'N/A')
+        print(f"  • Overall: {overall}")
+        print(f"  • Temporal Stability: {temporal_stability}")
+        if rationale != 'N/A':
+            print(f"  • Rationale: {rationale}")
 
-    violations = compliance_data.get('violations', [])
-    if violations:
-        print()
-        print("❌ VIOLATIONS:")
-        for v in violations:
-            print(f"    • {v}")
+    # Critical axes from compliance_data (always from full_analysis)
+    critical_axes = compliance_data.get('critical_axes', [])
+    print(f"  • Critical Axes: {len(critical_axes)}")
 
-    warnings_list = compliance_data.get('warnings', [])
-    if warnings_list:
+    if critical_axes:
         print()
-        print("⚠️  WARNINGS:")
-        for w in warnings_list:
-            print(f"    • {w}")
+        print("⚠️  CRITICAL AXES (Violations):")
+        for axis in critical_axes:
+            print(f"    • {axis}")
+
+    # Display issues if present (v9.0.0)
+    issues = report.get('issues', [])
+    if issues:
+        print()
+        print("=" * 80)
+        print("IDENTIFIED ISSUES")
+        print("=" * 80)
+        for i, issue in enumerate(issues, 1):
+            if isinstance(issue, dict):
+                severity = issue.get('severity', 'unknown')
+                desc = issue.get('description', str(issue))
+                print(f"\n{i}. [{severity.upper()}] {desc}")
+            else:
+                print(f"\n{i}. {issue}")
 
     print()
     print("=" * 80)
     print("RECOMMENDATIONS")
     print("=" * 80)
-    for i, rec in enumerate(report.get('recommendations', []), 1):
-        print(f"\n{i}. {rec}")
+    recommendations = report.get('recommendations', [])
+    if recommendations:
+        for i, rec in enumerate(recommendations, 1):
+            if isinstance(rec, dict):
+                priority = rec.get('priority', 'medium')
+                action = rec.get('action', str(rec))
+                print(f"\n{i}. [{priority.upper()}] {action}")
+            else:
+                print(f"\n{i}. {rec}")
+    else:
+        print("\nNo recommendations provided.")
 
 
 async def main():
@@ -325,7 +481,7 @@ async def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        help="Output directory for results (default: data/analysis_results/manual/<timestamp>)"
+        help="Output directory for results (default: data/archive/analysis_results/manual/<timestamp>)"
     )
     args = parser.parse_args()
 
@@ -341,12 +497,12 @@ async def main():
     print("ODD ANALYSIS - MANUAL RUNNER")
     print("=" * 80)
     print()
-    print("🔧 Model Configuration:")
+    print("🔧 Model Configuration (Phase 1.4.4 - Type-Driven COD):")
     print(f"   Perception:  {MODEL_PERCEPTION}")
     print(f"   Motion:      {MODEL_MOTION}")
     print(f"   Collision:   {MODEL_COLLISION}")
     print(f"   ODD Spec:    {MODEL_ODD_SPEC}")
-    print(f"   COD/Comply:  {MODEL_COD}")
+    print(f"   Evaluator:   {MODEL_EVALUATOR}")
     print(f"   Report:      {MODEL_REPORT}")
 
     # Find scenarios
@@ -355,7 +511,7 @@ async def main():
     scenarios = find_scenarios()
 
     if not scenarios:
-        print("❌ No scenarios found in data/processed/")
+        print("❌ No scenarios found in data/production/ or data/test/")
         print("Please run extract_windows.py to create data")
         sys.exit(1)
 
@@ -416,7 +572,7 @@ async def main():
             model_motion=MODEL_MOTION,
             model_collision=MODEL_COLLISION,
             model_odd_spec=MODEL_ODD_SPEC,
-            model_cod=MODEL_COD,
+            model_evaluator=MODEL_EVALUATOR,
             model_report=MODEL_REPORT,
         )
 
@@ -428,8 +584,8 @@ async def main():
                 output_dir = output_base / scenario_name
             else:
                 # Use default timestamp-based directory
-                output_base = Path(
-                    scenario_path).parent.parent.parent / "analysis_results" / "manual" / timestamp
+                output_base = project_root / "data" / "archive" / \
+                    "analysis_results" / "manual" / timestamp
                 output_dir = output_base / scenario_name
 
             output_dir.mkdir(parents=True, exist_ok=True)

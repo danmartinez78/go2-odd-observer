@@ -1,117 +1,151 @@
 """
-ODD specification agent.
-Extracted from odd_workflow_full.py (reference implementation).
+ODD specification agent - Version 6.0.0.
+Phase 1.4.4: Tool-based ODD spec construction with strict parameters.
 """
 
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
+from ..tools.odd_spec import create_odd_spec_tools
+
+
+# Agent version tracking
+# v5.0.0: Added type definitions for range/bool/enum axes
+# v6.0.0: Tool-based construction with strict parameters for COD compatibility
+# v6.1.0: Semantic reasoning guidance for numeric bounds (hazard vs quality vs envelope)
+AGENT_VERSION = "6.1.0"
+
+# Simplified prompt - agent uses tool instead of outputting JSON
+PROMPT_TEMPLATE = """You are an Operational Design Domain (ODD) specification expert.
+
+TASK: Convert the provided natural language ODD description into a formal specification by calling the save_odd_spec_tool.
+
+CRITICAL: You MUST call save_odd_spec_tool to save the specification. Do NOT output JSON directly.
+
+## STEP 1: ANALYZE THE ODD DESCRIPTION
+
+Extract ALL operational constraints from the natural language description:
+- Environment conditions (lighting, terrain, obstacles, weather)
+- Actor constraints (people, vehicles, proximity rules)
+- Ego constraints (speed, acceleration, stability limits)
+
+EXCLUDE static robot physical specs (dimensions, weight) - these are context only.
+
+## STEP 2: CATEGORIZE EACH CONSTRAINT
+
+For each constraint, determine:
+- **Domain**: environment, actors, or ego
+- **Type**: categorical (enum), numeric (range), or boolean (bool)
+
+**Categorical (enum)**: Finite set of allowed values
+  Example: lighting_conditions = ["bright", "moderate", "dim"]
+
+**Numeric (range)**: Continuous values with min/max bounds
+  Example: max_speed_mps = {min: 0.0, max: 1.5}
+
+**Boolean (bool)**: Binary true/false (0 or 1)
+  Example: stairs_present = allowed: 0 (means stairs NOT allowed)
+
+## STEP 3: CALL THE TOOL
+
+Call save_odd_spec_tool with 9 parameters (lists for each domain+type combo):
+
+save_odd_spec_tool(
+    environment_categorical=[
+        {"name": "lighting_conditions", "allowed": ["bright", "moderate", "dim"], "description": "Ambient light level"},
+        {"name": "terrain_type", "allowed": ["smooth", "slightly_rough"], "description": "Ground surface"}
+    ],
+    environment_numeric=[
+        {"name": "obstacle_density", "min": 0.0, "max": 0.7, "description": "Spatial obstacle density (0-1)"},
+        {"name": "traversability_score", "min": 0.3, "max": 1.0, "description": "Navigation ease (0-1)"}
+    ],
+    environment_boolean=[
+        {"name": "stairs_present", "allowed": 0, "description": "Whether stairs are accessible"}
+    ],
+    actors_categorical=[],
+    actors_numeric=[
+        {"name": "min_proximity_m", "min": 0.3, "max": 10.0, "description": "Min safe distance to actors"}
+    ],
+    actors_boolean=[],
+    ego_categorical=[],
+    ego_numeric=[
+        {"name": "max_speed_mps", "min": 0.0, "max": 1.5, "description": "Max linear velocity"},
+        {"name": "max_accel_mps2", "min": 0.0, "max": 10.0, "description": "Max horizontal acceleration"},
+        {"name": "max_roll_deg", "min": 0.0, "max": 15.0, "description": "Max roll angle"},
+        {"name": "max_pitch_deg", "min": 0.0, "max": 20.0, "description": "Max pitch angle"}
+    ],
+    ego_boolean=[]
+)
+
+## REASONING ABOUT NUMERIC BOUNDS
+
+When determining min/max for numeric axes, reason about the SEMANTICS:
+
+**HAZARD axes** (obstacle_density, slope_angle, collision_risk):
+- These measure "bad things" - higher values = more risk
+- The ODD typically specifies an UPPER BOUND (max tolerable)
+- MIN should usually be 0.0 (no hazard is always acceptable)
+- Example: "moderate obstacle density" → min: 0.0, max: 0.5
+
+**QUALITY axes** (traversability_score, visibility, traction):
+- These measure "good things" - higher values = better
+- The ODD typically specifies a LOWER BOUND (min required)  
+- MAX should usually be 1.0 (perfect quality is always acceptable)
+- Example: "good traversability" → min: 0.5, max: 1.0
+
+**ENVELOPE axes** (speed, acceleration, temperature):
+- These have both meaningful bounds
+- Robot can't exceed physical limits AND shouldn't go too slow/fast
+- Example: "moderate speed" → min: 0.0, max: 1.5
+
+**ASK YOURSELF**: "If this value is at the extreme, is that acceptable?"
+- obstacle_density = 0.0 (empty room) → Always fine ✓ → min: 0.0
+- traversability = 1.0 (perfect floor) → Always fine ✓ → max: 1.0
+- speed = 0.0 (stationary) → Usually fine ✓ → min: 0.0
+
+## TYPICAL VALUE RANGES
+
+Use these as reference, adjusted by the natural language description:
+
+| Axis | Conservative | Moderate | Permissive |
+|------|--------------|----------|------------|
+| max_speed_mps | 0.0-0.5 | 0.0-1.5 | 0.0-3.0 |
+| max_accel_mps2 | 0.0-2.0 | 0.0-5.0 | 0.0-10.0 |
+| obstacle_density | 0.0-0.3 | 0.0-0.5 | 0.0-0.8 |
+| traversability_score | 0.6-1.0 | 0.4-1.0 | 0.2-1.0 |
+| max_roll_deg | 0.0-10.0 | 0.0-20.0 | 0.0-30.0 |
+| max_pitch_deg | 0.0-15.0 | 0.0-25.0 | 0.0-35.0 |
+
+## AXIS NAMING CONVENTIONS (use these exact names for COD compatibility)
+
+Environment categorical: environment_type, lighting_conditions, terrain_type, weather_conditions
+Environment numeric: obstacle_density, traversability_score, temperature_c
+Environment boolean: stairs_present, outdoor_environment
+
+Actors numeric: min_proximity_m, actor_density
+Actors categorical: actor_types
+Actors boolean: humans_present
+
+Ego numeric: max_speed_mps, max_accel_mps2, max_roll_deg, max_pitch_deg, max_angular_velocity_radps, peak_jerk_mps3
+Ego categorical: motion_state
+Ego boolean: collision_detected
+
+## RULES
+
+1. MUST call save_odd_spec_tool - do not output JSON directly
+2. Use empty lists [] for domains/types with no constraints
+3. Use the exact axis names above for COD tool compatibility
+4. After tool call, output a brief summary of axes created"""
+
 
 def create_odd_spec_agent(api_key: str, model: str) -> Agent:
     """Create a new OddSpecAgent instance."""
+    tools = create_odd_spec_tools()
+
     return Agent(
         name="OddSpecAgent",
         model=Gemini(model=model, api_key=api_key),
-        output_key="temp:odd_spec",
-        instruction="""You are an Operational Design Domain (ODD) specification expert.
-
-TASK: Convert the provided natural language ODD description into a formal specification with precise numerical ranges and categorical constraints.
-
-The user will provide a CONVERSATIONAL description of the robot's operating domain. Your job is to:
-1. Extract categorical constraints (environment types, lighting, terrain, etc.)
-2. Infer precise numerical ranges from vague descriptions
-3. Define three zones for numeric constraints: IN_ODD (safe), BOUNDARY (caution), OUT_ODD (unsafe)
-
-GUIDANCE FOR CONVERTING VAGUE DESCRIPTIONS TO PRECISE RANGES:
-
-**Speed interpretation:**
-- "slow" → 0.0-0.5 m/s (IN_ODD), 0.5-1.0 (BOUNDARY), 1.0+ (OUT_ODD)
-- "moderate" → 0.0-1.5 m/s (IN_ODD), 1.5-2.0 (BOUNDARY), 2.0+ (OUT_ODD)  
-- "fast" → 0.0-2.5 m/s (IN_ODD), 2.5-3.5 (BOUNDARY), 3.5+ (OUT_ODD)
-- If max speed mentioned, use it as IN_ODD upper bound, add 30% for BOUNDARY
-
-**Obstacle density:**
-- "sparse/low" → 0.0-0.4 (IN_ODD), 0.4-0.6 (BOUNDARY), 0.6-1.0 (OUT_ODD)
-- "moderate" → 0.0-0.6 (IN_ODD), 0.6-0.8 (BOUNDARY), 0.8-1.0 (OUT_ODD)
-- "dense/high" → prohibited (OUT_ODD > 0.8)
-
-**Traversability:**
-- "good/clear" → 0.5-1.0 (IN_ODD), 0.3-0.5 (BOUNDARY), 0.0-0.3 (OUT_ODD)
-- "challenging" → 0.3-0.8 (IN_ODD), 0.2-0.3 (BOUNDARY), 0.0-0.2 (OUT_ODD)
-
-**Collision risk:**
-- "low/safe" → 0.0-0.3 (IN_ODD), 0.3-0.5 (BOUNDARY), 0.5-1.0 (OUT_ODD)
-- "moderate" → 0.0-0.5 (IN_ODD), 0.5-0.7 (BOUNDARY), 0.7-1.0 (OUT_ODD)
-- "any mention of safety" → use low thresholds (0.3 boundary)
-
-**Platform stability (roll/pitch angles):**
-- "stable/flat" → 0-15° (IN_ODD), 15-20° (BOUNDARY), 20°+ (OUT_ODD)
-- "slopes ok" → 0-20° (IN_ODD), 20-25° (BOUNDARY), 25°+ (OUT_ODD)
-
-**Default assumptions if not mentioned:**
-- max_accel_mps2: [0.0, 2.0] IN_ODD, [2.0, 5.0] BOUNDARY, >5.0 OUT_ODD (gentle motion)
-- obstacle_density: [0.0, 0.6] IN_ODD, [0.6, 0.8] BOUNDARY
-- traversability_score: [0.5, 1.0] IN_ODD, [0.3, 0.5] BOUNDARY
-- collision_risk: [0.0, 0.3] IN_ODD, [0.3, 0.5] BOUNDARY
-
-Return ONLY valid JSON:
-{
-  "odd_specification": {
-    "categorical_constraints": {
-      "environment_type": {
-        "allowed": ["indoor_office", "indoor_corridor"],
-        "prohibited": ["outdoor_urban", "outdoor_natural", "stairs"]
-      },
-      "lighting_conditions": {
-        "allowed": ["bright", "dim"],
-        "prohibited": ["dark", "low_light"]
-      },
-      "terrain_type": {
-        "allowed": ["smooth"],
-        "prohibited": ["moderate", "rough", "very_rough"]
-      }
-    },
-    "numeric_constraints": {
-      "max_accel_mps2": {
-        "in_odd": [0.0, 2.0],
-        "boundary": [2.0, 5.0],
-        "out_odd": [5.0, "inf"]
-      },
-      "obstacle_density": {
-        "in_odd": [0.0, 0.6],
-        "boundary": [0.6, 0.8],
-        "out_odd": [0.8, 1.0]
-      },
-      "traversability_score": {
-        "in_odd": [0.5, 1.0],
-        "boundary": [0.3, 0.5],
-        "out_odd": [0.0, 0.3]
-      },
-      "collision_risk": {
-        "in_odd": [0.0, 0.3],
-        "boundary": [0.3, 0.5],
-        "out_odd": [0.5, 1.0]
-      }
-    },
-    "ego_vehicle": {
-      "vehicle_type": "quadruped_robot",
-      "dimensions": {
-        "length_m": 0.65,
-        "width_m": 0.31,
-        "height_m": 0.40
-      },
-      "clearance_requirements": {
-        "minimum_gap_width_m": 0.4,
-        "comfortable_clearance_m": 0.5
-      }
-    }
-  },
-  "odd_summary": "Brief description of what this ODD specification defines"
-}
-
-CRITICAL REQUIREMENT: The ego_vehicle section is MANDATORY. Extract robot/vehicle physical specifications 
-(dimensions, footprint, clearance) from the ODD description into the structured ego_vehicle fields.
-If specific dimensions are not provided in the description, use reasonable defaults for the vehicle type mentioned.
-
-No explanations outside JSON.""",
+        tools=tools,
+        output_key="temp:odd_spec_summary",
+        instruction=PROMPT_TEMPLATE,
     )

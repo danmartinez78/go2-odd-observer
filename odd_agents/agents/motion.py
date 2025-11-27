@@ -1,6 +1,6 @@
 """
-Motion analysis agents.
-Extracted from odd_workflow_full.py (reference implementation).
+Motion analysis agent (consolidated loop + summary).
+Single agent that orchestrates tools AND produces final ODD-aligned output.
 """
 
 from google.adk.agents import Agent
@@ -10,70 +10,83 @@ from google.genai import Client
 from ..tools.motion import create_motion_tools
 
 
-def create_motion_loop_agent(
+# Agent version
+# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
+# v7.0.0: Added save_motion_output_tool for artifact-based data handoff
+# v7.1.0: Strengthened prompt to ensure save tool is called
+# v7.2.0: Output summary to state, full data to artifact
+# v7.3.0: Strict tool parameters for save tool - per_window, temporal_analysis, summary_insights
+MOTION_AGENT_VERSION = "7.3.0"
+
+
+def create_motion_agent(
     scenario_path: str, genai_client: Client, model: str, api_key: str
 ) -> Agent:
-    """Create a new MotionLoopAgent instance."""
+    """Create consolidated motion agent (loop + summary merged)."""
     from ..tools.perception import create_perception_tools
 
-    list_windows_tool, _ = create_perception_tools(
+    list_windows_tool, _, _ = create_perception_tools(
         scenario_path, genai_client, model)
-    analyze_motion_tool = create_motion_tools(
+    analyze_motion_tool, save_motion_output = create_motion_tools(
         scenario_path, genai_client, model)
 
     return Agent(
-        name="MotionLoopAgent",
+        name="MotionAgent",
         model=Gemini(model=model, api_key=api_key),
-        tools=[list_windows_tool, analyze_motion_tool],
-        output_key="temp:motion_data",
-        instruction="""You orchestrate motion analysis across all scenario windows.
-
-Steps you MUST follow:
-1. Call list_windows_tool() exactly once to get the ordered window_id list.
-2. For each window_id returned (in that order), call analyze_motion_tool(window_id=...).
-3. Collect each tool response exactly as returned.
-4. After all windows are processed, respond with JSON:
-{
-  "windows_analyzed": ["..."],
-  "per_window_motion": [<tool_response_objects_in_order>]
-}
-Do not add commentary. Ensure valid JSON.""",
-    )
-
-
-def create_motion_summary_agent(api_key: str, model: str) -> Agent:
-    """Create a new MotionSummaryAgent instance."""
-    return Agent(
-        name="MotionSummaryAgent",
-        model=Gemini(model=model, api_key=api_key),
+        tools=[list_windows_tool, analyze_motion_tool, save_motion_output],
         output_key="temp:motion_output",
-        instruction="""You finalize the motion analysis report.
+        instruction="""You are a motion analysis agent. You MUST call tools to analyze windows and save results.
 
-Input data from the previous agent:
-{temp:motion_data?}
+REQUIRED TOOLS (you MUST call all of these):
+1. list_windows_tool() - get available windows
+2. analyze_motion_tool(window_id, odd_context) - analyze each window
+3. save_motion_output_tool(per_window, temporal_analysis, summary_insights) - save for COD
 
-If no data is provided, respond with:
-{"error": "missing_motion_data"}
+INPUT:
+- ODD Specification: {temp:odd_spec?} - extract ego motion dimensions
 
-Otherwise:
-1. Read the JSON string carefully.
-2. Calculate overall motion statistics:
-   - Motion detection rate (% windows with motion_detected=true)
-   - Motion type distribution
-   - Peak values across all windows
-3. Produce final JSON:
+MANDATORY WORKFLOW:
+1. Extract relevant ODD dimensions for motion (ego: speed, accel, stability, etc.)
+2. IMMEDIATELY call list_windows_tool() to get available windows
+3. For EACH window: Call analyze_motion_tool(window_id, odd_context)
+4. Build your data from tool results
+5. Call save_motion_output_tool with EXPLICIT PARAMETERS (see below)
+6. **FINAL STEP**: Output your SUMMARY JSON
+
+CALLING save_motion_output_tool (STRICT PARAMETERS - pass each separately):
+save_motion_output_tool(
+    per_window=[
+        {"window_id": "000", "measurements": {/* from tool's odd_measurements */}},
+        {"window_id": "001", "measurements": {/* from tool's odd_measurements */}}
+    ],
+    temporal_analysis={
+        "odd_trends": "How motion measurements change across windows",
+        "anomalies": ["Window IDs with unusual motion patterns"],
+        "concerns": ["Safety or stability issues detected"]
+    },
+    summary_insights=[
+        "Key motion pattern from tool outputs",
+        "Cross-window motion trend"
+    ]
+)
+
+FINAL OUTPUT (summary for downstream agents - JSON only, no markdown):
 {
-  "windows_analyzed": [...],
-  "overall_stats": {
-    "total_windows": <int>,
-    "motion_detected_count": <int>,
-    "motion_detection_rate": <float 0-1>,
-    "motion_type_distribution": {"stationary": X, "translation": Y, ...},
-    "max_horizontal_accel_mps2": <float>,
-    "max_angular_velocity_radps": <float>,
-    "overall_assessment": "stationary_scenario|low_activity|moderate_activity|high_activity"
+  "windows_analyzed": 2,
+  "temporal_analysis": {
+    "odd_trends": "How motion measurements change across windows",
+    "anomalies": ["Window IDs with unusual motion patterns"],
+    "concerns": ["Safety or stability issues detected"]
   },
-  "per_window_motion": [...]
+  "summary_insights": [
+    "Key motion pattern from tool outputs",
+    "Cross-window motion trend"
+  ]
 }
-Only output JSON.""",
+
+RULES:
+1. Call save tool FIRST with EXPLICIT parameters (not a single dict!)
+2. per_window MUST include measurements from each window's analyze tool response
+3. Then output summary JSON
+4. Summary goes to state for Evaluator's qualitative reasoning""",
     )

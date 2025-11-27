@@ -11,6 +11,7 @@ Usage:
     python extract_windows.py --rosbag <path> --output <dir> [options]
 """
 
+from odd_agents.utils import auto_crop_bev
 import argparse
 import json
 import os
@@ -20,6 +21,10 @@ from typing import Dict, List, Tuple, Optional
 import numpy as np
 import pandas as pd
 from collections import defaultdict
+from scipy.spatial.transform import Rotation as R
+
+# Import BEV utilities
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # ROS2 libraries
 try:
@@ -27,9 +32,11 @@ try:
     from rclpy.serialization import deserialize_message
     from sensor_msgs.msg import Image, PointCloud2, Imu, JointState
     from nav_msgs.msg import Odometry
-    from geometry_msgs.msg import Twist
+    from geometry_msgs.msg import Twist, TransformStamped
+    from tf2_msgs.msg import TFMessage
     from cv_bridge import CvBridge
     import sensor_msgs_py.point_cloud2 as pc2
+    from rclpy.time import Time
     ROS2_AVAILABLE = True
     # Try to import Go2 custom IMU message (optional)
     try:
@@ -87,6 +94,9 @@ class WindowExtractor:
         stride: float = 1.0,
         run_id: Optional[str] = None,
         data_source: Optional[str] = None,
+        bev_rotation: int = 0,
+        bev_flip_horizontal: bool = False,
+        ground_filter_height: float = 0.10,
     ):
         """
         Initialize window extractor.
@@ -98,6 +108,12 @@ class WindowExtractor:
             stride: Stride between window starts in seconds
             run_id: Optional run identifier (auto-generated if None)
             data_source: 'real' or 'sim' (auto-detected if None)
+            bev_rotation: Optional rotation to apply to BEVs in degrees (0, 90, 180, 270)
+                         Positive = clockwise. Sim-specific workaround.
+            bev_flip_horizontal: If True, flip BEV horizontally after rotation.
+                                Sim-specific workaround for coordinate frame issues.
+            ground_filter_height: Height threshold in meters for ground filtering (default: 0.10m)
+                                 Points less than this height above ground plane are filtered from occupancy.
 
         IMPORTANT: The output directory name MUST match the run_id.
         Files are created with names like motion_{run_id}_w000.json.
@@ -111,6 +127,11 @@ class WindowExtractor:
             self.run_id = self.rosbag_path.stem
         else:
             self.run_id = run_id
+
+        # Store BEV transformation settings (data-source specific workarounds)
+        self.bev_rotation = bev_rotation
+        self.bev_flip_horizontal = bev_flip_horizontal
+        self.ground_filter_height = ground_filter_height
 
         # CRITICAL: Output directory MUST be named after run_id
         # The workflow uses directory.name to construct filenames
@@ -149,6 +170,9 @@ class WindowExtractor:
 
         # Data buffers - dict of lists indexed by topic
         self.messages = defaultdict(list)
+
+        # TF buffer for transforms (populated during bag reading)
+        self.tf_transforms = []  # List of (timestamp, TransformStamped) tuples
 
         # CV Bridge for image conversion
         if ROS2_AVAILABLE:
@@ -238,7 +262,6 @@ class WindowExtractor:
                 "cam_image_path": f"cam_{self.run_id}_w{i:03d}.png",
                 "bev_occupancy_path": f"bev_occupancy_{self.run_id}_w{i:03d}.png",
                 "bev_height_path": f"bev_height_{self.run_id}_w{i:03d}.png",
-                "bev_density_path": f"bev_density_{self.run_id}_w{i:03d}.png",
                 "bev_roughness_path": f"bev_roughness_{self.run_id}_w{i:03d}.png",
             }
 
@@ -403,23 +426,61 @@ class WindowExtractor:
             bev_features = {
                 'occupancy': empty.copy(),
                 'height': empty.copy(),
-                'density': empty.copy(),
                 'roughness': empty.copy(),
             }
         else:
-            _, pc_msg = closest
+            timestamp, pc_msg = closest
             # Render multi-channel BEV from point cloud
             try:
-                bev_features = self._render_bev_from_pointcloud(pc_msg)
+                bev_features = self._render_bev_from_pointcloud(
+                    pc_msg, timestamp)
             except Exception as e:
                 print(f"Warning: Failed to render BEV: {e}")
+                import traceback
+                traceback.print_exc()
                 empty = np.zeros((400, 400), dtype=np.uint8)
                 bev_features = {
                     'occupancy': empty.copy(),
                     'height': empty.copy(),
-                    'density': empty.copy(),
                     'roughness': empty.copy(),
                 }
+
+        # Apply data-source specific transformations to match expected BEV format:
+        # - Robot at center
+        # - Forward (x-axis) pointing up in image
+        # - Not mirrored (right is right, left is left)
+
+        # Rotation (if specified)
+        if self.bev_rotation != 0:
+            for feature_name in bev_features:
+                if self.bev_rotation == 90:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_90_CLOCKWISE)
+                elif self.bev_rotation == 180:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_180)
+                elif self.bev_rotation == 270:
+                    bev_features[feature_name] = cv2.rotate(
+                        bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        # Horizontal flip (if specified)
+        if self.bev_flip_horizontal:
+            for feature_name in bev_features:
+                bev_features[feature_name] = cv2.flip(
+                    bev_features[feature_name], 1)
+
+        # FINAL ROTATION: Align with camera view (robot center, facing up)
+        # For sim data with TF transforms, base_link frame needs 90° CCW rotation
+        # This makes forward (x-axis) point up in the image
+        if self.data_source == 'sim':
+            for feature_name in bev_features:
+                bev_features[feature_name] = cv2.rotate(
+                    bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        # Apply auto-crop to preserve obstacles while reducing size
+        for feature_name in bev_features:
+            bev_features[feature_name] = auto_crop_bev(
+                bev_features[feature_name])
 
         # Save each feature as separate PNG
         for feature_name, feature_img in bev_features.items():
@@ -448,23 +509,193 @@ class WindowExtractor:
 
         return roll, pitch, yaw
 
-    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2) -> Dict[str, np.ndarray]:
+    def _lookup_transform(self, target_frame: str, source_frame: str, timestamp: float) -> Optional[TransformStamped]:
+        """
+        Look up transform from TF data at specific timestamp.
+        Handles direct transforms and simple 2-hop chains (source→intermediate→target).
+
+        Args:
+            target_frame: Target frame (e.g., 'robot0/odom')
+            source_frame: Source frame (e.g., 'robot0/UnitreeL1_link')
+            timestamp: Timestamp in seconds
+
+        Returns:
+            TransformStamped if found, None otherwise
+        """
+        if not self.tf_transforms:
+            return None
+
+        # Try direct transform first
+        best_transform = None
+        best_time_diff = float('inf')
+
+        for tf_time, transform in self.tf_transforms:
+            # Check if frames match
+            if transform.header.frame_id == target_frame and transform.child_frame_id == source_frame:
+                time_diff = abs(tf_time - timestamp)
+                if time_diff < best_time_diff:
+                    best_time_diff = time_diff
+                    best_transform = transform
+
+        if best_transform:
+            return best_transform
+
+        # Try inverse transform (target←source means we need source→target inverted)
+        for tf_time, transform in self.tf_transforms:
+            # Check if we have the inverse
+            if transform.header.frame_id == source_frame and transform.child_frame_id == target_frame:
+                time_diff = abs(tf_time - timestamp)
+                if time_diff < best_time_diff:
+                    best_time_diff = time_diff
+                    # Invert the transform
+                    best_transform = self._invert_transform(transform)
+
+        if best_transform:
+            return best_transform
+
+        # Try 2-hop chain: source → intermediate → target
+        # Find all transforms at this timestamp
+        transforms_at_t = []
+        for tf_time, transform in self.tf_transforms:
+            if abs(tf_time - timestamp) < 0.1:  # Within 100ms
+                transforms_at_t.append(transform)
+
+        # Try to find a chain
+        for intermediate in transforms_at_t:
+            # Check if we can go source → intermediate.parent
+            if intermediate.child_frame_id == source_frame:
+                intermediate_frame = intermediate.header.frame_id
+                # Now find intermediate → target
+                for second_hop in transforms_at_t:
+                    if second_hop.child_frame_id == intermediate_frame and second_hop.header.frame_id == target_frame:
+                        # Compose transforms: T_target_source = T_target_intermediate @ T_intermediate_source
+                        composed = self._compose_transforms(
+                            second_hop, intermediate)
+                        return composed
+
+        return None
+
+    def _compose_transforms(self, t1: TransformStamped, t2: TransformStamped) -> TransformStamped:
+        """
+        Compose two transforms: result = t1 @ t2
+        (t1.parent → t1.child) @ (t2.parent → t2.child) = (t1.parent → t2.child)
+
+        Assumes t1.child == t2.parent
+        """
+        # Extract first transform
+        trans1 = np.array([t1.transform.translation.x,
+                          t1.transform.translation.y, t1.transform.translation.z])
+        rot1 = R.from_quat([t1.transform.rotation.x, t1.transform.rotation.y,
+                           t1.transform.rotation.z, t1.transform.rotation.w])
+
+        # Extract second transform
+        trans2 = np.array([t2.transform.translation.x,
+                          t2.transform.translation.y, t2.transform.translation.z])
+        rot2 = R.from_quat([t2.transform.rotation.x, t2.transform.rotation.y,
+                           t2.transform.rotation.z, t2.transform.rotation.w])
+
+        # Compose: T = T1 @ T2
+        rot_composed = rot1 * rot2  # Quaternion multiplication
+        trans_composed = rot1.apply(trans2) + trans1
+
+        # Create composed transform
+        composed = TransformStamped()
+        composed.header.frame_id = t1.header.frame_id
+        composed.child_frame_id = t2.child_frame_id
+        composed.header.stamp = t1.header.stamp
+        composed.transform.translation.x = trans_composed[0]
+        composed.transform.translation.y = trans_composed[1]
+        composed.transform.translation.z = trans_composed[2]
+        quat_composed = rot_composed.as_quat()
+        composed.transform.rotation.x = quat_composed[0]
+        composed.transform.rotation.y = quat_composed[1]
+        composed.transform.rotation.z = quat_composed[2]
+        composed.transform.rotation.w = quat_composed[3]
+
+        return composed
+
+    def _invert_transform(self, transform: TransformStamped) -> TransformStamped:
+        """
+        Invert a transform: if T is parent→child, return child→parent.
+        """
+        # Extract transform
+        trans = np.array([transform.transform.translation.x,
+                         transform.transform.translation.y, transform.transform.translation.z])
+        rot = R.from_quat([transform.transform.rotation.x, transform.transform.rotation.y,
+                          transform.transform.rotation.z, transform.transform.rotation.w])
+
+        # Invert: R_inv = R^T, t_inv = -R^T * t
+        rot_inv = rot.inv()
+        trans_inv = -rot_inv.apply(trans)
+
+        # Create inverted transform (swap parent and child)
+        inverted = TransformStamped()
+        inverted.header.frame_id = transform.child_frame_id
+        inverted.child_frame_id = transform.header.frame_id
+        inverted.header.stamp = transform.header.stamp
+        inverted.transform.translation.x = trans_inv[0]
+        inverted.transform.translation.y = trans_inv[1]
+        inverted.transform.translation.z = trans_inv[2]
+        quat_inv = rot_inv.as_quat()
+        inverted.transform.rotation.x = quat_inv[0]
+        inverted.transform.rotation.y = quat_inv[1]
+        inverted.transform.rotation.z = quat_inv[2]
+        inverted.transform.rotation.w = quat_inv[3]
+
+        return inverted
+
+    def _apply_transform(self, points: np.ndarray, transform: TransformStamped) -> np.ndarray:
+        """
+        Apply TransformStamped to point cloud.
+
+        Args:
+            points: Nx3 array of points
+            transform: ROS TransformStamped message
+
+        Returns:
+            Transformed Nx3 array of points
+        """
+        if points.shape[0] == 0:
+            return points
+
+        # Extract translation
+        trans = transform.transform.translation
+        translation = np.array([trans.x, trans.y, trans.z])
+
+        # Extract rotation as quaternion and convert to matrix
+        rot = transform.transform.rotation
+        quat = [rot.x, rot.y, rot.z, rot.w]
+        rotation_matrix = R.from_quat(quat).as_matrix()
+
+        # Apply: points_transformed = R @ points + t
+        points_transformed = (rotation_matrix @ points.T).T + translation
+
+        return points_transformed
+
+    def _render_bev_from_pointcloud(self, pc_msg: PointCloud2, timestamp: float) -> Dict[str, np.ndarray]:
         """
         Render multi-channel bird's-eye-view images from a point cloud.
 
+        Uses TF transforms to properly filter ground in gravity-aligned odom frame,
+        then transforms back to base_link for robot-centric BEV rendering.
+
+        Args:
+            pc_msg: PointCloud2 message
+            timestamp: Timestamp in seconds for TF lookup
+
         Returns:
-            Dictionary with keys: 'occupancy', 'height', 'density', 'roughness'
+            Dictionary with keys: 'occupancy', 'height', 'roughness'
             Each value is a 400x400 uint8 numpy array
         """
-        # Extract points from PointCloud2 message
+        # Extract points from PointCloud2 message (in sensor frame)
         points = []
         for point in pc2.read_points(pc_msg, field_names=("x", "y", "z"), skip_nans=True):
-            points.append(point)
+            points.append([point[0], point[1], point[2]])
 
         # BEV parameters
         bev_size = 400
         meters_per_pixel = 0.05  # 5cm per pixel
-        ground_threshold = 0.10  # 10cm - points below this are considered ground
+        ground_threshold = self.ground_filter_height  # Use configurable threshold
 
         if not points:
             # Return empty feature maps
@@ -472,11 +703,67 @@ class WindowExtractor:
             return {
                 'occupancy': empty.copy(),
                 'height': empty.copy(),
-                'density': empty.copy(),
                 'roughness': empty.copy(),
             }
 
-        points = np.array(points)
+        points_sensor = np.array(points, dtype=np.float32)
+
+        # Determine frame names based on data source
+        if self.data_source == 'sim':
+            sensor_frame = 'robot0/UnitreeL1_link'
+            base_frame = 'robot0/base_link'
+            odom_frame = 'robot0/odom'
+        else:  # real
+            sensor_frame = 'UnitreeL1_link'
+            base_frame = 'base_link'
+            odom_frame = 'odom'
+
+        # Strategy: Transform sensor → odom (gravity-aligned) for ground filtering,
+        # then transform filtered points odom → base_link for robot-centric BEV
+
+        # Step 1: Transform points from sensor frame to odom frame (if TF available)
+        transform_sensor_to_odom = self._lookup_transform(
+            odom_frame, sensor_frame, timestamp)
+
+        if transform_sensor_to_odom is not None:
+            # Use TF transforms (reliable, gravity-aligned)
+            points_odom = self._apply_transform(
+                points_sensor, transform_sensor_to_odom)
+
+            # Find ground level in odom frame (z-axis is up, gravity-aligned)
+            z_values = points_odom[:, 2]
+            hist, bin_edges = np.histogram(z_values, bins=100)
+            ground_bin_idx = np.argmax(hist)
+            ground_z = (bin_edges[ground_bin_idx] +
+                        bin_edges[ground_bin_idx + 1]) / 2
+
+            # Create masks for obstacles (above ground) vs all points (for roughness)
+            obstacle_mask = points_odom[:, 2] > (ground_z + ground_threshold)
+            obstacles_odom = points_odom[obstacle_mask]
+
+            # Step 2: Transform back to base_link for robot-centric BEV rendering
+            transform_odom_to_base = self._lookup_transform(
+                base_frame, odom_frame, timestamp)
+
+            if transform_odom_to_base is not None:
+                # Transform obstacles for occupancy & height
+                obstacles_base = self._apply_transform(
+                    obstacles_odom, transform_odom_to_base)
+
+                # Transform all points for roughness (includes ground variance)
+                all_points_base = self._apply_transform(
+                    points_odom, transform_odom_to_base)
+            else:
+                print(
+                    f"Warning: No TF transform {odom_frame}→{base_frame}, using odom frame")
+                obstacles_base = obstacles_odom
+                all_points_base = points_odom
+        else:
+            # Fallback: Use points in sensor frame (old behavior)
+            print(
+                f"Warning: No TF transforms available, using sensor frame without ground filtering")
+            obstacles_base = points_sensor
+            all_points_base = points_sensor
 
         # Create accumulator grids for feature calculation
         occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
@@ -487,22 +774,23 @@ class WindowExtractor:
         height_min = np.full((bev_size, bev_size), np.inf, dtype=np.float32)
         height_max = np.full((bev_size, bev_size), -np.inf, dtype=np.float32)
 
-        # Project points to BEV and accumulate statistics
-        for point in points:
+        # Separate grids for roughness (uses all points including ground)
+        roughness_height_sum = np.zeros((bev_size, bev_size), dtype=np.float32)
+        roughness_height_sq_sum = np.zeros(
+            (bev_size, bev_size), dtype=np.float32)
+        roughness_point_count = np.zeros((bev_size, bev_size), dtype=np.int32)
+
+        # First pass: accumulate statistics for OBSTACLES ONLY (occupancy & height)
+        for point in obstacles_base:
             x, y, z = point
 
-            # Convert to pixel coordinates (x forward, y left)
+            # Convert to pixel coordinates (x forward, y left in base_link)
             pixel_x = int((x / meters_per_pixel) + bev_size / 2)
             pixel_y = int((-y / meters_per_pixel) + bev_size / 2)
 
             # Check bounds
             if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
-                # Occupancy: only mark as occupied if above ground threshold
-                # This filters out ground plane and shows only obstacles
-                if z > ground_threshold:
-                    occupancy_grid[pixel_y, pixel_x] = 255
-
-                # Accumulate for height statistics (includes all points for terrain analysis)
+                # Accumulate height statistics
                 point_count[pixel_y, pixel_x] += 1
                 height_sum[pixel_y, pixel_x] += z
                 height_sq_sum[pixel_y, pixel_x] += z * z
@@ -511,9 +799,27 @@ class WindowExtractor:
                 height_max[pixel_y, pixel_x] = max(
                     height_max[pixel_y, pixel_x], z)
 
+        # Second pass: accumulate statistics for ALL POINTS (roughness - terrain variance)
+        for point in all_points_base:
+            x, y, z = point
+
+            # Convert to pixel coordinates
+            pixel_x = int((x / meters_per_pixel) + bev_size / 2)
+            pixel_y = int((-y / meters_per_pixel) + bev_size / 2)
+
+            # Check bounds
+            if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
+                # Accumulate for roughness calculation
+                roughness_point_count[pixel_y, pixel_x] += 1
+                roughness_height_sum[pixel_y, pixel_x] += z
+                roughness_height_sq_sum[pixel_y, pixel_x] += z * z
+
+        # Mark occupancy for pixels with obstacle points
+        occupancy_grid[point_count > 0] = 255
+
         # Calculate derived features
 
-        # 1. Height map (average elevation)
+        # 1. Height map (average elevation of OBSTACLES)
         mask = point_count > 0
         height_grid[mask] = height_sum[mask] / point_count[mask]
         # Normalize to 0-255 range (assuming ±2m range)
@@ -521,18 +827,14 @@ class WindowExtractor:
         height_img[mask] = np.clip(
             (height_grid[mask] + 2.0) * 63.75, 0, 255).astype(np.uint8)
 
-        # 2. Density map (number of points per cell)
-        density_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
-        max_count = point_count.max() if point_count.max() > 0 else 1
-        density_img = np.clip((point_count / max_count)
-                              * 255, 0, 255).astype(np.uint8)
-
-        # 3. Roughness map (height variance within cell)
+        # 2. Roughness map (terrain variance - includes ground)
         roughness_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        roughness_mask = roughness_point_count > 0
         # Calculate variance: Var(X) = E[X²] - E[X]²
         variance = np.zeros((bev_size, bev_size), dtype=np.float32)
-        variance[mask] = (height_sq_sum[mask] / point_count[mask]) - \
-            (height_sum[mask] / point_count[mask]) ** 2
+        variance[roughness_mask] = (roughness_height_sq_sum[roughness_mask] / roughness_point_count[roughness_mask]) - \
+            (roughness_height_sum[roughness_mask] /
+             roughness_point_count[roughness_mask]) ** 2
         # Ensure non-negative due to floating point errors
         variance = np.maximum(variance, 0)
         std_dev = np.sqrt(variance)
@@ -542,13 +844,11 @@ class WindowExtractor:
         # Apply slight blur to make features more visible
         occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
         height_img = cv2.GaussianBlur(height_img, (3, 3), 0)
-        density_img = cv2.GaussianBlur(density_img, (3, 3), 0)
         roughness_img = cv2.GaussianBlur(roughness_img, (3, 3), 0)
 
         return {
             'occupancy': occupancy_grid,
             'height': height_img,
-            'density': density_img,
             'roughness': roughness_img,
         }
 
@@ -599,6 +899,7 @@ class WindowExtractor:
             'sensor_msgs/msg/JointState': JointState,
             'nav_msgs/msg/Odometry': Odometry,
             'geometry_msgs/msg/Twist': Twist,
+            'tf2_msgs/msg/TFMessage': TFMessage,
         }
 
         # Add Go2 IMU if available
@@ -607,8 +908,24 @@ class WindowExtractor:
 
         # Read all messages
         msg_count = 0
+        tf_count = 0
         while reader.has_next():
             (topic, data, t) = reader.read_next()
+
+            # Handle TF messages separately (for sim data with /tf topic)
+            if topic == '/tf':
+                try:
+                    msg_type = msg_type_dict.get('tf2_msgs/msg/TFMessage')
+                    if msg_type:
+                        tf_msg = deserialize_message(data, msg_type)
+                        timestamp = t / 1e9
+                        # TFMessage contains multiple TransformStamped messages
+                        for transform in tf_msg.transforms:
+                            self.tf_transforms.append((timestamp, transform))
+                        tf_count += len(tf_msg.transforms)
+                except Exception as e:
+                    print(f"Warning: Failed to parse TF message: {e}")
+                continue
 
             # Only process topics we care about
             if topic not in self.topics.values():
@@ -632,6 +949,7 @@ class WindowExtractor:
                 print(f"  Read {msg_count} messages...")
 
         print(f"  Total messages read: {msg_count}")
+        print(f"  TF transforms read: {tf_count}")
         print(f"  Odom messages: {len(self.messages[self.topics['odom']])}")
         print(f"  IMU messages: {len(self.messages[self.topics['imu']])}")
         print(
@@ -683,6 +1001,18 @@ def main():
         default=None,
         help="Data source: 'real' for real robot, 'sim' for simulator (default: auto-detect from path)"
     )
+    parser.add_argument(
+        "--bev-rotation",
+        type=int,
+        choices=[0, 90, 180, 270],
+        default=0,
+        help="Rotation to apply to BEVs in degrees, clockwise (default: 0). Data-source specific."
+    )
+    parser.add_argument(
+        "--bev-flip-horizontal",
+        action="store_true",
+        help="Flip BEV horizontally after rotation. Data-source specific workaround."
+    )
 
     args = parser.parse_args()
 
@@ -694,6 +1024,8 @@ def main():
         stride=args.stride,
         run_id=args.run_id,
         data_source=args.data_source,
+        bev_rotation=args.bev_rotation,
+        bev_flip_horizontal=args.bev_flip_horizontal,
     )
 
     # Extract windows

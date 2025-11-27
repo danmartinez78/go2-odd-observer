@@ -1,481 +1,334 @@
-# Collision Agents
+# Collision Agent
+
+**Version:** Phase 1.2 (Binary Detection)  
+**Last Updated:** November 25, 2025
 
 ## Overview
 
-The collision risk pipeline performs **multimodal safety assessment** by fusing motion dynamics with camera and LiDAR data to evaluate collision likelihood. This two-agent system analyzes per-window risk and produces aggregate safety statistics.
+The collision agent performs **binary collision detection** using IMU sensor data to identify actual collision events (not proximity risk). This simplified single-agent design replaces the previous multimodal risk scoring system.
 
-**Key Innovation**: Combines motion context (acceleration, velocity) with visual/spatial obstacle detection for holistic risk assessment, not just static obstacle proximity.
+**Key Design Decision**: Collision detection is based on IMU threshold analysis (sudden impacts), NOT proximity to obstacles. Close navigation around furniture is normal and expected behavior.
 
 ---
 
-## CollisionLoopAgent
+## CollisionAgent
 
 ### Purpose
 
-Orchestrates per-window collision risk analysis by iterating through all time windows and collecting multimodal safety assessments.
+Analyzes motion metrics from the motion agent to detect actual collision events using IMU spike detection.
 
-**Problem it solves**: Evaluating collision risk requires understanding both the environment (obstacles, clearances) AND robot dynamics (motion, speed). This agent fuses both sources of information.
+**Problem it solves**: Distinguishes normal dynamic motion (obstacle avoidance, turning) from collision events (sudden impacts, spin-outs).
 
 ### Inputs
 
-**From User/Workflow:**
-- None (receives initial query to start analysis)
-
-**From Tools:**
-- `list_windows_tool()`: Available window IDs in the scenario
-- `analyze_collision_risk_tool(window_id, motion_metrics)`: Multimodal risk assessment
-
-**Environment Dependencies:**
-- Scenario directory with camera images (`cam_*.png`)
-- LiDAR BEV occupancy maps (`bev_occupancy_*.png`)
-- Motion metrics from MotionLoopAgent (passed via tool parameter)
+**From MotionAgent:**
+- `motion_metrics`: Per-window motion analysis data including:
+  - `peak_horizontal_accel_mps2`: Maximum horizontal acceleration
+  - `peak_angular_velocity_radps`: Maximum angular velocity (gyro)
+  - `max_jerk_mps3`: Maximum jerk (rate of acceleration change)
 
 ### Outputs
 
-**Output Key:** `temp:collision_data`
+**Output Key:** `collision_output`
 
 **Schema:**
 ```json
 {
-  "windows_analyzed": ["001", "002", "003"],
-  "collision_events": [
-    {
-      "window_id": "001",
-      "collision_risk_level": "low",
-      "risk_confidence": 0.85,
-      "collision_likelihood_score": 0.25,
-      "closest_obstacle_meters": 2.5,
-      "obstacle_direction": "front",
-      "motion_contributes_to_risk": false,
-      "camera_hazards": ["desk at 2.5m"],
-      "bev_hazards": ["obstacle cluster front-left"],
-      "recommended_action": "continue",
-      "evidence": "Clear forward path with distant obstacles..."
-    }
-  ]
+  "collision_detected": false,
+  "evidence": [
+    "Window 001: Peak accel 0.14 m/s² (threshold: 10.0)",
+    "Window 002: Peak gyro 0.99 rad/s (threshold: 5.0)",
+    "No collision indicators detected"
+  ],
+  "thresholds": {
+    "acceleration_spike_threshold": 10.0,
+    "angular_velocity_threshold": 5.0,
+    "jerk_spike_threshold": 50.0
+  }
 }
 ```
+
+### Detection Logic
+
+**Binary Thresholds (Tuned for Go2 Quadruped):**
+
+1. **Acceleration Spike**: `>10 m/s²` horizontal acceleration
+   - Normal quadruped motion: 0.1-2.0 m/s² (walking, turning)
+   - Obstacle avoidance reactions: 2.0-8.0 m/s² (acceptable)
+   - **Collision indicator**: >10 m/s² (sudden impact)
+
+2. **Angular Velocity**: `>5 rad/s` rotation rate
+   - Normal turning: 0.5-2.0 rad/s
+   - Quick direction changes: 2.0-4.0 rad/s (acceptable)
+   - **Collision indicator**: >5 rad/s (severe spin-out)
+
+3. **Jerk Spike**: `>50 m/s³` acceleration change
+   - Normal motion smoothness: <20 m/s³
+   - Reactive maneuvers: 20-40 m/s³ (acceptable)
+   - **Collision indicator**: >50 m/s³ (violent sudden change)
+
+**Collision Detected If:** Any threshold exceeded in any window
 
 ### Prompting Strategy
 
 **Key Instructions:**
-1. **Sequential processing**: Call `list_windows_tool()` exactly once, then iterate in order
-2. **Pass motion context**: For each window, pass corresponding motion metrics to collision tool
-3. **No modifications**: Collect tool responses exactly as returned
-4. **JSON output only**: No commentary outside JSON structure
+1. **Threshold-based detection**: Simple binary check (>threshold = collision)
+2. **Evidence collection**: Record peak values for each window
+3. **No interpretation**: Thresholds are pre-calibrated, agent just applies them
+4. **JSON output only**: No narrative commentary
 
 **Critical Pattern:**
 ```
-1. list_windows_tool() → ["001", "002", "003"]
-2. For each window_id:
-     # Get motion metrics for this window (from context or lookup)
-     motion_metrics = {...}
-     analyze_collision_risk_tool(window_id, motion_metrics) → {...}
-3. Collect all results in order
-4. Return JSON with windows_analyzed + collision_events arrays
+For each window in motion_metrics:
+  if peak_accel > 10.0 OR peak_gyro > 5.0 OR max_jerk > 50.0:
+    collision_detected = True
+    evidence.append(f"Window {id}: COLLISION - accel={peak_accel}")
+  else:
+    evidence.append(f"Window {id}: Normal - accel={peak_accel}")
 ```
-
-**Important**: The agent must correlate window_id with motion data from previous stage to pass correct motion_metrics to the tool.
 
 ### Model Selection
 
-**Default:** `gemini-2.0-flash-lite`  
-**Recommended Upgrade:** `gemini-2.5-pro`
-
+**Default:** `gemini-2.5-pro`  
 **Rationale:**
-- Loop agent orchestrates tool calls (simple coordination)
-- **Flash-lite sufficient** for basic orchestration
-- **Upgrade to 2.5-pro if**:
-  - Need more reliable motion context passing
-  - Complex scenarios with many windows
-  - Critical safety analysis requiring highest quality
+- Binary threshold logic is simple, but we want high reliability
+- Pro model ensures consistent threshold application
+- Cost difference minimal (single agent call per scenario)
 
-**Cost Impact:** flash-lite saves ~70% vs. pro
+**Not Recommended:**
+- flash-lite: May occasionally misapply thresholds
+- flash: Acceptable but pro preferred for safety-critical detection
 
 ### Tool Dependencies
 
-#### 1. `list_windows_tool()`
-**Purpose**: Discover available time windows (shared with other loop agents)
+#### `detect_collision_tool(motion_metrics)`
 
-**Output:**
-```json
-{
-  "status": "success",
-  "windows": ["001", "002", "003"],
-  "count": 3
-}
-```
+**Purpose**: Binary collision detection from IMU thresholds
 
-#### 2. `analyze_collision_risk_tool(window_id, motion_metrics)`
-**Purpose**: Multimodal collision risk assessment for single window
-
-**Implementation Details:**
+**Implementation:** `odd_agents/tools/collision.py`
 
 **Inputs:**
-- `window_id`: Window identifier
-- `motion_metrics`: Motion data from MotionLoopAgent
-  ```json
-  {
-    "motion_detected": true,
-    "motion_type": "translation",
-    "peak_horizontal_accel_mps2": 1.23,
-    "peak_angular_velocity_radps": 0.18,
-    ...
+```json
+{
+  "motion_metrics": [
+    {
+      "window_id": "001",
+      "peak_horizontal_accel_mps2": 0.14,
+      "peak_angular_velocity_radps": 0.99,
+      "max_jerk_mps3": 5.2
+    }
+  ]
+}
+```
+
+**Processing:**
+```python
+def detect_collision(motion_metrics):
+    ACCEL_THRESHOLD = 10.0  # m/s²
+    GYRO_THRESHOLD = 5.0    # rad/s
+    JERK_THRESHOLD = 50.0   # m/s³
+    
+    collision_detected = False
+    evidence = []
+    
+    for window in motion_metrics:
+        accel = window['peak_horizontal_accel_mps2']
+        gyro = window['peak_angular_velocity_radps']
+        jerk = window.get('max_jerk_mps3', 0)
+        
+        if accel > ACCEL_THRESHOLD:
+            collision_detected = True
+            evidence.append(f"Window {window['window_id']}: COLLISION - Accel spike {accel:.2f} m/s²")
+        elif gyro > GYRO_THRESHOLD:
+            collision_detected = True
+            evidence.append(f"Window {window['window_id']}: COLLISION - Gyro spike {gyro:.2f} rad/s")
+        elif jerk > JERK_THRESHOLD:
+            collision_detected = True
+            evidence.append(f"Window {window['window_id']}: COLLISION - Jerk spike {jerk:.2f} m/s³")
+        else:
+            evidence.append(f"Window {window['window_id']}: Normal motion")
+    
+    return {
+        "collision_detected": collision_detected,
+        "evidence": evidence,
+        "thresholds": {...}
+    }
+```
+
+### Example Outputs
+
+**Example 1: No Collision (Normal Navigation)**
+```json
+{
+  "collision_detected": false,
+  "evidence": [
+    "Window 001: Peak accel 0.14 m/s² (threshold: 10.0) - Normal",
+    "Window 002: Peak accel 0.11 m/s² (threshold: 10.0) - Normal",
+    "Window 001: Peak gyro 0.94 rad/s (threshold: 5.0) - Normal",
+    "Window 002: Peak gyro 0.99 rad/s (threshold: 5.0) - Normal",
+    "No collision indicators detected across 2 windows"
+  ],
+  "thresholds": {
+    "acceleration_spike_threshold": 10.0,
+    "angular_velocity_threshold": 5.0,
+    "jerk_spike_threshold": 50.0
   }
-  ```
-
-**Data Sources:**
-1. **Camera image**: Visual obstacle detection, hazard identification
-2. **LiDAR BEV**: Spatial obstacle mapping, distance estimation
-3. **Motion metrics**: Robot dynamics, speed, direction
-
-**Multimodal Fusion Prompt:**
-```
-MOTION CONTEXT:
-- Status: MOTION DETECTED / STATIONARY
-- Type: translation/rotation/combined/stationary
-- Peak accel: X.XX m/s²
-- Peak angular velocity: X.XX rad/s
-
-IMAGES PROVIDED:
-1. Camera feed (egocentric view)
-2. BEV LiDAR map (top-down obstacle map)
-
-TASK: Analyze collision risk by fusing motion + camera + BEV data.
-```
-
-**Risk Classification Logic:**
-- **none**: No obstacles, robot stationary
-- **low**: Obstacles distant (>2m) OR robot stationary
-- **medium**: Obstacles near (1-2m) AND robot moving slowly
-- **high**: Obstacles close (<1m) AND robot moving
-- **critical**: Imminent collision (<0.5m) with motion toward obstacle
-
-**Likelihood Score:**
-```
-0.0-0.2: Safe (low risk)
-0.2-0.4: Caution (medium risk)
-0.4-0.6: Warning (high risk)
-0.6-1.0: Danger (critical risk)
-```
-
-**Recommended Actions:**
-- `continue`: Safe to proceed
-- `slow_down`: Reduce speed, maintain direction
-- `stop`: Halt immediately
-- `change_direction`: Alter course to avoid obstacle
-
-**Output Schema:**
-```json
-{
-  "window_id": "001",
-  "collision_risk_level": "none|low|medium|high|critical",
-  "risk_confidence": 0.0-1.0,
-  "collision_likelihood_score": 0.0-1.0,
-  "closest_obstacle_meters": <float or null>,
-  "obstacle_direction": "front|left|right|rear|multiple|none",
-  "motion_contributes_to_risk": true|false,
-  "camera_hazards": ["list of hazards from camera"],
-  "bev_hazards": ["list of hazards from BEV"],
-  "recommended_action": "continue|slow_down|stop|change_direction",
-  "evidence": "Brief explanation of multimodal fusion analysis"
 }
 ```
 
-### Example Output
-
-**Full CollisionLoopAgent Output:**
+**Example 2: Collision Detected**
 ```json
 {
-  "windows_analyzed": ["001", "002", "003"],
-  "collision_events": [
-    {
-      "window_id": "001",
-      "collision_risk_level": "low",
-      "risk_confidence": 0.85,
-      "collision_likelihood_score": 0.25,
-      "closest_obstacle_meters": 2.5,
-      "obstacle_direction": "front",
-      "motion_contributes_to_risk": false,
-      "camera_hazards": ["desk at 2.5m front"],
-      "bev_hazards": ["sparse obstacles, clear path"],
-      "recommended_action": "continue",
-      "evidence": "Robot moving forward with desk obstacle at safe distance. Sufficient clearance for navigation."
-    },
-    {
-      "window_id": "002",
-      "collision_risk_level": "high",
-      "risk_confidence": 0.92,
-      "collision_likelihood_score": 0.68,
-      "closest_obstacle_meters": 0.8,
-      "obstacle_direction": "front",
-      "motion_contributes_to_risk": true,
-      "camera_hazards": ["sofa directly ahead <1m", "coffee table left"],
-      "bev_hazards": ["dense occupancy front", "narrow passage"],
-      "recommended_action": "stop",
-      "evidence": "Robot approaching sofa at close range while in motion. High collision likelihood due to proximity and movement."
-    },
-    {
-      "window_id": "003",
-      "collision_risk_level": "medium",
-      "risk_confidence": 0.78,
-      "collision_likelihood_score": 0.35,
-      "closest_obstacle_meters": 1.5,
-      "obstacle_direction": "left",
-      "motion_contributes_to_risk": true,
-      "camera_hazards": ["cabinet on left side"],
-      "bev_hazards": ["moderate occupancy left flank"],
-      "recommended_action": "slow_down",
-      "evidence": "Robot rotating with cabinet 1.5m to left. Medium risk due to proximity during turning maneuver."
-    }
-  ]
+  "collision_detected": true,
+  "evidence": [
+    "Window 001: Peak accel 0.8 m/s² - Normal",
+    "Window 002: Peak accel 1.2 m/s² - Normal",
+    "Window 003: Peak accel 12.5 m/s² - COLLISION DETECTED (threshold: 10.0)",
+    "Window 003: Peak gyro 6.8 rad/s - COLLISION DETECTED (threshold: 5.0)",
+    "COLLISION EVENT in window 003: Accel spike 12.5 m/s², Gyro spike 6.8 rad/s"
+  ],
+  "thresholds": {
+    "acceleration_spike_threshold": 10.0,
+    "angular_velocity_threshold": 5.0,
+    "jerk_spike_threshold": 50.0
+  }
 }
 ```
+
+### Validation Results
+
+**Test Data:** `sim_test_w010_w011` (2 windows, normal navigation)
+
+**Results:**
+- ✅ Collision detected: `false` (correct)
+- ✅ Peak acceleration: 0.11-0.14 m/s² (well below 10.0 threshold)
+- ✅ Peak gyro: 0.94-0.99 rad/s (well below 5.0 threshold)
+- ✅ No false positives
+
+**Production Data:** `sim_1_0` (62 windows, various scenarios)
+- ✅ No false positives on normal navigation
+- ✅ Correctly identifies collision-free scenarios
 
 ### Common Issues
 
-**Issue 1: Motion metrics not correlated with window_id**
-- **Symptom**: Wrong motion data passed to tool (e.g., window 3 data used for window 1)
-- **Cause**: Agent not properly indexing motion_data array
-- **Fix**: Ensure agent understands array indexing or uses window_id as lookup key
+**Issue 1: False positives on aggressive maneuvering**
+- **Symptom**: Collision detected during normal obstacle avoidance
+- **Cause**: Thresholds too low for aggressive robots
+- **Fix**: Increase thresholds (e.g., 15 m/s² for accel)
 
-**Issue 2: Tool reports missing images**
-- **Symptom**: Error "image file not found"
-- **Cause**: Scenario path incorrect or images not extracted
-- **Fix**: Verify scenario directory structure
+**Issue 2: Missing actual collisions**
+- **Symptom**: Real collision not detected
+- **Cause**: Thresholds too high or IMU data quality issues
+- **Fix**: Review IMU data, lower thresholds if needed
 
-**Issue 3: Over-conservative risk assessment**
-- **Symptom**: Stationary robot with distant obstacles flagged as "high risk"
-- **Cause**: Tool prompt may need tuning for specific robot platform
-- **Fix**: Adjust risk thresholds in tool prompt or accept conservative behavior
-
----
-
-## CollisionSummaryAgent
-
-### Purpose
-
-Synthesizes per-window collision events into aggregate statistics and overall safety profile.
-
-**Problem it solves**: Converting raw window-level risk assessments into scenario-level safety metrics (risk distribution, average likelihood, event counts).
-
-### Inputs
-
-**From Previous Agent:**
-- `{temp:collision_data?}`: Output from CollisionLoopAgent
-
-**Schema Expected:**
-```json
-{
-  "windows_analyzed": [...],
-  "collision_events": [...]
-}
-```
-
-### Outputs
-
-**Output Key:** `temp:collision_output`
-
-**Schema:**
-```json
-{
-  "windows_analyzed": ["001", "002", "003"],
-  "overall_collision_stats": {
-    "total_windows": 3,
-    "safe_count": 1,
-    "caution_count": 1,
-    "alert_count": 1,
-    "avg_collision_likelihood": 0.43
-  },
-  "collision_events": [...]
-}
-```
-
-### Prompting Strategy
-
-**Key Instructions:**
-1. **Read input carefully**: Parse `temp:collision_data?` JSON string
-2. **Calculate statistics**:
-   - Count by risk level:
-     - `safe_count`: risk_level = "none" or "low"
-     - `caution_count`: risk_level = "medium"
-     - `alert_count`: risk_level = "high" or "critical"
-   - Average collision likelihood: Mean of `collision_likelihood_score` across all windows
-3. **Preserve raw data**: Pass through `collision_events` unchanged
-
-### Model Selection
-
-**Default:** `gemini-2.0-flash-lite`  
-**Recommended Upgrade:** Not typically needed
-
-**Rationale:**
-- Simple statistical aggregation (flash-lite capable)
-- No complex reasoning required
-- **Keep flash-lite** unless debugging aggregation issues
-
-**Cost Impact:** flash-lite optimal for this task
-
-### Tool Dependencies
-
-**None** - Pure synthesis agent using only LLM reasoning on input data.
-
-### Example Output
-
-```json
-{
-  "windows_analyzed": ["001", "002", "003"],
-  "overall_collision_stats": {
-    "total_windows": 3,
-    "safe_count": 1,
-    "caution_count": 1,
-    "alert_count": 1,
-    "avg_collision_likelihood": 0.43
-  },
-  "collision_events": [
-    {
-      "window_id": "001",
-      "collision_risk_level": "low",
-      "collision_likelihood_score": 0.25,
-      "closest_obstacle_meters": 2.5,
-      "recommended_action": "continue"
-    },
-    {
-      "window_id": "002",
-      "collision_risk_level": "high",
-      "collision_likelihood_score": 0.68,
-      "closest_obstacle_meters": 0.8,
-      "recommended_action": "stop"
-    },
-    {
-      "window_id": "003",
-      "collision_risk_level": "medium",
-      "collision_likelihood_score": 0.35,
-      "closest_obstacle_meters": 1.5,
-      "recommended_action": "slow_down"
-    }
-  ]
-}
-```
-
-### Common Issues
-
-**Issue 1: Missing input data**
-- **Symptom**: Returns `{"error": "missing_collision_data"}`
-- **Cause**: CollisionLoopAgent failed or `output_key` misconfigured
-- **Fix**: Check CollisionLoopAgent logs and ADK context passing
-
-**Issue 2: Incorrect average calculation**
-- **Symptom**: avg_collision_likelihood doesn't match manual calculation
-- **Cause**: Agent including null values or misunderstanding float division
-- **Fix**: Usually self-corrects; verify input data quality
-
-**Issue 3: Wrong risk category counts**
-- **Symptom**: safe_count + caution_count + alert_count ≠ total_windows
-- **Cause**: Agent misclassifying risk levels or missing cases
-- **Fix**: Check for edge cases (e.g., "none" vs "low" handling)
+**Issue 3: Incomplete motion metrics**
+- **Symptom**: Missing jerk or gyro data
+- **Cause**: Motion agent didn't compute all metrics
+- **Fix**: Ensure motion agent provides complete metrics
 
 ---
 
-## Multimodal Collision Risk Fusion
+## Design Rationale
 
-### Why Fusion Matters
+### Why Binary Detection?
 
-**Camera alone:**
-- ✅ Rich semantic understanding (object types, distances)
-- ❌ Poor depth estimation (monocular vision)
-- ❌ Limited field of view
+**Previous System (Phase 1.1):**
+- Risk scoring (0-1 likelihood scores)
+- Multimodal fusion (camera + BEV + IMU)
+- Per-window risk levels (none/low/medium/high/critical)
 
-**LiDAR BEV alone:**
-- ✅ Accurate spatial mapping (obstacle positions)
-- ✅ Wide coverage (360° or near-360°)
-- ❌ No semantic information (what is the obstacle?)
+**Problems:**
+- **False positives**: Close proximity to furniture flagged as "high risk"
+- **Confusion**: Risk scores didn't reflect actual collisions
+- **Complexity**: Multimodal fusion added tokens without improving accuracy
 
-**Motion alone:**
-- ✅ Dynamics understanding (speed, direction)
-- ❌ No obstacle awareness
+**New System (Phase 1.2):**
+- Binary detection (yes/no collision)
+- IMU-only (threshold-based)
+- Simple, reliable, no false positives
 
-**Fusion advantages:**
-- Accurate obstacle distance (LiDAR) + semantic context (camera)
-- Motion dynamics contextualize static obstacle proximity
-- Redundancy: If one sensor fails, others provide partial information
+**Trade-off:**
+- ❌ Lost: Proximity awareness (how close to obstacles)
+- ✅ Gained: Reliable collision detection, no false alarms
+- ✅ Gained: Simpler system, faster execution
 
-### Risk Assessment Logic
+### Why IMU-Only?
 
-**Stationary robot:**
+**Considered enhancements:**
+- BEV occupancy for visual confirmation
+- Camera for obstacle contact detection
+
+**Deferred because:**
+1. **Self-hit complexity**: Robot body appears in BEV center
+2. **Temporal mismatch**: Frame-by-frame analysis needed (complex)
+3. **False positive risk**: Always near obstacles in cluttered environments
+4. **Current system works**: 0 false positives on test data
+
+**Future enhancement** (Phase 1.5+):
+- Add BEV visual confirmation with proper temporal reasoning
+- A/B test IMU-only vs IMU+BEV
+- Implement after agent versioning system
+
+### ODD Integration
+
+**In ODD Specification:**
 ```
-Low risk regardless of obstacle proximity
-(robot not moving toward obstacles)
+MOTION CHARACTERISTICS:
+- Quick reactive maneuvers acceptable (acceleration up to 10 m/s²)
+- Brief "abrupt" motion normal during obstacle avoidance
+- NOT designed for violent/erratic motion in open spaces
 ```
 
-**Moving robot:**
-```
-if closest_obstacle < 0.5m AND moving toward obstacle:
-    risk = "critical"
-elif closest_obstacle < 1.0m AND moving:
-    risk = "high"
-elif closest_obstacle < 2.0m AND moving fast:
-    risk = "medium"
-else:
-    risk = "low"
-```
+**COD Agent Usage:**
+- COD agent receives `collision_detected` boolean
+- If true → OUT_ODD violation
+- Evidence passed to report agent for context
 
-**Motion contribution:**
-```
-motion_contributes_to_risk = True if:
-  - Robot moving AND
-  - Movement direction toward obstacle AND
-  - Obstacle within risk distance
-```
-
-### Performance Characteristics
-
-**Tested on 13-window scenario (sim_run_new):**
-- ⚠️ **8 collision warnings** detected (high/critical risk)
-- ✅ **Multimodal fusion** correctly identified near-collision events
-- ✅ **Motion context** prevented false alarms on stationary windows
-
-**Calibration for different robots:**
-- Adjust distance thresholds based on robot size
-- Larger robots: Increase thresholds (bigger footprint)
-- Faster robots: Increase lookahead distance
+**Compliance Evaluation:**
+- `collision_detected: false` → No motion violations
+- `collision_detected: true` → Investigate collision event
 
 ---
 
 ## Integration Example
 
 ```python
-from odd_agents.agents import create_collision_loop_agent, create_collision_summary_agent
+from odd_agents.agents import create_collision_agent
 from google.genai import Client
 
 client = Client(api_key=api_key)
-scenario_path = "data/processed/runs/sim_run_test"
 
-# Create loop agent with tools
-loop_agent = create_collision_loop_agent(
-    scenario_path=scenario_path,
-    genai_client=client,
-    model="gemini-2.5-pro",  # Upgrade for critical safety analysis
-    api_key=api_key
-)
+# Motion metrics from previous agent
+motion_metrics = [
+    {
+        "window_id": "001",
+        "peak_horizontal_accel_mps2": 0.14,
+        "peak_angular_velocity_radps": 0.94,
+        "max_jerk_mps3": 5.2
+    }
+]
 
-# Create summary agent
-summary_agent = create_collision_summary_agent(
+# Create collision agent
+collision_agent = create_collision_agent(
     api_key=api_key,
-    model="gemini-2.0-flash-lite"  # flash-lite sufficient for aggregation
+    model="gemini-2.5-pro"
 )
 
-# Use in sequential workflow
-from google.adk.agents import SequentialAgent
-workflow = SequentialAgent(
-    name="CollisionWorkflow",
-    sub_agents=[loop_agent, summary_agent]
+# Run detection
+result = collision_agent.query(
+    f"Analyze motion metrics for collision detection: {motion_metrics}"
 )
+
+# Parse result
+collision_output = result['collision_output']
+print(f"Collision detected: {collision_output['collision_detected']}")
+print("\n".join(collision_output['evidence']))
 ```
 
 ## Related Documentation
 
-- **[Main Agent Architecture](README.md)**: Overall workflow context
-- **[Model Selection Guide](../MODEL_SELECTION_GUIDE.md)**: Cost optimization strategies
-- **[Perception Agents](PERCEPTION.md)**: Obstacle detection details
-- **[Motion Agents](MOTION.md)**: Motion dynamics analysis
+- **[Architecture Redesign](../ARCHITECTURE_REDESIGN.md)**: Phase 1.2 design details
+- **[Motion Agent](MOTION.md)**: Motion metrics source
+- **[COD Agent](COD_CLASSIFIER.md)**: How collision detection integrates
 - **[Tool Implementation](../../odd_agents/tools/collision.py)**: Source code
+- **[Tests](../../tests/test_collision_agent.py)**: Validation tests
