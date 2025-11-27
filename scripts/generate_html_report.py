@@ -185,67 +185,127 @@ def discover_windows(scenario_dir: Path, scenario_name: str) -> List[str]:
     return sorted(list(windows))
 
 
-def generate_svg_bar_chart(axes_names: list, axes_values: list, title: str = "ODD Compliance by Axis") -> str:
-    """Generate an inline SVG bar chart - no external dependencies."""
+def generate_svg_radar_chart(axes_names: list, axes_values: list, title: str = "ODD Compliance by Axis") -> str:
+    """Generate an inline SVG radar/spider chart for ODD compliance."""
+    import math
+    
     if not axes_names:
         return '<div class="text-muted text-center p-4">No data available</div>'
-
+    
     width = 400
-    height = 280
-    margin = {'top': 40, 'right': 20, 'bottom': 100, 'left': 50}
-    chart_width = width - margin['left'] - margin['right']
-    chart_height = height - margin['top'] - margin['bottom']
-
-    n_bars = len(axes_names)
-    bar_width = min(40, chart_width / n_bars * 0.7)
-    bar_gap = (chart_width - bar_width * n_bars) / (n_bars + 1)
-
-    bars_svg = ""
+    height = 350
+    cx, cy = width / 2, 170
+    max_r = 120
+    
+    n = len(axes_names)
+    angle_step = 2 * math.pi / n
+    
+    # Generate concentric circles (grid)
+    grid_svg = ""
+    for level in [0.25, 0.5, 0.75, 1.0]:
+        r = max_r * level
+        grid_svg += f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>'
+    
+    # Generate axis lines and labels
+    axes_svg = ""
     labels_svg = ""
-
+    for i, name in enumerate(axes_names):
+        angle = -math.pi/2 + i * angle_step  # Start from top
+        x_end = cx + max_r * math.cos(angle)
+        y_end = cy + max_r * math.sin(angle)
+        
+        # Axis line
+        axes_svg += f'<line x1="{cx}" y1="{cy}" x2="{x_end}" y2="{y_end}" stroke="var(--border-color)" stroke-width="1" opacity="0.7"/>'
+        
+        # Label position (slightly beyond the circle)
+        label_r = max_r + 25
+        lx = cx + label_r * math.cos(angle)
+        ly = cy + label_r * math.sin(angle)
+        
+        # Shorten long names
+        short_name = name.replace('_', ' ').title()
+        if len(short_name) > 12:
+            short_name = short_name[:10] + '..'
+        
+        # Adjust text anchor based on position
+        if angle > -0.1 and angle < 0.1:  # Right
+            anchor = "start"
+        elif angle > math.pi - 0.1 or angle < -math.pi + 0.1:  # Left
+            anchor = "end"
+        else:
+            anchor = "middle"
+        
+        labels_svg += f'<text x="{lx}" y="{ly + 4}" text-anchor="{anchor}" font-size="10" fill="var(--text-secondary)">{short_name}</text>'
+    
+    # Generate data polygon - INVERT values (0% violation = full radius, 100% violation = center)
+    # This makes "good" (compliant) show as large area, "bad" (violations) show as small
+    points = []
+    for i, value in enumerate(axes_values):
+        angle = -math.pi/2 + i * angle_step
+        # Invert: compliant (value=0) -> full radius, violation (value=1) -> zero radius
+        compliance = 1.0 - value  # Convert violation fraction to compliance fraction
+        r = max_r * compliance
+        x = cx + r * math.cos(angle)
+        y = cy + r * math.sin(angle)
+        points.append(f"{x},{y}")
+    
+    polygon_points = " ".join(points)
+    
+    # Determine fill color based on worst violation
+    max_violation = max(axes_values) if axes_values else 0
+    if max_violation == 0:
+        fill_color = "rgba(40, 167, 69, 0.3)"  # Green - all compliant
+        stroke_color = "#28a745"
+    elif max_violation < 0.5:
+        fill_color = "rgba(255, 193, 7, 0.3)"  # Yellow - some violations
+        stroke_color = "#ffc107"
+    else:
+        fill_color = "rgba(220, 53, 69, 0.3)"  # Red - major violations
+        stroke_color = "#dc3545"
+    
+    data_svg = f'<polygon points="{polygon_points}" fill="{fill_color}" stroke="{stroke_color}" stroke-width="2"/>'
+    
+    # Add dots at each vertex with violation indicator
+    dots_svg = ""
     for i, (name, value) in enumerate(zip(axes_names, axes_values)):
-        x = margin['left'] + bar_gap * (i + 1) + bar_width * i
-        bar_height = value * chart_height
-        y = margin['top'] + chart_height - bar_height
-        color = '#dc3545' if value > 0 else '#28a745'
-
-        # Bar
-        bars_svg += f'<rect x="{x}" y="{y}" width="{bar_width}" height="{bar_height}" fill="{color}" rx="2"/>'
-
-        # Value label on bar
+        angle = -math.pi/2 + i * angle_step
+        compliance = 1.0 - value
+        r = max_r * compliance
+        x = cx + r * math.cos(angle)
+        y = cy + r * math.sin(angle)
+        
+        # Color dot based on compliance
+        dot_color = "#dc3545" if value > 0 else "#28a745"
+        dots_svg += f'<circle cx="{x}" cy="{y}" r="5" fill="{dot_color}" stroke="white" stroke-width="2"/>'
+        
+        # Add percentage label for violations
         if value > 0:
-            bars_svg += f'<text x="{x + bar_width/2}" y="{y - 5}" text-anchor="middle" font-size="10" fill="#666">{value:.0%}</text>'
-
-        # X-axis label (rotated)
-        label_x = x + bar_width / 2
-        label_y = margin['top'] + chart_height + 10
-        short_name = name[:12] + '..' if len(name) > 14 else name
-        labels_svg += f'<text x="{label_x}" y="{label_y}" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 {label_x} {label_y})">{short_name}</text>'
-
-    # Y-axis
-    y_axis = f'<line x1="{margin["left"]}" y1="{margin["top"]}" x2="{margin["left"]}" y2="{margin["top"] + chart_height}" stroke="var(--border-color)" stroke-width="1"/>'
-
-    # Y-axis labels
-    y_labels = ""
-    for pct in [0, 0.25, 0.5, 0.75, 1.0]:
-        y_pos = margin['top'] + chart_height * (1 - pct)
-        y_labels += f'<text x="{margin["left"] - 5}" y="{y_pos + 3}" text-anchor="end" font-size="9" fill="var(--text-secondary)">{pct:.0%}</text>'
-        y_labels += f'<line x1="{margin["left"]}" y1="{y_pos}" x2="{margin["left"] + chart_width}" y2="{y_pos}" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/>'
-
-    # 50% threshold line
-    threshold_y = margin['top'] + chart_height * 0.5
-    threshold = f'<line x1="{margin["left"]}" y1="{threshold_y}" x2="{margin["left"] + chart_width}" y2="{threshold_y}" stroke="#ffc107" stroke-width="2" stroke-dasharray="5,3"/>'
-
+            label_x = x + 8 * math.cos(angle)
+            label_y = y + 8 * math.sin(angle)
+            dots_svg += f'<text x="{label_x}" y="{label_y}" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc3545">{value:.0%}</text>'
+    
     # Title
-    title_svg = f'<text x="{width/2}" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
-
+    title_svg = f'<text x="{width/2}" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
+    
+    # Legend
+    legend_svg = f'''
+        <g transform="translate(20, {height - 40})">
+            <circle cx="8" cy="0" r="4" fill="#28a745"/>
+            <text x="16" y="4" font-size="9" fill="var(--text-secondary)">Compliant</text>
+            <circle cx="80" cy="0" r="4" fill="#dc3545"/>
+            <text x="88" y="4" font-size="9" fill="var(--text-secondary)">Violation</text>
+            <text x="160" y="4" font-size="9" fill="var(--text-muted)">(Larger area = better compliance)</text>
+        </g>
+    '''
+    
     return f'''<svg viewBox="0 0 {width} {height}" class="svg-chart" style="width:100%;max-width:{width}px;height:auto;">
         {title_svg}
-        {y_axis}
-        {y_labels}
-        {threshold}
-        {bars_svg}
+        {grid_svg}
+        {axes_svg}
+        {data_svg}
+        {dots_svg}
         {labels_svg}
+        {legend_svg}
     </svg>'''
 
 
@@ -338,7 +398,7 @@ def generate_charts_data(result: Dict[str, Any]) -> dict:
     if fractions:
         axes_names = list(fractions.keys())
         axes_values = [fractions.get(ax, 0) for ax in axes_names]
-        charts['compliance_svg'] = generate_svg_bar_chart(
+        charts['compliance_svg'] = generate_svg_radar_chart(
             axes_names, axes_values, "ODD Compliance by Axis")
     else:
         charts['compliance_svg'] = '<div class="text-muted text-center p-4">No compliance data available</div>'
@@ -395,8 +455,19 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Discover windows and load images
     windows = discover_windows(scenario_dir, image_scenario_name)
+    
+    # Sample windows evenly across the scenario (max 6 for display)
+    MAX_DISPLAY_WINDOWS = 6
+    if len(windows) > MAX_DISPLAY_WINDOWS:
+        # Evenly sample across the scenario
+        step = len(windows) / MAX_DISPLAY_WINDOWS
+        sampled_indices = [int(i * step) for i in range(MAX_DISPLAY_WINDOWS)]
+        sampled_windows = [windows[i] for i in sampled_indices]
+    else:
+        sampled_windows = windows
+    
     windows_with_images = []
-    for window_id in windows:
+    for window_id in sampled_windows:
         images = find_window_images(
             scenario_dir, window_id, image_scenario_name)
         if images:
