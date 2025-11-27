@@ -6,13 +6,29 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 **Last Updated**: November 27, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.4.5 Complete, HTML reports v2.0 deployed to GitHub Pages
+**Status**: Phase 1.5 Complete (Knowledge Layer + Agent Evaluation)
 
-**Current Focus**: Knowledge layer complete; decide next priority (memory consolidation vs. open issues)
+**Current Focus**: Decide next priority - see Next Steps below
+
+## 🎯 Next Steps
+
+**Decision Point:** Choose next work item based on priorities:
+
+| Priority | Item | Why |
+|----------|------|-----|
+| HIGH | Full Production Run (100 windows) | Validates system at scale, generates demo artifacts |
+| HIGH | Real Data Validation | Tests on actual robot data (post-Phase 1 architecture) |
+| MEDIUM | Token Accounting Bug Fix | Cost reporting accuracy (workaround: 3x estimate) |
+| MEDIUM | Sporadic Window Failures RCA | Use agent evals to isolate cause |
+| LOW | Memory Layer (Phase 2.2) | Cross-run context (nice-to-have, not blocking) |
+
+**Recommended**: Full Production Run → Real Data Validation → Bug fixes
+
+---
 
 ## 🧠 Memory & Knowledge System
 
-**Status:** 🔥 **NEXT UP** - See [docs/MEMORY_KNOWLEDGE_DESIGN.md](docs/MEMORY_KNOWLEDGE_DESIGN.md)
+**Status:** ✅ **Knowledge Layer COMPLETE** | 📋 Memory Layer (Phase 2.2) deferred
 
 **Note:** In-memory session state (`InMemorySessionService`) is per-process. Cross-run memory is only meaningful with a persistent backend (e.g., `VertexAiMemoryBankService`). Before implementing, evaluate feasibility/cost of Vertex AI Memory Bank and add a toggle to run with/without persistent memory.
 
@@ -61,7 +77,7 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ## ✅ Agent Evaluation Refresh (ADK)
 
-**Completed:** February 24, 2025
+**Completed:** November 27, 2025
 
 - Rubric-based eval configs for Perception/Motion/Collision/Evaluator/Report/ODD Spec
 - Tool trajectory checks removed (rubric-based tool-use instead)
@@ -1137,73 +1153,32 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 
 **Priority:** HIGH - Required for competition
 
-#### Agent Evaluation & Testing 📋 AFTER MEMORY/KNOWLEDGE
+#### Agent Evaluation & Testing ✅ COMPLETE
 
-**Priority:** After Memory/Knowledge work (agent interfaces may change)
+**Completed:** November 27, 2025
 
-**Current State (as of Nov 27, 2025):**
-- ❌ Agent wrappers use old API (`create_perception_loop_agent` → should be `create_perception_agent`)
-- ❌ Test scenario paths outdated (`data/processed/runs/sim_run_test` → `data/test/sim/sim_test_w010_w011`)
-- ❌ Judge model outdated (`gemini-2.5-pro` → should be `gemini-3-pro`)
-- ❌ Rubrics reference old schemas (separate COD/Compliance → now Evaluator)
-- ❌ Only Perception has .test.json, other 5 agents missing
-- ✅ Framework structure exists (`odd_agents/evaluation/`, `tests/evaluation/`)
-- ✅ 40 rubrics defined in ADK dict format
+**What Was Done:**
+- ✅ Rubric-based eval configs for all 6 agents (Perception/Motion/Collision/Evaluator/Report/ODD Spec)
+- ✅ Removed brittle `tool_trajectory_avg_score` checks in favor of `rubric_based_tool_use_quality_v1`
+- ✅ Added evaluator/report fixtures (`tests/evaluation/fixtures/eval_report`)
+- ✅ All comprehensive tests passing (`pytest tests/test_adk_evaluation.py::test_*_comprehensive`)
+- ✅ Results logged in `tests/evaluation/RESULTS.md`
+- ✅ Docs updated: `docs/guides/AGENT_EVALUATION.md`, README link, docs/index.html callout
 
-**🐛 Bug Investigation Task:** Use agent tests to diagnose sporadic window failures
+**Known Limitations (ADK constraints):**
+- Report hallucination check omitted (ADK cannot ground function_call-only outputs)
+- Evaluator hallucinations threshold relaxed to 0.5 (until ADK improves grounding)
+
+**🐛 Remaining: Bug Investigation** - Use eval tests to diagnose sporadic window failures
 - If bug appears in isolated tests → tool-level issue
 - If bug ONLY appears in pipeline → orchestration/rate limiting issue
 - See: [Sporadic Window Analysis Failures](#sporadic-window-analysis-failures---tool-agent-errors)
-
-**ADK Evaluation Criteria to Use:**
-| Criteria | Purpose | Agents |
-|----------|---------|--------|
-| `tool_trajectory_avg_score` | Verify correct tool sequence | All (CI/CD) |
-| `rubric_based_final_response_quality_v1` | Custom quality rubrics | All |
-| `rubric_based_tool_use_quality_v1` | Tool usage quality | Sensor agents |
-| `hallucinations_v1` | Detect fabricated claims | Report agent |
-
-**Implementation Plan:**
-
-**Phase 1: Fix Infrastructure (Do 2-3 agents as examples)**
-- [ ] Update `tests/evaluation/perception/perception_agent.py` to use new API
-- [ ] Update judge model to `gemini-3-pro` in test configs
-- [ ] Update scenario path to `data/test/sim/sim_test_w010_w011`
-- [ ] Fix Perception agent wrapper + test file
-- [ ] Fix Motion agent wrapper + create test file
-- [ ] Validate both work with `pytest tests/test_adk_evaluation.py -v`
-- [ ] **Add error logging** to tool agents for failure investigation
-
-**Phase 2: Update Rubrics (Align with current schemas)**
-- [ ] Update Perception rubrics (add data_source detection)
-- [ ] Update Motion rubrics (artifact-based output)
-- [ ] Consolidate COD/Compliance rubrics → Evaluator rubrics
-- [ ] Update Report rubrics (v9.1.0 hybrid schema)
-
-**Phase 3: Run Isolated Agent Tests for Bug RCA**
-- [ ] Run perception tool on 10+ windows individually
-- [ ] Run motion tool on 10+ windows individually  
-- [ ] Run collision tool on 10+ windows individually
-- [ ] Document failure rate: isolated vs pipeline
-- [ ] If failures occur, capture: exception type, API status, file paths
-
-**Phase 4: Cloud Agent Pattern Matching**
-- [ ] Document the pattern from Phase 1-2 examples
-- [ ] Let cloud agents implement remaining agents:
-  - [ ] Collision agent wrapper + test file
-  - [ ] OddSpec agent wrapper + test file
-  - [ ] Evaluator agent wrapper + test file
-  - [ ] Report agent wrapper + test file
-
-**Mock Data Strategy:**
-- Use existing `data/test/sim/sim_test_w010_w011` (2 windows, real sensor data)
-- Expected tool trajectories captured from production runs
-- Reference responses generated from validated pipeline outputs
 
 **References:**
 - ADK Evaluation Docs: https://google.github.io/adk-docs/evaluate/
 - Current rubrics: `odd_agents/evaluation/rubrics.py`
 - Test structure: `tests/evaluation/*/`
+- Results: `tests/evaluation/RESULTS.md`
 
 - [ ] Performance benchmarking
   - [ ] Track token usage per agent across batch runs

@@ -1,6 +1,6 @@
 # ADK Evaluation Run Log (latest)
 
-Date: 2025-02-24  
+Date: 2025-11-27  
 Judge model: `gemini-3-pro` (rubrics/hallucinations)  
 Agent models: `gemini-2.5-pro`  
 Scenario/fixtures: `data/test/sim/sim_test_w010_w011` (loop agents), `tests/evaluation/fixtures/eval_report` (evaluator/report)

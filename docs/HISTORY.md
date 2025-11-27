@@ -2,7 +2,13 @@
 
 Chronological log of notable features and improvements. Add entries when features merge to keep a clear trail beyond TODOs.
 
-## 2025-??-?? (in progress)
+## 2025-11-27 – Agent Evaluation Refresh (ADK)
+- Added rubric-based eval configs for Perception/Motion/Collision/Evaluator/Report/ODD Spec; removed brittle tool_trajectory checks in favor of rubric-based tool-use.
+- Added evaluator/report fixtures (`tests/evaluation/fixtures/eval_report`) and latest results log (`tests/evaluation/RESULTS.md`).
+- Docs updated: `docs/guides/AGENT_EVALUATION.md`, README link, docs/index.html callout.
+- Caveat: Report hallucination check omitted (ADK cannot ground function_call-only outputs); evaluator hallucinations threshold relaxed to 0.5 until ADK improves grounding.
+
+## 2025-11-27 – Knowledge Layer
 - Added core knowledge reference doc `docs/agent_knowledge/core/ODD_COD_FUNDAMENTALS.md` (robot-agnostic fundamentals + optional profiles/manifest hook).
 - Added sensor interpretation reference `docs/agent_knowledge/core/SENSOR_INTERPRETATION.md` (BEV, camera, IMU, collision cues; profiles allowed).
 - Added knowledge manifest helpers `odd_agents/knowledge.py` to keep reference docs modular (fundamentals + optional robot/app/ODD + sensors overlays) and to seed memory keys.
