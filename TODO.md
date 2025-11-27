@@ -8,38 +8,61 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
 **Status**: Phase 1.4.5 Complete, HTML reports v2.0 deployed to GitHub Pages
 
-**Current Focus**: RAG knowledge base, then production testing
+**Current Focus**: Bug investigation (window failures), then production testing
 
-## 🔥 HIGH PRIORITY: RAG Knowledge Base for Agents
+## 🧠 Memory & Knowledge System
 
-**Goal:** Create a retrieval-augmented generation (RAG) knowledge base for consistent agent grounding
+**Status:** 📋 DESIGNED - See [docs/MEMORY_KNOWLEDGE_DESIGN.md](docs/MEMORY_KNOWLEDGE_DESIGN.md)
+
+**Target Phase:** 2.2 (after production validation + real data testing)
+
+**What It Provides:**
+- **Cross-run knowledge**: Aggregate ODD profiles, typical COD distances, common failure axes
+- **Few-shot examples**: Reference past runs for better reasoning
+- **Terminology grounding**: Consistent definitions via reference docs
+
+**Three-Layer Architecture:**
+| Layer | Purpose | Example |
+|-------|---------|---------|
+| Artifacts | Per-run outputs | ODD spec, COD distance, report |
+| Memory | Cross-run knowledge | ODD profiles, case summaries |
+| Reference Docs | Static fundamentals | ODD/COD definitions, policies |
+
+**Quick Win (Phase 1.x):**
+- [ ] Create `ODD_COD_FUNDAMENTALS.md` reference doc
+- [ ] Inject into OddSpec + Evaluator prompts (solves terminology issue)
+
+**Full Implementation (Phase 2.2):**
+- [ ] Memory schema: `ref:*`, `global:odd_profile:*`, `case:run:*`
+- [ ] Consolidator tool/agent (updates memory after each run)
+- [ ] Evaluator/Report read memory for cross-scenario context
+- [ ] "This run's COD distance is higher than typical for this ODD"
+
+---
+
+## 🔥 HIGH PRIORITY: Reference Doc for Agent Grounding
+
+**Goal:** Create `ODD_COD_FUNDAMENTALS.md` reference doc for consistent agent grounding
+
+**This is the "quick win" from Memory & Knowledge design** - solves terminology issues without full memory system.
 
 **Motivation:**
 - Terminology confusion (COD = "Current Operating Domain", not "Conditions of Operation Domain")
 - Large prompts with repeated domain knowledge
 - Inconsistent understanding across agents
 
-**Benefits:**
-1. **Token reduction**: Move static knowledge out of prompts
-2. **Consistency**: Single source of truth for terminology (ODD, COD, BOUNDARY, etc.)
-3. **Maintainability**: Update knowledge in one place, all agents benefit
-4. **Quality**: Agents pull in detailed domain knowledge when needed
-
-**Knowledge Base Content:**
+**Content to Include:**
 - ODD/COD definitions and relationships
-- Verdict criteria (IN_ODD, BOUNDARY, OUT_ODD)
-- Robotics safety fundamentals
+- Verdict criteria (IN_ODD, BOUNDARY, OUT_ODD)  
 - Sensor interpretation guidance (LiDAR BEV, IMU data)
-- Terrain/environment classification taxonomies
 - Go2 robot specifications and capabilities
 
-**Implementation Options to Explore:**
-- Google Vertex AI RAG (native to Gemini)
-- Gemini context caching (simpler alternative)
-- ADK built-in retrieval (if supported)
-- Custom embedding + vector search
+**Implementation:**
+1. Create `docs/guides/ODD_COD_FUNDAMENTALS.md`
+2. Add reference to OddSpec + Evaluator prompts
+3. Test terminology consistency in outputs
 
-**Status:** 📋 PLANNED - Next major feature
+**Status:** 📋 PLANNED - Quick win before full Memory system
 
 ---
 
@@ -104,6 +127,38 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 3. Estimate based on image sizes + prompt lengths
 
 **Status:** 📋 NEEDS FIX - Affects cost reporting accuracy
+
+---
+
+### Sporadic Window Analysis Failures - Tool Agent Errors
+
+**Problem:** Random windows fail to process in tool agents (Perception, Motion, Collision), causing data gaps in analysis.
+
+**Observed Symptoms:**
+- `"Motion data for window '044' was missing due to a processing error."`
+- `"Data processing failed for two windows (Perception '021', Motion '024') due to server errors"`
+- `"Collision analysis data was not available, leading to an incomplete safety assessment."`
+- Not all windows, not all agents - sporadic/random pattern
+
+**Impact:**
+- Incomplete per-window analysis (gaps in data)
+- Report agent correctly identifies and documents gaps
+- Pipeline continues but with reduced observability
+
+**Possible Causes (not yet confirmed):**
+1. **API Rate Limiting** - 30+ API calls in quick succession (10 windows × 3 agents)
+2. **Transient Server Errors** - 500/503 from Gemini API
+3. **Image Loading Issues** - BEV/camera file read failures
+4. **Timeout Issues** - Long-running multimodal analysis times out
+5. **Memory Issues** - Large image payloads causing OOM
+
+**RCA Needed:**
+- [ ] Add detailed error logging to tool agents (perception.py, motion.py, collision.py)
+- [ ] Log: which window, which file, what exception type, API response status
+- [ ] Capture stack traces on failure
+- [ ] Run 5-10 production scenarios and analyze error patterns
+
+**Status:** 🐛 BUG - Needs investigation before fix
 
 ---
 
