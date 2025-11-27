@@ -2,7 +2,7 @@
 
 Executable scripts for the Go2 ODD Observer project.
 
-**Phase 1.4.4 (Nov 26, 2025):** 6-agent pipeline with type-driven COD construction.
+**Phase 1.4.5 (Nov 27, 2025):** Artifact-based handoff, categorical micro-agent, data source detection.
 
 ---
 
@@ -18,7 +18,7 @@ Executable scripts for the Go2 ODD Observer project.
 python scripts/run_odd_analysis.py
 
 # Specify scenario directly
-python scripts/run_odd_analysis.py --scenario sim_test_w010_w011
+python scripts/run_odd_analysis.py --scenario data/test/sim/sim_test_w010_w011
 ```
 
 **What it does**:
@@ -28,29 +28,38 @@ python scripts/run_odd_analysis.py --scenario sim_test_w010_w011
 - Displays executive summary and compliance status
 - Saves results to `data/archive/analysis_results/manual/<timestamp>/<scenario>/`
 
-**Model Configuration** (Phase 1.4.4):
+**Model Configuration** (Phase 1.4.5):
 ```python
-MODEL_PERCEPTION = "gemini-2.0-flash-thinking-exp"  # Multimodal tool calling
-MODEL_MOTION = "gemini-2.0-flash-exp"               # IMU motion detection
-MODEL_COLLISION = "gemini-2.0-flash-exp"            # Collision detection
-MODEL_ODD_SPEC = "gemini-2.0-flash-exp"             # ODD specification parsing
-MODEL_EVALUATOR = "gemini-2.0-flash-exp"            # COD + compliance
-MODEL_REPORT = "gemini-2.0-flash-exp"               # Report generation
+MODEL_PERCEPTION = "gemini-2.5-flash"   # Multimodal + data source detection
+MODEL_MOTION = "gemini-2.5-flash"       # IMU motion analysis
+MODEL_COLLISION = "gemini-2.5-flash"    # Collision detection
+MODEL_ODD_SPEC = "gemini-2.5-flash"     # ODD specification parsing
+MODEL_EVALUATOR = "gemini-2.5-pro"      # COD + compliance (complex reasoning)
+MODEL_REPORT = "gemini-2.5-flash"       # Report generation
 ```
 
 **Output Example**:
 ```
-ANALYSIS METADATA
-  • Pipeline version: 2.0.0
-  • Duration: 25.47 seconds
-  • Agents executed: 6
-  • Total tokens: 21,731
-  • Estimated cost: $0.43
+╔════════════════════════════════════════════════════════════════╗
+║                      ODD ANALYSIS SUMMARY                       ║
+╚════════════════════════════════════════════════════════════════╝
 
-ODD COMPLIANCE
-  • Overall: IN_ODD
-  • Temporal Stability: STABLE
-  • Critical Axes: 0
+┌─ COMPLIANCE ─────────────────────────────────────────────────────┐
+│ Verdict: IN_ODD                                                  │
+│ Confidence: 0.85                                                 │
+│ Region Distance: 0.0                                             │
+│ Stability: stable                                                │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ SCENARIO METADATA ──────────────────────────────────────────────┐
+│ Data Source: simulated                                           │
+│ Windows: 2                                                       │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ ANALYSIS METADATA ──────────────────────────────────────────────┐
+│ Duration: 148.3 seconds                                          │
+│ Cost: $0.0155                                                    │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -347,3 +356,62 @@ Superseded scripts moved to [`.archive/scripts/`](../.archive/scripts/):
 **Issue**: "Rate limit errors"
 - **Solution**: Switch to `gemini-2.5-flash` (more quota)
 - Edit model configuration at top of script
+
+---
+
+## 🧪 Development & Exploration Scripts
+
+These scripts were created during development to explore ADK patterns and validate new features.
+
+### `test_categorical_agent.py` - **Categorical Micro-Agent Tests**
+
+**Purpose**: Validate the categorical micro-agent for semantic ODD matching.
+
+**Usage**:
+```bash
+python scripts/test_categorical_agent.py
+```
+
+**What it tests**:
+- Semantic equivalence detection (e.g., "indoor_commercial" ≈ "office")
+- Anti-cheat generalization (uses novel examples not in training prompt)
+- Edge cases and false positive prevention
+
+**Key Design Principle**: Tests verify GENERALIZATION, not memorization. Every pattern in the prompt has a corresponding anti-cheat test with different examples.
+
+---
+
+### `test_adk_artifacts.py` - **Artifact Pattern Example**
+
+**Purpose**: Toy example demonstrating ADK artifact-based inter-agent communication.
+
+**Usage**:
+```bash
+python scripts/test_adk_artifacts.py
+```
+
+**What it demonstrates**:
+- `InMemoryArtifactService` usage
+- Producer agent saving artifacts
+- Consumer agent loading artifacts
+- Reliable data handoff pattern
+
+**Why created**: Explored artifact pattern before implementing in production pipeline (Phase 1.4.5).
+
+---
+
+### `test_adk_blackboard.py` - **Blackboard State Example**
+
+**Purpose**: Toy example demonstrating ADK blackboard state access from tools.
+
+**Usage**:
+```bash
+python scripts/test_adk_blackboard.py
+```
+
+**What it demonstrates**:
+- `tool_context.state` access in tools
+- `output_key` pattern for agent state
+- Producer/consumer agent pattern
+
+**Why created**: Explored blackboard pattern before deciding artifact pattern was more reliable.

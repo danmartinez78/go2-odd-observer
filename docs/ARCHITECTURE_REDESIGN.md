@@ -1,13 +1,13 @@
 # ODD Observer Architecture Redesign
 
 **Date:** November 24, 2025  
-**Status:** Phase 1.4.4 Complete (Nov 26, 2025) - Type-Driven COD Construction
+**Status:** Phase 1.4.5 Complete (Nov 27, 2025) - Artifact Handoff + Categorical Reasoning
 
 ## Executive Summary
 
 This document outlines a fundamental redesign of the ODD compliance evaluation system to fix critical architectural flaws discovered during production use.
 
-**✅ COMPLETED (Phase 1.4.1 - 1.4.4):**
+**✅ COMPLETED (Phase 1.4.1 - 1.4.5):**
 - ODD-schema driven architecture (agents adapt to any ODD structure)
 - Intelligent two-tier architecture (tool agents → analysis agents)
 - Dynamic COD dimension mapping (auto-aligns with ODD spec)
@@ -16,11 +16,18 @@ This document outlines a fundamental redesign of the ODD compliance evaluation s
 - Cross-window temporal reasoning integrated into analysis agents
 - Agent consolidation: 9 → 6 agents (eliminated redundant summary layer)
 - Massive prompt compression (72-79% reduction in tool prompts)
-- **Type-driven COD construction** (range/enum/bool types)
-- **Python tools for deterministic COD building** (no LLM hallucination)
-- **Blackboard pattern with ToolContext** (token-efficient data flow)
-- **Cleaner ODD specs** (no static robot dimensions, no measurement_guidance)
+- Type-driven COD construction (range/enum/bool types)
+- Python tools for deterministic COD building (no LLM hallucination)
+- Blackboard pattern with ToolContext (token-efficient data flow)
+- Cleaner ODD specs (no static robot dimensions, no measurement_guidance)
+- **Artifact-based inter-agent communication** (InMemoryArtifactService)
+- **Categorical micro-agent** (semantic ODD matching, anti-cheat design)
+- **Data source detection** (simulated vs real, emergent downstream use)
+- **Report v9.1.0** (hybrid schema: compliance + executive_summary + key_findings)
+- **Model standardization** (gemini-2.5-flash for all agents, pro for Evaluator)
+- **Pricing module** (accurate per-model cost calculation)
 - Tested: Ground robots + drones (generalization validated)
+- Production validated: 2-window and 10-window tests passing
 
 **⏳ REMAINING (Future Phases):**
 - Severity-based assessment (currently binary IN_ODD/OUT_ODD)
@@ -1664,3 +1671,122 @@ Window 4: lighting=bright, obstacle_density=0.4, terrain=smooth
 ```
 
 **Key Difference:** Redesigned system preserves the critical OUT_ODD window instead of averaging it away, provides nuanced severity assessment, and generates specific investigation flag.
+---
+
+## Phase 1.4.5 Architecture Updates (November 27, 2025)
+
+### Artifact-Based Inter-Agent Communication
+
+**Problem:** Session state passing between agents was unreliable. Downstream agents couldn't consistently access upstream outputs.
+
+**Solution:** Artifact-based handoff using ADK's `InMemoryArtifactService`:
+
+```python
+# Sensor agents save outputs as artifacts
+artifact_service = InMemoryArtifactService()
+
+# Each sensor agent saves its output
+perception_agent.save_artifact("perception_output.json", perception_data)
+motion_agent.save_artifact("motion_output.json", motion_data)  
+collision_agent.save_artifact("collision_output.json", collision_data)
+
+# Evaluator loads all artifacts reliably
+evaluator_agent.load_artifacts(["perception_output.json", "motion_output.json", "collision_output.json"])
+```
+
+**Benefits:**
+- Reliable data transfer between agents
+- Debuggable (artifacts can be inspected)
+- Decouples agent execution from data access
+
+### Categorical Micro-Agent for Semantic ODD Matching
+
+**Problem:** String comparison flagged semantic equivalences as mismatches:
+- "indoor_commercial" vs "office" → flagged as mismatch (wrong!)
+- "clear" vs "good" lighting → flagged as mismatch (wrong!)
+
+**Solution:** LLM-based categorical assessment:
+
+```python
+# CODTool v1.1.0 - Categorical Micro-Agent
+def assess_categorical_mismatch(odd_value: str, cod_value: str, dimension: str) -> dict:
+    """Use LLM to determine if values are semantically equivalent."""
+    prompt = f"""
+    For ODD dimension '{dimension}':
+    - ODD allows: {odd_value}
+    - COD observed: {cod_value}
+    
+    Are these semantically equivalent? Consider domain synonyms.
+    """
+    # Returns: {equivalent: bool, reasoning: str}
+```
+
+**Anti-Cheat Design:**
+- Test suite uses novel examples not in training prompt
+- Validates generalization to unseen synonyms
+- Model: gemini-2.5-flash for reliability
+
+### Data Source Detection
+
+**Problem:** Pipeline couldn't distinguish simulated vs real data.
+
+**Solution:** Perception tool assesses data source from visual cues:
+
+```json
+{
+  "data_source": {
+    "type": "simulated",
+    "confidence": 0.95,
+    "indicators": [
+      "Perfect lighting uniformity",
+      "Unnaturally clean surfaces",
+      "Geometric precision in furniture placement"
+    ]
+  }
+}
+```
+
+**Emergent Behavior:** Downstream agents naturally incorporated data_source context into their reasoning without explicit prompting. Executive summaries referenced "simulated environment" without instruction.
+
+### Model Standardization
+
+**Final Configuration (v1.4.5):**
+
+| Agent | Version | Model | Rationale |
+|-------|---------|-------|-----------|
+| OddSpecAgent | 6.1.0 | gemini-2.5-flash | Reliable tool calling |
+| PerceptionAgent | 7.4.0 | gemini-2.5-flash | Multimodal + data source |
+| MotionAgent | 7.3.0 | gemini-2.5-flash | Reliable analysis |
+| CollisionAgent | 7.3.0 | gemini-2.5-flash | Multimodal collision |
+| EvaluatorAgent | 5.0.0 | gemini-2.5-pro | Complex reasoning |
+| ReportAgent | 9.1.0 | gemini-2.5-flash | Reliable synthesis |
+| CODTool | 1.1.0 | gemini-2.5-flash | Categorical micro-agent |
+
+**Key Decision:** Upgraded ReportAgent from flash-lite to flash. Flash-lite wasn't reliably calling tools.
+
+### Pricing Module
+
+New `odd_agents/pricing.py` provides accurate cost calculation:
+
+```python
+GEMINI_PRICING = {
+    "gemini-2.5-flash": {"input": 0.15, "output": 0.60},  # per 1M tokens
+    "gemini-2.5-pro": {"input": 1.25, "output": 10.00},
+    "gemini-2.0-flash-exp": {"input": 0.0, "output": 0.0},  # free tier
+}
+```
+
+### Production Test Results
+
+**2-Window Test (sim_test_w010_w011):**
+- Verdict: IN_ODD
+- Region distance: 0.0
+- Cost: $0.0155
+- Duration: 148 seconds
+
+**10-Window Test (sim_1_0_chunk_000_009):**
+- Verdict: BOUNDARY
+- Region distance: 0.2
+- Cost: $0.0372
+- Duration: 510 seconds
+- **Sub-linear scaling:** 5x windows → 2.4x cost

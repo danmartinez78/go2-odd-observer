@@ -4,40 +4,48 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ---
 
-**Last Updated**: November 26, 2025  
+**Last Updated**: November 27, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.4.4 Complete (v1.4.4 tagged), ready for next phase
+**Status**: Phase 1.4.5 Complete, production validated
 
-**Current Focus**: Determine next phase priority
+**Current Focus**: Documentation cleanup, prepare for Phase 2
 
-**Recent Completions (Nov 26, 2025)**:
-- ✅ Phase 1.4.4: Type-Driven COD + Synthesis-Focused Reports (merged, tagged v1.4.4)
-  - 6 agents total (OddSpec, Perception, Motion, Collision, Evaluator, Report)
-  - Sensor agents use thinking model (gemini-2.5-flash-preview)
-  - Type-driven COD construction with Python tools
-  - Synthesis-focused reports (LLM interprets, Python computes)
-  - ~100 seconds per 2-window analysis
-  - ~32K tokens total pipeline cost
-  - No null fields in reports - data_quality computed by Python
-  - Full technical report with audit trail
+**Recent Completions (Nov 27, 2025)**:
+- ✅ Phase 1.4.5: Artifact Handoff, Categorical Reasoning, Data Source Detection
+  - **Artifact-based data handoff**: Sensor agents save to artifacts, Evaluator loads reliably
+  - **Categorical micro-agent**: LLM-based semantic mismatch (understands "indoor_commercial" ≈ "office")
+  - **Data source detection**: Automatically identifies simulated vs real data
+  - **Report v9.1.0**: Hybrid schema with compliance, executive_summary, key_findings, scenario_metadata
+  - **Model standardization**: All agents on gemini-2.5-flash for reliability
+  - **Pricing module**: Accurate per-model cost calculation
+  - **Production validated**: 2-window ($0.0155, 148s) and 10-window ($0.0372, 510s) tests passing
 
-**Agent Versions (v1.4.4)**:
+**Agent Versions (v1.4.5)**:
 | Agent | Version | Model |
 |-------|---------|-------|
-| OddSpecAgent | 5.0.0 | gemini-2.0-flash-exp |
-| PerceptionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
-| MotionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
-| CollisionAgent | 6.0.0 | gemini-2.5-flash-preview (thinking) |
-| EvaluatorAgent | 2.0.0 | gemini-2.0-flash-exp |
-| ReportAgent | 6.0.0 | gemini-2.0-flash-exp |
+| OddSpecAgent | 6.1.0 | gemini-2.5-flash |
+| PerceptionAgent | 7.4.0 | gemini-2.5-flash |
+| MotionAgent | 7.3.0 | gemini-2.5-flash |
+| CollisionAgent | 7.3.0 | gemini-2.5-flash |
+| EvaluatorAgent | 5.0.0 | gemini-2.5-pro |
+| ReportAgent | 9.1.0 | gemini-2.5-flash |
+| CODTool | 1.1.0 | gemini-2.5-flash (categorical micro-agent) |
+
+**Tool Versions (v1.4.5)**:
+| Tool | Version | Description |
+|------|---------|-------------|
+| PerceptionTool | 5.1.0 | Multimodal analysis + data source detection |
+| MotionTool | 5.0.0 | IMU analysis + motion state |
+| CollisionTool | 5.0.0 | Multimodal collision detection |
+| CODTool | 1.1.0 | Categorical micro-agent for semantic matching |
 
 **Suggested Next Phases**:
 | Phase | Focus | Description | Priority |
 |-------|-------|-------------|----------|
-| 1.5 | Production validation | Run on all production scenarios, compare results | HIGH |
-| 1.6 | Evaluator enhancement | Severity scoring, distance-from-limits | MEDIUM |
-| 1.7 | Manual validation | Test with diverse scenarios, verify behavior | HIGH |
+| 1.6 | Test updates | Update unit tests for new API (loop→consolidated agents) | MEDIUM |
+| 1.7 | Full production run | Run on all sim_1_0 chunks (100 windows) | HIGH |
 | 2.0 | Performance optimization | Visual/LiDAR odometry, tool splitting | LOW |
+| 2.1 | Real data validation | Test on real robot data (not sim) | HIGH |
 
 ---
 
@@ -587,6 +595,108 @@ See [Phase 0 details in ARCHITECTURE_REDESIGN.md](docs/ARCHITECTURE_REDESIGN.md#
 - [x] Tagged v1.4.4
 
 **Outcome**: Robust data pipeline with clear separation of concerns. LLM provides high-quality synthesis, Python ensures accurate computation. No more null fields or copy failures.
+
+### 1.4.5 Artifact Handoff, Categorical Reasoning, Data Source Detection ✅ COMPLETED (Nov 27, 2025)
+
+**Goal:** Reliable inter-agent data flow, semantic ODD matching, and automatic data source identification
+
+**Problems Identified:**
+1. **Session state unreliable**: Agents couldn't reliably access upstream outputs via session state
+2. **Categorical mismatch false positives**: LLM flagging "indoor_commercial" vs "office" as mismatch
+3. **No sim/real distinction**: Pipeline couldn't tell if data was simulated or real
+4. **Report tool calling unreliable**: flash-lite model not reliably calling tools
+
+**Solutions Implemented:**
+
+**1. Artifact-Based Data Handoff:**
+- [x] InMemoryArtifactService for inter-agent communication
+- [x] Sensor agents save outputs as artifacts (`perception_output.json`, etc.)
+- [x] Evaluator loads artifacts reliably (no more session state issues)
+- [x] Tool call tracking for debugging
+
+**2. Categorical Micro-Agent (CODTool v1.1.0):**
+- [x] LLM-based semantic mismatch assessment
+- [x] Understands equivalences: "indoor_commercial" ≈ "office", "clear" ≈ "good"
+- [x] Anti-cheat design: generalizes beyond training examples
+- [x] Model: gemini-2.5-flash for reliability
+- [x] Comprehensive test suite: `scripts/test_categorical_agent.py`
+
+**3. Data Source Detection:**
+- [x] Perception tool assesses simulated vs real from visual cues
+- [x] Output: `{type: "simulated"|"real", confidence: 0.0-1.0, indicators: [...]}`
+- [x] Flows through: Perception → Artifact → Report → Display
+- [x] **Emergent behavior**: Downstream agents naturally incorporate data_source context without explicit prompting
+
+**4. Report Agent v9.1.0:**
+- [x] Upgraded from flash-lite to flash (reliable tool calling)
+- [x] Hybrid schema: compliance, executive_summary, key_findings, scenario_metadata
+- [x] Added `scenario_data_source` to scenario_metadata
+- [x] Display function shows Data Source
+
+**5. Tool-Based ODD Spec (v8.0.0):**
+- [x] save_odd_spec_tool with strict parameter enforcement
+- [x] Consistent downstream COD construction
+- [x] Validates all required ODD dimensions
+
+**6. Pricing Module (NEW):**
+- [x] `odd_agents/pricing.py` for accurate cost calculation
+- [x] Per-model pricing for all Gemini models
+- [x] Used in display_summary for cost reporting
+
+**Test Results:**
+
+**2-Window Test (sim_test_w010_w011):**
+- ✅ Verdict: IN_ODD
+- ✅ Region distance: 0.0
+- ✅ Data source: simulated (correctly identified)
+- ✅ Cost: $0.0155
+- ✅ Duration: 148 seconds
+
+**10-Window Test (sim_1_0_chunk_000_009):**
+- ✅ Verdict: BOUNDARY
+- ✅ Region distance: 0.2
+- ✅ Data source: simulated
+- ✅ Cost: $0.0372 (sub-linear scaling: 5x windows → 2.4x cost)
+- ✅ Duration: 510 seconds
+
+**Emergent Behavior Observed:**
+- Executive summary naturally incorporated "simulated" context
+- Key findings referenced simulation without explicit prompting
+- Demonstrates agents can reason from metadata without instruction
+
+**Version Tracking:**
+| Agent | Version | Model | Change |
+|-------|---------|-------|--------|
+| OddSpecAgent | 6.1.0 | gemini-2.5-flash | Tool-based spec |
+| PerceptionAgent | 7.4.0 | gemini-2.5-flash | Data source detection |
+| MotionAgent | 7.3.0 | gemini-2.5-flash | Artifact save |
+| CollisionAgent | 7.3.0 | gemini-2.5-flash | Artifact save |
+| EvaluatorAgent | 5.0.0 | gemini-2.5-pro | Artifact load |
+| ReportAgent | 9.1.0 | gemini-2.5-flash | Hybrid schema + data_source |
+| CODTool | 1.1.0 | gemini-2.5-flash | Categorical micro-agent |
+
+**New Files:**
+- `odd_agents/pricing.py` - Cost calculation module
+- `odd_agents/tools/odd_spec.py` - ODD specification tools
+- `scripts/test_categorical_agent.py` - Anti-cheat test suite
+- `scripts/test_adk_artifacts.py` - Artifact pattern example
+- `scripts/test_adk_blackboard.py` - Blackboard pattern example
+
+**Known Issues:**
+- Some test files need API updates (old loop/summary pattern)
+- ADK evaluation tests have breaking changes (upstream ADK API)
+
+**Deliverables Completed:**
+- [x] Artifact-based data handoff (InMemoryArtifactService)
+- [x] Categorical micro-agent for semantic ODD matching
+- [x] Data source detection (sim vs real)
+- [x] Report schema v9.1.0 with data_source
+- [x] Pricing module for accurate cost tracking
+- [x] Tool-based ODD spec generation
+- [x] 2-window and 10-window production tests
+- [x] Committed and pushed to dev branch
+
+**Outcome**: Pipeline now has reliable inter-agent communication via artifacts, intelligent semantic matching for ODD categories, and automatic data source identification. Cost tracking is accurate. Model configuration standardized on gemini-2.5-flash for reliability.
 
 ### 1.5 Evaluator Agent Upgrade 📋 PLANNED
 

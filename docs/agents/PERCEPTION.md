@@ -1,388 +1,257 @@
-# Perception Agents
+# Perception Agent
 
 ## Overview
 
-The perception pipeline performs **multimodal environment analysis** by combining camera and LiDAR data to understand the robot's surroundings. This two-agent system processes time-windowed sensor snapshots and produces environment classifications and obstacle assessments.
+The **PerceptionAgent** performs **multimodal environment analysis** by combining camera and LiDAR data to understand the robot's surroundings. It produces environment classifications, obstacle assessments, and **data source detection** (simulated vs real).
+
+**Version:** 7.4.0  
+**Model:** gemini-2.5-flash  
+**Purpose:** Per-window perception analysis with artifact-based output
 
 ---
 
-## PerceptionLoopAgent
+## Architecture (Phase 1.4.5)
+
+### Consolidated Agent Design
+
+The PerceptionAgent v7.x is a **consolidated agent** that combines:
+- Window iteration (previously PerceptionLoopAgent)
+- Multimodal analysis (via perception tool)
+- Data aggregation (previously PerceptionSummaryAgent)
+
+### Artifact-Based Output
+
+Instead of session state, the agent saves output to an artifact:
+
+```python
+# Agent saves output to artifact store
+await artifact_service.save_artifact(
+    "perception_output.json",
+    perception_data,
+    artifact_type="application/json"
+)
+```
+
+This ensures reliable data handoff to the EvaluatorAgent.
+
+---
+
+## Tool: analyze_window_perception_tool
+
+### Version: 5.1.0
 
 ### Purpose
-
-Orchestrates per-window perception analysis by iterating through all time windows in a scenario and collecting multimodal sensor analysis results.
-
-**Problem it solves**: Coordinating systematic analysis of all available sensor snapshots without missing windows or duplicating work.
+Multimodal perception analysis of a single time window, including **data source detection**.
 
 ### Inputs
 
-**From User/Workflow:**
-- None (receives initial query to start analysis)
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `window_id` | string | Window identifier (e.g., "010") |
 
-**From Tools:**
-- `list_windows_tool()`: Available window IDs in the scenario
-- `analyze_window_perception_tool(window_id)`: Multimodal analysis results
+The tool automatically loads:
+- Camera image: `cam_{window_id}.png`
+- LiDAR BEV: `bev_occupancy_{window_id}.png`
 
-**Environment Dependencies:**
-- Scenario directory with camera images (`cam_*.png`)
-- LiDAR BEV occupancy maps (`bev_occupancy_*.png`)
+### Multimodal Fusion
 
-### Outputs
-
-**Output Key:** `temp:perception_data`
-
-**Schema:**
-```json
-{
-  "windows_analyzed": ["001", "002", "003"],
-  "per_window_perception": [
-    {
-      "window_id": "001",
-      "environment_type": "indoor_office",
-      "lighting_class": "bright",
-      "terrain_roughness_class": "smooth",
-      "obstacle_density": 0.35,
-      "traversability_score": 0.75,
-      "occupancy_ratio": 0.18,
-      "primary_obstacles": ["desk", "chair", "cabinet"],
-      "evidence": "Well-lit office space with furniture obstacles..."
-    }
-  ]
-}
-```
-
-### Prompting Strategy
-
-**Key Instructions:**
-1. **Sequential processing**: Call `list_windows_tool()` exactly once, then iterate in order
-2. **No modifications**: Collect tool responses exactly as returned (no interpretation)
-3. **JSON output only**: No commentary or explanations outside JSON structure
-
-**Critical Pattern:**
-```
-1. list_windows_tool() → ["001", "002", "003"]
-2. For each window_id:
-     analyze_window_perception_tool(window_id) → {...}
-3. Collect all results in order
-4. Return JSON with windows_analyzed + per_window_perception arrays
-```
-
-**Why this works**: The agent acts as a pure orchestrator, delegating all perception logic to the multimodal tool. This ensures consistent processing and prevents hallucination.
-
-### Model Selection
-
-**Default:** `gemini-2.0-flash-lite`  
-**Recommended Upgrade:** `gemini-2.5-pro`
-
-**Rationale:**
-- Loop agent only orchestrates tool calls (simple JSON collection)
-- **Flash-lite sufficient** for coordination logic
-- Upgrade to **2.5-pro** if:
-  - Need more reliable tool calling in complex scenarios
-  - Scenario has many windows (>20) requiring precise orchestration
-
-**Cost Impact:** flash-lite saves ~70% vs. pro, acceptable for coordination task
-
-### Tool Dependencies
-
-#### 1. `list_windows_tool()`
-**Purpose**: Discover available time windows in scenario
-
-**Implementation**: 
-- Reads scenario index CSV
-- Checks for existence of motion data files (used as ground truth)
-- Returns ordered list of window IDs
-
-**Output:**
-```json
-{
-  "status": "success",
-  "windows": ["001", "002", "003"],
-  "count": 3
-}
-```
-
-#### 2. `analyze_window_perception_tool(window_id)`
-**Purpose**: Multimodal perception analysis of single window
-
-**Implementation:**
-- Loads camera image and LiDAR BEV map
-- Calls Gemini with multimodal prompt + both images
-- Extracts structured JSON from response
-
-**Multimodal Fusion:**
 - **Camera image**: Environment type, lighting, visual obstacles
 - **LiDAR BEV**: Occupancy ratio, obstacle density, traversability
-  - **Ground filtering**: BEV shows only obstacles >10cm above ground (ground plane filtered out)
-  - **Robot position**: Center of 400x400 grid (pixel 200,200), facing upward (+x direction)
-  - **Spatial layout**: Upper half = forward path, lower half = behind, sides = lateral areas
+  - **Ground filtering**: BEV shows only obstacles >10cm above ground
+  - **Robot position**: Center of 400×400 grid (pixel 200,200)
+  - **Spatial layout**: Upper half = forward path
 
-**Key Distinctions in Prompt:**
-- `terrain_roughness_class`: Ground surface elevation changes (NOT surface texture or materials)
-  - "smooth" = flat floor with minimal elevation changes (<5cm variation)
-    - Includes: smooth concrete, flat carpet/rugs, level tile floors
-    - Key: Surface can be plush/textured but still "smooth" if elevation is flat
-  - "moderate" = small bumps, gentle slopes (5-15cm elevation changes)
-  - "rough" = significant elevation changes (15-30cm), stairs, ramps, rocky/unpaved ground
-  - "very_rough" = extreme terrain (>30cm changes), large boulders, steep slopes
-- `obstacle_density`: Concentration of objects in forward path
-- `traversability_score`: Combined terrain + obstacles assessment
+### Output Schema
 
-**Output:**
 ```json
 {
-  "window_id": "001",
+  "window_id": "010",
   "environment_type": "indoor_office",
   "lighting_class": "bright",
   "terrain_roughness_class": "smooth",
-  "obstacle_density": 0.35,
-  "traversability_score": 0.75,
-  "occupancy_ratio": 0.18,
+  "obstacle_density": 0.08,
+  "traversability_score": 0.9,
+  "occupancy_ratio": 0.05,
   "primary_obstacles": ["desk", "chair"],
-  "evidence": "..."
+  "evidence": "Well-lit office space with furniture...",
+  "data_source": {
+    "type": "simulated",
+    "confidence": 0.95,
+    "indicators": [
+      "Perfect lighting uniformity",
+      "Unnaturally clean surfaces",
+      "Geometric precision in furniture"
+    ]
+  }
 }
 ```
-
-### Example Output
-
-**Full PerceptionLoopAgent Output:**
-```json
-{
-  "windows_analyzed": ["001", "002"],
-  "per_window_perception": [
-    {
-      "window_id": "001",
-      "environment_type": "indoor_office",
-      "lighting_class": "bright",
-      "terrain_roughness_class": "smooth",
-      "obstacle_density": 0.35,
-      "traversability_score": 0.75,
-      "occupancy_ratio": 0.18,
-      "primary_obstacles": ["desk", "chair", "cabinet"],
-      "evidence": "Well-lit office space with standard furniture. Smooth floor with clear navigation paths between obstacles."
-    },
-    {
-      "window_id": "002",
-      "environment_type": "indoor_office",
-      "lighting_class": "bright",
-      "terrain_roughness_class": "smooth",
-      "obstacle_density": 0.62,
-      "traversability_score": 0.45,
-      "occupancy_ratio": 0.31,
-      "primary_obstacles": ["sofa", "table", "boxes"],
-      "evidence": "Office environment with dense furniture arrangement. Navigable but constrained paths."
-    }
-  ]
-}
-```
-
-### Common Issues
-
-**Issue 1: Tool not found**
-- **Symptom**: Agent reports "tool not available" or tries wrong tool name
-- **Cause**: Tool factory not called before agent creation
-- **Fix**: Ensure `create_perception_tools()` called in agent factory
-
-**Issue 2: Missing images**
-- **Symptom**: Tool returns error "image file not found"
-- **Cause**: Scenario path incorrect or images not extracted
-- **Fix**: Verify scenario directory structure and run `extract_windows.py`
-
-**Issue 3: Confusion about terrain vs. obstacles**
-- **Symptom**: High-pile rug classified as "rough terrain"
-- **Cause**: Model confusing surface texture with elevation changes
-- **Fix**: Prompt emphasizes terrain = elevation, not texture (already mitigated)
-
-**Issue 4: Ground plane showing as obstacles in old data**
-- **Symptom**: High occupancy_ratio (70-80%) on flat floors
-- **Cause**: Old data didn't filter ground from BEV occupancy
-- **Fix**: Regenerate data with updated extraction (10cm ground filtering now applied)
-- **Note**: Data extracted after Nov 2025 has ground filtering; older data may show inflated metrics
 
 ---
 
-## PerceptionSummaryAgent
+## Data Source Detection (New in v5.1.0)
 
 ### Purpose
 
-Synthesizes per-window perception data into aggregate statistics and overall environment classification.
+Automatically identify whether sensor data is from simulation or real robot.
 
-**Problem it solves**: Converting raw window-level observations into scenario-level insights (environment type, data source classification).
+### How It Works
 
-### Inputs
+The perception tool prompts the model to assess data source from visual cues:
 
-**From Previous Agent:**
-- `{temp:perception_data?}`: Output from PerceptionLoopAgent
+**Simulation Indicators:**
+- Perfect lighting uniformity
+- Unnaturally clean/smooth surfaces
+- Geometric precision in object placement
+- Lack of natural wear/imperfections
+- Consistent shadows (no real-world variation)
 
-**Schema Expected:**
-```json
-{
-  "windows_analyzed": [...],
-  "per_window_perception": [...]
-}
-```
+**Real Data Indicators:**
+- Natural lighting variations
+- Surface imperfections/wear
+- Organic object placement
+- Sensor noise/artifacts
+- Environmental clutter
 
-### Outputs
-
-**Output Key:** `temp:perception_output`
-
-**Schema:**
-```json
-{
-  "windows_analyzed": ["001", "002"],
-  "environment_classification": {
-    "primary_class": "indoor_office",
-    "confidence": 0.95,
-    "evidence": ["consistent office furniture", "indoor lighting patterns"]
-  },
-  "data_source_classification": {
-    "source": "simulation",
-    "confidence": 1.0,
-    "evidence": ["perfect textures", "uniform lighting", "lack of sensor noise"]
-  },
-  "per_window_perception": [...]
-}
-```
-
-### Prompting Strategy
-
-**Key Instructions:**
-1. **Read input carefully**: Parse `temp:perception_data?` JSON string
-2. **Classify environment**: Determine overall environment class from per-window data
-   - Allowed classes: `indoor_office`, `indoor_corridor`, `indoor`, `outdoor_urban`, `outdoor_natural`, `open_space`
-   - Use majority vote or dominant pattern
-3. **Classify data source**: Determine if simulation vs. real-world
-   - Simulation indicators: Perfect textures, uniform lighting, geometric regularity
-   - Real-world indicators: Natural lighting variation, sensor noise, organic textures
-4. **Preserve raw data**: Pass through `per_window_perception` unchanged
-
-**Why data source classification matters**: 
-- Simulation data may have different characteristics (perfect geometry, no noise)
-- Real-world data requires different expectations for sensor quality
-- Flows through entire pipeline to final report for context
-
-### Model Selection
-
-**Default:** `gemini-2.0-flash-lite`  
-**Recommended Upgrade:** `gemini-2.5-pro`
-
-**Rationale:**
-- Summary involves JSON synthesis (flash-lite capable)
-- **Upgrade to 2.5-pro if**:
-  - Need more sophisticated environment classification logic
-  - Scenario has ambiguous environments (e.g., mixed indoor/outdoor)
-  - Data source classification is critical (e.g., validating simulator fidelity)
-
-**Cost Impact:** flash-lite saves ~70% vs. pro
-
-### Tool Dependencies
-
-**None** - Pure synthesis agent using only LLM reasoning on input data.
-
-### Example Output
+### Output Format
 
 ```json
 {
-  "windows_analyzed": ["001", "002", "003"],
-  "environment_classification": {
-    "primary_class": "indoor_office",
-    "confidence": 0.95,
-    "evidence": [
-      "Consistent office furniture across windows",
-      "Indoor lighting patterns",
-      "Smooth floor surfaces"
+  "data_source": {
+    "type": "simulated",    // or "real"
+    "confidence": 0.95,     // 0.0 to 1.0
+    "indicators": [
+      "Perfect lighting uniformity",
+      "Unnaturally clean surfaces"
     ]
-  },
-  "data_source_classification": {
-    "source": "simulation",
-    "confidence": 1.0,
-    "evidence": [
-      "Perfect texture rendering",
-      "Uniform lighting without natural variation",
-      "Geometric regularity in furniture placement",
-      "Absence of sensor noise"
-    ]
-  },
-  "per_window_perception": [
-    {
-      "window_id": "001",
-      "environment_type": "indoor_office",
-      "lighting_class": "bright",
-      "terrain_roughness_class": "smooth",
-      "obstacle_density": 0.35,
-      "traversability_score": 0.75,
-      "occupancy_ratio": 0.18,
-      "primary_obstacles": ["desk", "chair", "cabinet"],
-      "evidence": "Well-lit office space..."
-    },
-    {
-      "window_id": "002",
-      "environment_type": "indoor_office",
-      "lighting_class": "bright",
-      "terrain_roughness_class": "smooth",
-      "obstacle_density": 0.62,
-      "traversability_score": 0.45,
-      "occupancy_ratio": 0.31,
-      "primary_obstacles": ["sofa", "table"],
-      "evidence": "Dense furniture arrangement..."
-    }
-  ]
+  }
 }
 ```
 
-### Common Issues
+### Emergent Downstream Behavior
 
-**Issue 1: Missing input data**
-- **Symptom**: Returns `{"error": "missing_perception_data"}`
-- **Cause**: PerceptionLoopAgent failed or `output_key` misconfigured
-- **Fix**: Check PerceptionLoopAgent logs and ADK context passing
+**Key Discovery:** Downstream agents (Motion, Collision, Evaluator, Report) naturally incorporate data_source context into their reasoning **without explicit prompting**.
 
-**Issue 2: Inconsistent environment classification**
-- **Symptom**: Primary class doesn't match per-window observations
-- **Cause**: Conflicting environment types across windows
-- **Fix**: Expected behavior - agent should use majority vote or explain conflict in evidence
+Example from executive summary:
+> "The robot successfully operated in a **simulated** indoor office environment..."
 
-**Issue 3: Wrong data source classification**
-- **Symptom**: Simulation classified as real-world (or vice versa)
-- **Cause**: Ambiguous visual indicators
-- **Fix**: Provide more explicit indicators in scenario or accept lower confidence
+This demonstrates LLM reasoning capabilities - agents use available metadata to improve their analysis.
 
 ---
 
-## Integration Example
+## Terrain Classification Guide
 
-```python
-from odd_agents.agents import create_perception_loop_agent, create_perception_summary_agent
-from google.genai import Client
+### terrain_roughness_class
 
-client = Client(api_key=api_key)
-scenario_path = "data/processed/runs/sim_run_test"
+| Class | Elevation Change | Examples |
+|-------|-----------------|----------|
+| `smooth` | <5cm | Flat floors, carpet, tile |
+| `moderate` | 5-15cm | Small bumps, gentle slopes |
+| `rough` | 15-30cm | Stairs, ramps, unpaved |
+| `very_rough` | >30cm | Boulders, steep slopes |
 
-# Create loop agent with tools
-loop_agent = create_perception_loop_agent(
-    scenario_path=scenario_path,
-    genai_client=client,
-    model="gemini-2.5-pro",  # Upgrade for better quality
-    api_key=api_key
-)
+**Important:** Terrain refers to **elevation changes**, not surface texture. A plush carpet on a flat floor is "smooth" terrain.
 
-# Create summary agent
-summary_agent = create_perception_summary_agent(
-    api_key=api_key,
-    model="gemini-2.0-flash-lite"  # flash-lite sufficient for synthesis
-)
+---
 
-# Use in sequential workflow
-from google.adk.agents import SequentialAgent
-workflow = SequentialAgent(
-    name="PerceptionWorkflow",
-    sub_agents=[loop_agent, summary_agent]
-)
+## Agent Output Schema
+
+### Full PerceptionAgent Output
+
+```json
+{
+  "windows_analyzed": ["010", "011"],
+  "per_window_perception": [
+    {
+      "window_id": "010",
+      "environment_type": "indoor_office",
+      "lighting_class": "bright",
+      "terrain_roughness_class": "smooth",
+      "obstacle_density": 0.05,
+      "traversability_score": 0.92,
+      "occupancy_ratio": 0.05,
+      "primary_obstacles": ["desk", "chair"],
+      "evidence": "Well-lit office environment...",
+      "data_source": {
+        "type": "simulated",
+        "confidence": 0.95,
+        "indicators": ["Perfect lighting", "Clean surfaces"]
+      }
+    },
+    {
+      "window_id": "011",
+      "environment_type": "indoor_office",
+      "lighting_class": "bright",
+      "terrain_roughness_class": "smooth",
+      "obstacle_density": 0.08,
+      "traversability_score": 0.90,
+      "occupancy_ratio": 0.08,
+      "primary_obstacles": ["desk", "cabinet"],
+      "evidence": "Office space with sparse furniture...",
+      "data_source": {
+        "type": "simulated",
+        "confidence": 0.92,
+        "indicators": ["Uniform lighting", "Geometric precision"]
+      }
+    }
+  ],
+  "data_source_assessment": {
+    "overall_type": "simulated",
+    "confidence": 0.94,
+    "window_consensus": "all windows identified as simulated"
+  }
+}
 ```
+
+---
+
+## Model Selection
+
+**Current:** `gemini-2.5-flash`
+
+**Why flash (not flash-lite):**
+- Multimodal analysis requires reliable visual reasoning
+- Data source detection benefits from stronger model
+- Artifact saving ensures data reliability
+
+**Alternative:** Use `gemini-2.5-pro` for:
+- Complex scenes with many obstacles
+- Critical applications requiring highest accuracy
+- Low-light or degraded image quality
+
+---
+
+## Common Issues
+
+### Issue 1: High occupancy ratio on flat floors
+- **Symptom**: 70-80% occupancy on flat terrain
+- **Cause**: Old data without ground filtering
+- **Fix**: Regenerate data (10cm ground filtering applied in extraction)
+
+### Issue 2: Terrain confusion
+- **Symptom**: Carpet classified as "rough terrain"
+- **Cause**: Model confusing texture with elevation
+- **Fix**: Prompt clarifies terrain = elevation changes
+
+### Issue 3: Data source detection errors
+- **Symptom**: Real data marked as simulated
+- **Cause**: Very clean real environment
+- **Fix**: Check confidence value; low confidence (<0.7) indicates uncertainty
+
+---
+
+## Version History
+
+| Version | Changes |
+|---------|---------|
+| 7.4.0 | Data source detection, artifact-based output |
+| 7.3.0 | Consolidated agent (loop + summary merged) |
+| 6.0.0 | Type-driven measurements |
+| 5.0.0 | ODD-schema driven analysis |
+
+---
 
 ## Related Documentation
 
-- **[Main Agent Architecture](README.md)**: Overall workflow context
-- **[Model Selection Guide](../MODEL_SELECTION_GUIDE.md)**: Cost optimization strategies
-- **[COD Classifier](COD_CLASSIFIER.md)**: How perception data is used downstream
-- **[Tool Implementation](../../odd_agents/tools/perception.py)**: Source code
+- **[Agent Architecture](README.md)**: Pipeline overview
+- **[Report Agent](REPORT.md)**: How data_source flows to reports
+- **[Architecture Redesign](../ARCHITECTURE_REDESIGN.md)**: Full design rationale
