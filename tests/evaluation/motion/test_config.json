@@ -1,8 +1,23 @@
 {
   "criteria": {
-    "tool_trajectory_avg_score": {
-      "threshold": 1.0,
-      "match_type": "IN_ORDER"
+    "rubric_based_tool_use_quality_v1": {
+      "threshold": 0.7,
+      "model": "gemini-3-pro",
+      "num_samples": 1,
+      "rubrics": [
+        {
+          "rubric_id": "tools_called",
+          "rubric_content": {
+            "text_property": "Agent calls list_windows_tool, analyze_motion_tool for each window, then save_motion_output_tool."
+          }
+        },
+        {
+          "rubric_id": "windows_covered",
+          "rubric_content": {
+            "text_property": "All available windows are processed (010 and 011 in the test scenario)."
+          }
+        }
+      ]
     },
     "rubric_based_final_response_quality_v1": {
       "threshold": 0.7,

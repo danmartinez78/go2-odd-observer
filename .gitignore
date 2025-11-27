@@ -75,6 +75,7 @@ data/examples/**
 *.json
 !tests/evaluation/perception/*.json
 !tests/evaluation/motion/*.json
+!tests/evaluation/odd_spec/*.json
 *.png
 *.csv
 # But allow CSV files in root and tests

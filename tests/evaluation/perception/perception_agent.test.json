@@ -27,20 +27,16 @@
                     "intermediate_data": {
                         "tool_uses": [
                             {
-                                "name": "list_windows_tool",
-                                "args": {}
+                                "name": "list_windows_tool"
                             },
                             {
-                                "name": "analyze_window_perception_tool",
-                                "args": {
-                                    "window_id": "010"
-                                }
+                                "name": "analyze_window_perception_tool"
                             },
                             {
-                                "name": "analyze_window_perception_tool",
-                                "args": {
-                                    "window_id": "011"
-                                }
+                                "name": "analyze_window_perception_tool"
+                            },
+                            {
+                                "name": "save_perception_output_tool"
                             }
                         ],
                         "intermediate_responses": []

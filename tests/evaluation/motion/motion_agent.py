@@ -11,7 +11,9 @@ from odd_agents.agents.motion import create_motion_agent
 
 load_dotenv()
 
-scenario_path = Path("data/test/sim/sim_test_w010_w011")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+scenario_path = PROJECT_ROOT / "data" / "test" / "sim_test_w010_w011"
+
 api_key = os.getenv("GOOGLE_API_KEY")
 
 if not api_key:

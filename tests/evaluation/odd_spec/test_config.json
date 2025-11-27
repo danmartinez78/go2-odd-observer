@@ -1,0 +1,29 @@
+{
+    "criteria": {
+        "rubric_based_final_response_quality_v1": {
+            "threshold": 0.7,
+            "model": "gemini-3-pro",
+            "num_samples": 1,
+            "rubrics": [
+                {
+                    "rubric_id": "json_structure",
+                    "rubric_content": {
+                        "text_property": "The agent output is valid JSON with required structure: odd_specification object containing categorical_constraints and numeric_constraints. All required nested keys present (environment_type, lighting_conditions, terrain_type for categorical; max_speed_mps, obstacle_density, traversability_score, collision_risk for numeric with in_odd/boundary/out_odd zones)."
+                    }
+                },
+                {
+                    "rubric_id": "categorical_extraction",
+                    "rubric_content": {
+                        "text_property": "Categorical constraints correctly extracted from natural language input. Allowed vs prohibited lists match the input description (e.g., 'indoor' should be in allowed if mentioned, 'outdoor' in prohibited if explicitly excluded)."
+                    }
+                },
+                {
+                    "rubric_id": "numeric_inference",
+                    "rubric_content": {
+                        "text_property": "Numeric constraints appropriately inferred from vague terms in input. Ranges are realistic for robotics domain (e.g., 'slow' → conservative speed limits, 'moderate obstacle density' → appropriate density ranges). Each numeric constraint has three zones: in_odd, boundary, out_odd."
+                    }
+                }
+            ]
+        }
+    }
+}

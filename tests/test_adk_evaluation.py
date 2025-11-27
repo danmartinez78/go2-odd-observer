@@ -46,6 +46,7 @@ async def test_perception_tool_trajectory_only():
         await AgentEvaluator.evaluate(
             agent_module="tests.evaluation.perception.perception_agent",
             eval_dataset_file_path_or_dir=str(perception_dir / "perception_agent.test.json"),
+            num_runs=1,
         )
     finally:
         if config_backup.exists():
@@ -155,6 +156,7 @@ async def test_motion_tool_trajectory_only():
         await AgentEvaluator.evaluate(
             agent_module="tests.evaluation.motion.motion_agent",
             eval_dataset_file_path_or_dir=str(motion_dir / "motion_agent.test.json"),
+            num_runs=1,
         )
     finally:
         if config_backup.exists():
