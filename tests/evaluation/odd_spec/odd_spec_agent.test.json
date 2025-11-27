@@ -1,0 +1,73 @@
+{
+    "eval_set_id": "odd_spec_agent_basic_tests",
+    "name": "ODD Specification Agent Evaluation",
+    "description": "Tests OddSpecAgent's ability to convert natural language ODD descriptions into structured specifications. NO TOOL CALLS - single inference agent.",
+    "eval_cases": [
+        {
+            "eval_id": "odd_spec_indoor_office",
+            "conversation": [
+                {
+                    "invocation_id": "odd-spec-test-001",
+                    "user_content": {
+                        "parts": [
+                            {
+                                "text": "The Unitree Go2 is a quadruped robot designed for indoor office navigation. It operates on smooth, flat floors with adequate lighting (bright or dim). Maximum speed 1.5 m/s. Designed for environments with moderate obstacle density and good traversability. Requires low collision risk conditions. Not designed for: outdoor environments, stairs, rough terrain, or dark areas."
+                            }
+                        ],
+                        "role": "user"
+                    },
+                    "final_response": {
+                        "parts": [
+                            {
+                                "text": "{\"odd_specification\": {\"categorical_constraints\": {}, \"numeric_constraints\": {}}}"
+                            }
+                        ],
+                        "role": "model"
+                    },
+                    "intermediate_data": {
+                        "tool_uses": [],
+                        "intermediate_responses": []
+                    }
+                }
+            ],
+            "session_input": {
+                "app_name": "OddSpecAgentApp",
+                "user_id": "test_user",
+                "state": {}
+            }
+        },
+        {
+            "eval_id": "odd_spec_minimal",
+            "conversation": [
+                {
+                    "invocation_id": "odd-spec-test-002",
+                    "user_content": {
+                        "parts": [
+                            {
+                                "text": "A small robot for indoor use. Moves slowly on flat floors. Needs good lighting."
+                            }
+                        ],
+                        "role": "user"
+                    },
+                    "final_response": {
+                        "parts": [
+                            {
+                                "text": "{\"odd_specification\": {\"categorical_constraints\": {}, \"numeric_constraints\": {}}}"
+                            }
+                        ],
+                        "role": "model"
+                    },
+                    "intermediate_data": {
+                        "tool_uses": [],
+                        "intermediate_responses": []
+                    }
+                }
+            ],
+            "session_input": {
+                "app_name": "OddSpecAgentApp",
+                "user_id": "test_user",
+                "state": {}
+            }
+        }
+    ]
+}

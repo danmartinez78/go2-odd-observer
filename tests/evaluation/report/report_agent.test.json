@@ -1,0 +1,84 @@
+{
+  "eval_set_id": "report_agent_basic",
+  "name": "Report agent basic evaluation",
+  "description": "Ensures report agent calls generate_report_tool and returns structured report",
+  "eval_cases": [
+    {
+      "eval_id": "report_generate",
+      "conversation": [
+        {
+          "invocation_id": "report-001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {"text": "Generate the final compliance report."}
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "{\"compliance\": {\"status\": \"IN_ODD\", \"confidence\": \"HIGH\", \"summary\": \"\"}, \"executive_summary\": \"\", \"key_findings\": {\"perception\": \"\", \"motion\": \"\", \"safety\": \"\", \"temporal_trends\": \"\"}, \"scenario_metadata\": {\"windows_analyzed\": 2, \"environment\": \"indoor\", \"data_quality\": \"complete\", \"data_source\": \"simulated\"}, \"issues\": [], \"recommendations\": []}"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "generate_report_tool"}
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "ReportWorkflowApp",
+        "user_id": "test_user",
+        "state": {
+          "temp:evaluator_output": {
+            "cod_region": {
+              "speed": {"type": "range", "min": 0.4, "max": 0.6},
+              "surface": {"type": "enum", "smooth": 1.0},
+              "stairs": {"type": "bool", "p_0": 1.0, "p_1": 0.0}
+            },
+            "region_metrics": {
+              "region_distance": 0.0,
+              "fraction_outside_per_axis": {"speed": 0.0, "surface": 0.0, "stairs": 0.0},
+              "total_windows": 2,
+              "windows_in_odd": 2,
+              "windows_violated": [],
+              "first_violation_window": null
+            },
+            "compliance_verdict": {
+              "verdict": "IN_ODD",
+              "confidence": 0.92,
+              "rationale": "Speeds within 0-1.5 m/s, smooth indoor surface, no collisions",
+              "critical_axes": [],
+              "temporal_stability": "STABLE"
+            },
+            "key_concerns": []
+          },
+          "temp:perception_output": {
+            "summary": {
+              "environment": "indoor_commercial",
+              "windows_analyzed": 2,
+              "data_source": "simulated"
+            }
+          },
+          "temp:motion_output": {
+            "overall_stats": {
+              "speed_min": 0.4,
+              "speed_max": 0.6,
+              "stability": "stable"
+            }
+          },
+          "temp:collision_output": {
+            "summary": {
+              "collisions_detected": 0,
+              "temporal_trend": "stable"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

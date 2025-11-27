@@ -13,6 +13,19 @@ We evaluate agent quality using ADK's evaluation criteria:
 
 **Key Insight**: Loop agent tests evaluate BOTH orchestration AND inference quality because loop agents call tools which make actual LLM inference calls. When you test a loop agent with rubrics, you're testing the multimodal vision/NLP inference, not just JSON validation.
 
+## 📊 Evaluation Matrix (current suite)
+
+| Agent         | Type        | Configs in CI scope                           | Criteria used                                             | Notes / Data                                                                 |
+|---------------|-------------|-----------------------------------------------|-----------------------------------------------------------|-------------------------------------------------------------------------------|
+| Perception    | Loop agent  | `test_config_rubric_only`, `test_config_comprehensive` | `rubric_based_tool_use_quality_v1`, `rubric_based_final_response_quality_v1`, `hallucinations_v1` (comprehensive) | Scenario: `data/test/sim/sim_test_w010_w011` (camera + BEV)                   |
+| Motion        | Loop agent  | `test_config_rubric_only`, `test_config_comprehensive` | `rubric_based_tool_use_quality_v1`, `rubric_based_final_response_quality_v1`, `hallucinations_v1` (comprehensive) | Scenario: `data/test/sim/sim_test_w010_w011` (IMU)                            |
+| Collision     | Loop agent  | `test_config.json`, `test_config_comprehensive.json` | `rubric_based_tool_use_quality_v1`, `rubric_based_final_response_quality_v1`, `hallucinations_v1` (comprehensive) | Scenario: `data/test/sim/sim_test_w010_w011` (IMU collision)                  |
+| Evaluator     | Tool-based  | `test_config.json`, `test_config_comprehensive.json` | `rubric_based_tool_use_quality_v1`, `rubric_based_final_response_quality_v1`, `hallucinations_v1` (comprehensive) | Fixtures: `tests/evaluation/fixtures/eval_report` (ODD + sensor artifacts)    |
+| Report        | Tool-based  | `test_config.json`, `test_config_comprehensive.json` | `rubric_based_tool_use_quality_v1`, `rubric_based_final_response_quality_v1`, `hallucinations_v1` (comprehensive) | Fixtures: `tests/evaluation/fixtures/eval_report` (state from prior agents)   |
+| ODD Spec      | Single call | `test_config_rubric_only`, `test_config_comprehensive` | `rubric_based_final_response_quality_v1`, `hallucinations_v1` (comprehensive) | Inputs: NL ODD descriptions (no tools)                                        |
+
+Shared defaults: judge model `gemini-3-pro`; agent models `gemini-2.5-pro`; tool_trajectory checks removed in favor of rubric-based tool-use to avoid brittle argument matching.
+
 ---
 
 ## 📂 Directory Structure
@@ -27,17 +40,29 @@ tests/evaluation/
 │   ├── perception_agent.py      # Agent export for ADK
 │   ├── perception_agent.test.json  # EvalSet test cases
 │   ├── test_config.json         # Main config (tool + rubric)
-│   ├── test_config_tool_traj.json
 │   ├── test_config_rubric_only.json
-│   ├── test_config_comprehensive.json
-│   └── test_config_response_only.json
+│   └── test_config_comprehensive.json
+├── collision/                   # Collision agent evaluation (LOOP AGENT)
+│   ├── collision_agent.py
+│   ├── collision_agent.test.json
+│   ├── test_config.json
+│   └── test_config_comprehensive.json
 ├── motion/                      # Motion agent evaluation (LOOP AGENT)
 │   ├── README.md                # Motion-specific docs
 │   ├── motion_agent.py
 │   ├── motion_agent.test.json
 │   ├── test_config.json
-│   ├── test_config_tool_traj.json
 │   ├── test_config_rubric_only.json
+│   └── test_config_comprehensive.json
+├── evaluator/                   # Evaluator agent (COD construction)
+│   ├── evaluator_agent.py
+│   ├── evaluator_agent.test.json
+│   ├── test_config.json
+│   └── test_config_comprehensive.json
+├── report/                      # Report agent (narrative synthesis)
+│   ├── report_agent.py
+│   ├── report_agent.test.json
+│   ├── test_config.json
 │   └── test_config_comprehensive.json
 ├── odd_spec/                    # ODD Spec agent evaluation (NON-LOOP AGENT)
 │   ├── README.md                # Non-loop agent pattern docs
@@ -46,6 +71,8 @@ tests/evaluation/
 │   ├── test_config.json
 │   ├── test_config_rubric_only.json
 │   └── test_config_comprehensive.json
+├── fixtures/                    # Shared fixtures for evaluator/report
+│   └── eval_report/*.json
 ├── toy_examples/                # Reference implementations
 │   ├── README.md
 │   ├── simple_agent.py
@@ -60,12 +87,15 @@ tests/evaluation/
 
 Each agent has **3 test types** with different speed/coverage tradeoffs:
 
-### 1. Tool Trajectory (~20-25s)
-**Purpose**: Fast validation of orchestration logic
+- **Defaults (this repo):**
+  - Scenario: `data/test/sim/sim_test_w010_w011` (2 windows)
+  - Judge model: `gemini-3-pro` for rubric/hallucination criteria
+  - Agent models (evaluation): `gemini-2.5-pro` for tool-calling reliability
 
-**Tests**: Tool calling sequence matches expected pattern
+### 1. Tool Use Rubric (~20-25s)
+**Purpose**: Fast validation of orchestration logic via `rubric_based_tool_use_quality_v1`
 
-**Threshold**: **1.0** (strict - must be exact)
+**Tests**: LLM judge verifies correct tool usage pattern (list → analyze per window → save), all windows covered
 
 **Use Case**: 
 - PR validation (fast feedback)

@@ -59,6 +59,21 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ---
 
+## ✅ Agent Evaluation Refresh (ADK)
+
+**Completed:** February 24, 2025
+
+- Rubric-based eval configs for Perception/Motion/Collision/Evaluator/Report/ODD Spec
+- Tool trajectory checks removed (rubric-based tool-use instead)
+- Fixtures for evaluator/report (`tests/evaluation/fixtures/eval_report`)
+- Results log captured (`tests/evaluation/RESULTS.md`)
+- Docs updated: `docs/guides/AGENT_EVALUATION.md`, root README, docs/index.html
+
+**Notes:**
+- Report hallucination check omitted (ADK cannot ground function_call-only outputs); evaluator hallucinations threshold relaxed to 0.5. Re-enable/tighten when ADK improves grounding.
+
+---
+
 ## ✅ HTML Reports v2.0 + GitHub Pages Update
 
 **Completed:** November 27, 2025

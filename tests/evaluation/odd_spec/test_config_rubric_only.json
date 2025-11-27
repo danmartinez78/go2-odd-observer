@@ -1,0 +1,29 @@
+{
+    "criteria": {
+        "rubric_based_final_response_quality_v1": {
+            "threshold": 0.7,
+            "model": "gemini-3-pro",
+            "num_samples": 1,
+            "rubrics": [
+                {
+                    "rubric_id": "json_structure",
+                    "rubric_content": {
+                        "text_property": "The agent output is valid JSON with required keys: environment_categorical, environment_numeric, environment_boolean, actors_categorical, actors_numeric, actors_boolean, ego_categorical, ego_numeric, ego_boolean."
+                    }
+                },
+                {
+                    "rubric_id": "categorical_extraction",
+                    "rubric_content": {
+                        "text_property": "Categorical constraints correctly extracted from natural language input. Allowed values align with the description; prohibited or out-of-scope values are excluded."
+                    }
+                },
+                {
+                    "rubric_id": "numeric_bounds",
+                    "rubric_content": {
+                        "text_property": "Numeric constraints inferred with realistic min/max ranges for robotics. No legacy zone fields (in_odd/boundary/out_odd); uses min/max only."
+                    }
+                }
+            ]
+        }
+    }
+}

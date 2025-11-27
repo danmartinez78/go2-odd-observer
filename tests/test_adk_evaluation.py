@@ -46,6 +46,7 @@ async def test_perception_tool_trajectory_only():
         await AgentEvaluator.evaluate(
             agent_module="tests.evaluation.perception.perception_agent",
             eval_dataset_file_path_or_dir=str(perception_dir / "perception_agent.test.json"),
+            num_runs=1,
         )
     finally:
         if config_backup.exists():
@@ -155,6 +156,7 @@ async def test_motion_tool_trajectory_only():
         await AgentEvaluator.evaluate(
             agent_module="tests.evaluation.motion.motion_agent",
             eval_dataset_file_path_or_dir=str(motion_dir / "motion_agent.test.json"),
+            num_runs=1,
         )
     finally:
         if config_backup.exists():
@@ -234,6 +236,227 @@ async def test_motion_comprehensive():
 
 
 # =============================================================================
+# COLLISION AGENT EVALUATION TESTS
+# Tests orchestration + collision inference (IMU-based collision detection)
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_collision_rubric_quality():
+    """
+    Collision agent with rubric-based judging (tool use + output quality).
+
+    Runtime: ~70-90s (inference + judging)
+    """
+    import shutil
+    import importlib
+    collision_dir = EVAL_DIR / "collision"
+    config_main = collision_dir / "test_config.json"
+    config_rubric = collision_dir / "test_config.json"
+    config_backup = collision_dir / "test_config_backup.json"
+
+    # Reload module so each test gets a fresh agent + genai client (avoids stale event loops)
+    import tests.evaluation.collision.collision_agent as collision_agent_module
+    importlib.reload(collision_agent_module)
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        if config_rubric != config_main:
+            shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.collision.collision_agent",
+            eval_dataset_file_path_or_dir=str(collision_dir / "collision_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_collision_comprehensive():
+    """
+    Full collision agent evaluation (tool use + output + hallucinations).
+
+    Runtime: ~90-120s (inference + judging)
+    """
+    import shutil
+    import importlib
+    collision_dir = EVAL_DIR / "collision"
+    config_main = collision_dir / "test_config.json"
+    config_comprehensive = collision_dir / "test_config_comprehensive.json"
+    config_backup = collision_dir / "test_config_backup.json"
+
+    # Reload module so each test gets a fresh agent + genai client (avoids stale event loops)
+    import tests.evaluation.collision.collision_agent as collision_agent_module
+    importlib.reload(collision_agent_module)
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.collision.collision_agent",
+            eval_dataset_file_path_or_dir=str(collision_dir / "collision_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+# =============================================================================
+# EVALUATOR AGENT EVALUATION TESTS
+# Tests COD construction + verdict synthesis (uses artifacts/fixtures)
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_evaluator_rubric_quality():
+    """
+    Evaluator agent with rubric-based judging (tool use + output quality).
+
+    Runtime: ~70-90s (inference + judging)
+    """
+    import shutil
+    import importlib
+    evaluator_dir = EVAL_DIR / "evaluator"
+    config_main = evaluator_dir / "test_config.json"
+    config_rubric = evaluator_dir / "test_config.json"
+    config_backup = evaluator_dir / "test_config_backup.json"
+
+    import tests.evaluation.evaluator.evaluator_agent as evaluator_agent_module
+    importlib.reload(evaluator_agent_module)
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        if config_rubric != config_main:
+            shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.evaluator.evaluator_agent",
+            eval_dataset_file_path_or_dir=str(evaluator_dir / "evaluator_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_evaluator_comprehensive():
+    """
+    Full evaluator agent evaluation (tool use + output + hallucinations).
+
+    Runtime: ~90-120s (inference + judging)
+    """
+    import shutil
+    import importlib
+    evaluator_dir = EVAL_DIR / "evaluator"
+    config_main = evaluator_dir / "test_config.json"
+    config_comprehensive = evaluator_dir / "test_config_comprehensive.json"
+    config_backup = evaluator_dir / "test_config_backup.json"
+
+    import tests.evaluation.evaluator.evaluator_agent as evaluator_agent_module
+    importlib.reload(evaluator_agent_module)
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.evaluator.evaluator_agent",
+            eval_dataset_file_path_or_dir=str(evaluator_dir / "evaluator_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+# =============================================================================
+# REPORT AGENT EVALUATION TESTS
+# Tests report synthesis (single tool call, state-fed)
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_report_rubric_quality():
+    """
+    Report agent with rubric-based judging (tool use + output quality).
+
+    Runtime: ~60-80s (inference + judging)
+    """
+    import shutil
+    import importlib
+    report_dir = EVAL_DIR / "report"
+    config_main = report_dir / "test_config.json"
+    config_rubric = report_dir / "test_config.json"
+    config_backup = report_dir / "test_config_backup.json"
+
+    import tests.evaluation.report.report_agent as report_agent_module
+    importlib.reload(report_agent_module)
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        if config_rubric != config_main:
+            shutil.copy(config_rubric, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.report.report_agent",
+            eval_dataset_file_path_or_dir=str(report_dir / "report_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_report_comprehensive():
+    """
+    Full report agent evaluation (tool use + output + hallucinations).
+
+    Runtime: ~80-100s (inference + judging)
+    """
+    import shutil
+    import importlib
+    report_dir = EVAL_DIR / "report"
+    config_main = report_dir / "test_config.json"
+    config_comprehensive = report_dir / "test_config_comprehensive.json"
+    config_backup = report_dir / "test_config_backup.json"
+
+    import tests.evaluation.report.report_agent as report_agent_module
+    importlib.reload(report_agent_module)
+
+    if config_main.exists():
+        shutil.copy(config_main, config_backup)
+        shutil.copy(config_comprehensive, config_main)
+
+    try:
+        await AgentEvaluator.evaluate(
+            agent_module="tests.evaluation.report.report_agent",
+            eval_dataset_file_path_or_dir=str(report_dir / "report_agent.test.json"),
+        )
+    finally:
+        if config_backup.exists():
+            shutil.copy(config_backup, config_main)
+            config_backup.unlink()
+
+
+# =============================================================================
 # ODD SPEC AGENT EVALUATION TESTS
 # Tests single-inference agent (NO TOOLS) - NL text → structured JSON
 # =============================================================================
@@ -302,6 +525,10 @@ async def test_odd_spec_comprehensive():
     config_main = odd_spec_dir / "test_config.json"
     config_comprehensive = odd_spec_dir / "test_config_comprehensive.json"
     config_backup = odd_spec_dir / "test_config_backup.json"
+
+    import importlib
+    import tests.evaluation.odd_spec.odd_spec_agent as odd_spec_agent_module
+    importlib.reload(odd_spec_agent_module)
 
     if config_main.exists():
         shutil.copy(config_main, config_backup)

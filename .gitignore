@@ -73,6 +73,13 @@ data/examples/**
 
 # Processed data files (can be regenerated)
 *.json
+!tests/evaluation/perception/*.json
+!tests/evaluation/motion/*.json
+!tests/evaluation/odd_spec/*.json
+!tests/evaluation/collision/*.json
+!tests/evaluation/evaluator/*.json
+!tests/evaluation/report/*.json
+!tests/evaluation/fixtures/**.json
 *.png
 *.csv
 # But allow CSV files in root and tests

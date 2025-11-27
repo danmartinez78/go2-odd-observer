@@ -1,0 +1,40 @@
+{
+  "eval_set_id": "evaluator_agent_basic",
+  "name": "Evaluator agent basic evaluation",
+  "description": "Ensure evaluator constructs COD and verdict using fixture artifacts",
+  "eval_cases": [
+    {
+      "eval_id": "evaluator_cod_construction",
+      "conversation": [
+        {
+          "invocation_id": "evaluator-001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {"text": "Build COD and give compliance verdict for this scenario."}
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "{\"cod_region\": {}, \"region_metrics\": {}, \"compliance_verdict\": {\"verdict\": \"IN_ODD\", \"confidence\": 0.9, \"rationale\": \"\", \"critical_axes\": [], \"temporal_stability\": \"STABLE\"}, \"key_concerns\": []}"
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {"name": "construct_cod_tool"}
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "EvaluatorWorkflowApp",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

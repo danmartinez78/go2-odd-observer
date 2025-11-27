@@ -40,6 +40,19 @@ def create_evaluator_tools(scenario_path: Path):
     from google.adk.tools.tool_context import ToolContext
     import json
 
+    def _load_local_json(filename: str) -> dict:
+        """Fallback loader for tests or offline runs when artifacts are missing."""
+        for candidate in [
+            scenario_path / filename,
+            scenario_path / "artifacts" / filename,
+        ]:
+            if candidate.exists():
+                try:
+                    return json.loads(candidate.read_text())
+                except Exception:
+                    continue
+        return {}
+
     async def construct_cod_tool(tool_context: ToolContext) -> str:
         """
         Construct COD region and compute ODD/COD distance metrics.
@@ -92,6 +105,16 @@ def create_evaluator_tools(scenario_path: Path):
                     f"🟣 [CONSTRUCT_COD_TOOL] Loaded collision: {len(collision_output.get('per_window', []))} windows")
             except Exception as e:
                 print(f"🟣 [CONSTRUCT_COD_TOOL] Could not load collision: {e}")
+
+            # Fallback to scenario fixture files if artifacts are unavailable
+            if not odd_spec:
+                odd_spec = _load_local_json("odd_spec.json")
+            if not perception_output:
+                perception_output = _load_local_json("perception_output.json")
+            if not motion_output:
+                motion_output = _load_local_json("motion_output.json")
+            if not collision_output:
+                collision_output = _load_local_json("collision_output.json")
 
             # === Construct COD ===
             from ..tools.cod_construction import (

@@ -12,7 +12,7 @@
 [![ROS2 Humble](https://img.shields.io/badge/ROS2-Humble-22314E?style=for-the-badge&logo=ros)](https://docs.ros.org/en/humble/)
 
 [**Quick Start**](#-quick-start) • [**Live Demo**](https://danmartinez78.github.io/go2-odd-observer/) • [**Documentation**](docs/guides/GETTING_STARTED.md) • [**Features**](#-key-features)
-[**Agent Knowledge**](docs/agent_knowledge/README.md)
+[**Agent Knowledge**](docs/agent_knowledge/README.md) • [**Agent Evaluation**](docs/guides/AGENT_EVALUATION.md)
 
 </div>
 
@@ -100,6 +100,15 @@ jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/late
 
 🌐 **Live Examples:** [https://danmartinez78.github.io/go2-odd-observer/](https://danmartinez78.github.io/go2-odd-observer/)  
 📚 **Full Setup Guide:** [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)
+
+---
+
+## ✅ Agent Evaluation (ADK)
+
+- Rubric-based suites for Perception, Motion, Collision, Evaluator, Report, and ODD Spec (see `tests/evaluation`).
+- Latest run log: `tests/evaluation/RESULTS.md`.
+- Quick run (slow, live LLMs): `pytest tests/test_adk_evaluation.py -q`
+- Docs: [docs/guides/AGENT_EVALUATION.md](docs/guides/AGENT_EVALUATION.md)
 
 ---
 
