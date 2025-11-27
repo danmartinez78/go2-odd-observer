@@ -328,13 +328,16 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         confidence = {'HIGH': 0.9, 'MEDIUM': 0.6,
                       'LOW': 0.3}.get(confidence, 0.5)
 
-    # Status styling
+    # Status styling - support both 'BOUNDARY' and 'ODD_BOUNDARY' forms
     status_config = {
         'IN_ODD': {'color': '#28a745', 'icon': '✅', 'label': 'IN ODD'},
-        'ODD_BOUNDARY': {'color': '#ffc107', 'icon': '⚠️', 'label': 'BOUNDARY'},
+        'BOUNDARY': {'color': '#ffc107', 'icon': '⚠️', 'label': 'ODD BOUNDARY'},
+        'ODD_BOUNDARY': {'color': '#ffc107', 'icon': '⚠️', 'label': 'ODD BOUNDARY'},
         'OUT_ODD': {'color': '#dc3545', 'icon': '❌', 'label': 'OUT OF ODD'},
     }
-    status = status_config.get(verdict, status_config['OUT_ODD'])
+    # Default to UNKNOWN styling instead of OUT_ODD to avoid false negatives
+    default_status = {'color': '#6c757d', 'icon': '❓', 'label': 'UNKNOWN'}
+    status = status_config.get(verdict, default_status)
 
     # Discover windows and load images
     windows = discover_windows(scenario_dir, image_scenario_name)
