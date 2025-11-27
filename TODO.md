@@ -152,13 +152,22 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 4. **Timeout Issues** - Long-running multimodal analysis times out
 5. **Memory Issues** - Large image payloads causing OOM
 
-**RCA Needed:**
-- [ ] Add detailed error logging to tool agents (perception.py, motion.py, collision.py)
-- [ ] Log: which window, which file, what exception type, API response status
-- [ ] Capture stack traces on failure
-- [ ] Run 5-10 production scenarios and analyze error patterns
+**Investigation Strategy - Use Agent Tests/Evals:**
 
-**Status:** 🐛 BUG - Needs investigation before fix
+The key insight: **Don't debug via full pipeline runs**. Use isolated agent tests:
+
+| Test Result | Diagnosis |
+|-------------|-----------|
+| Bug appears in isolated agent tests | Tool-level bug (data loading, prompt, model) |
+| Bug ONLY appears in full pipeline | Orchestration issue (rate limiting, concurrency) |
+
+**Tasks (part of Agent Evaluation work):**
+- [ ] Update agent test wrappers to v1.4.5 API
+- [ ] Run isolated perception/motion/collision tests on multiple windows
+- [ ] Add error logging to tool agents for when failures occur
+- [ ] Compare isolated vs pipeline failure rates
+
+**Status:** 🐛 BUG - Investigate via agent tests/evals (see Agent Evaluation section)
 
 ---
 
@@ -1131,6 +1140,11 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 - ✅ Framework structure exists (`odd_agents/evaluation/`, `tests/evaluation/`)
 - ✅ 40 rubrics defined in ADK dict format
 
+**🐛 Bug Investigation Task:** Use agent tests to diagnose sporadic window failures
+- If bug appears in isolated tests → tool-level issue
+- If bug ONLY appears in pipeline → orchestration/rate limiting issue
+- See: [Sporadic Window Analysis Failures](#sporadic-window-analysis-failures---tool-agent-errors)
+
 **ADK Evaluation Criteria to Use:**
 | Criteria | Purpose | Agents |
 |----------|---------|--------|
@@ -1148,6 +1162,7 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 - [ ] Fix Perception agent wrapper + test file
 - [ ] Fix Motion agent wrapper + create test file
 - [ ] Validate both work with `pytest tests/test_adk_evaluation.py -v`
+- [ ] **Add error logging** to tool agents for failure investigation
 
 **Phase 2: Update Rubrics (Align with current schemas)**
 - [ ] Update Perception rubrics (add data_source detection)
@@ -1155,7 +1170,14 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 - [ ] Consolidate COD/Compliance rubrics → Evaluator rubrics
 - [ ] Update Report rubrics (v9.1.0 hybrid schema)
 
-**Phase 3: Cloud Agent Pattern Matching**
+**Phase 3: Run Isolated Agent Tests for Bug RCA**
+- [ ] Run perception tool on 10+ windows individually
+- [ ] Run motion tool on 10+ windows individually  
+- [ ] Run collision tool on 10+ windows individually
+- [ ] Document failure rate: isolated vs pipeline
+- [ ] If failures occur, capture: exception type, API status, file paths
+
+**Phase 4: Cloud Agent Pattern Matching**
 - [ ] Document the pattern from Phase 1-2 examples
 - [ ] Let cloud agents implement remaining agents:
   - [ ] Collision agent wrapper + test file
