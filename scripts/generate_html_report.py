@@ -185,123 +185,156 @@ def discover_windows(scenario_dir: Path, scenario_name: str) -> List[str]:
     return sorted(list(windows))
 
 
-def generate_svg_radar_chart(axes_names: list, axes_values: list, title: str = "ODD Compliance by Axis") -> str:
-    """Generate an inline SVG radar/spider chart for ODD compliance."""
+def generate_svg_radar_chart(axes_names: list, axes_values: list, title: str = "ODD Distance by Axis") -> str:
+    """Generate an inline SVG radar/spider chart for ODD compliance.
+
+    Zero (compliant) is at a small inner ring, not the center.
+    Distance from ODD increases outward - larger = more violation.
+    """
     import math
-    
+
     if not axes_names:
         return '<div class="text-muted text-center p-4">No data available</div>'
-    
-    width = 400
-    height = 350
-    cx, cy = width / 2, 170
-    max_r = 120
-    
+
+    width = 500
+    height = 460
+    cx, cy = width / 2, 220
+
+    # Key dimensions - zero ring is NOT at center, BIGGER chart
+    zero_r = 45       # Inner ring where zero/compliant sits
+    max_r = 160       # Maximum radius for 100% violation
+
     n = len(axes_names)
+    if n == 0:
+        return '<div class="text-muted text-center p-4">No axes data</div>'
+
     angle_step = 2 * math.pi / n
-    
-    # Generate concentric circles (grid)
-    grid_svg = ""
-    for level in [0.25, 0.5, 0.75, 1.0]:
-        r = max_r * level
-        grid_svg += f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>'
-    
-    # Generate axis lines and labels
-    axes_svg = ""
-    labels_svg = ""
-    for i, name in enumerate(axes_names):
-        angle = -math.pi/2 + i * angle_step  # Start from top
+
+    # Generate the STAR/WEB structure first - lines from center to each vertex
+    web_svg = ""
+
+    # Draw web rings at each level connecting vertices (the spider web look)
+    for level in [0.0, 0.33, 0.66, 1.0]:
+        r = zero_r + (max_r - zero_r) * level
+        web_points = []
+        for i in range(n):
+            angle = -math.pi/2 + i * angle_step
+            x = cx + r * math.cos(angle)
+            y = cy + r * math.sin(angle)
+            web_points.append(f"{x},{y}")
+        web_points_str = " ".join(web_points)
+
+        if level == 0.0:
+            # Zero ring - green, filled
+            web_svg += f'<polygon points="{web_points_str}" fill="rgba(40, 167, 69, 0.15)" stroke="#28a745" stroke-width="2"/>'
+        elif level == 1.0:
+            # Outer ring - red
+            web_svg += f'<polygon points="{web_points_str}" fill="none" stroke="#dc3545" stroke-width="1.5" opacity="0.6"/>'
+        else:
+            # Intermediate rings - dashed
+            web_svg += f'<polygon points="{web_points_str}" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>'
+
+    # Draw axis lines from center to each vertex (the star spokes)
+    for i in range(n):
+        angle = -math.pi/2 + i * angle_step
         x_end = cx + max_r * math.cos(angle)
         y_end = cy + max_r * math.sin(angle)
-        
-        # Axis line
-        axes_svg += f'<line x1="{cx}" y1="{cy}" x2="{x_end}" y2="{y_end}" stroke="var(--border-color)" stroke-width="1" opacity="0.7"/>'
-        
-        # Label position (slightly beyond the circle)
-        label_r = max_r + 25
+        web_svg += f'<line x1="{cx}" y1="{cy}" x2="{x_end}" y2="{y_end}" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/>'
+
+    # Generate labels - positioned outside the chart
+    labels_svg = ""
+    for i, name in enumerate(axes_names):
+        angle = -math.pi/2 + i * angle_step
+
+        # Position labels beyond max radius
+        label_r = max_r + 20
         lx = cx + label_r * math.cos(angle)
         ly = cy + label_r * math.sin(angle)
-        
-        # Shorten long names
-        short_name = name.replace('_', ' ').title()
-        if len(short_name) > 12:
-            short_name = short_name[:10] + '..'
-        
-        # Adjust text anchor based on position
-        if angle > -0.1 and angle < 0.1:  # Right
-            anchor = "start"
-        elif angle > math.pi - 0.1 or angle < -math.pi + 0.1:  # Left
-            anchor = "end"
-        else:
+
+        # Clean up axis name
+        short_name = name.replace('_', ' ').replace(
+            'mps2', '').replace('deg', '°')
+        short_name = ' '.join(word.capitalize() for word in short_name.split())
+
+        if len(short_name) > 16:
+            short_name = short_name[:14] + '..'
+
+        # Text anchor based on position
+        angle_deg = math.degrees(angle) % 360
+        if 60 < angle_deg < 120:  # Bottom
             anchor = "middle"
-        
-        labels_svg += f'<text x="{lx}" y="{ly + 4}" text-anchor="{anchor}" font-size="10" fill="var(--text-secondary)">{short_name}</text>'
-    
-    # Generate data polygon - INVERT values (0% violation = full radius, 100% violation = center)
-    # This makes "good" (compliant) show as large area, "bad" (violations) show as small
+            ly += 12
+        elif 120 <= angle_deg <= 240:  # Left side
+            anchor = "end"
+            lx -= 5
+        elif 240 < angle_deg < 300:  # Top
+            anchor = "middle"
+            ly -= 5
+        else:  # Right side
+            anchor = "start"
+            lx += 5
+
+        labels_svg += f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" font-size="10" fill="var(--text-secondary)">{short_name}</text>'
+
+    # Build the data polygon - distance increases outward from zero ring
     points = []
+    dots_svg = ""
+
     for i, value in enumerate(axes_values):
         angle = -math.pi/2 + i * angle_step
-        # Invert: compliant (value=0) -> full radius, violation (value=1) -> zero radius
-        compliance = 1.0 - value  # Convert violation fraction to compliance fraction
-        r = max_r * compliance
+
+        # value is fraction outside (0 = compliant at zero_r, 1 = max violation at max_r)
+        r = zero_r + (max_r - zero_r) * min(value, 1.0)
         x = cx + r * math.cos(angle)
         y = cy + r * math.sin(angle)
         points.append(f"{x},{y}")
-    
+
+        # Dot color based on violation
+        if value > 0:
+            dot_color = "#dc3545"
+            # Label for violations - position it smartly
+            label_r_offset = 15
+            lx = x + label_r_offset * math.cos(angle)
+            ly = y + label_r_offset * math.sin(angle)
+            dots_svg += f'<text x="{lx}" y="{ly + 3}" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc3545">{value:.0%}</text>'
+        else:
+            dot_color = "#28a745"
+
+        dots_svg += f'<circle cx="{x}" cy="{y}" r="5" fill="{dot_color}" stroke="white" stroke-width="2"/>'
+
+    # Draw the data polygon
     polygon_points = " ".join(points)
-    
-    # Determine fill color based on worst violation
     max_violation = max(axes_values) if axes_values else 0
+
     if max_violation == 0:
-        fill_color = "rgba(40, 167, 69, 0.3)"  # Green - all compliant
+        fill_color = "rgba(40, 167, 69, 0.3)"
         stroke_color = "#28a745"
     elif max_violation < 0.5:
-        fill_color = "rgba(255, 193, 7, 0.3)"  # Yellow - some violations
+        fill_color = "rgba(255, 193, 7, 0.3)"
         stroke_color = "#ffc107"
     else:
-        fill_color = "rgba(220, 53, 69, 0.3)"  # Red - major violations
+        fill_color = "rgba(220, 53, 69, 0.3)"
         stroke_color = "#dc3545"
-    
-    data_svg = f'<polygon points="{polygon_points}" fill="{fill_color}" stroke="{stroke_color}" stroke-width="2"/>'
-    
-    # Add dots at each vertex with violation indicator
-    dots_svg = ""
-    for i, (name, value) in enumerate(zip(axes_names, axes_values)):
-        angle = -math.pi/2 + i * angle_step
-        compliance = 1.0 - value
-        r = max_r * compliance
-        x = cx + r * math.cos(angle)
-        y = cy + r * math.sin(angle)
-        
-        # Color dot based on compliance
-        dot_color = "#dc3545" if value > 0 else "#28a745"
-        dots_svg += f'<circle cx="{x}" cy="{y}" r="5" fill="{dot_color}" stroke="white" stroke-width="2"/>'
-        
-        # Add percentage label for violations
-        if value > 0:
-            label_x = x + 8 * math.cos(angle)
-            label_y = y + 8 * math.sin(angle)
-            dots_svg += f'<text x="{label_x}" y="{label_y}" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc3545">{value:.0%}</text>'
-    
-    # Title
-    title_svg = f'<text x="{width/2}" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
-    
-    # Legend
+
+    data_svg = f'<polygon points="{polygon_points}" fill="{fill_color}" stroke="{stroke_color}" stroke-width="2.5"/>'
+
+    # Title - more space from chart
+    title_svg = f'<text x="{width/2}" y="28" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
+
+    # Legend at bottom
+    legend_y = height - 20
     legend_svg = f'''
-        <g transform="translate(20, {height - 40})">
-            <circle cx="8" cy="0" r="4" fill="#28a745"/>
-            <text x="16" y="4" font-size="9" fill="var(--text-secondary)">Compliant</text>
-            <circle cx="80" cy="0" r="4" fill="#dc3545"/>
-            <text x="88" y="4" font-size="9" fill="var(--text-secondary)">Violation</text>
-            <text x="160" y="4" font-size="9" fill="var(--text-muted)">(Larger area = better compliance)</text>
+        <g transform="translate(70, {legend_y})">
+            <circle cx="8" cy="0" r="5" fill="#28a745" stroke="white" stroke-width="1.5"/>
+            <text x="20" y="4" font-size="10" fill="var(--text-secondary)">Compliant (0%)</text>
+            <circle cx="160" cy="0" r="5" fill="#dc3545" stroke="white" stroke-width="1.5"/>
+            <text x="172" y="4" font-size="10" fill="var(--text-secondary)">Violation (outward)</text>
         </g>
     '''
-    
+
     return f'''<svg viewBox="0 0 {width} {height}" class="svg-chart" style="width:100%;max-width:{width}px;height:auto;">
         {title_svg}
-        {grid_svg}
-        {axes_svg}
+        {web_svg}
         {data_svg}
         {dots_svg}
         {labels_svg}
@@ -455,7 +488,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Discover windows and load images
     windows = discover_windows(scenario_dir, image_scenario_name)
-    
+
     # Sample windows evenly across the scenario (max 6 for display)
     MAX_DISPLAY_WINDOWS = 6
     if len(windows) > MAX_DISPLAY_WINDOWS:
@@ -465,7 +498,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         sampled_windows = [windows[i] for i in sampled_indices]
     else:
         sampled_windows = windows
-    
+
     windows_with_images = []
     for window_id in sampled_windows:
         images = find_window_images(
@@ -601,9 +634,18 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     if not critical_axes_html:
         critical_axes_html = "<span class='text-muted'>None</span>"
 
-    # Data source info
+    # Data source info - only display if known (not 'unknown')
     data_source = scenario_meta.get('data_source', 'unknown')
-    data_source_badge = 'bg-info' if data_source == 'simulated' else 'bg-success'
+    data_source_classification = scenario_meta.get('data_source_classification', {})
+    data_source_confidence = data_source_classification.get('confidence', 0)
+    
+    # Build data source display string (only if known)
+    if data_source in ('simulated', 'sim'):
+        data_source_display = f"Simulation ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Simulation"
+    elif data_source == 'real':
+        data_source_display = f"Real Robot ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Real Robot"
+    else:
+        data_source_display = None  # Will omit from display
 
     # Windows violated - handle both list and int
     windows_violated = region_metrics.get('windows_violated', [])
@@ -755,10 +797,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     <div class="container">
         <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <a href="../index.html" class="btn btn-outline-light">← Back to Home</a>
-            <div>
-                <span class="badge {data_source_badge} me-2">{data_source.upper()}</span>
-                <a href="{json_filename}" class="btn btn-outline-light btn-sm" download>📥 Download JSON</a>
-            </div>
+            <a href="{json_filename}" class="btn btn-outline-light btn-sm" download>📥 Download JSON</a>
         </div>
         <div class="row align-items-center">
             <div class="col-md-8">
@@ -967,7 +1006,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                 <p class="mb-0"><small>{analysis_meta.get('analysis_timestamp', 'N/A')[:19] if analysis_meta.get('analysis_timestamp') else 'N/A'}</small></p>
             </div>
             <div class="col-md-4 text-end">
-                <p class="mb-0">Data Source: {data_source}</p>
+                {f'<p class="mb-0">Data Source: {data_source_display}</p>' if data_source_display else ''}
                 <p class="mb-0"><small>Scenario: {scenario_name}</small></p>
             </div>
         </div>
