@@ -398,6 +398,12 @@ def display_summary(result: Dict[str, Any]):
             f"  • Total tokens: {analysis_meta.get('total_tokens_used', 'N/A'):,}")
         print(
             f"  • Estimated cost: ${analysis_meta.get('estimated_cost_usd', 0):.4f} USD")
+        knowledge_refs = analysis_meta.get('knowledge_refs') or result.get(
+            'pipeline_metadata', {}).get('knowledge_refs')
+        if knowledge_refs:
+            print("  • Knowledge references:")
+            for k, v in knowledge_refs.items():
+                print(f"    - {k}: {v}")
 
     print()
     print("=" * 80)
@@ -483,6 +489,26 @@ async def main():
         type=str,
         help="Output directory for results (default: data/archive/analysis_results/manual/<timestamp>)"
     )
+    parser.add_argument(
+        "--use-default-knowledge",
+        action="store_true",
+        help="Seed knowledge manifest (fundamentals + sensors + Go2 profile) into session before run",
+    )
+    parser.add_argument(
+        "--knowledge-manifest",
+        type=str,
+        help="Path to JSON file containing a manifest dict to seed (overrides defaults if provided)",
+    )
+    parser.add_argument(
+        "--knowledge-robot",
+        type=str,
+        help="Override robot profile artifact (e.g., artifact:robot_go2_profile_v1)",
+    )
+    parser.add_argument(
+        "--knowledge-app",
+        type=str,
+        help="Override app profile artifact (optional)",
+    )
     args = parser.parse_args()
 
     # Load environment
@@ -492,6 +518,51 @@ async def main():
         print("❌ GOOGLE_API_KEY not set in environment")
         print("Please create a .env file with: GOOGLE_API_KEY=your-key")
         sys.exit(1)
+
+    # Build knowledge seed (optional)
+    knowledge_seed = None
+    if args.use_default_knowledge or args.knowledge_manifest or args.knowledge_robot or args.knowledge_app:
+        from odd_agents.knowledge import (
+            build_reference_manifest,
+            default_fundamentals_sections,
+            default_sensor_sections,
+            build_memory_seed_entries,
+        )
+
+        if args.knowledge_manifest:
+            try:
+                with open(args.knowledge_manifest) as f:
+                    manifest = json.load(f)
+            except Exception as e:
+                print(f"❌ Failed to load knowledge manifest JSON: {e}")
+                sys.exit(1)
+        else:
+            # Defaults: core fundamentals + sensors + Go2 profile
+            fundamentals_artifact = "artifact:odd_cod_fundamentals_v1"
+            sensors_artifact = "artifact:sensor_interpretation_core_v1"
+            robot_artifact = args.knowledge_robot or "artifact:robot_go2_profile_v1"
+            app_artifact = args.knowledge_app or None
+
+            manifest = build_reference_manifest(
+                fundamentals_artifact=fundamentals_artifact,
+                sensors_artifact=sensors_artifact,
+                robot_artifact=robot_artifact,
+                app_artifact=app_artifact,
+            )
+
+        fundamentals_sections = default_fundamentals_sections(
+            fundamentals_artifact=manifest.get("fundamentals", "artifact:odd_cod_fundamentals_v1")
+        ) if "fundamentals" in manifest else None
+        sensor_sections = default_sensor_sections(
+            sensors_artifact=manifest.get("sensors", "artifact:sensor_interpretation_core_v1"),
+            sensors_overlay_artifact=manifest.get("sensors_overlay"),
+        ) if "sensors" in manifest else None
+
+        knowledge_seed = build_memory_seed_entries(
+            manifest=manifest,
+            fundamentals_sections=fundamentals_sections,
+            sensor_sections=sensor_sections,
+        )
 
     print("\n" + "=" * 80)
     print("ODD ANALYSIS - MANUAL RUNNER")
@@ -574,6 +645,7 @@ async def main():
             model_odd_spec=MODEL_ODD_SPEC,
             model_evaluator=MODEL_EVALUATOR,
             model_report=MODEL_REPORT,
+            knowledge_seed=knowledge_seed,
         )
 
         if result:

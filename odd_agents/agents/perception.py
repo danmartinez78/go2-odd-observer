@@ -18,10 +18,13 @@ from ..tools.perception import create_perception_tools
 # v7.2.0: Output summary to state, full data to artifact
 # v7.3.0: Strict tool parameters for save tool - per_window, temporal_analysis, summary_insights
 # v7.4.0: Added data_source detection (sim vs real) metadata for downstream agents
-PERCEPTION_AGENT_VERSION = "7.4.0"
+# v7.5.0: Knowledge-grounded sensor interpretation via manifest (shared doc, no prompt duplication)
+PERCEPTION_AGENT_VERSION = "7.5.0"
 
 # Consolidated prompt - save full data to artifact, output summary to state
 PERCEPTION_AGENT_PROMPT = """You are a perception analysis agent. You MUST call tools to analyze windows and save results.
+
+KNOWLEDGE (if available): Use ref:knowledge_manifest → sensors (and overlay if present) for BEV/camera interpretation patterns. Do NOT invent limits; ODD spec artifact remains authoritative for axes.
 
 REQUIRED TOOLS (you MUST call all of these):
 1. list_windows_tool() - get available windows

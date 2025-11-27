@@ -19,6 +19,14 @@ python scripts/run_odd_analysis.py
 
 # Specify scenario directly
 python scripts/run_odd_analysis.py --scenario data/test/sim/sim_test_w010_w011
+
+# Seed default agent knowledge (fundamentals + sensors + Go2 profile)
+python scripts/run_odd_analysis.py --scenario sim_test_w010_w011 --use-default-knowledge
+
+# Provide custom knowledge manifest/profile overrides
+python scripts/run_odd_analysis.py --scenario sim_test_w010_w011 \\
+  --knowledge-manifest path/to/manifest.json \\
+  --knowledge-robot artifact:robot_custom_profile_v1
 ```
 
 **What it does**:
@@ -27,6 +35,7 @@ python scripts/run_odd_analysis.py --scenario data/test/sim/sim_test_w010_w011
 - Runs complete 6-agent ODD workflow
 - Displays executive summary and compliance status
 - Saves results to `data/archive/analysis_results/manual/<timestamp>/<scenario>/`
+ - Records knowledge references in metadata when a manifest is seeded (see `docs/agent_knowledge/`)
 
 **Model Configuration** (Phase 1.4.5):
 ```python

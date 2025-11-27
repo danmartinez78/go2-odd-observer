@@ -13,10 +13,13 @@ from ..tools.odd_spec import create_odd_spec_tools
 # v5.0.0: Added type definitions for range/bool/enum axes
 # v6.0.0: Tool-based construction with strict parameters for COD compatibility
 # v6.1.0: Semantic reasoning guidance for numeric bounds (hazard vs quality vs envelope)
-AGENT_VERSION = "6.1.0"
+# v6.2.0: Knowledge grounding hook via manifest (fundamentals/overlays), ODD spec remains authority
+AGENT_VERSION = "6.2.0"
 
 # Simplified prompt - agent uses tool instead of outputting JSON
 PROMPT_TEMPLATE = """You are an Operational Design Domain (ODD) specification expert.
+
+KNOWLEDGE (if available): Use ref:knowledge_manifest to consult fundamentals (ODD/COD definitions, verdict rules) and any robot/app overlays. Use these ONLY for terminology alignment; derive all constraints from the provided natural language description.
 
 TASK: Convert the provided natural language ODD description into a formal specification by calling the save_odd_spec_tool.
 
@@ -85,23 +88,23 @@ When determining min/max for numeric axes, reason about the SEMANTICS:
 - These measure "bad things" - higher values = more risk
 - The ODD typically specifies an UPPER BOUND (max tolerable)
 - MIN should usually be 0.0 (no hazard is always acceptable)
-- Example: "moderate obstacle density" → min: 0.0, max: 0.5
+- Example: "moderate obstacle density" -> min: 0.0, max: 0.5
 
 **QUALITY axes** (traversability_score, visibility, traction):
 - These measure "good things" - higher values = better
 - The ODD typically specifies a LOWER BOUND (min required)  
 - MAX should usually be 1.0 (perfect quality is always acceptable)
-- Example: "good traversability" → min: 0.5, max: 1.0
+- Example: "good traversability" -> min: 0.5, max: 1.0
 
 **ENVELOPE axes** (speed, acceleration, temperature):
 - These have both meaningful bounds
 - Robot can't exceed physical limits AND shouldn't go too slow/fast
-- Example: "moderate speed" → min: 0.0, max: 1.5
+- Example: "moderate speed" -> min: 0.0, max: 1.5
 
 **ASK YOURSELF**: "If this value is at the extreme, is that acceptable?"
-- obstacle_density = 0.0 (empty room) → Always fine ✓ → min: 0.0
-- traversability = 1.0 (perfect floor) → Always fine ✓ → max: 1.0
-- speed = 0.0 (stationary) → Usually fine ✓ → min: 0.0
+- obstacle_density = 0.0 (empty room) -> Always fine -> min: 0.0
+- traversability = 1.0 (perfect floor) -> Always fine -> max: 1.0
+- speed = 0.0 (stationary) -> Usually fine -> min: 0.0
 
 ## TYPICAL VALUE RANGES
 

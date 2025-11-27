@@ -29,6 +29,11 @@ This document outlines a fundamental redesign of the ODD compliance evaluation s
 - Tested: Ground robots + drones (generalization validated)
 - Production validated: 2-window and 10-window tests passing
 
+**Agent Knowledge (v1.0.0):**
+- Shared reference artifacts under `docs/agent_knowledge/` (core fundamentals, core sensor interpretation, platform/app profiles).
+- Injected via `ref:knowledge_manifest` when seeded; artifacts remain the authority for ODD schema/limits.
+- Knowledge artifact IDs are recorded in run metadata for traceability.
+
 **⏳ REMAINING (Future Phases):**
 - Severity-based assessment (currently binary IN_ODD/OUT_ODD)
 - Full cross-window temporal analysis visualization
