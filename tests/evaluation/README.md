@@ -27,16 +27,13 @@ tests/evaluation/
 │   ├── perception_agent.py      # Agent export for ADK
 │   ├── perception_agent.test.json  # EvalSet test cases
 │   ├── test_config.json         # Main config (tool + rubric)
-│   ├── test_config_tool_traj.json
 │   ├── test_config_rubric_only.json
-│   ├── test_config_comprehensive.json
-│   └── test_config_response_only.json
+│   └── test_config_comprehensive.json
 ├── motion/                      # Motion agent evaluation (LOOP AGENT)
 │   ├── README.md                # Motion-specific docs
 │   ├── motion_agent.py
 │   ├── motion_agent.test.json
 │   ├── test_config.json
-│   ├── test_config_tool_traj.json
 │   ├── test_config_rubric_only.json
 │   └── test_config_comprehensive.json
 ├── odd_spec/                    # ODD Spec agent evaluation (NON-LOOP AGENT)
@@ -65,12 +62,10 @@ Each agent has **3 test types** with different speed/coverage tradeoffs:
   - Judge model: `gemini-3-pro` for rubric/hallucination criteria
   - Agent models (evaluation): `gemini-2.5-pro` for tool-calling reliability
 
-### 1. Tool Trajectory (~20-25s)
-**Purpose**: Fast validation of orchestration logic
+### 1. Tool Use Rubric (~20-25s)
+**Purpose**: Fast validation of orchestration logic via `rubric_based_tool_use_quality_v1`
 
-**Tests**: Tool calling sequence matches expected pattern
-
-**Threshold**: **1.0** (strict - must be exact)
+**Tests**: LLM judge verifies correct tool usage pattern (list → analyze per window → save), all windows covered
 
 **Use Case**: 
 - PR validation (fast feedback)
