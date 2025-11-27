@@ -43,6 +43,59 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ---
 
+## 🐛 KNOWN ISSUES
+
+### Token Accounting Bug - Tool API Calls Not Tracked
+
+**Problem:** Perception, Motion, and Collision tools make **direct genai.Client API calls** for multimodal analysis, but these calls are NOT tracked in ADK event metadata.
+
+**Impact:**
+- Reported: PerceptionAgent ~2,664 tokens ($0.003)
+- Actual estimate: ~45,000 tokens per 10 windows (images + prompts)
+- **Total pipeline cost is significantly underreported**
+
+**Root Cause:**
+- `genai_client.models.generate_content()` calls in tools bypass ADK Runner
+- ADK only tracks agent-level invocations, not tool-internal API calls
+- Image token costs (camera + BEV) not captured
+
+**Fix Options:**
+1. Track tool API calls manually (add usage_metadata extraction in tools)
+2. Return token usage from tools and aggregate in workflow
+3. Estimate based on image sizes + prompt lengths
+
+**Status:** 📋 NEEDS FIX - Affects cost reporting accuracy
+
+---
+
+## 📚 GitHub Pages & Documentation
+
+### Update Getting Started Guide
+
+**Status:** 📋 TODO
+
+- [ ] Update `docs/guides/getting_started.html` for Phase 1.4.5 changes
+- [ ] Update API examples with new agent interfaces
+- [ ] Add troubleshooting section
+- [ ] Add cost estimation guidance
+
+### Add More GitHub Pages
+
+**Status:** 📋 TODO
+
+- [ ] **Agent Deep Dive pages** - Individual pages for each agent:
+  - OddSpecAgent: Input/output schemas, prompt design
+  - PerceptionAgent: Multimodal analysis, BEV interpretation
+  - MotionAgent: IMU analysis, motion state classification
+  - CollisionAgent: Safety detection logic
+  - EvaluatorAgent: COD construction, compliance reasoning
+  - ReportAgent: Output schema, executive summary generation
+- [ ] **Architecture Overview** - Visual diagram of pipeline flow
+- [ ] **Data Formats** - Window structure, JSON schemas
+- [ ] **Cost & Performance** - Benchmarks, optimization tips
+
+---
+
 **Recent Completions (Nov 27, 2025)**:
 - ✅ Phase 1.4.5: Artifact Handoff, Categorical Reasoning, Data Source Detection
   - **Artifact-based data handoff**: Sensor agents save to artifacts, Evaluator loads reliably
