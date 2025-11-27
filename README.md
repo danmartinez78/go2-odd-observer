@@ -21,7 +21,7 @@
 
 **Deploying autonomous robots? Need to know if they're operating safely?**
 
-This system uses **7 specialized AI agents** to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically answer:
+This system uses **6 pipeline agents + 4 tool agents** (10 LLM-calling entities) to analyze multi-modal sensor data (camera, LiDAR, IMU) and automatically answer:
 
 ✅ **Is the robot within its design limits?** (Operational Design Domain compliance)  
 ⚠️ **Are conditions approaching safety boundaries?** (Warning detection)  
@@ -104,16 +104,16 @@ jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/late
 
 ## 🤖 How It Works
 
-### 9-Agent Three-Tier Pipeline
+### 6 Pipeline Agents + 4 Tool Agents
 
+**Pipeline Agents** (tracked by ADK):
 ```mermaid
 graph LR
-    A[📝 ODD Spec<br/>Define Limits] --> B[👁️ Perception<br/>Camera+3 BEV]
-    B --> C[🎯 Motion<br/>IMU+Camera]
-    C --> D[⚠️ Collision<br/>Multimodal Detection]
-    D --> E[🏷️ COD<br/>Classify Domain]
-    E --> F[⚖️ Compliance<br/>Check Violations]
-    F --> G[📋 Report<br/>Generate Summary]
+    A[📝 ODD Spec] --> B[👁️ Perception]
+    B --> C[🎯 Motion]
+    C --> D[⚠️ Collision]
+    D --> E[⚖️ Evaluator<br/>COD + Compliance]
+    E --> F[📋 Report]
     
     style A fill:#e3f2fd,stroke:#333,stroke-width:2px,color:#000
     style B fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
@@ -124,25 +124,22 @@ graph LR
     style G fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
 ```
 
-**Phase 1.4.2 Architecture (Current - Nov 2025):**
+**Phase 1.4.5 Architecture (Current - Nov 2025):**
 
-**Three-Tier Intelligence:**
-- **Tool Agents (Tier 1)**: Per-window grounded observations from multimodal sensors
-  - Perception tool: Camera + 3 BEV channels → flexible observations
-  - Motion tool: IMU + camera → motion state with reasoning
-  - Collision tool: Multimodal fusion → binary collision detection
-- **Loop Agents (Tier 2)**: Cross-window temporal pattern recognition
-  - Intelligent ODD filtering (agent decides relevance)
-  - Detect transitions, trends, anomalies across time windows
-- **Summary Agents (Tier 3)**: ODD-aligned structural aggregation
-  - Map observations to ODD dimensions dynamically
-  - Build structured measurements + preserve rich observations
+**Two-Tier Design:**
+- **Pipeline Agents** (6 total): Orchestrated by ADK, tracked in metadata
+  - OddSpecAgent, PerceptionAgent, MotionAgent, CollisionAgent, EvaluatorAgent, ReportAgent
+- **Tool Agents** (4 total): Embedded LLM calls within tools (NOT tracked by ADK)
+  - `perception_tool`: Camera + 3 BEV channels → multimodal vision analysis
+  - `motion_tool`: IMU + camera → motion state with reasoning
+  - `collision_tool`: Multimodal fusion → binary collision detection
+  - `cod_construction_tool`: Categorical micro-agent for semantic ODD matching
   
 **Key Features:**
+- **Artifact-Based Handoff**: Reliable inter-agent data transfer via InMemoryArtifactService
 - **ODD-Schema Driven**: Agents adapt to any ODD structure (ground robots, drones, etc.)
-- **Dynamic Dimension Mapping**: COD measurements auto-align with ODD spec
-- **Flexible Observations**: Rich narrative descriptions + quantitative metrics
-- **Intelligent Reasoning**: Camera evidence prioritized, sensor anomalies detected
+- **Categorical Micro-Agent**: Semantic matching ("indoor_commercial" ≈ "office")
+- **Data Source Detection**: Automatic sim vs real identification from visual cues
 
 ### Multi-Modal Sensor Fusion
 

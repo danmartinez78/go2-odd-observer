@@ -2,7 +2,13 @@
 
 ## Overview
 
-The ODD (Operational Design Domain) Observer uses a **6-agent pipeline** to analyze robot sensor data and determine if the robot is operating within its design specifications. Each agent is specialized for a specific analysis task, working together in a sequential workflow.
+The ODD (Operational Design Domain) Observer uses a **6-agent + 4-tool-agent architecture** (10 total LLM-calling entities) to analyze robot sensor data and determine if the robot is operating within its design specifications.
+
+**Architecture:**
+- **6 Pipeline Agents**: Orchestrated by ADK, tracked in metadata
+- **4 Tool Agents**: Embedded LLM calls within tools for multimodal analysis
+
+This two-tier design separates orchestration (pipeline agents) from grounded sensor analysis (tool agents).
 
 **Architecture Update (Phase 1.4.5 - Nov 27, 2025):** 
 - Artifact-based inter-agent communication (InMemoryArtifactService)
@@ -47,16 +53,18 @@ graph TD
 | **EvaluatorAgent** | 5.0.0 | gemini-2.5-pro | COD construction + compliance verdict |
 | **ReportAgent** | 9.1.0 | gemini-2.5-flash | Executive summary + recommendations |
 
-## Tool Versions (v1.4.5)
+## Tool Agents (v1.4.5)
 
-| Tool | Version | Description |
-|------|---------|-------------|
-| **save_odd_spec_tool** | 8.0.0 | Saves typed ODD specification |
-| **analyze_window_perception_tool** | 5.1.0 | Per-window multimodal perception + data source |
-| **analyze_window_motion_tool** | 5.0.0 | Per-window IMU motion analysis |
-| **analyze_window_collision_tool** | 5.0.0 | Per-window collision detection |
-| **construct_cod_tool** | 1.1.0 | Builds COD with categorical micro-agent |
-| **generate_report_tool** | 9.1.0 | Generates hybrid report |
+**Important:** These tools contain embedded LLM agents that make direct `genai.Client.generate_content()` calls. They are NOT tracked by ADK metadata, which is why reported token counts are underestimated.
+
+| Tool | Version | Makes LLM Calls? | Model | Description |
+|------|---------|------------------|-------|-------------|
+| **save_odd_spec_tool** | 8.0.0 | ❌ No | - | Saves typed ODD specification |
+| **analyze_window_perception_tool** | 5.1.0 | ✅ **Yes** | gemini-2.5-flash | Per-window multimodal vision analysis |
+| **analyze_window_motion_tool** | 5.0.0 | ✅ **Yes** | gemini-2.5-flash | Per-window IMU + camera motion analysis |
+| **analyze_window_collision_tool** | 5.0.0 | ✅ **Yes** | gemini-2.5-flash | Per-window multimodal collision detection |
+| **construct_cod_tool** | 1.1.0 | ✅ **Yes** | gemini-2.5-flash | Categorical micro-agent for semantic matching |
+| **generate_report_tool** | 9.1.0 | ❌ No | - | Generates hybrid report |
 
 ## Agent Categories
 
