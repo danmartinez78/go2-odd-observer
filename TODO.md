@@ -8,11 +8,13 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
 **Status**: Phase 1.4.5 Complete, HTML reports v2.0 deployed to GitHub Pages
 
-**Current Focus**: Memory & Knowledge System (reference doc + cross-run knowledge)
+**Current Focus**: Knowledge layer complete; decide next priority (memory consolidation vs. open issues)
 
 ## 🧠 Memory & Knowledge System
 
 **Status:** 🔥 **NEXT UP** - See [docs/MEMORY_KNOWLEDGE_DESIGN.md](docs/MEMORY_KNOWLEDGE_DESIGN.md)
+
+**Note:** In-memory session state (`InMemorySessionService`) is per-process. Cross-run memory is only meaningful with a persistent backend (e.g., `VertexAiMemoryBankService`). Before implementing, evaluate feasibility/cost of Vertex AI Memory Bank and add a toggle to run with/without persistent memory.
 
 **Target Phase:** 2.2 (after production validation + real data testing)
 
@@ -29,40 +31,31 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 | Reference Docs | Static fundamentals | ODD/COD definitions, policies |
 
 **Quick Win (Phase 1.x):**
-- [ ] Create `ODD_COD_FUNDAMENTALS.md` reference doc
-- [ ] Inject into OddSpec + Evaluator prompts (solves terminology issue)
+- [x] Create agent knowledge references under `docs/agent_knowledge/` (core fundamentals, sensor interpretation, robot profile)
+- [x] Inject knowledge manifest into agent prompts (OddSpec/Perception/Motion/Collision/Evaluator/Report) for shared grounding
+- [x] Capture knowledge refs in pipeline metadata; runner flags to seed manifest (`--use-default-knowledge`, custom manifest/profile overrides)
 
 **Full Implementation (Phase 2.2):**
 - [ ] Memory schema: `ref:*`, `global:odd_profile:*`, `case:run:*`
 - [ ] Consolidator tool/agent (updates memory after each run)
 - [ ] Evaluator/Report read memory for cross-scenario context
 - [ ] "This run's COD distance is higher than typical for this ODD"
+- [ ] Decide on persistent memory backend (e.g., VertexAiMemoryBankService) and cost implications; add toggle to disable/enable in dev
 
 ---
 
-## 🔥 HIGH PRIORITY: Reference Doc for Agent Grounding
+## ✅ Knowledge Layer (Agent References)
 
-**Goal:** Create `ODD_COD_FUNDAMENTALS.md` reference doc for consistent agent grounding
+**Goal:** Shared agent knowledge artifacts for consistent grounding
 
-**This is the "quick win" from Memory & Knowledge design** - solves terminology issues without full memory system.
-
-**Motivation:**
-- Terminology confusion (COD = "Current Operating Domain", not "Conditions of Operation Domain")
-- Large prompts with repeated domain knowledge
-- Inconsistent understanding across agents
-
-**Content to Include:**
-- ODD/COD definitions and relationships
-- Verdict criteria (IN_ODD, BOUNDARY, OUT_ODD)  
-- Sensor interpretation guidance (LiDAR BEV, IMU data)
-- Go2 robot specifications and capabilities
-
-**Implementation:**
-1. Create `docs/guides/ODD_COD_FUNDAMENTALS.md`
-2. Add reference to OddSpec + Evaluator prompts
-3. Test terminology consistency in outputs
-
-**Status:** 📋 PLANNED - Quick win before full Memory system
+**Completed:**
+- Agent knowledge docs under `docs/agent_knowledge/`:
+  - Core fundamentals (`core/ODD_COD_FUNDAMENTALS.md`, artifact: `odd_cod_fundamentals_v1`)
+  - Core sensor interpretation (`core/SENSOR_INTERPRETATION.md`, artifact: `sensor_interpretation_core_v1`)
+  - Go2 robot profile (`profiles/ROBOT_GO2_PROFILE.md`, artifact: `robot_go2_profile_v1`)
+- Prompts updated to use `ref:knowledge_manifest` (OddSpec/Perception/Motion/Collision/Evaluator/Report)
+- Workflow records `knowledge_refs`; runner can seed defaults (`--use-default-knowledge`) or custom manifest/profile overrides
+- Seeding helper: `scripts/seed_knowledge_manifest.py`
 
 ---
 
