@@ -185,61 +185,163 @@ def discover_windows(scenario_dir: Path, scenario_name: str) -> List[str]:
     return sorted(list(windows))
 
 
-def generate_plotly_charts(result: Dict[str, Any]) -> Dict[str, str]:
-    """Generate Plotly chart configurations as JSON strings."""
+def generate_svg_bar_chart(axes_names: list, axes_values: list, title: str = "ODD Compliance by Axis") -> str:
+    """Generate an inline SVG bar chart - no external dependencies."""
+    if not axes_names:
+        return '<div class="text-muted text-center p-4">No data available</div>'
+
+    width = 400
+    height = 280
+    margin = {'top': 40, 'right': 20, 'bottom': 100, 'left': 50}
+    chart_width = width - margin['left'] - margin['right']
+    chart_height = height - margin['top'] - margin['bottom']
+
+    n_bars = len(axes_names)
+    bar_width = min(40, chart_width / n_bars * 0.7)
+    bar_gap = (chart_width - bar_width * n_bars) / (n_bars + 1)
+
+    bars_svg = ""
+    labels_svg = ""
+
+    for i, (name, value) in enumerate(zip(axes_names, axes_values)):
+        x = margin['left'] + bar_gap * (i + 1) + bar_width * i
+        bar_height = value * chart_height
+        y = margin['top'] + chart_height - bar_height
+        color = '#dc3545' if value > 0 else '#28a745'
+
+        # Bar
+        bars_svg += f'<rect x="{x}" y="{y}" width="{bar_width}" height="{bar_height}" fill="{color}" rx="2"/>'
+
+        # Value label on bar
+        if value > 0:
+            bars_svg += f'<text x="{x + bar_width/2}" y="{y - 5}" text-anchor="middle" font-size="10" fill="#666">{value:.0%}</text>'
+
+        # X-axis label (rotated)
+        label_x = x + bar_width / 2
+        label_y = margin['top'] + chart_height + 10
+        short_name = name[:12] + '..' if len(name) > 14 else name
+        labels_svg += f'<text x="{label_x}" y="{label_y}" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 {label_x} {label_y})">{short_name}</text>'
+
+    # Y-axis
+    y_axis = f'<line x1="{margin["left"]}" y1="{margin["top"]}" x2="{margin["left"]}" y2="{margin["top"] + chart_height}" stroke="var(--border-color)" stroke-width="1"/>'
+
+    # Y-axis labels
+    y_labels = ""
+    for pct in [0, 0.25, 0.5, 0.75, 1.0]:
+        y_pos = margin['top'] + chart_height * (1 - pct)
+        y_labels += f'<text x="{margin["left"] - 5}" y="{y_pos + 3}" text-anchor="end" font-size="9" fill="var(--text-secondary)">{pct:.0%}</text>'
+        y_labels += f'<line x1="{margin["left"]}" y1="{y_pos}" x2="{margin["left"] + chart_width}" y2="{y_pos}" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/>'
+
+    # 50% threshold line
+    threshold_y = margin['top'] + chart_height * 0.5
+    threshold = f'<line x1="{margin["left"]}" y1="{threshold_y}" x2="{margin["left"] + chart_width}" y2="{threshold_y}" stroke="#ffc107" stroke-width="2" stroke-dasharray="5,3"/>'
+
+    # Title
+    title_svg = f'<text x="{width/2}" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
+
+    return f'''<svg viewBox="0 0 {width} {height}" class="svg-chart" style="width:100%;max-width:{width}px;height:auto;">
+        {title_svg}
+        {y_axis}
+        {y_labels}
+        {threshold}
+        {bars_svg}
+        {labels_svg}
+    </svg>'''
+
+
+def generate_svg_pie_chart(labels: list, values: list, title: str = "Cost Breakdown") -> str:
+    """Generate an inline SVG donut/pie chart - no external dependencies."""
+    if not labels or not values or sum(values) == 0:
+        return '<div class="text-muted text-center p-4">No cost data available</div>'
+
+    import math
+
+    width = 400
+    height = 300
+    cx, cy = width / 2, 140
+    outer_r = 80
+    inner_r = 45  # Donut hole
+
+    colors = ['#667eea', '#764ba2', '#28a745', '#ffc107',
+              '#dc3545', '#17a2b8', '#6c757d', '#fd7e14']
+    total = sum(values)
+
+    paths_svg = ""
+    legend_svg = ""
+    start_angle = -90  # Start from top
+
+    for i, (label, value) in enumerate(zip(labels, values)):
+        if value == 0:
+            continue
+
+        pct = value / total
+        angle = pct * 360
+        end_angle = start_angle + angle
+
+        # Calculate arc
+        large_arc = 1 if angle > 180 else 0
+
+        # Convert to radians
+        start_rad = math.radians(start_angle)
+        end_rad = math.radians(end_angle)
+
+        # Outer arc points
+        x1_o = cx + outer_r * math.cos(start_rad)
+        y1_o = cy + outer_r * math.sin(start_rad)
+        x2_o = cx + outer_r * math.cos(end_rad)
+        y2_o = cy + outer_r * math.sin(end_rad)
+
+        # Inner arc points
+        x1_i = cx + inner_r * math.cos(end_rad)
+        y1_i = cy + inner_r * math.sin(end_rad)
+        x2_i = cx + inner_r * math.cos(start_rad)
+        y2_i = cy + inner_r * math.sin(start_rad)
+
+        color = colors[i % len(colors)]
+
+        # Path for donut segment
+        path = f'M {x1_o} {y1_o} A {outer_r} {outer_r} 0 {large_arc} 1 {x2_o} {y2_o} L {x1_i} {y1_i} A {inner_r} {inner_r} 0 {large_arc} 0 {x2_i} {y2_i} Z'
+        paths_svg += f'<path d="{path}" fill="{color}" stroke="white" stroke-width="2"/>'
+
+        # Legend item
+        legend_y = 250 + (i // 3) * 18
+        legend_x = 30 + (i % 3) * 130
+        short_label = label.replace('Agent', '')[:10]
+        legend_svg += f'<rect x="{legend_x}" y="{legend_y}" width="12" height="12" fill="{color}" rx="2"/>'
+        legend_svg += f'<text x="{legend_x + 16}" y="{legend_y + 10}" font-size="10" fill="var(--text-secondary)">{short_label} ({pct:.0%})</text>'
+
+        start_angle = end_angle
+
+    # Center text
+    center_text = f'<text x="{cx}" y="{cy - 5}" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Total</text>'
+    center_text += f'<text x="{cx}" y="{cy + 12}" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">${total/1000:.3f}</text>'
+
+    # Title
+    title_svg = f'<text x="{width/2}" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
+
+    return f'''<svg viewBox="0 0 {width} {height}" class="svg-chart" style="width:100%;max-width:{width}px;height:auto;">
+        {title_svg}
+        {paths_svg}
+        {center_text}
+        {legend_svg}
+    </svg>'''
+
+
+def generate_charts_data(result: Dict[str, Any]) -> dict:
+    """Generate SVG chart HTML strings."""
     charts = {}
 
-    # COD Region Compliance Chart (categorical vs numeric)
-    cod_region = get_cod_region(result)
+    # COD Region Compliance Bar Chart
     region_metrics = get_region_metrics(result)
+    fractions = region_metrics.get('fraction_outside_per_axis', {})
 
-    if cod_region:
-        # Separate categorical and numeric axes
-        categorical_axes = []
-        numeric_axes = []
-
-        for axis, value in cod_region.items():
-            if isinstance(value, dict):
-                # This is a nested structure (categorical with allowed_values)
-                categorical_axes.append(axis)
-            elif isinstance(value, (int, float)):
-                numeric_axes.append(axis)
-            elif isinstance(value, str):
-                categorical_axes.append(axis)
-
-        # Fraction outside per axis
-        fractions = region_metrics.get('fraction_outside_per_axis', {})
-
+    if fractions:
         axes_names = list(fractions.keys())
         axes_values = [fractions.get(ax, 0) for ax in axes_names]
-        axes_colors = ['#dc3545' if v > 0 else '#28a745' for v in axes_values]
-
-        compliance_chart = {
-            'data': [{
-                'x': axes_names,
-                'y': axes_values,
-                'type': 'bar',
-                'marker': {'color': axes_colors},
-                'name': 'Fraction Outside ODD'
-            }],
-            'layout': {
-                'title': 'ODD Compliance by Axis',
-                'xaxis': {'title': 'ODD Axis', 'tickangle': -45},
-                'yaxis': {'title': 'Fraction Outside', 'range': [0, 1]},
-                'shapes': [{
-                    'type': 'line', 'x0': -0.5, 'x1': len(axes_names)-0.5,
-                    'y0': 0.5, 'y1': 0.5,
-                    'line': {'color': '#ffc107', 'dash': 'dash', 'width': 2}
-                }],
-                'margin': {'b': 120},
-                'height': 320,
-                'autosize': True
-            }
-        }
-        charts['compliance'] = json.dumps(compliance_chart)
+        charts['compliance_svg'] = generate_svg_bar_chart(
+            axes_names, axes_values, "ODD Compliance by Axis")
     else:
-        charts['compliance'] = json.dumps(
-            {'data': [], 'layout': {'title': 'No COD Data'}})
+        charts['compliance_svg'] = '<div class="text-muted text-center p-4">No compliance data available</div>'
 
     # Agent Cost Breakdown Pie Chart
     analysis_meta = result.get('analysis_metadata', {})
@@ -247,64 +349,12 @@ def generate_plotly_charts(result: Dict[str, Any]) -> Dict[str, str]:
 
     if cost_per_agent:
         agent_names = list(cost_per_agent.keys())
-        # Convert to millicents
+        # Convert to millicents for display
         agent_costs = [cost_per_agent[a] * 1000 for a in agent_names]
-
-        cost_chart = {
-            'data': [{
-                'labels': agent_names,
-                'values': agent_costs,
-                'type': 'pie',
-                'hole': 0.4,
-                'textinfo': 'label+percent',
-                'marker': {
-                    'colors': ['#667eea', '#764ba2', '#28a745', '#ffc107', '#dc3545', '#17a2b8']
-                }
-            }],
-            'layout': {
-                'title': 'Cost Breakdown by Agent (millicents)',
-                'showlegend': True,
-                'legend': {'orientation': 'h', 'y': -0.1},
-                'height': 320,
-                'autosize': True
-            }
-        }
-        charts['cost'] = json.dumps(cost_chart)
+        charts['cost_svg'] = generate_svg_pie_chart(
+            agent_names, agent_costs, "Cost Breakdown by Agent")
     else:
-        charts['cost'] = json.dumps(
-            {'data': [], 'layout': {'title': 'No Cost Data'}})
-
-    # Temporal Stability Gauge (if available)
-    compliance = get_compliance_verdict(result)
-    stability = compliance.get('temporal_stability', 'UNKNOWN')
-    stability_value = {'STABLE': 1.0, 'MIXED': 0.5,
-                       'DEGRADING': 0.25, 'UNKNOWN': 0}.get(stability, 0)
-
-    stability_chart = {
-        'data': [{
-            'type': 'indicator',
-            'mode': 'gauge+number+delta',
-            'value': stability_value * 100,
-            'title': {'text': f'Temporal Stability: {stability}'},
-            'gauge': {
-                'axis': {'range': [0, 100]},
-                'bar': {'color': '#667eea'},
-                'steps': [
-                    {'range': [0, 25], 'color': '#dc3545'},
-                    {'range': [25, 50], 'color': '#ffc107'},
-                    {'range': [50, 75], 'color': '#28a745'},
-                    {'range': [75, 100], 'color': '#17a2b8'}
-                ],
-                'threshold': {
-                    'line': {'color': 'black', 'width': 4},
-                    'thickness': 0.75,
-                    'value': stability_value * 100
-                }
-            }
-        }],
-        'layout': {'height': 300}
-    }
-    charts['stability'] = json.dumps(stability_chart)
+        charts['cost_svg'] = '<div class="text-muted text-center p-4">No cost data available</div>'
 
     return charts
 
@@ -352,8 +402,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         if images:
             windows_with_images.append({'id': window_id, 'images': images})
 
-    # Generate charts
-    charts = generate_plotly_charts(result)
+    # Generate SVG charts (no external dependencies)
+    charts = generate_charts_data(result)
 
     # Generate timestamp
     timestamp = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
@@ -507,9 +557,6 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Plotly.js -->
-    <script src="https://cdn.plotly.com/plotly-2.27.0.min.js"></script>
     
     <style>
         :root {{
@@ -732,7 +779,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     <div class="row">
         <div class="col-lg-6">
             <div class="chart-container">
-                <div id="compliance-chart"></div>
+                {charts['compliance_svg']}
             </div>
         </div>
         <div class="col-lg-6">
@@ -782,7 +829,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     <div class="row">
         <div class="col-lg-6">
             <div class="chart-container">
-                <div id="cost-chart"></div>
+                {charts['cost_svg']}
             </div>
         </div>
         <div class="col-lg-6">
@@ -870,55 +917,12 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         document.getElementById('theme-icon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
         localStorage.setItem('theme', newTheme);
         
-        // Update Plotly charts for dark mode
-        const layout_update = newTheme === 'dark' ? {{
-            paper_bgcolor: '#25292f',
-            plot_bgcolor: '#25292f',
-            font: {{ color: '#e9ecef' }},
-            xaxis: {{ gridcolor: '#495057' }},
-            yaxis: {{ gridcolor: '#495057' }}
-        }} : {{
-            paper_bgcolor: '#f8f9fa',
-            plot_bgcolor: '#f8f9fa',
-            font: {{ color: '#212529' }},
-            xaxis: {{ gridcolor: '#dee2e6' }},
-            yaxis: {{ gridcolor: '#dee2e6' }}
-        }};
-        
-        if (document.getElementById('compliance-chart').data) {{
-            Plotly.relayout('compliance-chart', layout_update);
-        }}
-        if (document.getElementById('cost-chart').data) {{
-            Plotly.relayout('cost-chart', layout_update);
-        }}
     }}
     
     // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    
-    // Initialize Plotly charts
-    const complianceData = {charts['compliance']};
-    const costData = {charts['cost']};
-    
-    // Apply theme to initial charts
-    const isDark = savedTheme === 'dark';
-    const themeLayout = isDark ? {{
-        paper_bgcolor: '#25292f',
-        plot_bgcolor: '#25292f',
-        font: {{ color: '#e9ecef' }},
-    }} : {{
-        paper_bgcolor: '#f8f9fa',
-        plot_bgcolor: '#f8f9fa',
-        font: {{ color: '#212529' }},
-    }};
-    
-    complianceData.layout = {{ ...complianceData.layout, ...themeLayout }};
-    costData.layout = {{ ...costData.layout, ...themeLayout }};
-    
-    Plotly.newPlot('compliance-chart', complianceData.data, complianceData.layout, {{responsive: true}});
-    Plotly.newPlot('cost-chart', costData.data, costData.layout, {{responsive: true}});
 </script>
 
 </body>

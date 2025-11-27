@@ -8,9 +8,6 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Plotly.js -->
-    <script src="https://cdn.plotly.com/plotly-2.27.0.min.js"></script>
-    
     <style>
         :root {
             --status-color: #ffc107;
@@ -146,7 +143,7 @@
             <div class="col-md-8">
                 <h1 class="display-4">🤖 ODD Analysis Report</h1>
                 <h2 class="h3">Scenario: sim_1_0_chunk_000_009</h2>
-                <p class="lead mb-0">Generated November 27, 2025 at 05:34:57</p>
+                <p class="lead mb-0">Generated November 27, 2025 at 05:39:30</p>
                 <p class="mb-0">
                     <small>Pipeline v2.0.0 | 
                     70,124 tokens | 
@@ -312,7 +309,14 @@
     <div class="row">
         <div class="col-lg-6">
             <div class="chart-container">
-                <div id="compliance-chart"></div>
+                <svg viewBox="0 0 400 280" class="svg-chart" style="width:100%;max-width:400px;height:auto;">
+        <text x="200.0" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">ODD Compliance by Axis</text>
+        <line x1="50" y1="40" x2="50" y2="180" stroke="var(--border-color)" stroke-width="1"/>
+        <text x="45" y="183" text-anchor="end" font-size="9" fill="var(--text-secondary)">0%</text><line x1="50" y1="180" x2="380" y2="180" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/><text x="45" y="148.0" text-anchor="end" font-size="9" fill="var(--text-secondary)">25%</text><line x1="50" y1="145.0" x2="380" y2="145.0" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/><text x="45" y="113.0" text-anchor="end" font-size="9" fill="var(--text-secondary)">50%</text><line x1="50" y1="110.0" x2="380" y2="110.0" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/><text x="45" y="78.0" text-anchor="end" font-size="9" fill="var(--text-secondary)">75%</text><line x1="50" y1="75.0" x2="380" y2="75.0" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/><text x="45" y="43.0" text-anchor="end" font-size="9" fill="var(--text-secondary)">100%</text><line x1="50" y1="40.0" x2="380" y2="40.0" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2,2"/>
+        <line x1="50" y1="110.0" x2="380" y2="110.0" stroke="#ffc107" stroke-width="2" stroke-dasharray="5,3"/>
+        <rect x="61.0" y="152.0" width="28.874999999999996" height="28.0" fill="#dc3545" rx="2"/><text x="75.4375" y="147.0" text-anchor="middle" font-size="10" fill="#666">20%</text><rect x="100.875" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/><rect x="140.75" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/><rect x="180.625" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/><rect x="220.5" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/><rect x="260.375" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/><rect x="300.25" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/><rect x="340.125" y="180.0" width="28.874999999999996" height="0.0" fill="#28a745" rx="2"/>
+        <text x="75.4375" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 75.4375 190)">environment_..</text><text x="115.3125" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 115.3125 190)">lighting_con..</text><text x="155.1875" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 155.1875 190)">terrain_type</text><text x="195.0625" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 195.0625 190)">obstacle_den..</text><text x="234.9375" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 234.9375 190)">traversabili..</text><text x="274.8125" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 274.8125 190)">max_accel_mps2</text><text x="314.6875" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 314.6875 190)">max_roll_deg</text><text x="354.5625" y="190" text-anchor="start" font-size="9" fill="var(--text-secondary)" transform="rotate(45 354.5625 190)">max_pitch_deg</text>
+    </svg>
             </div>
         </div>
         <div class="col-lg-6">
@@ -402,7 +406,12 @@
     <div class="row">
         <div class="col-lg-6">
             <div class="chart-container">
-                <div id="cost-chart"></div>
+                <svg viewBox="0 0 400 300" class="svg-chart" style="width:100%;max-width:400px;height:auto;">
+        <text x="200.0" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">Cost Breakdown by Agent</text>
+        <path d="M 200.0 60.0 A 80 80 0 0 1 227.7292676233839 64.95942619441963 L 215.59771303815344 97.78967723436105 A 45 45 0 0 0 200.0 95.0 Z" fill="#667eea" stroke="white" stroke-width="2"/><path d="M 227.7292676233839 64.95942619441963 A 80 80 0 0 1 237.06559749413626 69.10471466731599 L 220.84939859045164 100.12140200036524 A 45 45 0 0 0 215.59771303815344 97.78967723436105 Z" fill="#764ba2" stroke="white" stroke-width="2"/><path d="M 237.06559749413626 69.10471466731599 A 80 80 0 0 1 262.85084397329285 90.50483445987079 L 235.35359973497725 112.15896938367732 A 45 45 0 0 0 220.84939859045164 100.12140200036524 Z" fill="#28a745" stroke="white" stroke-width="2"/><path d="M 262.85084397329285 90.50483445987079 A 80 80 0 0 1 279.9838618789107 141.60681017401797 L 244.99092230688728 140.90383072288512 A 45 45 0 0 0 235.35359973497725 112.15896938367732 Z" fill="#ffc107" stroke="white" stroke-width="2"/><path d="M 279.9838618789107 141.60681017401797 A 80 80 0 1 1 127.59269154688661 105.98262675373516 L 159.27088899512373 120.86522754897604 A 45 45 0 1 0 244.99092230688728 140.90383072288512 Z" fill="#dc3545" stroke="white" stroke-width="2"/><path d="M 127.59269154688661 105.98262675373516 A 80 80 0 0 1 199.99999999999997 60.0 L 200.0 95.0 A 45 45 0 0 0 159.27088899512373 120.86522754897604 Z" fill="#17a2b8" stroke="white" stroke-width="2"/>
+        <text x="200.0" y="135" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Total</text><text x="200.0" y="152" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">$0.037</text>
+        <rect x="30" y="250" width="12" height="12" fill="#667eea" rx="2"/><text x="46" y="260" font-size="10" fill="var(--text-secondary)">OddSpec (6%)</text><rect x="160" y="250" width="12" height="12" fill="#764ba2" rx="2"/><text x="176" y="260" font-size="10" fill="var(--text-secondary)">Perception (2%)</text><rect x="290" y="250" width="12" height="12" fill="#28a745" rx="2"/><text x="306" y="260" font-size="10" fill="var(--text-secondary)">Motion (7%)</text><rect x="30" y="268" width="12" height="12" fill="#ffc107" rx="2"/><text x="46" y="278" font-size="10" fill="var(--text-secondary)">Collision (11%)</text><rect x="160" y="268" width="12" height="12" fill="#dc3545" rx="2"/><text x="176" y="278" font-size="10" fill="var(--text-secondary)">Evaluator (57%)</text><rect x="290" y="268" width="12" height="12" fill="#17a2b8" rx="2"/><text x="306" y="278" font-size="10" fill="var(--text-secondary)">Report (18%)</text>
+    </svg>
             </div>
         </div>
         <div class="col-lg-6">
@@ -504,7 +513,7 @@
         <div class="row">
             <div class="col-md-4">
                 <p class="mb-0">Generated by ODD Observer Analysis Pipeline</p>
-                <p class="mb-0"><small>November 27, 2025 at 05:34:57</small></p>
+                <p class="mb-0"><small>November 27, 2025 at 05:39:30</small></p>
             </div>
             <div class="col-md-4 text-center">
                 <p class="mb-0">Pipeline v2.0.0</p>
@@ -532,55 +541,12 @@
         document.getElementById('theme-icon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
         localStorage.setItem('theme', newTheme);
         
-        // Update Plotly charts for dark mode
-        const layout_update = newTheme === 'dark' ? {
-            paper_bgcolor: '#25292f',
-            plot_bgcolor: '#25292f',
-            font: { color: '#e9ecef' },
-            xaxis: { gridcolor: '#495057' },
-            yaxis: { gridcolor: '#495057' }
-        } : {
-            paper_bgcolor: '#f8f9fa',
-            plot_bgcolor: '#f8f9fa',
-            font: { color: '#212529' },
-            xaxis: { gridcolor: '#dee2e6' },
-            yaxis: { gridcolor: '#dee2e6' }
-        };
-        
-        if (document.getElementById('compliance-chart').data) {
-            Plotly.relayout('compliance-chart', layout_update);
-        }
-        if (document.getElementById('cost-chart').data) {
-            Plotly.relayout('cost-chart', layout_update);
-        }
     }
     
     // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    
-    // Initialize Plotly charts
-    const complianceData = {"data": [{"x": ["environment_type", "lighting_conditions", "terrain_type", "obstacle_density", "traversability_score", "max_accel_mps2", "max_roll_deg", "max_pitch_deg"], "y": [0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "type": "bar", "marker": {"color": ["#dc3545", "#28a745", "#28a745", "#28a745", "#28a745", "#28a745", "#28a745", "#28a745"]}, "name": "Fraction Outside ODD"}], "layout": {"title": "ODD Compliance by Axis", "xaxis": {"title": "ODD Axis", "tickangle": -45}, "yaxis": {"title": "Fraction Outside", "range": [0, 1]}, "shapes": [{"type": "line", "x0": -0.5, "x1": 7.5, "y0": 0.5, "y1": 0.5, "line": {"color": "#ffc107", "dash": "dash", "width": 2}}], "margin": {"b": 120}, "height": 320, "autosize": true}};
-    const costData = {"data": [{"labels": ["OddSpecAgent", "PerceptionAgent", "MotionAgent", "CollisionAgent", "EvaluatorAgent", "ReportAgent"], "values": [2.097, 0.757, 2.5, 4.071, 21.095, 6.704], "type": "pie", "hole": 0.4, "textinfo": "label+percent", "marker": {"colors": ["#667eea", "#764ba2", "#28a745", "#ffc107", "#dc3545", "#17a2b8"]}}], "layout": {"title": "Cost Breakdown by Agent (millicents)", "showlegend": true, "legend": {"orientation": "h", "y": -0.1}, "height": 320, "autosize": true}};
-    
-    // Apply theme to initial charts
-    const isDark = savedTheme === 'dark';
-    const themeLayout = isDark ? {
-        paper_bgcolor: '#25292f',
-        plot_bgcolor: '#25292f',
-        font: { color: '#e9ecef' },
-    } : {
-        paper_bgcolor: '#f8f9fa',
-        plot_bgcolor: '#f8f9fa',
-        font: { color: '#212529' },
-    };
-    
-    complianceData.layout = { ...complianceData.layout, ...themeLayout };
-    costData.layout = { ...costData.layout, ...themeLayout };
-    
-    Plotly.newPlot('compliance-chart', complianceData.data, complianceData.layout, {responsive: true});
-    Plotly.newPlot('cost-chart', costData.data, costData.layout, {responsive: true});
 </script>
 
 </body>
