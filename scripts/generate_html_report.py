@@ -231,7 +231,9 @@ def generate_plotly_charts(result: Dict[str, Any]) -> Dict[str, str]:
                     'y0': 0.5, 'y1': 0.5,
                     'line': {'color': '#ffc107', 'dash': 'dash', 'width': 2}
                 }],
-                'margin': {'b': 120}
+                'margin': {'b': 120},
+                'height': 320,
+                'autosize': True
             }
         }
         charts['compliance'] = json.dumps(compliance_chart)
@@ -262,7 +264,9 @@ def generate_plotly_charts(result: Dict[str, Any]) -> Dict[str, str]:
             'layout': {
                 'title': 'Cost Breakdown by Agent (millicents)',
                 'showlegend': True,
-                'legend': {'orientation': 'h', 'y': -0.1}
+                'legend': {'orientation': 'h', 'y': -0.1},
+                'height': 320,
+                'autosize': True
             }
         }
         charts['cost'] = json.dumps(cost_chart)
@@ -579,6 +583,11 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             padding: 1.5rem;
             margin-bottom: 2rem;
             min-height: 350px;
+        }}
+        
+        .chart-container > div {{
+            height: 320px;
+            width: 100%;
         }}
         
         .compliance-table {{
