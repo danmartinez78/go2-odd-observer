@@ -11,6 +11,7 @@ docs/
 ├── reports/                # Individual scenario reports
 │   ├── demo_report.html
 │   └── [more reports...]
+├── agent_knowledge/        # Agent knowledge reference docs (fundamentals, sensors, profiles)
 ├── agents/                 # Agent architecture documentation
 │   ├── README.md           # Overview and workflow
 │   ├── PERCEPTION.md       # Perception agents

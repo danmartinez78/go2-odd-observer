@@ -12,7 +12,7 @@ from google.adk.models.google_llm import Gemini
 from google.adk.tools import FunctionTool
 
 
-REPORT_AGENT_VERSION = "9.1.0"
+REPORT_AGENT_VERSION = "9.2.0"
 
 
 def create_report_tools(scenario_path: Path):
@@ -121,6 +121,8 @@ def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
         tools=tools,
         output_key="temp:report_output",
         instruction="""You synthesize a narrative report from pipeline insights.
+
+KNOWLEDGE (if available): Use ref:knowledge_manifest to consult fundamentals (ODD/COD definitions, verdict criteria) and any robot/app overlays for terminology alignment. Base all findings on artifacts/state provided; do not invent limits.
 
 ## INPUT FROM SESSION STATE
 

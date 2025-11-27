@@ -152,6 +152,7 @@ async def run_odd_workflow(
     model_odd_spec: str = "gemini-2.0-flash-exp",
     model_evaluator: str = "gemini-2.0-flash-exp",
     model_report: str = "gemini-2.0-flash-exp",
+    knowledge_seed: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Run the complete ODD analysis workflow with Phase 1.4.4 architecture.
 
@@ -255,7 +256,8 @@ async def run_odd_workflow(
     user_id = "odd_analysis"
     session = await session_service.create_session(
         app_name="OddWorkflowApp",
-        user_id=user_id
+        user_id=user_id,
+        state=knowledge_seed or {},
     )
 
     events = []
@@ -317,6 +319,41 @@ async def run_odd_workflow(
             scenario_path=scenario_path,
         )
 
+        # Capture knowledge manifest references (if seeded into session memory)
+        knowledge_refs = {}
+        try:
+            session_snapshot = await session_service.get_session(
+                app_name="OddWorkflowApp",
+                user_id=user_id,
+                session_id=session.id,
+            )
+            state = session_snapshot.state if session_snapshot else {}
+
+            def _get_state_value(key: str):
+                if key in state:
+                    return state[key]
+                for prefix in ("user:", "app:", "temp:"):
+                    prefixed = f"{prefix}{key}"
+                    if prefixed in state:
+                        return state[prefixed]
+                return None
+
+            manifest = _get_state_value("ref:knowledge_manifest")
+            fundamentals = _get_state_value("ref:odd_cod_fundamentals")
+            sensors = _get_state_value("ref:sensor_interpretation")
+
+            if manifest:
+                knowledge_refs["manifest"] = manifest
+            if fundamentals:
+                knowledge_refs["fundamentals"] = fundamentals
+            if sensors:
+                knowledge_refs["sensors"] = sensors
+        except Exception as e:
+            print(f"\n⚠️ Could not read knowledge manifest from session: {e}")
+
+        if knowledge_refs:
+            pipeline_metadata["knowledge_refs"] = knowledge_refs
+
         # Compute lightweight analysis metadata for reports
         total_tokens = sum(
             exec_data.get('token_usage', {}).get('total_tokens', 0)
@@ -338,6 +375,8 @@ async def run_odd_workflow(
             'cost_breakdown': cost_data['breakdown'],
             'cost_per_agent': cost_data['per_agent'],
         }
+        if knowledge_refs:
+            analysis_metadata['knowledge_refs'] = knowledge_refs
 
         # Extract evaluator output for full_analysis
         evaluator_output = extract_agent_output(events, "EvaluatorAgent")

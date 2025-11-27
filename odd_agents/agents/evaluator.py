@@ -20,7 +20,8 @@ from google.genai import Client
 # v3.0.0: Load sensor outputs from artifacts instead of state (fixes data handoff)
 # v4.0.0: Tool takes no parameters - loads ODD spec from state automatically
 # v5.0.0: Load ODD spec from artifact (consistent artifact pattern)
-EVALUATOR_AGENT_VERSION = "5.0.0"
+# v5.1.0: Knowledge grounding hook via manifest (fundamentals/overlays), artifacts remain authority
+EVALUATOR_AGENT_VERSION = "5.1.0"
 
 
 def _load_artifact_json(artifact) -> dict:
@@ -208,6 +209,8 @@ def create_evaluator_agent(
         tools=tools,
         output_key="temp:evaluator_output",
         instruction="""You are the ODD Compliance Evaluator. Your job is to construct the COD (Current Operating Domain) and determine compliance.
+
+KNOWLEDGE (if available): Use ref:knowledge_manifest to consult fundamentals (ODD/COD definitions, verdict rules) and any robot/app overlays for terminology alignment. Artifacts (ODD spec + sensor outputs) remain the source of truth for constraints and measurements.
 
 **TERMINOLOGY:**
 - ODD = Operational Design Domain (the safe operating envelope)

@@ -16,7 +16,8 @@ from ..tools.motion import create_motion_tools
 # v7.1.0: Strengthened prompt to ensure save tool is called
 # v7.2.0: Output summary to state, full data to artifact
 # v7.3.0: Strict tool parameters for save tool - per_window, temporal_analysis, summary_insights
-MOTION_AGENT_VERSION = "7.3.0"
+# v7.4.0: Knowledge-grounded sensor interpretation via manifest (shared doc, no prompt duplication)
+MOTION_AGENT_VERSION = "7.4.0"
 
 
 def create_motion_agent(
@@ -36,6 +37,8 @@ def create_motion_agent(
         tools=[list_windows_tool, analyze_motion_tool, save_motion_output],
         output_key="temp:motion_output",
         instruction="""You are a motion analysis agent. You MUST call tools to analyze windows and save results.
+
+KNOWLEDGE (if available): Use ref:knowledge_manifest → sensors (and overlay if present) for IMU/motion interpretation patterns. Do NOT invent limits; ODD spec artifact remains authoritative for axes.
 
 REQUIRED TOOLS (you MUST call all of these):
 1. list_windows_tool() - get available windows
