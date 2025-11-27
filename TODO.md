@@ -8,11 +8,11 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
 **Status**: Phase 1.4.5 Complete, HTML reports v2.0 deployed to GitHub Pages
 
-**Current Focus**: Bug investigation (window failures), then production testing
+**Current Focus**: Memory & Knowledge System (reference doc + cross-run knowledge)
 
 ## 🧠 Memory & Knowledge System
 
-**Status:** 📋 DESIGNED - See [docs/MEMORY_KNOWLEDGE_DESIGN.md](docs/MEMORY_KNOWLEDGE_DESIGN.md)
+**Status:** 🔥 **NEXT UP** - See [docs/MEMORY_KNOWLEDGE_DESIGN.md](docs/MEMORY_KNOWLEDGE_DESIGN.md)
 
 **Target Phase:** 2.2 (after production validation + real data testing)
 
@@ -1129,7 +1129,9 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 
 **Priority:** HIGH - Required for competition
 
-#### Agent Evaluation & Testing 📋 NEEDS UPDATE
+#### Agent Evaluation & Testing 📋 AFTER MEMORY/KNOWLEDGE
+
+**Priority:** After Memory/Knowledge work (agent interfaces may change)
 
 **Current State (as of Nov 27, 2025):**
 - ❌ Agent wrappers use old API (`create_perception_loop_agent` → should be `create_perception_agent`)
