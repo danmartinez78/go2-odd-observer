@@ -48,6 +48,7 @@ from . import utils
 from . import tools
 from . import agents
 from . import report_builder
+from . import pricing
 
 # Re-export commonly used items
 from .utils import (
@@ -67,6 +68,13 @@ from .report_builder import (
     extract_all_agent_outputs,
     build_executive_summary_report,
     build_full_technical_report,
+)
+
+from .pricing import (
+    calculate_cost,
+    calculate_pipeline_cost,
+    get_model_pricing,
+    format_cost_summary,
 )
 
 __all__ = [
@@ -91,4 +99,11 @@ __all__ = [
     "extract_all_agent_outputs",
     "build_executive_summary_report",
     "build_full_technical_report",
+
+    # Pricing exports
+    "pricing",
+    "calculate_cost",
+    "calculate_pipeline_cost",
+    "get_model_pricing",
+    "format_cost_summary",
 ]

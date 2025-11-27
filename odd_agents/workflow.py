@@ -8,8 +8,11 @@ import time
 from pathlib import Path
 from typing import Optional, Dict, Any
 from google.adk.agents import SequentialAgent
-from google.adk.runners import InMemoryRunner
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.adk.artifacts import InMemoryArtifactService
 from google.genai import Client
+import google.genai.types as types
 
 from .utils import extract_json_block
 from .metadata import hash_text, extract_pipeline_metadata, build_agent_registry
@@ -79,13 +82,24 @@ def create_odd_workflow(
 
 
 def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
-    """Extract final report from ReportAgent output."""
+    """Extract final report from ReportAgent output or tool response."""
     for event in events:
-        if event.author == "ReportAgent" and event.content:
+        if event.author == "ReportAgent" and event.content and event.content.parts:
             for part in event.content.parts:
+                # Check for direct text output
                 if part.text:
                     try:
                         return extract_json_block(part.text)
+                    except Exception:
+                        continue
+                # Check for function response (tool return value)
+                if hasattr(part, 'function_response') and part.function_response:
+                    try:
+                        response = part.function_response.response
+                        if isinstance(response, str):
+                            return extract_json_block(response)
+                        elif isinstance(response, dict):
+                            return response
                     except Exception:
                         continue
     return None
@@ -94,7 +108,7 @@ def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
 def extract_agent_output(events: list, agent_name: str) -> Optional[Dict[str, Any]]:
     """Extract output from a specific agent."""
     for event in events:
-        if event.author == agent_name and event.content:
+        if event.author == agent_name and event.content and event.content.parts:
             for part in event.content.parts:
                 if part.text:
                     try:
@@ -222,11 +236,62 @@ async def run_odd_workflow(
         model_evaluator=model_evaluator,
         model_report=model_report,
     )
-    runner = InMemoryRunner(agent=odd_workflow, app_name="OddWorkflowApp")
+
+    # Create services for data handoff between agents
+    session_service = InMemorySessionService()
+    artifact_service = InMemoryArtifactService()
+
+    runner = Runner(
+        agent=odd_workflow,
+        app_name="OddWorkflowApp",
+        session_service=session_service,
+        artifact_service=artifact_service,  # Enable artifact-based data handoff
+    )
 
     # Run workflow and track timing
     pipeline_start = time.time()
-    events = await runner.run_debug(user_query)
+
+    # Create session and run
+    user_id = "odd_analysis"
+    session = await session_service.create_session(
+        app_name="OddWorkflowApp",
+        user_id=user_id
+    )
+
+    events = []
+    tool_calls = []
+    async for event in runner.run_async(
+        user_id=user_id,
+        session_id=session.id,
+        new_message=types.Content(
+            role="user",
+            parts=[types.Part(text=user_query)]
+        )
+    ):
+        events.append(event)
+        # Track tool calls for debugging
+        if event.content and event.content.parts:
+            for part in event.content.parts:
+                if hasattr(part, 'function_call') and part.function_call:
+                    tool_calls.append(
+                        f"{event.author}: {part.function_call.name}")
+
+    # Log tool calls summary
+    print(f"\n📊 Tool calls ({len(tool_calls)} total):")
+    for call in tool_calls:
+        print(f"   • {call}")
+
+    # Check artifacts saved
+    try:
+        artifacts = await artifact_service.list_artifact_keys(
+            app_name="OddWorkflowApp",
+            user_id=user_id,
+            session_id=session.id
+        )
+        print(f"\n📦 Artifacts saved: {artifacts}")
+    except Exception as e:
+        print(f"\n⚠️ Could not list artifacts: {e}")
+
     pipeline_duration = time.time() - pipeline_start
 
     # Extract report
@@ -258,10 +323,10 @@ async def run_odd_workflow(
             for exec_data in pipeline_metadata['agent_executions'].values()
         )
 
-        # Gemini pricing (as of Nov 2024): ~$0.00001/token for flash, ~$0.00003/token for pro
-        # Use weighted average based on model distribution
-        avg_price_per_token = 0.00002  # Conservative estimate
-        estimated_cost = total_tokens * avg_price_per_token
+        # Calculate accurate cost based on model-specific pricing
+        from .pricing import calculate_pipeline_cost
+        cost_data = calculate_pipeline_cost(
+            pipeline_metadata['agent_executions'])
 
         analysis_metadata = {
             'pipeline_version': pipeline_metadata['pipeline_version'],
@@ -269,7 +334,9 @@ async def run_odd_workflow(
             'analysis_duration_seconds': round(pipeline_metadata['pipeline_duration_seconds'], 2),
             'total_agents_executed': len(pipeline_metadata['agent_executions']),
             'total_tokens_used': total_tokens,
-            'estimated_cost_usd': round(estimated_cost, 4),
+            'estimated_cost_usd': cost_data['total_usd'],
+            'cost_breakdown': cost_data['breakdown'],
+            'cost_per_agent': cost_data['per_agent'],
         }
 
         # Extract evaluator output for full_analysis

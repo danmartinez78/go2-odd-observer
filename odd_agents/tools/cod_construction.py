@@ -8,12 +8,276 @@ and construct:
 3. Region-level aggregate metrics
 
 Implements distance metrics for range, bool, and enum axis types.
+Uses LLM micro-agent for semantic categorical mismatch assessment.
 """
 
 import json
+import os
+import asyncio
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import math
+
+# Version tracking for COD construction tools
+# 1.1.0: Added categorical micro-agent with gemini-2.5-flash
+COD_TOOL_VERSION = "1.1.0"
+CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
+
+
+def _flatten_odd_spec(odd_spec: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Flatten nested ODD spec structure to flat axis dictionary.
+
+    Input format (from OddSpecAgent):
+    {
+      "odd_specification": {
+        "environment": {
+          "categorical": {"lighting": {"type": "enum", ...}},
+          "numeric": {"speed": {"type": "range", ...}},
+          "boolean": {"stairs": {"type": "bool", ...}}
+        },
+        "actors": {...},
+        "ego": {...}
+      }
+    }
+
+    Output format (for COD construction):
+    {
+      "lighting": {"type": "enum", ...},
+      "speed": {"type": "range", ...},
+      "stairs": {"type": "bool", ...}
+    }
+    """
+    flat = {}
+
+    # Handle already-flat format (defensive)
+    if "odd_specification" not in odd_spec:
+        # Check if it's already flat (has type fields at top level values)
+        for key, val in odd_spec.items():
+            if isinstance(val, dict) and "type" in val:
+                return odd_spec  # Already flat
+        # Otherwise unknown format, return as-is
+        return odd_spec
+
+    spec = odd_spec["odd_specification"]
+
+    # Iterate over domains (environment, actors, ego, etc.)
+    for domain_name, domain_data in spec.items():
+        if not isinstance(domain_data, dict):
+            continue
+
+        # Iterate over constraint types (categorical, numeric, boolean)
+        for constraint_type, constraints in domain_data.items():
+            if not isinstance(constraints, dict):
+                continue
+
+            # Add each axis to flat dict
+            for axis_name, axis_spec in constraints.items():
+                if isinstance(axis_spec, dict):
+                    flat[axis_name] = axis_spec
+
+    return flat
+
+
+# =============================================================================
+# CATEGORICAL MISMATCH MICRO-AGENT
+# =============================================================================
+
+def _assess_categorical_mismatches_sync(
+    mismatches: List[Dict[str, Any]],
+    model: str = CATEGORICAL_AGENT_MODEL
+) -> Dict[str, float]:
+    """
+    Synchronous wrapper for categorical mismatch assessment.
+
+    Args:
+        mismatches: List of {axis_name, odd_allowed, measured_labels}
+        model: Which model to use (default: flash for better generalization)
+
+    Returns:
+        Dict mapping axis_name -> semantic distance (0.0, 0.5, or 1.0)
+    """
+    if not mismatches:
+        return {}
+
+    # Run async function in sync context
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # Already in async context, create new loop
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    asyncio.run,
+                    _assess_categorical_mismatches_async(mismatches, model)
+                )
+                return future.result()
+        else:
+            return loop.run_until_complete(
+                _assess_categorical_mismatches_async(mismatches, model)
+            )
+    except RuntimeError:
+        # No event loop, create one
+        return asyncio.run(_assess_categorical_mismatches_async(mismatches, model))
+
+
+async def _assess_categorical_mismatches_async(
+    mismatches: List[Dict[str, Any]],
+    model: str = "gemini-2.5-flash-lite"
+) -> Dict[str, float]:
+    """
+    Use LLM to assess semantic compatibility of categorical mismatches.
+
+    This enables the COD distance computation to understand that
+    "smooth" ≈ "flat" (synonyms) or "indoor_commercial" ⊇ "office" (superset).
+
+    Args:
+        mismatches: List of {axis_name, odd_allowed, measured_labels}
+        model: Which model to use (default: cheapest/fastest)
+
+    Returns:
+        Dict mapping axis_name -> semantic distance (0.0, 0.5, or 1.0)
+    """
+    try:
+        from google import genai
+    except ImportError:
+        # Fallback to exact matching if genai not available
+        return {m['axis_name']: 1.0 for m in mismatches}
+
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        # Fallback to exact matching if no API key
+        return {m['axis_name']: 1.0 for m in mismatches}
+
+    client = genai.Client(api_key=api_key)
+
+    # Build the prompt
+    prompt_parts = [
+        "You are assessing categorical ODD (Operational Design Domain) mismatches.",
+        "For each axis, determine if the measured values are semantically compatible with allowed values.",
+        "",
+        "SCORING RULES (apply in order):",
+        "",
+        "1. SUPERSET/GENERAL (score 0.0): If measured is a BROADER or MORE GENERAL category.",
+        "   - 'smooth' is a property shared by 'smooth_tile', 'smooth_hardwood', 'smooth_concrete'",
+        "   - 'indoor_commercial' contains 'office', 'retail', 'warehouse'",
+        "   - 'indoor' contains 'indoor_commercial', 'indoor_residential'",
+        "   - 'commercial' contains 'warehouse', 'office', 'retail'",
+        "   - 'flooring' contains 'tile', 'hardwood', 'carpet'",
+        "   KEY: If measured is a prefix, qualifier, or parent category of the allowed values → 0.0",
+        "",
+        "2. SUBSET/SPECIFIC (score 0.0): If measured is MORE SPECIFIC than allowed.",
+        "   - 'office' is a type of 'commercial' or 'indoor_commercial' → compatible",
+        "   - 'smooth_tile' is a type of 'smooth' → compatible",
+        "",
+        "3. SYNONYM (score 0.0): Same meaning, different words.",
+        "   - 'smooth' ≈ 'flat' ≈ 'level' ≈ 'even'",
+        "   - 'bright' ≈ 'well-lit' ≈ 'good_lighting'",
+        "",
+        "4. RELATED (score 0.5): Same domain, no hierarchy relationship.",
+        "   - 'warehouse' vs 'retail' (both commercial, but siblings)",
+        "   - 'dim' vs 'moderate' lighting (adjacent levels)",
+        "",
+        "5. INCOMPATIBLE (score 1.0): Fundamentally different.",
+        "   - 'outdoor' vs 'indoor'",
+        "   - 'stairs' vs 'flat'",
+        "",
+        "IMPORTANT: When measured is a general property and allowed values are specific variants",
+        "of that property (e.g., measured='smooth', allowed=['smooth_tile', 'smooth_hardwood']),",
+        "this is COMPATIBLE (score 0.0) because the robot IS on a smooth surface.",
+        "",
+        "MISMATCHES TO ASSESS:",
+        ""
+    ]
+
+    for i, m in enumerate(mismatches, 1):
+        prompt_parts.append(f"{i}. AXIS: {m['axis_name']}")
+        prompt_parts.append(f"   ODD ALLOWED: {m['odd_allowed']}")
+        prompt_parts.append(f"   MEASURED: {m['measured_labels']}")
+        prompt_parts.append("")
+
+    prompt_parts.extend([
+        "Respond with ONLY a JSON object mapping axis names to scores.",
+        "Example: {\"terrain_type\": 0.0, \"environment_type\": 1.0}",
+        "",
+        "JSON response:"
+    ])
+
+    prompt = "\n".join(prompt_parts)
+
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=[prompt]
+        )
+
+        # Log token usage for cost tracking
+        if hasattr(response, 'usage_metadata') and response.usage_metadata:
+            usage = response.usage_metadata
+            print(f"[COD] Categorical micro-agent ({model}): "
+                  f"{usage.prompt_token_count} input + {usage.candidates_token_count} output tokens")
+
+        # Parse response
+        text = response.text.strip()
+        # Handle markdown code blocks
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        result = json.loads(text)
+        return result
+
+    except Exception as e:
+        # Fallback to 1.0 (violation) for all axes on error
+        print(f"[COD] Categorical assessment error: {e}")
+        return {m['axis_name']: 1.0 for m in mismatches}
+
+
+def _collect_categorical_mismatches(
+    cod_region: Dict[str, Any],
+    odd_spec: Dict[str, Any]
+) -> Tuple[List[Dict[str, Any]], Dict[str, List[str]]]:
+    """
+    Identify categorical (enum) axes with mismatches between COD and ODD.
+
+    Returns:
+        mismatches: List of {axis_name, odd_allowed, measured_labels} for LLM assessment
+        exact_matches: Dict of axis_name -> list of matching labels (no LLM needed)
+    """
+    mismatches = []
+    exact_matches = {}
+
+    for axis_name, axis_spec in odd_spec.items():
+        if axis_spec.get("type") != "enum":
+            continue
+
+        if axis_name not in cod_region:
+            continue
+
+        cod_data = cod_region[axis_name]
+        allowed_set = set(axis_spec.get("allowed", []))
+
+        # Get measured labels from COD region
+        measured_labels = [
+            label for label in cod_data.keys()
+            if label != "type" and cod_data[label] > 0
+        ]
+
+        # Separate exact matches from mismatches
+        exact = [l for l in measured_labels if l in allowed_set]
+        mismatched = [l for l in measured_labels if l not in allowed_set]
+
+        if exact:
+            exact_matches[axis_name] = exact
+
+        if mismatched:
+            mismatches.append({
+                "axis_name": axis_name,
+                "odd_allowed": list(allowed_set),
+                "measured_labels": mismatched
+            })
+
+    return mismatches, exact_matches
 
 
 def construct_cod_from_sensor_outputs(
@@ -251,9 +515,21 @@ def _compute_region_metrics(
 ) -> Dict[str, Any]:
     """
     Compute region-level aggregate metrics.
+
+    Uses LLM micro-agent for semantic assessment of categorical mismatches.
     """
+    # Collect categorical mismatches for LLM assessment
+    mismatches, exact_matches = _collect_categorical_mismatches(
+        cod_region, odd_spec)
+
+    # Assess mismatches with LLM (single batched call)
+    categorical_distances = {}
+    if mismatches:
+        categorical_distances = _assess_categorical_mismatches_sync(mismatches)
+
     # Region distance
-    d_region = _region_distance(cod_region, odd_spec, weights)
+    d_region = _region_distance(
+        cod_region, odd_spec, weights, categorical_distances)
 
     # Fraction outside per axis
     fraction_outside = {}
@@ -264,7 +540,8 @@ def _compute_region_metrics(
         f_i = _fraction_outside_axis(
             axis_name,
             cod_region[axis_name],
-            axis_spec
+            axis_spec,
+            categorical_distances.get(axis_name)
         )
         fraction_outside[axis_name] = round(f_i, 4)
 
@@ -278,7 +555,7 @@ def _compute_region_metrics(
     windows_in_odd = total_windows - len(windows_violated)
     first_violation = windows_violated[0] if windows_violated else None
 
-    return {
+    result = {
         "region_distance": round(d_region, 4),
         "fraction_outside_per_axis": fraction_outside,
         "total_windows": total_windows,
@@ -286,6 +563,12 @@ def _compute_region_metrics(
         "windows_violated": windows_violated,
         "first_violation_window": first_violation,
     }
+
+    # Include semantic assessment details for transparency
+    if categorical_distances:
+        result["categorical_semantic_distances"] = categorical_distances
+
+    return result
 
 
 # =============================================================================
@@ -381,13 +664,23 @@ def _margin_to_boundary_point(
 def _region_distance(
     cod_region: Dict[str, Any],
     odd_spec: Dict[str, Any],
-    weights: Dict[str, float]
+    weights: Dict[str, float],
+    categorical_distances: Optional[Dict[str, float]] = None
 ) -> float:
     """
     Compute region distance D_region.
 
     Measures how much of the COD region lies outside ODD.
+
+    Args:
+        cod_region: COD region data
+        odd_spec: ODD specification
+        weights: Per-axis weights
+        categorical_distances: LLM-assessed semantic distances for enum axes
     """
+    if categorical_distances is None:
+        categorical_distances = {}
+
     f_sq_sum = 0.0
 
     for feat, spec in odd_spec.items():
@@ -395,7 +688,12 @@ def _region_distance(
             continue
 
         w = weights.get(feat, 1.0)
-        f_i = _fraction_outside_axis(feat, cod_region[feat], spec)
+        f_i = _fraction_outside_axis(
+            feat,
+            cod_region[feat],
+            spec,
+            categorical_distances.get(feat)
+        )
         f_sq_sum += w * (f_i ** 2)
 
     return math.sqrt(f_sq_sum)
@@ -404,10 +702,18 @@ def _region_distance(
 def _fraction_outside_axis(
     axis_name: str,
     cod_axis_data: Dict[str, Any],
-    odd_axis_spec: Dict[str, Any]
+    odd_axis_spec: Dict[str, Any],
+    semantic_distance: Optional[float] = None
 ) -> float:
     """
     Compute fraction of COD region outside ODD for a single axis.
+
+    Args:
+        axis_name: Name of the axis
+        cod_axis_data: COD region data for this axis
+        odd_axis_spec: ODD specification for this axis
+        semantic_distance: For enum axes, LLM-assessed semantic distance (0.0, 0.5, 1.0)
+                          If None, uses exact string matching
     """
     axis_type = odd_axis_spec["type"]
 
@@ -432,13 +738,23 @@ def _fraction_outside_axis(
 
     elif axis_type == "enum":
         allowed_set = set(odd_axis_spec["allowed"])
-        # Sum probability of disallowed labels
-        f_outside = 0.0
+
+        # Calculate probability-weighted distance
+        total_outside = 0.0
         for label, prob in cod_axis_data.items():
             if label == "type":
                 continue
-            if label not in allowed_set:
-                f_outside += prob
-        return f_outside
+
+            if label in allowed_set:
+                # Exact match - no distance
+                continue
+            else:
+                # Use semantic distance if provided, otherwise 1.0 (full violation)
+                if semantic_distance is not None:
+                    total_outside += prob * semantic_distance
+                else:
+                    total_outside += prob * 1.0
+
+        return total_outside
 
     return 0.0

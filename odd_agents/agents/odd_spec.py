@@ -1,279 +1,151 @@
 """
-ODD specification agent - Version 3.0.0.
-Phase 1.4.1: ODD-schema driven architecture with environment/actors/ego structure.
+ODD specification agent - Version 6.0.0.
+Phase 1.4.4: Tool-based ODD spec construction with strict parameters.
 """
 
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
+from ..tools.odd_spec import create_odd_spec_tools
+
 
 # Agent version tracking
-# Breaking: adds type definitions for range/bool/enum axes
-AGENT_VERSION = "5.0.0"
+# v5.0.0: Added type definitions for range/bool/enum axes
+# v6.0.0: Tool-based construction with strict parameters for COD compatibility
+# v6.1.0: Semantic reasoning guidance for numeric bounds (hazard vs quality vs envelope)
+AGENT_VERSION = "6.1.0"
 
-# Prompt template for hashing
+# Simplified prompt - agent uses tool instead of outputting JSON
 PROMPT_TEMPLATE = """You are an Operational Design Domain (ODD) specification expert.
 
-TASK: Convert the provided natural language ODD description into a formal specification with precise numerical ranges and categorical constraints.
+TASK: Convert the provided natural language ODD description into a formal specification by calling the save_odd_spec_tool.
 
-The user will provide a CONVERSATIONAL description of the robot's operating domain. Your job is to:
-1. Extract ALL operational constraints from the natural language description
-2. Organize constraints into logical domains (environment/actors/ego)
-3. Infer precise numerical limits from vague descriptions
-4. EXCLUDE static robot physical specifications (footprint, dimensions, weight) - these are context only
+CRITICAL: You MUST call save_odd_spec_tool to save the specification. Do NOT output JSON directly.
 
-CRITICAL: DO NOT include the robot's physical dimensions (length, width, height, weight, turning radius) in the ODD specification.
-These are STATIC PROPERTIES of the robot, not operational conditions. They provide context but are not part of the ODD.
+## STEP 1: ANALYZE THE ODD DESCRIPTION
 
-ORGANIZATIONAL STRUCTURE (use as default, but be flexible):
+Extract ALL operational constraints from the natural language description:
+- Environment conditions (lighting, terrain, obstacles, weather)
+- Actor constraints (people, vehicles, proximity rules)
+- Ego constraints (speed, acceleration, stability limits)
 
-The ODD is typically organized into three domains:
+EXCLUDE static robot physical specs (dimensions, weight) - these are context only.
 
-**ENVIRONMENT** - External conditions the robot operates within
-- Examples: lighting, terrain, obstacles, weather, temperature, clutter
-- Things the robot doesn't control but must handle
-- Constraints about the physical operating space
+## STEP 2: CATEGORIZE EACH CONSTRAINT
 
-**ACTORS** - Other entities the robot interacts with
-- Examples: people, vehicles, animals, other robots
-- Proximity constraints, interaction rules
-- Dynamic entities that can move and interact
+For each constraint, determine:
+- **Domain**: environment, actors, or ego
+- **Type**: categorical (enum), numeric (range), or boolean (bool)
 
-**EGO** - The robot's own operational capabilities and limits  
-- Examples: speed, acceleration, battery level, payload capacity
-- OPERATIONAL performance envelope (not physical dimensions)
-- Dynamic constraints that vary during operation
-- DO NOT include static physical specs (size, weight, shape)
+**Categorical (enum)**: Finite set of allowed values
+  Example: lighting_conditions = ["bright", "moderate", "dim"]
 
-FLEXIBILITY: If a constraint doesn't fit these categories, create new sections as needed.
-Examples: temporal constraints (operating hours), safety-specific rules, communication requirements.
-PRIORITIZE capturing ALL constraints - don't force-fit if it loses semantic meaning.
+**Numeric (range)**: Continuous values with min/max bounds
+  Example: max_speed_mps = {min: 0.0, max: 1.5}
 
-METADATA FOR EACH DIMENSION:
-- **description**: What this dimension means (1-2 sentences max)
-- DO NOT include "measurement_guidance" - let downstream agents determine measurement approach
+**Boolean (bool)**: Binary true/false (0 or 1)
+  Example: stairs_present = allowed: 0 (means stairs NOT allowed)
 
-GUIDANCE FOR CONVERTING VAGUE DESCRIPTIONS TO PRECISE LIMITS:
+## STEP 3: CALL THE TOOL
 
-Define ONLY the designed operating envelope - the region the robot is built to operate within.
-Do NOT define boundary or out-of-spec zones (Evaluator agent handles that).
+Call save_odd_spec_tool with 9 parameters (lists for each domain+type combo):
 
-**Speed interpretation:**
-- "slow" → max: 0.5 m/s
-- "moderate" → max: 1.5 m/s  
-- "fast" → max: 2.5 m/s
-- If specific max mentioned, use that value
+save_odd_spec_tool(
+    environment_categorical=[
+        {"name": "lighting_conditions", "allowed": ["bright", "moderate", "dim"], "description": "Ambient light level"},
+        {"name": "terrain_type", "allowed": ["smooth", "slightly_rough"], "description": "Ground surface"}
+    ],
+    environment_numeric=[
+        {"name": "obstacle_density", "min": 0.0, "max": 0.7, "description": "Spatial obstacle density (0-1)"},
+        {"name": "traversability_score", "min": 0.3, "max": 1.0, "description": "Navigation ease (0-1)"}
+    ],
+    environment_boolean=[
+        {"name": "stairs_present", "allowed": 0, "description": "Whether stairs are accessible"}
+    ],
+    actors_categorical=[],
+    actors_numeric=[
+        {"name": "min_proximity_m", "min": 0.3, "max": 10.0, "description": "Min safe distance to actors"}
+    ],
+    actors_boolean=[],
+    ego_categorical=[],
+    ego_numeric=[
+        {"name": "max_speed_mps", "min": 0.0, "max": 1.5, "description": "Max linear velocity"},
+        {"name": "max_accel_mps2", "min": 0.0, "max": 10.0, "description": "Max horizontal acceleration"},
+        {"name": "max_roll_deg", "min": 0.0, "max": 15.0, "description": "Max roll angle"},
+        {"name": "max_pitch_deg", "min": 0.0, "max": 20.0, "description": "Max pitch angle"}
+    ],
+    ego_boolean=[]
+)
 
-**Acceleration interpretation:**
-- "gentle" → max: 2.0 m/s²
-- "moderate" → max: 5.0 m/s²
-- "agile/reactive" → max: 10.0 m/s²
-- If specific max mentioned (e.g., "up to 10 m/s²"), use that value
+## REASONING ABOUT NUMERIC BOUNDS
 
-**Obstacle density:**
-- "sparse/low" → max: 0.4 (normalized 0-1)
-- "moderate" → max: 0.6 (normalized)
-- "moderate to high" → max: 0.7 (normalized)
-- "dense/high" → max: 0.8 (normalized)
+When determining min/max for numeric axes, reason about the SEMANTICS:
 
-**Traversability:**
-- "good/clear" → min: 0.5 (normalized 0-1, higher = easier)
-- "moderate" → min: 0.4 (normalized)
-- "challenging" → min: 0.3 (normalized)
+**HAZARD axes** (obstacle_density, slope_angle, collision_risk):
+- These measure "bad things" - higher values = more risk
+- The ODD typically specifies an UPPER BOUND (max tolerable)
+- MIN should usually be 0.0 (no hazard is always acceptable)
+- Example: "moderate obstacle density" → min: 0.0, max: 0.5
 
-**Lighting:**
-- Categorical: bright, moderate, dim, dark
-- Convert vague descriptions to these levels
+**QUALITY axes** (traversability_score, visibility, traction):
+- These measure "good things" - higher values = better
+- The ODD typically specifies a LOWER BOUND (min required)  
+- MAX should usually be 1.0 (perfect quality is always acceptable)
+- Example: "good traversability" → min: 0.5, max: 1.0
 
-**Environment type:**
-- Categorical: list allowed environment types with specificity
-- Indoor: office, residential, warehouse, hallway, corridor
-- Outdoor: urban, natural, industrial, park
+**ENVELOPE axes** (speed, acceleration, temperature):
+- These have both meaningful bounds
+- Robot can't exceed physical limits AND shouldn't go too slow/fast
+- Example: "moderate speed" → min: 0.0, max: 1.5
 
-**Terrain:**
-- Categorical: smooth, slightly_rough, rough, very_rough
-- Do NOT define prohibited terrain - just list designed terrain
+**ASK YOURSELF**: "If this value is at the extreme, is that acceptable?"
+- obstacle_density = 0.0 (empty room) → Always fine ✓ → min: 0.0
+- traversability = 1.0 (perfect floor) → Always fine ✓ → max: 1.0
+- speed = 0.0 (stationary) → Usually fine ✓ → min: 0.0
 
-CRITICAL: For numeric constraints, define ONLY max/min values for the designed operating envelope.
-DO NOT create boundary or out-of-spec ranges - this is done later by Evaluator.
+## TYPICAL VALUE RANGES
 
-EXPECTED OUTPUT JSON STRUCTURE:
+Use these as reference, adjusted by the natural language description:
 
-Each axis MUST include a "type" field: "range", "bool", or "enum"
-DO NOT include "measurement_guidance" field
+| Axis | Conservative | Moderate | Permissive |
+|------|--------------|----------|------------|
+| max_speed_mps | 0.0-0.5 | 0.0-1.5 | 0.0-3.0 |
+| max_accel_mps2 | 0.0-2.0 | 0.0-5.0 | 0.0-10.0 |
+| obstacle_density | 0.0-0.3 | 0.0-0.5 | 0.0-0.8 |
+| traversability_score | 0.6-1.0 | 0.4-1.0 | 0.2-1.0 |
+| max_roll_deg | 0.0-10.0 | 0.0-20.0 | 0.0-30.0 |
+| max_pitch_deg | 0.0-15.0 | 0.0-25.0 | 0.0-35.0 |
 
-{
-  "odd_specification": {
-    "environment": {
-      "categorical": {
-        "<dimension_name>": {
-          "type": "enum",
-          "allowed": ["value1", "value2"],
-          "description": "What this dimension represents"
-        }
-      },
-      "numeric": {
-        "<dimension_name>": {
-          "type": "range",
-          "min": <value>,
-          "max": <value>,
-          "description": "What this dimension represents"
-        }
-      },
-      "boolean": {
-        "<dimension_name>": {
-          "type": "bool",
-          "allowed": 0 or 1,
-          "description": "What this dimension represents"
-        }
-      }
-    },
-    "actors": {
-      "categorical": { /* same structure with type: "enum" */ },
-      "numeric": { /* same structure with type: "range" */ },
-      "boolean": { /* same structure with type: "bool" */ }
-    },
-    "ego": {
-      "categorical": { /* same structure with type: "enum" */ },
-      "numeric": { /* same structure with type: "range" */ },
-      "boolean": { /* same structure with type: "bool" */ }
-    }
-  }
-}
+## AXIS NAMING CONVENTIONS (use these exact names for COD compatibility)
 
-AXIS TYPES:
-- **range**: Continuous numeric values with min/max bounds (e.g., speed: 0.0-1.5 m/s)
-- **enum**: Categorical values from a finite set (e.g., lighting: ["bright", "dim"])
-- **bool**: Binary true/false conditions (e.g., stairs_present: 0=no, 1=yes)
+Environment categorical: environment_type, lighting_conditions, terrain_type, weather_conditions
+Environment numeric: obstacle_density, traversability_score, temperature_c
+Environment boolean: stairs_present, outdoor_environment
 
-EXAMPLES:
+Actors numeric: min_proximity_m, actor_density
+Actors categorical: actor_types
+Actors boolean: humans_present
 
-Example 1 - Ground robot in indoor spaces:
-{
-  "odd_specification": {
-    "environment": {
-      "categorical": {
-        "lighting_conditions": {
-          "type": "enum",
-          "allowed": ["bright", "moderate", "dim"],
-          "description": "Ambient illumination level in operating space"
-        },
-        "terrain_type": {
-          "type": "enum",
-          "allowed": ["smooth", "slightly_rough"],
-          "description": "Ground surface characteristics and roughness"
-        },
-        "environment_type": {
-          "type": "enum",
-          "allowed": ["indoor_office", "indoor_residential", "indoor_corridor"],
-          "description": "Physical space classification"
-        }
-      },
-      "numeric": {
-        "obstacle_density": {
-          "type": "range",
-          "min": 0.0,
-          "max": 0.7,
-          "description": "Spatial density of obstacles in operating area (normalized 0-1)"
-        },
-        "traversability_score": {
-          "type": "range",
-          "min": 0.3,
-          "max": 1.0,
-          "description": "Ease of navigation through terrain (normalized 0-1, higher=easier)"
-        }
-      },
-      "boolean": {
-        "stairs_present": {
-          "type": "bool",
-          "allowed": 0,
-          "description": "Whether stairs are accessible in the operating area"
-        }
-      }
-    },
-    "ego": {
-      "numeric": {
-        "max_speed_mps": {
-          "type": "range",
-          "min": 0.0,
-          "max": 1.5,
-          "description": "Maximum linear velocity during operation"
-        },
-        "max_accel_mps2": {
-          "type": "range",
-          "min": 0.0,
-          "max": 10.0,
-          "description": "Peak horizontal acceleration capability during motion"
-        }
-      }
-    }
-  }
-}
+Ego numeric: max_speed_mps, max_accel_mps2, max_roll_deg, max_pitch_deg, max_angular_velocity_radps, peak_jerk_mps3
+Ego categorical: motion_state
+Ego boolean: collision_detected
 
-Example 2 - Inspection drone with actors:
-{
-  "odd_specification": {
-    "environment": {
-      "categorical": {
-        "weather_conditions": {
-          "type": "enum",
-          "allowed": ["clear", "light_wind", "overcast"],
-          "description": "Atmospheric conditions during flight"
-        }
-      },
-      "numeric": {
-        "wind_speed_ms": {
-          "type": "range",
-          "min": 0.0,
-          "max": 15.0,
-          "description": "Maximum sustained wind speed"
-        }
-      }
-    },
-    "actors": {
-      "categorical": {
-        "human_presence": {
-          "type": "enum",
-          "allowed": ["none", "sparse"],
-          "description": "Presence and density of people in operating area"
-        }
-      },
-      "numeric": {
-        "min_human_distance_m": {
-          "type": "range",
-          "min": 5.0,
-          "max": 100.0,
-          "description": "Minimum safe separation distance from people"
-        }
-      }
-    },
-    "ego": {
-      "numeric": {
-        "max_altitude_m": {
-          "type": "range",
-          "min": 0.0,
-          "max": 120.0,
-          "description": "Maximum operating altitude above ground level"
-        },
-        "battery_pct": {
-          "type": "range",
-          "min": 20.0,
-          "max": 100.0,
-          "description": "Minimum battery level for operations"
-        }
-      }
-    }
-  }
-}
+## RULES
 
-Return ONLY the JSON. No markdown code fences, no explanations."""
+1. MUST call save_odd_spec_tool - do not output JSON directly
+2. Use empty lists [] for domains/types with no constraints
+3. Use the exact axis names above for COD tool compatibility
+4. After tool call, output a brief summary of axes created"""
 
 
 def create_odd_spec_agent(api_key: str, model: str) -> Agent:
     """Create a new OddSpecAgent instance."""
+    tools = create_odd_spec_tools()
+
     return Agent(
         name="OddSpecAgent",
         model=Gemini(model=model, api_key=api_key),
-        output_key="temp:odd_spec",
+        tools=tools,
+        output_key="temp:odd_spec_summary",
         instruction=PROMPT_TEMPLATE,
     )

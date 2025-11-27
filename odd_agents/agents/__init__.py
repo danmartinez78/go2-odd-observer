@@ -1,6 +1,6 @@
 """
 Agent definitions for ODD analysis pipeline.
-Phase 1.4.4 - Type-driven COD construction with Python tools.
+Phase 1.4.5 - Artifact-based data handoff for reliable sensor → evaluator communication.
 """
 
 from .perception import create_perception_agent, PERCEPTION_AGENT_VERSION
@@ -10,6 +10,9 @@ from .odd_spec import create_odd_spec_agent, AGENT_VERSION as ODD_SPEC_VERSION
 from .evaluator import create_evaluator_agent, EVALUATOR_AGENT_VERSION
 from .report import create_report_agent, REPORT_AGENT_VERSION
 
+# Import tool versions
+from ..tools.cod_construction import COD_TOOL_VERSION, CATEGORICAL_AGENT_MODEL
+
 # Agent versions for metadata tracking
 AGENT_VERSIONS = {
     'OddSpecAgent': ODD_SPEC_VERSION,
@@ -18,10 +21,13 @@ AGENT_VERSIONS = {
     'CollisionAgent': COLLISION_AGENT_VERSION,
     'EvaluatorAgent': EVALUATOR_AGENT_VERSION,
     'ReportAgent': REPORT_AGENT_VERSION,
+    # Tool versions (not ADK agents, but use LLM calls)
+    'CODTool': COD_TOOL_VERSION,
+    'CategoricalMicroAgent': f"1.0.0 ({CATEGORICAL_AGENT_MODEL})",
 }
 
 __all__ = [
-    # Sensor agents (v5.0.0 - per-window typed measurements)
+    # Sensor agents (v7.0.0 - artifact-based output for evaluator)
     "create_perception_agent",
     "create_motion_agent",
     "create_collision_agent",

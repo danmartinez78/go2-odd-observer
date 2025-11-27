@@ -41,7 +41,7 @@ def extract_all_agent_outputs(events: list) -> Dict[str, Any]:
     ]
 
     for event in events:
-        if event.author in agent_names and event.content:
+        if event.author in agent_names and event.content and event.content.parts:
             for part in event.content.parts:
                 if part.text:
                     try:
@@ -64,7 +64,7 @@ def extract_tool_calls(events: list) -> List[Dict[str, Any]]:
 
     for event in events:
         # Check for function call events in ADK format
-        if hasattr(event, 'content') and event.content:
+        if hasattr(event, 'content') and event.content and event.content.parts:
             for part in event.content.parts:
                 if hasattr(part, 'function_call') and part.function_call:
                     tool_calls.append({
@@ -480,25 +480,29 @@ def _build_agent_summary(agent_executions: Dict[str, Any]) -> List[Dict[str, Any
 
 
 def _build_token_summary(agent_executions: Dict[str, Any]) -> Dict[str, Any]:
-    """Build token usage summary."""
+    """Build token usage summary with accurate cost calculation."""
+    from .pricing import calculate_pipeline_cost
+
     total_prompt = 0
     total_completion = 0
     total = 0
 
     for exec_data in agent_executions.values():
         usage = exec_data.get("token_usage", {})
-        total_prompt += usage.get("prompt_tokens", 0)
-        total_completion += usage.get("completion_tokens", 0)
-        total += usage.get("total_tokens", 0)
+        total_prompt += usage.get("prompt_tokens") or 0
+        total_completion += usage.get("completion_tokens") or 0
+        total += usage.get("total_tokens") or 0
 
-    # Cost estimation (conservative)
-    estimated_cost = total * 0.00002
+    # Calculate accurate cost based on model pricing
+    cost_data = calculate_pipeline_cost(agent_executions)
 
     return {
         "prompt_tokens": total_prompt,
         "completion_tokens": total_completion,
         "total_tokens": total,
-        "estimated_cost_usd": round(estimated_cost, 4),
+        "estimated_cost_usd": cost_data["total_usd"],
+        "cost_breakdown": cost_data["breakdown"],
+        "cost_per_agent": cost_data["per_agent"],
     }
 
 

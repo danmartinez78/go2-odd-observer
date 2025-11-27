@@ -55,6 +55,8 @@ def extract_json_block(text: str) -> Dict[str, Any]:
         {"key": "value"}
         ```
 
+    Also handles thinking model output that may have JSON in reasoning.
+
     Args:
         text: Text containing JSON (possibly with markdown)
 
@@ -74,7 +76,44 @@ def extract_json_block(text: str) -> Dict[str, Any]:
             if not line.strip().startswith("```")
         )
 
-    # Find JSON object boundaries
+    # Try to find JSON object by attempting to parse from different starting positions
+    # This handles thinking models that may output reasoning with JSON before the final answer
+    start_positions = []
+    pos = 0
+    while True:
+        pos = cleaned.find("{", pos)
+        if pos == -1:
+            break
+        start_positions.append(pos)
+        pos += 1
+
+    if not start_positions:
+        raise ValueError(f"No JSON object found in response: {text}")
+
+    # Try from each { position, preferring later ones (more likely to be final answer)
+    # Reverse so we try the last { first
+    errors = []
+    for start in reversed(start_positions):
+        # Find matching }
+        end = cleaned.rfind("}")
+        if end <= start:
+            continue
+
+        json_text = cleaned[start:end + 1]
+
+        # Replace Python boolean literals with JSON boolean literals
+        json_text = json_text.replace(": True", ": true")
+        json_text = json_text.replace(": False", ": false")
+        json_text = json_text.replace(":True", ":true")
+        json_text = json_text.replace(":False", ":false")
+
+        try:
+            return json.loads(json_text)
+        except json.JSONDecodeError as e:
+            errors.append(f"Position {start}: {e}")
+            continue
+
+    # If we got here, try the original simple approach as fallback
     start = cleaned.find("{")
     end = cleaned.rfind("}")
 
@@ -82,8 +121,6 @@ def extract_json_block(text: str) -> Dict[str, Any]:
         raise ValueError(f"No JSON object found in response: {text}")
 
     json_text = cleaned[start:end + 1]
-
-    # Replace Python boolean literals with JSON boolean literals
     json_text = json_text.replace(": True", ": true")
     json_text = json_text.replace(": False", ": false")
     json_text = json_text.replace(":True", ":true")

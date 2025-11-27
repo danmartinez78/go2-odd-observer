@@ -6,7 +6,7 @@ Factory functions that create tools with specific configuration.
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 from google.adk.tools import FunctionTool
 from google.genai import types
 from google import genai
@@ -17,7 +17,8 @@ from .common import get_window_file_paths
 
 # Tool agent version
 # v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
-COLLISION_TOOL_AGENT_VERSION = "4.0.0"
+# v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
+COLLISION_TOOL_AGENT_VERSION = "5.0.0"
 
 
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -206,5 +207,64 @@ Be CONCISE. Focus on collision YES/NO with reasoning.""")]
                 "confidence": 0.0,
             }
 
-    # Return FunctionTool wrapper
-    return FunctionTool(func=analyze_collision_tool)
+    async def save_collision_output_tool(
+        per_window: List[Dict[str, Any]],
+        temporal_analysis: Dict[str, Any],
+        summary_insights: List[str],
+        collision_stats: Dict[str, Any],
+        tool_context
+    ) -> Dict[str, Any]:
+        """Save final collision output as artifact for Evaluator to load.
+
+        Args:
+            per_window: List of window results, each with {window_id: str, measurements: dict}
+                        measurements should contain odd_measurements from analyze tool
+            temporal_analysis: Dict with {odd_trends: str, anomalies: list, concerns: list}
+            summary_insights: List of key insight strings
+            collision_stats: Dict with {total_windows: int, collisions_detected: int}
+            tool_context: ADK tool context with artifact service access
+
+        Call this AFTER processing all windows to persist your combined output.
+        """
+        import google.genai.types as gtypes
+
+        print(
+            f"\n🟠 [SAVE_COLLISION_OUTPUT] Called with {len(per_window)} windows")
+
+        try:
+            # Build structured output from explicit parameters
+            output_data = {
+                "per_window": per_window,
+                "temporal_analysis": temporal_analysis,
+                "summary_insights": summary_insights,
+                "collision_stats": collision_stats
+            }
+
+            # Serialize output to JSON bytes
+            json_bytes = json.dumps(output_data, indent=2).encode('utf-8')
+            artifact = gtypes.Part.from_bytes(
+                data=json_bytes, mime_type="application/json")
+
+            # Save as artifact
+            version = await tool_context.save_artifact(
+                filename="collision_output.json",
+                artifact=artifact
+            )
+
+            print(f"🟠 [SAVE_COLLISION_OUTPUT] Saved artifact v{version}")
+
+            return {
+                "status": "saved",
+                "artifact": "collision_output.json",
+                "version": version,
+                "windows_saved": len(per_window)
+            }
+        except Exception as e:
+            print(f"🟠 [SAVE_COLLISION_OUTPUT] Error: {e}")
+            return {"status": "error", "message": str(e)}
+
+    # Return FunctionTool wrappers (analyze + save)
+    return (
+        FunctionTool(func=analyze_collision_tool),
+        FunctionTool(func=save_collision_output_tool)
+    )
