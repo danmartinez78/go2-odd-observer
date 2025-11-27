@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ODD Observer - Interactive Analysis Reports</title>
+    <title>ODD Observer - AI-Powered Robot Safety Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -13,7 +13,6 @@
             padding: 2rem 0;
         }
 
-        /* Desktop optimizations */
         @media (min-width: 1200px) {
             body {
                 padding: 4rem 0;
@@ -27,22 +26,12 @@
                 padding: 5rem 4rem !important;
             }
 
-            .report-card {
-                padding: 3rem !important;
-            }
-
             h1.display-4 {
                 font-size: 4rem !important;
             }
 
             .lead {
                 font-size: 1.5rem !important;
-            }
-        }
-
-        @media (min-width: 1600px) {
-            .container {
-                max-width: 1600px;
             }
         }
 
@@ -80,6 +69,11 @@
 
         .badge-in-odd {
             background-color: #28a745;
+        }
+
+        .badge-boundary {
+            background-color: #ffc107;
+            color: #000;
         }
 
         h1 {
@@ -120,28 +114,38 @@
             margin-right: 0.5rem;
         }
 
-        /* Multi-column layouts for desktop */
-        @media (min-width: 992px) {
-            .feature-grid {
-                column-count: 2;
-                column-gap: 2rem;
-            }
-
-            .feature-grid .feature-list {
-                break-inside: avoid;
-            }
+        .version-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        /* Section headers */
+        .agent-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
         .section-header {
             font-weight: 700;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
         }
 
-        /* Improved spacing */
         .content-section {
             margin-bottom: 4rem;
+        }
+
+        .phase-badge {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -150,627 +154,272 @@
     <div class="container">
         <!-- Hero Section -->
         <div class="hero text-center">
+            <div class="d-flex justify-content-center gap-2 mb-3">
+                <span class="phase-badge">Phase 1.4.5</span>
+                <span class="version-badge">Pipeline v2.0.0</span>
+            </div>
             <h1 class="display-4 mb-3">🤖 ODD Observer</h1>
-            <p class="lead mb-4">Interactive Analysis Reports for Robot Operational Design Domain Monitoring</p>
-            <p class="text-muted">Powered by Multi-Agent AI Analysis Pipeline</p>
-        </div>
+            <p class="lead mb-4">AI-Powered Operational Design Domain Analysis for Quadruped Robots</p>
+            <p class="text-muted mb-4">Built with Google ADK + Gemini 2.5 | 6 Specialized Agents | Artifact-Based
+                Architecture</p>
 
-        <!-- Navigation -->
-        <div class="row mb-5 content-section">
-            <div class="col-12 col-lg-10 offset-lg-1 col-xl-8 offset-xl-2">
-                <div class="hero p-3">
-                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="#reports" class="btn btn-outline-dark btn-lg">📊 Reports</a>
-                        <a href="dashboard.html" class="btn btn-primary btn-lg">📈 Dashboard</a>
-                        <a href="guides/getting_started.html" class="btn btn-outline-dark btn-lg">📖 Guides</a>
-                        <a href="https://github.com/danmartinez78/go2-odd-observer"
-                            class="btn btn-outline-dark btn-lg">💻
-                            GitHub</a>
-                    </div>
-                </div>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="#reports" class="btn btn-primary btn-lg">📊 View Reports</a>
+                <a href="guides/getting_started.html" class="btn btn-outline-dark btn-lg">📖 Documentation</a>
+                <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-outline-dark btn-lg">💻
+                    GitHub</a>
             </div>
         </div>
 
-        <!-- Available Reports -->
-        <div class="row content-section" id="reports">
-            <div class="col-12 col-lg-10 offset-lg-1">
-                <h2 class="text-white mb-4 section-header">📊 Analysis Reports</h2>
-
-                <!-- Production Scenarios -->
-                <div class="mt-4 mb-3">
-                    <h3 class="text-white">🏭 Production Analysis</h3>
-                    <p class="text-white mb-2">Real-world and simulated operational data analyzed with reasoning-based
-                        motion, spatial
-                        perception, and ego vehicle awareness</p>
-                    <div class="alert alert-success">
-                        <strong>Highlights:</strong> 4 scenarios, 60 windows total |
-                        <strong>Compliance:</strong> All ODD_BOUNDARY (0 violations) |
-                        <strong>Key Findings:</strong> Sensor fusion gap (real) • Dark lighting detection gap (sim) •
-                        Extended living room dataset
-                    </div>
-                </div>
-
-                <!-- collection_20251122_173442_chunk_03 -->
-                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Production 1 - Living Room Navigation (12 Windows) 🏭</h3>
-                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_173442_chunk_03
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Challenging
-                                Conditions</p>
-                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 10.45 m/s² (at boundary) |
-                                <strong>Avg Collision Risk:</strong> 0.75 (at boundary)
-                            </p>
-
-                            <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Operating at
-                                    Boundary</span>
-                            </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
-                                <li>Camera sensor corruption degrading visual perception (multiple windows)</li>
-                                <li>Close-proximity events in 4 windows (005, 006, 010, 011) - obstacles <0.5m< /li>
-                                <li>High collision risk (9/12 windows) indicating aggressive maneuvers</li>
-                                <li>Sensor discrepancies for low-lying obstacles (camera vs BEV LiDAR)</li>
-                            </ul>
-
-                            <p class="mb-2"><strong>Analysis Features:</strong></p>
-                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
-                                <li>Reasoning-based motion detection with complex pattern handling</li>
-                                <li>Boundary zone detection (10 m/s² acceleration limit)</li>
-                                <li>Ego vehicle awareness (0.65×0.31×0.4m with clearance requirements)</li>
-                                <li>Production operation analysis (12 windows)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/collection_20251122_173442_chunk_03_report.html"
-                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
-                                View Full Report →
-                            </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🏭 Production Data (12 windows)</div>
-                                <div>📸 Full Image Set (60 BEV + 12 Camera)</div>
-                                <div>📥 <a href="reports/collection_20251122_173442_chunk_03_full_result.json"
-                                        download>JSON Download</a></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- collection_20251122_174321_chunk_03 -->
-                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Production 2 - Living Room Navigation (8 Windows) 🏭</h3>
-                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_174321_chunk_03
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Sensor Fusion
-                                Gap</p>
-                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 7.67 m/s² (in boundary 5-10) |
-                                <strong>Max Instability:</strong> 16.0° (in boundary 15-20)
-                            </p>
-
-                            <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Sensor Fusion
-                                    Gap</span>
-                            </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
-                                <li><strong>Critical:</strong> Low-profile obstacles (boxes) visible in camera but
-                                    missed by BEV LiDAR</li>
-                                <li>Reasoning-based motion correctly classified stationary windows despite IMU noise
-                                </li>
-                                <li>Platform instability reaching boundary zone (16.0° pitch/roll)</li>
-                                <li>Acceleration in boundary zone demonstrates refined ODD effectiveness</li>
-                            </ul>
-
-                            <p class="mb-2"><strong>Refined ODD Showcase:</strong></p>
-                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
-                                <li>Stationary detection: Windows 003,004,006,007 correctly identified (no false
-                                    positives)</li>
-                                <li>Spatial awareness: BEV scale 0.05 m/pixel, robot body exclusion ~10px radius</li>
-                                <li>Boundary handling: Accel/instability correctly flagged as boundary conditions</li>
-                                <li><strong>Sensor fusion gap:</strong> Height threshold issue (&lt;10cm obstacles
-                                    missed)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/collection_20251122_174321_chunk_03_report.html"
-                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
-                                View Full Report →
-                            </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🏭 Production Data (8 windows)</div>
-                                <div>📸 Full Image Set (40 BEV + 8 Camera)</div>
-                                <div>📥 <a href="reports/collection_20251122_174321_chunk_03_full_result.json"
-                                        download>JSON Download</a></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- sim_run_new_01 -->
-                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Production 3 - Simulated Office Navigation (25 Windows) 🎮</h3>
-                            <p class="text-muted mb-2"><strong>Scenario:</strong> sim_run_new_01</p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Simulated Indoor Office - High
-                                Obstacle Density</p>
-                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> 1.03 m/s² |
-                                <strong>Traversability:</strong> 0.3 (at boundary)
-                            </p>
-
-                            <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Lighting Detection
-                                    Gap</span>
-                            </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
-                                <li><strong>Analysis Gap:</strong> Dark lighting detected (windows 000,001,002) but not
-                                    flagged as violation</li>
-                                <li>2 very close proximity events (windows 009, 015) - obstacles <0.5m< /li>
-                                <li>High collision activity: 56% of windows at alert/caution levels (14 alert, 3
-                                    caution)</li>
-                                <li>Low traversability (0.3) at boundary - challenging confined space navigation</li>
-                            </ul>
-
-                            <p class="mb-2"><strong>Analysis Features:</strong></p>
-                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
-                                <li>Simulated environment validation (25 windows)</li>
-                                <li>Detection gap identified: Prohibited lighting not flagged by compliance agent</li>
-                                <li>Aggregation masking: Critical events (1.0 risk) masked by average compliance</li>
-                                <li>Confined space analysis: Extreme close proximity obstacle navigation</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/sim_run_new_01_report.html"
-                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
-                                View Full Report →
-                            </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🎮 Simulation Data (25 windows)</div>
-                                <div>📸 Full Image Set (125 BEV + 25 Camera)</div>
-                                <div>📥 <a href="reports/sim_run_new_01_full_result.json" download>JSON Download</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- collection_20251122_173813_chunk_01 -->
-                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Production 4 - Extended Living Room Analysis (15 Windows) 🏭</h3>
-                            <p class="text-muted mb-2"><strong>Scenario:</strong> collection_20251122_173813_chunk_01
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Extended
-                                Analysis
-                            </p>
-                            <p class="text-muted mb-3"><strong>Peak Accel:</strong> TBD |
-                                <strong>Avg Collision Risk:</strong> TBD
-                            </p>
-
-                            <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">AT ODD LIMITS</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Extended
-                                    Dataset</span>
-                            </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul class="feature-list mb-3" style="font-size: 0.95rem;">
-                                <li>Extended analysis of living room navigation patterns</li>
-                                <li>15 windows providing comprehensive operational coverage</li>
-                                <li>Continued validation of ODD boundary conditions</li>
-                            </ul>
-
-                            <p class="mb-2"><strong>Analysis Features:</strong></p>
-                            <ul class="feature-list mb-0" style="font-size: 0.9rem;">
-                                <li>Reasoning-based motion detection with pattern analysis</li>
-                                <li>Boundary zone monitoring (10 m/s² acceleration limit)</li>
-                                <li>Ego vehicle spatial awareness (0.65×0.31×0.4m)</li>
-                                <li>Extended production operation dataset</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/collection_20251122_173813_chunk_01_report.html"
-                                class="btn btn-warning btn-view-report w-100 mb-3" style="color: #000;">
-                                View Full Report →
-                            </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🏭 Production Data (15 windows)</div>
-                                <div>📸 Full Image Set (75 BEV + 15 Camera)</div>
-                                <div>📥 <a href="reports/collection_20251122_173813_chunk_01_full_result.json"
-                                        download>JSON Download</a></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Test Scenarios -->
-                <div class="mt-4 mb-3">
-                    <h3 class="text-white">Real Robot Test Scenarios</h3>
-                    <p class="text-white mb-2">Comprehensive test suite with motion detection, spatial perception, and
-                        ego vehicle awareness</p>
-                    <div class="alert alert-info">
-                        <strong>Results:</strong> 2/8 IN_ODD, 1/8 BOUNDARY, 5/8 OUT_ODD |
-                        <strong>Total Violations:</strong> 9 across all scenarios
-                    </div>
-                </div>
-
-                <!-- real_01_173442 -->
-                <div class="report-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 1 - real_01_173442</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential</p>
-                            <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">1 Violation</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Issue:</strong> Traversability below
-                                threshold</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_01_173442_report.html"
-                                class="btn btn-primary btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_01_173442_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- real_02_173813 - SUCCESS STORY -->
-                <div class="report-card" style="border-color: #28a745; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 2 - real_02_173813 ⭐</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential</p>
-                            <div class="mb-3">
-                                <span class="badge badge-in-odd badge-status me-2">✅ IN ODD</span>
-                                <span class="badge bg-success badge-status">0 Violations | Clean Operation</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Success:</strong> All parameters within
-                                refined ODD boundaries</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_02_173813_report.html"
-                                class="btn btn-success btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_02_173813_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- real_03_174232 -->
-                <div class="report-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 3 - real_03_174232</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential - Emergency Stop
-                            </p>
-                            <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">2 Violations</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Issues:</strong> Blocked path + high
-                                collision risk</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_03_174232_report.html"
-                                class="btn btn-primary btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_03_174232_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- real_04_174321 -->
-                <div class="report-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 4 - real_04_174321</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential</p>
-                            <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">2 Violations</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Issues:</strong> Motion + traversability
-                                violations</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_04_174321_report.html"
-                                class="btn btn-primary btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_04_174321_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- real_05_174503 - BOUNDARY -->
-                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 5 - real_05_174503</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Residential</p>
-                            <div class="mb-3">
-                                <span class="badge bg-warning text-dark badge-status me-2">⚠️ ODD BOUNDARY</span>
-                                <span class="badge bg-warning text-dark badge-status">0 Violations | Edge Case</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Status:</strong> Operating at refined ODD
-                                limits, no violations</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_05_174503_report.html"
-                                class="btn btn-warning btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_05_174503_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- real_06_174604 - SUCCESS STORY + VALIDATION -->
-                <div class="report-card" style="border-color: #28a745; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 6 - real_06_174604 ⭐🔬</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Living Room - Stationary
-                                Robot with Person & Dog at 0.7-1.0m</p>
-                            <div class="mb-3">
-                                <span class="badge badge-in-odd badge-status me-2">✅ IN ODD</span>
-                                <span class="badge bg-success badge-status">0 Violations | Validation Success</span>
-                            </div>
-                            <p class="mb-2" style="font-size: 0.9rem;"><strong>Breakthrough:</strong> Previously OUT_ODD
-                                (false positive), now correctly IN_ODD</p>
-                            <ul class="mb-0" style="font-size: 0.85rem;">
-                                <li>✅ Motion: Stationary (was incorrectly "translation" due to IMU gravity leakage)</li>
-                                <li>✅ Collision Risk: 0.375 (was 0.9 false alarm)</li>
-                                <li>✅ Traversability: 0.7 avg (was 0.45 due to missing robot size context)</li>
-                                <li>✅ Reasoning-based detection: Camera evidence > IMU artifacts</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_06_174604_report.html"
-                                class="btn btn-success btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_06_174604_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- real_07_174604 -->
-                <div class="report-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Real Scenario 7 - real_07_174604</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Real Robot Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Living Room - Closer
-                                Proximity Test</p>
-                            <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">2 Violations</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Purpose:</strong> A/B test vs real_06 -
-                                validates refined ODD discriminates unsafe proximity</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/real_07_174604_report.html"
-                                class="btn btn-primary btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/real_07_174604_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- sim_run_test -->
-                <div class="report-card">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Simulation Scenario - sim_run_test</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation Data |
-                                <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Office - Stationary Robot
-                                with Blocked Path</p>
-                            <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">🔴 OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">1 Violation</span>
-                            </div>
-                            <p class="mb-0" style="font-size: 0.9rem;"><strong>Issue:</strong> Traversability 0.3
-                                (blocked by coffee table + sofas)</p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/sim_run_test_report.html"
-                                class="btn btn-primary btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <a href="reports/sim_run_test_full_result.json"
-                                class="btn btn-sm btn-outline-secondary w-100" download>📥 Download JSON</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dashboard Section -->
+        <!-- What's New Section -->
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
-                <h2 class="text-white mb-4 section-header">📈 Aggregate Analysis</h2>
-
-                <div class="report-card" style="opacity: 0.6;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3>Interactive Dashboard - Batch Analysis</h3>
-                            <p class="text-muted mb-2"><strong>Status:</strong> Coming Soon</p>
-                            <p class="text-muted mb-3"><strong>Features:</strong> Compliance distribution, violation
-                                breakdown, performance metrics</p>
-
-                            <ul class="feature-list mb-0">
-                                <li>Aggregate statistics across all windows</li>
-                                <li>Interactive pie charts & bar graphs</li>
-                                <li>Scenario-by-scenario comparison table</li>
-                                <li>Environment & terrain distribution analysis</li>
-                            </ul>
+                <h2 class="text-white mb-4 section-header">✨ What's New in Phase 1.4.5</h2>
+                <div class="report-card">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <h5 class="text-primary">🎯 Artifact Handoff</h5>
+                            <p class="mb-0">Agents pass structured data via artifacts instead of context injection.
+                                Cleaner, more reliable pipeline.</p>
                         </div>
-                        <div class="col-md-4 text-center">
-                            <button class="btn btn-secondary w-100" disabled>
-                                Coming Soon...
-                            </button>
+                        <div class="col-md-4 mb-3">
+                            <h5 class="text-primary">🏷️ Categorical Reasoning</h5>
+                            <p class="mb-0">Type-driven COD construction with separate handling for categorical vs
+                                numeric ODD axes.</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h5 class="text-primary">🔍 Data Source Detection</h5>
+                            <p class="mb-0">Automatic sim vs real detection from sensor patterns. High confidence
+                                classification.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- About Section -->
+        <!-- Agent Architecture -->
+        <div class="row content-section">
+            <div class="col-12 col-lg-10 offset-lg-1">
+                <h2 class="text-white mb-4 section-header">🤖 Agent Architecture</h2>
+                <div class="report-card">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">6 Specialized Agents</h5>
+                            <div class="agent-card">
+                                <strong>OddSpecAgent</strong> <span class="badge bg-secondary">v6.1.0</span>
+                                <br><small class="text-muted">Parses natural language ODD → structured spec</small>
+                            </div>
+                            <div class="agent-card">
+                                <strong>PerceptionAgent</strong> <span class="badge bg-secondary">v7.4.0</span>
+                                <br><small class="text-muted">Camera + LiDAR BEV analysis, data source detection</small>
+                            </div>
+                            <div class="agent-card">
+                                <strong>MotionAgent</strong> <span class="badge bg-secondary">v7.3.0</span>
+                                <br><small class="text-muted">IMU analysis, reasoning-based motion
+                                    classification</small>
+                            </div>
+                            <div class="agent-card">
+                                <strong>CollisionAgent</strong> <span class="badge bg-secondary">v7.3.0</span>
+                                <br><small class="text-muted">Proximity assessment with ego vehicle awareness</small>
+                            </div>
+                            <div class="agent-card">
+                                <strong>EvaluatorAgent</strong> <span class="badge bg-secondary">v5.0.0</span>
+                                <br><small class="text-muted">COD construction + compliance verdict
+                                    (gemini-2.5-pro)</small>
+                            </div>
+                            <div class="agent-card">
+                                <strong>ReportAgent</strong> <span class="badge bg-secondary">v9.1.0</span>
+                                <br><small class="text-muted">Executive summary + technical report generation</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Pipeline Flow</h5>
+                            <div class="text-center p-3" style="background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-family: monospace; text-align: left; font-size: 0.9rem;">
+                                    <div>📋 OddSpecAgent</div>
+                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">odd_spec.json
+                                            artifact</span></div>
+                                    <div>┌──────┼──────┐</div>
+                                    <div>👁️ Perception │ 🏃 Motion │ 💥 Collision</div>
+                                    <div>└──────┼──────┘</div>
+                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">*_output.json
+                                            artifacts</span></div>
+                                    <div>⚖️ EvaluatorAgent</div>
+                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">COD region +
+                                            compliance</span></div>
+                                    <div>📝 ReportAgent</div>
+                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">full_result.json</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Key Features:</h6>
+                                <ul class="feature-list" style="font-size: 0.9rem;">
+                                    <li>Artifact-based data handoff</li>
+                                    <li>Parallel sensor agent execution</li>
+                                    <li>Type-driven COD construction</li>
+                                    <li>Temporal stability tracking</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Reports -->
+        <div class="row content-section" id="reports">
+            <div class="col-12 col-lg-10 offset-lg-1">
+                <h2 class="text-white mb-4 section-header">📊 Sample Analysis Reports</h2>
+
+                <div class="alert alert-info mb-4">
+                    <strong>Note:</strong> Reports below were generated with the Phase 1.4.5 pipeline.
+                    Each includes COD region analysis, compliance verdict, agent execution details, and cost breakdown.
+                </div>
+
+                <!-- Featured: 10-Window Production Run -->
+                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h3 class="mb-0">🌟 Production Run - sim_1_0_chunk_000_009</h3>
+                                <span class="badge bg-warning text-dark">Featured</span>
+                            </div>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
+                            </p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Office/Workspace - Simulated
+                            </p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-boundary badge-status me-2">⚠️ BOUNDARY</span>
+                                <span class="badge bg-success badge-status me-2">95% Confidence</span>
+                                <span class="badge bg-info badge-status">Temporal: STABLE</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul style="font-size: 0.9rem;">
+                                <li><strong>Perception:</strong> Well-lit indoor environments with smooth, traversable
+                                    floors</li>
+                                <li><strong>Motion:</strong> Stationary to dynamic patterns including rotations and
+                                    complex movements</li>
+                                <li><strong>Safety:</strong> No collisions detected, safe distances maintained
+                                    throughout</li>
+                                <li><strong>Temporal:</strong> Stable conditions with consistent lighting and terrain
+                                </li>
+                            </ul>
+
+                            <p class="mb-0 mt-3" style="font-size: 0.85rem;">
+                                <strong>Critical Axis:</strong> <code>environment_type</code> (minor boundary violation
+                                - offices/workspaces detected vs. expected residential)
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/sim_1_0_chunk_000_009_report.html"
+                                class="btn btn-warning btn-view-report w-100 mb-2" style="color: #000;">
+                                View Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>🎮 10-Window Analysis</div>
+                                <div>💰 $0.037 USD / 70K tokens</div>
+                                <div>⏱️ ~8.5 min analysis</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Scenario Card -->
+                <div class="report-card" style="border-color: #dc3545; border-width: 2px;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3>Test Scenario - sim_test_w010_w011</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 2
+                            </p>
+                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Office - Simulated</p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-violation badge-status me-2">❌ OUT OF ODD</span>
+                                <span class="badge bg-secondary badge-status">Temporal: DEGRADING</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul style="font-size: 0.9rem;">
+                                <li><strong>Perception:</strong> Bright indoor office, smooth floors, large curved
+                                    obstacles</li>
+                                <li><strong>Motion:</strong> Rotational movements, parameters within limits</li>
+                                <li><strong>Safety:</strong> Server error in collision detection for window 011</li>
+                                <li><strong>Critical Axis:</strong> terrain_type violation</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/sim_test_w010_w011_report.html"
+                                class="btn btn-danger btn-view-report w-100 mb-2">
+                                View Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>🎮 2-Window Test</div>
+                                <div>💰 ~$0.02 USD / 39K tokens</div>
+                                <div>⏱️ ~3 min analysis</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
                 <div class="hero">
-                    <h2 class="mb-4">🚀 About This Project</h2>
-                    <p class="mb-4" style="font-size: 1.15rem;">
-                        The <strong>ODD Observer</strong> is an AI-powered multi-agent system that monitors whether a
-                        quadruped robot operates within its Operational Design Domain (ODD). Built with Google's
-                        Agentic Development Kit (ADK) and Gemini models, it provides real-time safety analysis
-                        from multimodal sensor data.
-                    </p>
+                    <h2 class="mb-4">🔬 Technical Details</h2>
 
-                    <h4 class="mt-5 mb-4">🎯 System Capabilities:</h4>
                     <div class="row mb-4">
-                        <div class="col-md-6 mb-3">
-                            <strong>Reasoning-Based Motion Detection</strong>
-                            <ul class="mt-2" style="font-size: 0.9rem;">
-                                <li>Evidence hierarchy: Camera vision > Temporal patterns > Gyroscope > Accelerometer
-                                </li>
-                                <li>Gravity compensation for stationary detection</li>
-                                <li>Complex motion pattern analysis</li>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">ODD Specification</h5>
+                            <ul class="feature-list">
+                                <li>Natural language → structured spec</li>
+                                <li>Categorical axes (terrain, lighting, environment)</li>
+                                <li>Numeric axes (acceleration, distance, velocity)</li>
+                                <li>Boolean axes (collision, blocked path)</li>
                             </ul>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <strong>Spatial Perception</strong>
-                            <ul class="mt-2" style="font-size: 0.9rem;">
-                                <li>BEV scale awareness (0.05 m/pixel)</li>
-                                <li>Robot body exclusion for accurate distance measurement</li>
-                                <li>Multimodal sensor fusion (camera + LiDAR)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <strong>Ego Vehicle Specification</strong>
-                            <ul class="mt-2" style="font-size: 0.9rem;">
-                                <li>ISO 34503 compliant vehicle dimensions</li>
-                                <li>0.65m × 0.31m × 0.4m (L×W×H)</li>
-                                <li>Clearance requirements (0.4m min, 0.5m comfortable)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <strong>ODD Parameters</strong>
-                            <ul class="mt-2" style="font-size: 0.9rem;">
-                                <li>Acceleration: 10.0 m/s² max (5.0-10.0 boundary zone)</li>
-                                <li>Collision risk: 0.75 IN_ODD (0.75-0.9 boundary)</li>
-                                <li>Motion types: smooth, complex, abrupt</li>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">COD Construction</h5>
+                            <ul class="feature-list">
+                                <li>Per-window measurements</li>
+                                <li>Type-driven aggregation</li>
+                                <li>Semantic distance for categoricals</li>
+                                <li>Fraction outside per axis</li>
                             </ul>
                         </div>
                     </div>
 
-                    <h4 class="mt-5 mb-4">🔬 Technical Innovation:</h4>
-                    <div class="row mb-5">
-                        <div class="col-lg-6 mb-4">
-                            <h5 class="text-primary mb-3">Sensor Fusion</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Compliance Verdict</h5>
                             <ul class="feature-list">
-                                <li>Camera + LiDAR BEV analysis (gemini-2.5-pro)</li>
-                                <li>IMU-based motion with jerk detection</li>
-                                <li>Visual odometry for velocity estimation</li>
-                                <li>Odometry-independent (works with real robots)</li>
+                                <li>IN_ODD / ODD_BOUNDARY / OUT_ODD</li>
+                                <li>Confidence score (0-1)</li>
+                                <li>Critical axes identification</li>
+                                <li>Temporal stability (STABLE/MIXED/DEGRADING)</li>
                             </ul>
                         </div>
-                        <div class="col-lg-6 mb-4">
-                            <h5 class="text-primary mb-3">Multi-Agent Pipeline</h5>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Models Used</h5>
                             <ul class="feature-list">
-                                <li>8 specialized agents (perception, motion, collision, etc.)</li>
-                                <li>Natural language ODD specification</li>
-                                <li>Automated COD classification</li>
-                                <li>ODD compliance with violation detection</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <h4 class="mt-5 mb-4">✨ Key Features:</h4>
-                    <div class="feature-grid mb-4">
-                        <div>
-                            <ul class="feature-list">
-                                <li><strong>Reasoning-Based Motion</strong> - Camera evidence > IMU artifacts (gravity
-                                    compensation)</li>
-                                <li><strong>Spatial Perception</strong> - BEV scale (0.05 m/pixel) + robot body
-                                    awareness</li>
-                                <li><strong>Ego Vehicle Specs</strong> - ISO 34503 compliant (0.31m width, 0.4m min gap)
-                                </li>
-                                <li><strong>Multi-Modal Fusion</strong> - Camera + LiDAR + IMU with cross-validation
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <ul class="feature-list">
-                                <li><strong>Interactive Reports</strong> - Plotly charts & dark mode</li>
-                                <li><strong>Real Robot Testing</strong> - Unitree Go2 with broken odometry</li>
-                                <li><strong>ODD Boundaries</strong> - 10 m/s² accel, 0.75 collision risk</li>
-                                <li><strong>Production Ready</strong> - 7 real + 1 sim scenarios validated</li>
+                                <li><code>gemini-2.5-flash</code> - Sensor agents</li>
+                                <li><code>gemini-2.5-pro</code> - Evaluator (reasoning)</li>
+                                <li>Vision-enabled for image analysis</li>
+                                <li>~$0.02/scenario (2 windows)</li>
                             </ul>
                         </div>
                     </div>
 
                     <div class="text-center mt-4">
                         <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-dark btn-lg me-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
-                                class="bi bi-github" viewBox="0 0 16 16"
-                                style="vertical-align: middle; margin-right: 8px;">
-                                <path
-                                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-                            </svg>
-                            View on GitHub
+                            💻 View on GitHub
                         </a>
-                        <a href="README.md" class="btn btn-outline-dark btn-lg">
-                            📖 Documentation
+                        <a href="agents/README.md" class="btn btn-outline-dark btn-lg">
+                            📖 Agent Documentation
                         </a>
                     </div>
                 </div>
@@ -780,7 +429,8 @@
         <!-- Footer -->
         <div class="text-center mt-5 text-white">
             <p class="mb-0">Built with ❤️ for the Kaggle ADK Agent Capstone</p>
-            <p class="small">Powered by Google Gemini 2.5 Pro & Multi-Agent AI</p>
+            <p class="small mb-0">Powered by Google Gemini 2.5 + Multi-Agent AI</p>
+            <p class="small">Phase 1.4.5 - November 2025</p>
         </div>
     </div>
 

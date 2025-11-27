@@ -948,22 +948,59 @@ See [`docs/METADATA_DESIGN.md`](docs/METADATA_DESIGN.md) for complete design.
 
 **Priority:** HIGH - Required for competition
 
-#### Agent Evaluation & Testing
-- [x] Implement LLM-as-judge evaluation pattern ✅ COMPLETED
-  - ✅ Use gemini-2.5-pro as judge to avoid model similarity bias
-  - ✅ Majority voting (num_samples=5) for robustness
-  - ✅ Custom rubrics for all 7 agent types
-  - ✅ Comprehensive evaluation framework in `odd_agents/evaluation/`
-  - See `odd_agents/evaluation/README.md` for details
-- [ ] **URGENT: Review and fix ADK evaluation tests** ⚠️ CRITICAL FOR KAGGLE
-  - [ ] Verify existing eval tests still pass after perception prompt changes
-  - [ ] Update test expectations for terrain classification
-  - [ ] Review and merge agent evaluation PRs
-  - [ ] Fix any broken evaluation workflows
-  - [ ] Update evaluation datasets for new prompt behavior
-  - [ ] Validate rubrics align with updated agent outputs
-  - [ ] Run full test suite: `pytest tests/test_adk_evaluation.py -v`
-- [x] Expand test coverage ✅ COMPLETED
+#### Agent Evaluation & Testing 📋 NEEDS UPDATE
+
+**Current State (as of Nov 27, 2025):**
+- ❌ Agent wrappers use old API (`create_perception_loop_agent` → should be `create_perception_agent`)
+- ❌ Test scenario paths outdated (`data/processed/runs/sim_run_test` → `data/test/sim/sim_test_w010_w011`)
+- ❌ Judge model outdated (`gemini-2.5-pro` → should be `gemini-3-pro`)
+- ❌ Rubrics reference old schemas (separate COD/Compliance → now Evaluator)
+- ❌ Only Perception has .test.json, other 5 agents missing
+- ✅ Framework structure exists (`odd_agents/evaluation/`, `tests/evaluation/`)
+- ✅ 40 rubrics defined in ADK dict format
+
+**ADK Evaluation Criteria to Use:**
+| Criteria | Purpose | Agents |
+|----------|---------|--------|
+| `tool_trajectory_avg_score` | Verify correct tool sequence | All (CI/CD) |
+| `rubric_based_final_response_quality_v1` | Custom quality rubrics | All |
+| `rubric_based_tool_use_quality_v1` | Tool usage quality | Sensor agents |
+| `hallucinations_v1` | Detect fabricated claims | Report agent |
+
+**Implementation Plan:**
+
+**Phase 1: Fix Infrastructure (Do 2-3 agents as examples)**
+- [ ] Update `tests/evaluation/perception/perception_agent.py` to use new API
+- [ ] Update judge model to `gemini-3-pro` in test configs
+- [ ] Update scenario path to `data/test/sim/sim_test_w010_w011`
+- [ ] Fix Perception agent wrapper + test file
+- [ ] Fix Motion agent wrapper + create test file
+- [ ] Validate both work with `pytest tests/test_adk_evaluation.py -v`
+
+**Phase 2: Update Rubrics (Align with current schemas)**
+- [ ] Update Perception rubrics (add data_source detection)
+- [ ] Update Motion rubrics (artifact-based output)
+- [ ] Consolidate COD/Compliance rubrics → Evaluator rubrics
+- [ ] Update Report rubrics (v9.1.0 hybrid schema)
+
+**Phase 3: Cloud Agent Pattern Matching**
+- [ ] Document the pattern from Phase 1-2 examples
+- [ ] Let cloud agents implement remaining agents:
+  - [ ] Collision agent wrapper + test file
+  - [ ] OddSpec agent wrapper + test file
+  - [ ] Evaluator agent wrapper + test file
+  - [ ] Report agent wrapper + test file
+
+**Mock Data Strategy:**
+- Use existing `data/test/sim/sim_test_w010_w011` (2 windows, real sensor data)
+- Expected tool trajectories captured from production runs
+- Reference responses generated from validated pipeline outputs
+
+**References:**
+- ADK Evaluation Docs: https://google.github.io/adk-docs/evaluate/
+- Current rubrics: `odd_agents/evaluation/rubrics.py`
+- Test structure: `tests/evaluation/*/`
+
 - [ ] Performance benchmarking
   - [ ] Track token usage per agent across batch runs
   - [ ] Measure latency for each workflow stage
