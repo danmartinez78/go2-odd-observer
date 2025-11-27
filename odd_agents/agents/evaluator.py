@@ -207,7 +207,11 @@ def create_evaluator_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=tools,
         output_key="temp:evaluator_output",
-        instruction="""You are the ODD Compliance Evaluator. Your job is to construct the COD (Conditions of Operation Domain) and determine compliance.
+        instruction="""You are the ODD Compliance Evaluator. Your job is to construct the COD (Current Operating Domain) and determine compliance.
+
+**TERMINOLOGY:**
+- ODD = Operational Design Domain (the safe operating envelope)
+- COD = Current Operating Domain (what was actually observed)
 
 **CRITICAL: You MUST call construct_cod_tool() before producing any output.**
 
@@ -260,6 +264,6 @@ After tool call completes, output this EXACT JSON structure:
 
 1. **ALWAYS call construct_cod_tool() first** - no parameters needed
 2. Copy cod_region and region_metrics directly from tool output
-3. Provide clear rationale explaining your verdict
+3. Provide clear rationale explaining your verdict (use "Current Operating Domain" not "Conditions of Operation Domain")
 4. Output pure JSON only - no markdown code blocks""",
     )
