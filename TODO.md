@@ -8,7 +8,40 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
 **Status**: Phase 1.4.5 Complete, production validated
 
-**Current Focus**: Documentation cleanup, prepare for Phase 2
+**Current Focus**: Feature branch cleanup, then RAG knowledge base
+
+## 🔥 HIGH PRIORITY: RAG Knowledge Base for Agents
+
+**Goal:** Create a retrieval-augmented generation (RAG) knowledge base for consistent agent grounding
+
+**Motivation:**
+- Terminology confusion (COD = "Current Operating Domain", not "Conditions of Operation Domain")
+- Large prompts with repeated domain knowledge
+- Inconsistent understanding across agents
+
+**Benefits:**
+1. **Token reduction**: Move static knowledge out of prompts
+2. **Consistency**: Single source of truth for terminology (ODD, COD, BOUNDARY, etc.)
+3. **Maintainability**: Update knowledge in one place, all agents benefit
+4. **Quality**: Agents pull in detailed domain knowledge when needed
+
+**Knowledge Base Content:**
+- ODD/COD definitions and relationships
+- Verdict criteria (IN_ODD, BOUNDARY, OUT_ODD)
+- Robotics safety fundamentals
+- Sensor interpretation guidance (LiDAR BEV, IMU data)
+- Terrain/environment classification taxonomies
+- Go2 robot specifications and capabilities
+
+**Implementation Options to Explore:**
+- Google Vertex AI RAG (native to Gemini)
+- Gemini context caching (simpler alternative)
+- ADK built-in retrieval (if supported)
+- Custom embedding + vector search
+
+**Status:** 📋 PLANNED - Next major feature after current branch merge
+
+---
 
 **Recent Completions (Nov 27, 2025)**:
 - ✅ Phase 1.4.5: Artifact Handoff, Categorical Reasoning, Data Source Detection
