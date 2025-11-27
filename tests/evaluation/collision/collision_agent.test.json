@@ -1,0 +1,53 @@
+{
+  "eval_set_id": "collision_agent_basic_tests",
+  "name": "Collision Agent Basic Evaluation",
+  "description": "Basic evaluation tests for collision agent using sim_test_w010_w011 scenario",
+  "eval_cases": [
+    {
+      "eval_id": "collision_basic_analysis",
+      "conversation": [
+        {
+          "invocation_id": "collision-test-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Analyze collisions for all windows in this scenario"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "{\"windows_analyzed\": 2, \"collisions_detected\": 0, \"temporal_analysis\": {\"odd_trends\": \"\", \"anomalies\": [], \"concerns\": []}, \"summary_insights\": []}"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "list_windows_tool"
+              },
+              {
+                "name": "analyze_collision_tool"
+              },
+              {
+                "name": "analyze_collision_tool"
+              },
+              {
+                "name": "save_collision_output_tool"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "CollisionWorkflowApp",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

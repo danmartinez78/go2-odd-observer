@@ -1,0 +1,48 @@
+{
+  "criteria": {
+    "rubric_based_tool_use_quality_v1": {
+      "threshold": 0.7,
+      "model": "gemini-3-pro",
+      "num_samples": 1,
+      "rubrics": [
+        {
+          "rubric_id": "tools_called",
+          "rubric_content": {
+            "text_property": "Agent calls list_windows_tool, analyze_collision_tool for each window, then save_collision_output_tool."
+          }
+        },
+        {
+          "rubric_id": "windows_covered",
+          "rubric_content": {
+            "text_property": "All available windows are processed (010 and 011 in the test scenario)."
+          }
+        }
+      ]
+    },
+    "rubric_based_final_response_quality_v1": {
+      "threshold": 0.7,
+      "model": "gemini-3-pro",
+      "num_samples": 1,
+      "rubrics": [
+        {
+          "rubric_id": "json_structure",
+          "rubric_content": {
+            "text_property": "The agent output is valid JSON with required keys: windows_analyzed (int), collisions_detected (int or bool), temporal_analysis (object), summary_insights (list). No prose commentary."
+          }
+        },
+        {
+          "rubric_id": "completeness",
+          "rubric_content": {
+            "text_property": "windows_analyzed reflects both windows in the test scenario (2 windows)."
+          }
+        },
+        {
+          "rubric_id": "summaries_present",
+          "rubric_content": {
+            "text_property": "summary_insights contains at least one collision-related insight derived from the analyses."
+          }
+        }
+      ]
+    }
+  }
+}

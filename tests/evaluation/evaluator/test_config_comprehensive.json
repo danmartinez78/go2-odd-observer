@@ -1,0 +1,48 @@
+{
+  "criteria": {
+    "rubric_based_tool_use_quality_v1": {
+      "threshold": 0.7,
+      "model": "gemini-3-pro",
+      "num_samples": 1,
+      "rubrics": [
+        {
+          "rubric_id": "tool_called",
+          "rubric_content": {
+            "text_property": "Agent must call construct_cod_tool exactly once to load artifacts and compute COD."
+          }
+        }
+      ]
+    },
+    "rubric_based_final_response_quality_v1": {
+      "threshold": 0.6,
+      "model": "gemini-3-pro",
+      "num_samples": 1,
+      "rubrics": [
+        {
+          "rubric_id": "json_structure",
+          "rubric_content": {
+            "text_property": "Response is pure JSON with keys cod_region, region_metrics, compliance_verdict, key_concerns."
+          }
+        },
+        {
+          "rubric_id": "verdict_present",
+          "rubric_content": {
+            "text_property": "compliance_verdict includes verdict, confidence, rationale, critical_axes, temporal_stability."
+          }
+        },
+        {
+          "rubric_id": "metrics_consistent",
+          "rubric_content": {
+            "text_property": "region_metrics reflects two windows, non-negative distances, and lists violated windows if any."
+          }
+        }
+      ]
+    },
+    "hallucinations_v1": {
+      "threshold": 0.5,
+      "model": "gemini-3-pro",
+      "grounding_source": "final_response",
+      "num_samples": 1
+    }
+  }
+}
