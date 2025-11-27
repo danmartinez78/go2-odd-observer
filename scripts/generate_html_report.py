@@ -636,9 +636,10 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Data source info - only display if known (not 'unknown')
     data_source = scenario_meta.get('data_source', 'unknown')
-    data_source_classification = scenario_meta.get('data_source_classification', {})
+    data_source_classification = scenario_meta.get(
+        'data_source_classification', {})
     data_source_confidence = data_source_classification.get('confidence', 0)
-    
+
     # Build data source display string (only if known)
     if data_source in ('simulated', 'sim'):
         data_source_display = f"Simulation ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Simulation"

@@ -171,6 +171,44 @@
             </div>
         </div>
 
+        <!-- ODD/COD Explanation Section -->
+        <div class="row content-section">
+            <div class="col-12 col-lg-10 offset-lg-1">
+                <h2 class="text-white mb-4 section-header">📐 What is ODD & COD?</h2>
+                <div class="report-card">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">🎯 ODD - Operational Design Domain</h5>
+                            <p>The <strong>ODD</strong> defines the <em>safe operating envelope</em> for a robot—the
+                                conditions under which it's designed to function correctly.</p>
+                            <ul style="font-size: 0.9rem;">
+                                <li><strong>Environmental:</strong> Lighting (bright/dim), terrain (smooth/rough),
+                                    indoor/outdoor</li>
+                                <li><strong>Dynamic:</strong> Max speed, acceleration, pitch/roll limits</li>
+                                <li><strong>Safety:</strong> Obstacle density, collision avoidance boundaries</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">📊 COD - Conditions of Operation Domain</h5>
+                            <p>The <strong>COD</strong> captures <em>what actually happened</em> during robot
+                                operation—the observed conditions across all ODD axes.</p>
+                            <ul style="font-size: 0.9rem;">
+                                <li><strong>Per-window measurements:</strong> What was observed in each time window</li>
+                                <li><strong>Region construction:</strong> Aggregated operational envelope</li>
+                                <li><strong>Compliance check:</strong> Is COD ⊆ ODD? (COD contained within ODD)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
+                        <strong>Verdict:</strong>
+                        <span class="badge bg-success">IN_ODD</span> COD fully within ODD |
+                        <span class="badge bg-warning text-dark">BOUNDARY</span> Minor violations, still safe |
+                        <span class="badge bg-danger">OUT_ODD</span> Critical violations detected
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- What's New Section -->
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
@@ -234,21 +272,47 @@
                         </div>
                         <div class="col-md-6">
                             <h5 class="mb-3">Pipeline Flow</h5>
-                            <div class="text-center p-3" style="background: #f8f9fa; border-radius: 8px;">
-                                <div style="font-family: monospace; text-align: left; font-size: 0.9rem;">
-                                    <div>📋 OddSpecAgent</div>
-                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">odd_spec.json
-                                            artifact</span></div>
-                                    <div>┌──────┼──────┐</div>
-                                    <div>👁️ Perception │ 🏃 Motion │ 💥 Collision</div>
-                                    <div>└──────┼──────┘</div>
-                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">*_output.json
-                                            artifacts</span></div>
-                                    <div>⚖️ EvaluatorAgent</div>
-                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">COD region +
-                                            compliance</span></div>
-                                    <div>📝 ReportAgent</div>
-                                    <div style="padding-left: 1rem;">↓ <span class="text-muted">full_result.json</span>
+                            <div class="p-3" style="background: #f8f9fa; border-radius: 8px;">
+                                <!-- Stage 1 -->
+                                <div class="text-center mb-2">
+                                    <div class="d-inline-block px-3 py-2"
+                                        style="background: #667eea; color: white; border-radius: 8px;">
+                                        📋 <strong>OddSpecAgent</strong>
+                                    </div>
+                                </div>
+                                <div class="text-center text-muted mb-2">↓ odd_spec.json</div>
+
+                                <!-- Stage 2 - Parallel -->
+                                <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
+                                    <div class="px-2 py-1"
+                                        style="background: #28a745; color: white; border-radius: 6px; font-size: 0.85rem;">
+                                        👁️ Perception
+                                    </div>
+                                    <div class="px-2 py-1"
+                                        style="background: #28a745; color: white; border-radius: 6px; font-size: 0.85rem;">
+                                        🏃 Motion
+                                    </div>
+                                    <div class="px-2 py-1"
+                                        style="background: #28a745; color: white; border-radius: 6px; font-size: 0.85rem;">
+                                        💥 Collision
+                                    </div>
+                                </div>
+                                <div class="text-center text-muted mb-2">↓ artifacts</div>
+
+                                <!-- Stage 3 -->
+                                <div class="text-center mb-2">
+                                    <div class="d-inline-block px-3 py-2"
+                                        style="background: #764ba2; color: white; border-radius: 8px;">
+                                        ⚖️ <strong>EvaluatorAgent</strong>
+                                    </div>
+                                </div>
+                                <div class="text-center text-muted mb-2">↓ COD + compliance</div>
+
+                                <!-- Stage 4 -->
+                                <div class="text-center">
+                                    <div class="d-inline-block px-3 py-2"
+                                        style="background: #dc3545; color: white; border-radius: 8px;">
+                                        📝 <strong>ReportAgent</strong>
                                     </div>
                                 </div>
                             </div>
@@ -267,6 +331,54 @@
             </div>
         </div>
 
+        <!-- Agent Reasoning Section -->
+        <div class="row content-section">
+            <div class="col-12 col-lg-10 offset-lg-1">
+                <h2 class="text-white mb-4 section-header">🧠 Agent Reasoning Capabilities</h2>
+                <div class="report-card">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <h5 class="text-primary">👁️ Visual Grounding</h5>
+                            <p>Agents analyze camera images and LiDAR BEV (Bird's Eye View) maps to make observations grounded in actual sensor data.</p>
+                            <ul style="font-size: 0.85rem;">
+                                <li>Height, occupancy, roughness BEV channels</li>
+                                <li>Obstacle detection and classification</li>
+                                <li>Environment type inference</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h5 class="text-primary">📊 Temporal Reasoning</h5>
+                            <p>Cross-window analysis identifies patterns, trends, and anomalies that single-frame analysis would miss.</p>
+                            <ul style="font-size: 0.85rem;">
+                                <li>Stability assessment across windows</li>
+                                <li>Transition detection (STABLE→DEGRADING)</li>
+                                <li>Trend identification in motion profiles</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h5 class="text-primary">🏷️ Semantic Understanding</h5>
+                            <p>Categorical axes use semantic distance for nuanced compliance—"indoor_commercial" ≈ "commercial" with low penalty.</p>
+                            <ul style="font-size: 0.85rem;">
+                                <li>Fuzzy matching for environment types</li>
+                                <li>Context-aware terrain classification</li>
+                                <li>Semantic distance in COD construction</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">🔗 Chain of Thought</h5>
+                            <p>Each agent provides explicit reasoning chains that explain <em>why</em> observations lead to conclusions. Fully auditable.</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">⚡ ODD-Aware Filtering</h5>
+                            <p>Agents receive the ODD spec and intelligently focus observations on relevant axes, reducing noise and improving accuracy.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Sample Reports -->
         <div class="row content-section" id="reports">
             <div class="col-12 col-lg-10 offset-lg-1">
@@ -278,87 +390,107 @@
                 </div>
 
                 <!-- Featured: 10-Window Production Run -->
-                <div class="report-card" style="border-color: #ffc107; border-width: 3px;">
+                <div class="report-card" style="border-color: #28a745; border-width: 3px;">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <h3 class="mb-0">🌟 Production Run - sim_1_0_chunk_000_009</h3>
-                                <span class="badge bg-warning text-dark">Featured</span>
+                                <h3 class="mb-0">🌟 sim_1_0_chunk_000_009</h3>
+                                <span class="badge bg-success">Featured</span>
                             </div>
                             <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Office/Workspace - Simulated
-                            </p>
+                                (w000-w009)</p>
 
                             <div class="mb-3">
                                 <span class="badge badge-boundary badge-status me-2">⚠️ BOUNDARY</span>
                                 <span class="badge bg-success badge-status me-2">95% Confidence</span>
-                                <span class="badge bg-info badge-status">Temporal: STABLE</span>
+                                <span class="badge bg-info badge-status">STABLE</span>
                             </div>
 
                             <p class="mb-2"><strong>Key Findings:</strong></p>
                             <ul style="font-size: 0.9rem;">
-                                <li><strong>Perception:</strong> Well-lit indoor environments with smooth, traversable
-                                    floors</li>
-                                <li><strong>Motion:</strong> Stationary to dynamic patterns including rotations and
-                                    complex movements</li>
-                                <li><strong>Safety:</strong> No collisions detected, safe distances maintained
-                                    throughout</li>
-                                <li><strong>Temporal:</strong> Stable conditions with consistent lighting and terrain
-                                </li>
+                                <li>Well-lit indoor environments with smooth, traversable floors</li>
+                                <li>Motion from stationary to dynamic patterns including rotations</li>
+                                <li>No collisions detected, safe distances maintained</li>
                             </ul>
 
-                            <p class="mb-0 mt-3" style="font-size: 0.85rem;">
-                                <strong>Critical Axis:</strong> <code>environment_type</code> (minor boundary violation
-                                - offices/workspaces detected vs. expected residential)
+                            <p class="mb-0" style="font-size: 0.85rem;">
+                                <strong>Critical Axis:</strong> <code>environment_type</code> (office detected vs
+                                expected residential)
                             </p>
                         </div>
                         <div class="col-md-4 text-center">
                             <a href="reports/sim_1_0_chunk_000_009_report.html"
-                                class="btn btn-warning btn-view-report w-100 mb-2" style="color: #000;">
+                                class="btn btn-success btn-view-report w-100 mb-2">
                                 View Report →
                             </a>
                             <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🎮 10-Window Analysis</div>
                                 <div>💰 $0.037 USD / 70K tokens</div>
-                                <div>⏱️ ~8.5 min analysis</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Test Scenario Card -->
-                <div class="report-card" style="border-color: #dc3545; border-width: 2px;">
+                <!-- chunk_020_029 -->
+                <div class="report-card" style="border-color: #28a745; border-width: 2px;">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h3>Test Scenario - sim_test_w010_w011</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 2
-                            </p>
-                            <p class="text-muted mb-2"><strong>Environment:</strong> Indoor Office - Simulated</p>
+                            <h3 class="mb-2">sim_1_0_chunk_020_029</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
+                                (w020-w029)</p>
 
                             <div class="mb-3">
-                                <span class="badge badge-violation badge-status me-2">❌ OUT OF ODD</span>
-                                <span class="badge bg-secondary badge-status">Temporal: DEGRADING</span>
+                                <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
+                                <span class="badge bg-success badge-status me-2">100% Confidence</span>
+                                <span class="badge bg-info badge-status">STABLE</span>
                             </div>
 
                             <p class="mb-2"><strong>Key Findings:</strong></p>
                             <ul style="font-size: 0.9rem;">
-                                <li><strong>Perception:</strong> Bright indoor office, smooth floors, large curved
-                                    obstacles</li>
-                                <li><strong>Motion:</strong> Rotational movements, parameters within limits</li>
-                                <li><strong>Safety:</strong> Server error in collision detection for window 011</li>
-                                <li><strong>Critical Axis:</strong> terrain_type violation</li>
+                                <li>Bright indoor commercial environment, smooth terrain</li>
+                                <li>Stationary to low-speed operation, zero speed violations</li>
+                                <li>All ODD axes fully compliant with zero region distance</li>
                             </ul>
                         </div>
                         <div class="col-md-4 text-center">
-                            <a href="reports/sim_test_w010_w011_report.html"
-                                class="btn btn-danger btn-view-report w-100 mb-2">
+                            <a href="reports/sim_1_0_chunk_020_029_report.html"
+                                class="btn btn-success btn-view-report w-100 mb-2">
                                 View Report →
                             </a>
                             <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>🎮 2-Window Test</div>
-                                <div>💰 ~$0.02 USD / 39K tokens</div>
-                                <div>⏱️ ~3 min analysis</div>
+                                <div>💰 $0.079 USD / 63K tokens</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- chunk_040_049 -->
+                <div class="report-card" style="border-color: #28a745; border-width: 2px;">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3 class="mb-2">sim_1_0_chunk_040_049</h3>
+                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
+                                (w040-w049)</p>
+
+                            <div class="mb-3">
+                                <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
+                                <span class="badge bg-success badge-status me-2">95% Confidence</span>
+                                <span class="badge bg-info badge-status">STABLE</span>
+                            </div>
+
+                            <p class="mb-2"><strong>Key Findings:</strong></p>
+                            <ul style="font-size: 0.9rem;">
+                                <li>Consistent indoor commercial conditions throughout</li>
+                                <li>Minor semantic note on environment_type (indoor_commercial ≈ commercial)</li>
+                                <li>All numeric ODD axes well within boundaries</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="reports/sim_1_0_chunk_040_049_report.html"
+                                class="btn btn-success btn-view-report w-100 mb-2">
+                                View Report →
+                            </a>
+                            <div class="text-muted" style="font-size: 0.85rem;">
+                                <div>💰 $0.090 USD / 71K tokens</div>
                             </div>
                         </div>
                     </div>
