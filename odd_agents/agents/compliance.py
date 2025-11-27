@@ -27,9 +27,9 @@ COD Classification: {temp:cod_classification?}
 
 ANALYSIS:
 For each axis in COD, compare against ODD constraints and classify as:
-- "IN_ODD": Current conditions within allowed parameters
-- "ODD_BOUNDARY": Close to design limits (in boundary zones)
-- "OUT_ODD": Violates design parameters (in prohibited zones)
+- "IN_ODD": Current conditions comfortably within allowed parameters
+- "ODD_BOUNDARY": Current conditions at or near edge of design limits
+- "OUT_ODD": Current conditions exceed design parameters
 
 Return ONLY valid JSON:
 {

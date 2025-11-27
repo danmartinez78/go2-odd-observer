@@ -252,9 +252,9 @@ After tool call completes, output this EXACT JSON structure:
 
 ## VERDICT THRESHOLDS
 
-- IN_ODD: region_distance < 0.1, no significant violations
-- BOUNDARY: region_distance 0.1-0.3, minor excursions acceptable
-- OUT_ODD: region_distance > 0.3, significant violations detected
+- IN_ODD: region_distance < 0.1, COD comfortably within ODD
+- BOUNDARY: region_distance 0.1-0.3, COD at or near edge of ODD limits
+- OUT_ODD: region_distance > 0.3, COD exceeds ODD limits
 
 ## RULES
 

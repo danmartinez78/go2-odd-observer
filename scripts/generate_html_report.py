@@ -634,11 +634,24 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     if not critical_axes_html:
         critical_axes_html = "<span class='text-muted'>None</span>"
 
-    # Data source info - only display if known (not 'unknown')
-    data_source = scenario_meta.get('data_source', 'unknown')
-    data_source_classification = scenario_meta.get(
-        'data_source_classification', {})
-    data_source_confidence = data_source_classification.get('confidence', 0)
+    # Data source info - check multiple locations in schema
+    # New schema: agent_outputs.PerceptionAgent.data_source
+    # Old schema: scenario_metadata.data_source
+    agent_outputs = result.get('agent_outputs', {})
+    perception_output = agent_outputs.get('PerceptionAgent', {})
+    perception_data_source = perception_output.get('data_source', {})
+
+    if isinstance(perception_data_source, dict) and perception_data_source.get('type'):
+        # New schema format
+        data_source = perception_data_source.get('type', 'unknown')
+        data_source_confidence = perception_data_source.get('confidence', 0)
+    else:
+        # Fall back to old schema
+        data_source = scenario_meta.get('data_source', 'unknown')
+        data_source_classification = scenario_meta.get(
+            'data_source_classification', {})
+        data_source_confidence = data_source_classification.get(
+            'confidence', 0)
 
     # Build data source display string (only if known)
     if data_source in ('simulated', 'sim'):

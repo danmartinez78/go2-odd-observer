@@ -189,7 +189,7 @@
                             </ul>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <h5 class="text-primary">📊 COD - Conditions of Operation Domain</h5>
+                            <h5 class="text-primary">📊 COD - Current Operating Domain</h5>
                             <p>The <strong>COD</strong> captures <em>what actually happened</em> during robot
                                 operation—the observed conditions across all ODD axes.</p>
                             <ul style="font-size: 0.9rem;">
@@ -202,8 +202,8 @@
                     <div class="text-center mt-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
                         <strong>Verdict:</strong>
                         <span class="badge bg-success">IN_ODD</span> COD fully within ODD |
-                        <span class="badge bg-warning text-dark">BOUNDARY</span> Minor violations, still safe |
-                        <span class="badge bg-danger">OUT_ODD</span> Critical violations detected
+                        <span class="badge bg-warning text-dark">BOUNDARY</span> COD at or near edge of ODD |
+                        <span class="badge bg-danger">OUT_ODD</span> COD exceeds ODD limits
                     </div>
                 </div>
             </div>
@@ -339,7 +339,8 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <h5 class="text-primary">👁️ Visual Grounding</h5>
-                            <p>Agents analyze camera images and LiDAR BEV (Bird's Eye View) maps to make observations grounded in actual sensor data.</p>
+                            <p>Agents analyze camera images and LiDAR BEV (Bird's Eye View) maps to make observations
+                                grounded in actual sensor data.</p>
                             <ul style="font-size: 0.85rem;">
                                 <li>Height, occupancy, roughness BEV channels</li>
                                 <li>Obstacle detection and classification</li>
@@ -348,7 +349,8 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <h5 class="text-primary">📊 Temporal Reasoning</h5>
-                            <p>Cross-window analysis identifies patterns, trends, and anomalies that single-frame analysis would miss.</p>
+                            <p>Cross-window analysis identifies patterns, trends, and anomalies that single-frame
+                                analysis would miss.</p>
                             <ul style="font-size: 0.85rem;">
                                 <li>Stability assessment across windows</li>
                                 <li>Transition detection (STABLE→DEGRADING)</li>
@@ -357,7 +359,8 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <h5 class="text-primary">🏷️ Semantic Understanding</h5>
-                            <p>Categorical axes use semantic distance for nuanced compliance—"indoor_commercial" ≈ "commercial" with low penalty.</p>
+                            <p>Categorical axes use semantic distance for nuanced compliance—"indoor_commercial" ≈
+                                "commercial" with low penalty.</p>
                             <ul style="font-size: 0.85rem;">
                                 <li>Fuzzy matching for environment types</li>
                                 <li>Context-aware terrain classification</li>
@@ -368,11 +371,13 @@
                     <div class="row mt-3">
                         <div class="col-md-6 mb-3">
                             <h5 class="text-primary">🔗 Chain of Thought</h5>
-                            <p>Each agent provides explicit reasoning chains that explain <em>why</em> observations lead to conclusions. Fully auditable.</p>
+                            <p>Each agent provides explicit reasoning chains that explain <em>why</em> observations lead
+                                to conclusions. Fully auditable.</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <h5 class="text-primary">⚡ ODD-Aware Filtering</h5>
-                            <p>Agents receive the ODD spec and intelligently focus observations on relevant axes, reducing noise and improving accuracy.</p>
+                            <p>Agents receive the ODD spec and intelligently focus observations on relevant axes,
+                                reducing noise and improving accuracy.</p>
                         </div>
                     </div>
                 </div>
