@@ -75,15 +75,13 @@ Field naming aligns with prior odometry placeholders (`odom_vx`…); all VO-spec
 - Document intrinsics/assumptions in data generation README.
 
 ## VO Quality Tagging (where to flag bad frames)
-- **Preferred: Preprocessing pass** (during window extraction)  
+- **Option A: Preprocessing only (deterministic flags)**  
   - Run cheap image checks per window (blur/sharpness, exposure/low-light, saturation/clipping, motion streaks).  
-  - Emit `vo_risk` in metadata (e.g., `{"status":"degraded","blur":"high","low_light":"medium","artifacts":true}`).  
-  - Store alongside VO outputs (in `vo_<window>.json` and/or motion JSON) so all agents can see it deterministically.
-- **Agent-side pass-through**  
-  - Perception tool reads `vo_risk` from metadata and includes it in its output so Motion/Evaluator can down-weight VO or fall back to IMU-only.
-- **Optional agent-side check**  
-  - Perception can compute a lightweight blur/exposure score on the frame it already loads, setting a local `vo_status`. This is slower than preprocessing and should be advisory only.
-- Recommendation: do primary tagging in preprocessing; have Perception pass the flag through; let Motion/Evaluator use it to decide VO trust.
+  - Emit `vo_risk` in metadata (e.g., `{"status":"degraded","blur":"high","low_light":"medium","artifacts":true}`) and store with VO outputs (in `vo_<window>.json` and/or motion JSON).
+- **Option B: Dynamic (agent) only**  
+  - Perception computes a lightweight blur/exposure score on the frame it already loads, sets a local `vo_status`, and includes it in its output. Slower and less consistent, but no preprocessing dependency.
+- **Option C: Both (recommended)**  
+  - Do primary tagging in preprocessing, and also allow Perception to add an advisory check. Perception passes `vo_risk` through; Motion/Evaluator use it to decide VO trust (down-weight VO or fall back to IMU-only).
 
 ## Testing & Validation
 - Unit: synthetic frame pairs with known translation/rotation → verify recovered velocities within tolerance.

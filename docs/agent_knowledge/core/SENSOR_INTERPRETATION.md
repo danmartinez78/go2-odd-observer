@@ -44,6 +44,12 @@
 - **Accumulated map:** Multiple scans aggregated over time/motion. Denser coverage, shows traversed area.
 - BEV interpretation differs: accumulated maps show more complete environment but may have motion artifacts if robot moved significantly.
 
+## LiDAR Self-Hits
+- **What are self-hits?** LiDAR beams can reflect off the robot's own body (legs, chassis) and appear as detected points. These "self-hits" show up in the point cloud and BEV images.
+- **How they appear:** Small clusters of occupied pixels very close to the robot position (BEV center). Often appear as a consistent pattern across frames since the robot geometry is fixed.
+- **Interpretation guidance:** When analyzing BEV occupancy near the robot center, consider that very small, close-proximity clusters may be self-hits rather than external obstacles. This is especially relevant for collision or clearance analysis—a persistent pattern at the same relative position across multiple windows is more likely self-hit than a real obstacle.
+- **Not a strict rule:** Context matters. A genuine obstacle can also be very close to the robot. Use temporal consistency, motion context, and camera imagery to disambiguate when needed.
+
 ## Optional Profiles (robot/app-specific)
 - Profiles add robot-specific hardware details (sensor specs, known artifacts, FOV). Profiles should not redefine channel meanings—only add platform context.
 

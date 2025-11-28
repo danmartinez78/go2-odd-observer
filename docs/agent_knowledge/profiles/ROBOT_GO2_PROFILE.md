@@ -21,3 +21,11 @@
 - Avoid stairs/steep ramps (>~15°) and outdoor terrain.
 - Feature-poor areas (blank walls, uniform floors) can challenge vision-based localization; cross-check with IMU.
 - Do not infer new limits from this profile; use it as contextual guidance only.
+
+---
+
+## TODO: Robot Specification Migration
+> **Future work:** Consider moving detailed robot specifications (dimensions, weight, sensor FOV, max speeds, etc.) from the natural language ODD and ODD Spec Agent output into this profile document. This would allow:
+> - The NL ODD to simply state "the robot is a Go2 quadruped robot"
+> - The ODD Spec Agent to either populate full specs from this knowledge profile, or all agents to reference this profile for salient robot information
+> - Cleaner separation: ODD defines operational constraints, profile defines platform capabilities
