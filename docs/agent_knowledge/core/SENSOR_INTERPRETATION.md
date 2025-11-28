@@ -2,7 +2,11 @@
 
 **Purpose:** Shared, robot-agnostic guidance for interpreting BEV, camera, and IMU data. Keep prompts slim by referencing this doc; do not override per-run ODD spec or tool outputs.
 
-**Version:** v1.1.0 (knowledge-only)
+**Version:** v1.2.0 (knowledge-only)
+
+**Changelog:**
+- v1.2.0: Added LiDAR self-hit guidance section
+- v1.1.0: Updated BEV channel semantics (height/roughness use all points), added sim vs real characteristics
 
 ## BEV Basics
 - **Channels:**
