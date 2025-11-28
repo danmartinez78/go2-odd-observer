@@ -19,9 +19,24 @@ This document tracks versions of processed data and the processing parameters us
 
 ### Sim Data
 
-| Version | Date | Windows | BEV Settings | Notes |
-|---------|------|---------|--------------|-------|
-| `sim_1_v0` | TBD | TBD | rotation=90°, flip=horizontal, auto-crop | Initial with BEV transformations |
+| Version | Date | Windows | Window Settings | BEV Settings | Notes |
+|---------|------|---------|-----------------|--------------|-------|
+| `sim_1_0` | Nov 25 | 62 | 2.0s window, 1.0s stride (50% overlap) | rotation=180°, flip=horizontal | Legacy: overlap creates redundancy |
+| `sim_2_0_nooverlap` | Nov 28 | 31 | 2.0s window, 2.0s stride (no overlap) | rotation=180°, flip=horizontal | **Recommended**: No redundancy, half the cost |
+
+### Window Strategy Rationale
+
+**Why no overlap is preferred for ODD analysis:**
+
+1. **No redundant analysis** - Each moment analyzed exactly once
+2. **50% fewer windows** - Half the API calls and cost
+3. **LLM cross-window reasoning** - Agents already see all windows in a chunk, so overlap doesn't add value
+4. **Pattern detection** - Looking for trends, not precise event timestamps
+
+**When overlap might help:**
+- Event detection where boundary timing matters
+- Very short windows (<1s) where context is limited
+- Real-time streaming analysis (not our use case)
 
 ### Real Data
 

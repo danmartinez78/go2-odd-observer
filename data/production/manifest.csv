@@ -1,0 +1,4 @@
+run_id,is_sim,environment,notes,windows,window_length,stride
+demo_run,True,demo,Synthetic demo data for testing workflow,,,
+sim_1_0,True,gazebo_indoor,Legacy: 50% overlap (2s window 1s stride),62,2.0,1.0
+sim_2_0_nooverlap,True,gazebo_indoor,Recommended: no overlap (2s window 2s stride),31,2.0,2.0
