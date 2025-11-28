@@ -56,10 +56,19 @@ The tool automatically loads:
 ### Multimodal Fusion
 
 - **Camera image**: Environment type, lighting, visual obstacles
-- **LiDAR BEV**: Occupancy ratio, obstacle density, traversability
-  - **Ground filtering**: BEV shows only obstacles >10cm above ground
-  - **Robot position**: Center of 400×400 grid (pixel 200,200)
-  - **Spatial layout**: Upper half = forward path
+- **LiDAR BEV Channels** (3 complementary views):
+  - **Occupancy BEV** (`bev_occupancy_*.png`): Obstacles only (z > 10cm above ground)
+    - Robot position: Center of 400×400 grid (pixel 200,200)
+    - Upper half = forward path
+    - Use for: Collision detection, obstacle density
+  - **Height BEV** (`bev_height_*.png`): Full terrain elevation (ALL points)
+    - Includes ground surface - richer terrain signal
+    - Normalized: 0=low (-2m), 128≈ground (0m), 255=high (+2m)
+    - Use for: Terrain analysis, elevation changes, slope detection
+  - **Roughness BEV** (`bev_roughness_*.png`): Terrain variance (ALL points)
+    - Shows height variation within each pixel
+    - Bright = rough/variable terrain, Dark = smooth/flat
+    - Use for: Surface quality assessment, traversability
 
 ### Output Schema
 
@@ -222,20 +231,25 @@ This demonstrates LLM reasoning capabilities - agents use available metadata to 
 
 ## Common Issues
 
-### Issue 1: High occupancy ratio on flat floors
-- **Symptom**: 70-80% occupancy on flat terrain
-- **Cause**: Old data without ground filtering
-- **Fix**: Regenerate data (10cm ground filtering applied in extraction)
+### Issue 1: Confusing BEV channels
+- **Symptom**: Misinterpreting height BEV as occupancy
+- **Cause**: Height includes ground, occupancy does not
+- **Fix**: Use occupancy for obstacle detection, height for terrain analysis
 
 ### Issue 2: Terrain confusion
 - **Symptom**: Carpet classified as "rough terrain"
 - **Cause**: Model confusing texture with elevation
-- **Fix**: Prompt clarifies terrain = elevation changes
+- **Fix**: Prompt clarifies terrain = elevation changes; use roughness BEV
 
 ### Issue 3: Data source detection errors
 - **Symptom**: Real data marked as simulated
 - **Cause**: Very clean real environment
 - **Fix**: Check confidence value; low confidence (<0.7) indicates uncertainty
+
+### Issue 4: Real vs Sim BEV differences
+- **Symptom**: Real data BEVs look noisier than sim
+- **Cause**: Real LiDAR has more noise; sim is idealized
+- **Fix**: Expected behavior - agents should note data quality in observations
 
 ---
 

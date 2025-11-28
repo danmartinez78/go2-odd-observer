@@ -490,9 +490,9 @@ async def main():
         help="Output directory for results (default: data/archive/analysis_results/manual/<timestamp>)"
     )
     parser.add_argument(
-        "--use-default-knowledge",
+        "--no-knowledge",
         action="store_true",
-        help="Seed knowledge manifest (fundamentals + sensors + Go2 profile) into session before run",
+        help="Disable knowledge seeding (fundamentals + sensors + Go2 profile are seeded by default)",
     )
     parser.add_argument(
         "--knowledge-manifest",
@@ -519,9 +519,9 @@ async def main():
         print("Please create a .env file with: GOOGLE_API_KEY=your-key")
         sys.exit(1)
 
-    # Build knowledge seed (optional)
+    # Build knowledge seed (enabled by default, use --no-knowledge to disable)
     knowledge_seed = None
-    if args.use_default_knowledge or args.knowledge_manifest or args.knowledge_robot or args.knowledge_app:
+    if not args.no_knowledge:
         from odd_agents.knowledge import (
             build_reference_manifest,
             default_fundamentals_sections,
@@ -551,10 +551,12 @@ async def main():
             )
 
         fundamentals_sections = default_fundamentals_sections(
-            fundamentals_artifact=manifest.get("fundamentals", "artifact:odd_cod_fundamentals_v1")
+            fundamentals_artifact=manifest.get(
+                "fundamentals", "artifact:odd_cod_fundamentals_v1")
         ) if "fundamentals" in manifest else None
         sensor_sections = default_sensor_sections(
-            sensors_artifact=manifest.get("sensors", "artifact:sensor_interpretation_core_v1"),
+            sensors_artifact=manifest.get(
+                "sensors", "artifact:sensor_interpretation_core_v1"),
             sensors_overlay_artifact=manifest.get("sensors_overlay"),
         ) if "sensors" in manifest else None
 

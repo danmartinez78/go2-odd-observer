@@ -6,28 +6,45 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 **Last Updated**: November 28, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.5 Complete (Knowledge Layer + Agent Evaluation)
+**Status**: Phase 1.6 - Real Data BEV Fix (feature branch ready for merge)
 
-**Current Focus**: Production validation with `sim_2_0_nooverlap` (31 windows, no overlap)
+**Current Focus**: Validate real data pipeline, then merge `feature/real-data-bev-fix` to `dev`
 
 ## 🎯 Next Steps
 
-**In Progress:** Full production run on `sim_2_0_nooverlap` (31 windows = full ~62s scenario)
+**In Progress:** Manual pipeline validation on 2-window test sets
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
-| HIGH | Full Production Run | 🔄 IN PROGRESS | Running on `sim_2_0_nooverlap` (31 windows) |
-| HIGH | Real Data Validation | ⏳ NEXT | TF transforms ready, need to extract windows |
-| MEDIUM | Sporadic Window Failures RCA | 📋 TODO | Check results of current run for failures |
+| HIGH | Pipeline Validation | 🔄 IN PROGRESS | Testing sim_2win and real_2win test sets |
+| HIGH | Merge Feature Branch | ⏳ NEXT | Merge `feature/real-data-bev-fix` → `dev` after validation |
+| HIGH | Batch Production Run | ⏳ NEXT | Process all 167 windows overnight |
+| MEDIUM | Sporadic Window Failures RCA | 📋 TODO | Check results of batch run for failures |
 | MEDIUM | Token Accounting Bug Fix | 📋 TODO | Cost reporting accuracy (workaround: 3x estimate) |
 | LOW | Memory Layer (Phase 2.2) | 📋 DEFERRED | Cross-run context (nice-to-have) |
 
 **Recent Completions (Nov 28):**
-- ✅ Created `sim_2_0_nooverlap` production data (31 windows, no overlap)
-- ✅ Added `docs/DATA_GENERATION.md` - comprehensive extraction guide
-- ✅ Fixed BEV transformation documentation (sim auto-transform, no manual params)
+- ✅ Real data BEV extraction working (odom-frame detection, proper ground filtering)
+- ✅ Anti-aliasing improvements (bilinear splatting + 5x5 Gaussian blur)
+- ✅ Height BEV now uses ALL points (richer terrain signal vs filtered occupancy)
+- ✅ Generated all production data: 167 windows (31 sim + 136 real across 6 collections)
+- ✅ Created 2-window test sets for validation (sim_2win, real_2win)
+- ✅ Updated knowledge docs (SENSOR_INTERPRETATION.md, ROBOT_GO2_PROFILE.md)
+- ✅ Added LiDAR self-hit guidance to sensor interpretation
 
-**Recommended Path**: Current run → Check for failures → Real data extraction → Real data validation
+**Production Data Summary:**
+| Dataset | Windows | Notes |
+|---------|---------|-------|
+| sim_1 | 31 | No overlap, regenerated with improved BEV |
+| real_173442 | 31 | Office environment |
+| real_173813 | 30 | Office environment |
+| real_174232 | 11 | Shorter sequence |
+| real_174321 | 29 | Office environment |
+| real_174503 | 11 | Shorter sequence |
+| real_174604 | 24 | Office environment |
+| **Total** | **167** | Ready for batch analysis |
+
+**Recommended Path**: Validate test sets → Merge to dev → Batch process overnight
 
 ---
 

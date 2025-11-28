@@ -6,7 +6,14 @@ Processes all production scenarios and generates aggregate report.
 Follows the notebook workflow pattern with model configuration at top.
 
 Usage:
-    python scripts/run_odd_batch_analysis.py
+    python scripts/run_odd_batch_analysis.py [OPTIONS]
+
+Options:
+    --dry-run           Show what would be processed without running
+    --continue-on-error Continue processing even if a scenario fails
+    --no-knowledge      Disable knowledge seeding
+    --scenario NAME     Run only a specific scenario by name
+    --skip NAME         Skip specific scenarios (can be repeated)
 
 Output:
     data/archive/analysis_results/automated/<timestamp>/
@@ -16,9 +23,11 @@ Output:
         <scenario_2>/
             ...
         aggregate_report.json
+        batch_summary.json
 """
 
 from odd_agents import run_odd_workflow
+import argparse
 import asyncio
 import json
 import os
@@ -26,7 +35,7 @@ import sys
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
 from google.genai import Client
@@ -52,19 +61,25 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 # MODEL CONFIGURATION
 # ============================================================================
 # Customize which models to use for each agent
-# Options: "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro",
-#          "gemini-3-pro", "gemini-robotics-er-1.5-preview"
+# Options: "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash-exp"
 
 # Camera + LiDAR analysis (complex vision)
 MODEL_PERCEPTION = "gemini-2.5-pro"
 # IMU motion detection (straightforward)
-MODEL_MOTION = "gemini-2.5-flash"
+MODEL_MOTION = "gemini-2.5-pro"
 # Collision risk assessment (complex reasoning)
 MODEL_COLLISION = "gemini-2.5-pro"
 # ODD specification parsing (complex NLP)
 MODEL_ODD_SPEC = "gemini-2.5-pro"
-MODEL_COD = "gemini-2.5-flash"             # COD classification + compliance
-MODEL_REPORT = "gemini-2.5-flash"          # Final report generation
+# COD/Compliance evaluation
+MODEL_EVALUATOR = "gemini-2.5-pro"
+# Final report generation
+MODEL_REPORT = "gemini-2.5-pro"
+
+# Cost estimation (per 1K tokens, approximate)
+COST_PER_1K_INPUT = 0.00125  # gemini-2.5-pro input
+COST_PER_1K_OUTPUT = 0.01    # gemini-2.5-pro output
+ESTIMATED_TOKENS_PER_WINDOW = 20000  # Rough estimate
 
 # ============================================================================
 # ODD DESCRIPTION (Default from notebook)
@@ -98,13 +113,10 @@ DEFINITELY NOT designed for:
 - Extremely crowded spaces where collision is almost guaranteed
 - Rough terrain, gravel, sand, or anything unstable
 - Industrial environments with heavy machinery or hazardous materials
-- Extremely crowded spaces where collision is almost guaranteed
-- Rough terrain, gravel, sand, or anything unstable
-- Industrial environments with heavy machinery or hazardous materials
 """
 
 
-def find_production_scenarios():
+def find_production_scenarios(scenario_filter: Optional[str] = None, skip_list: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Find all production scenarios."""
     scenarios = []
     production_dir = project_root / "data" / "production"
@@ -116,6 +128,12 @@ def find_production_scenarios():
         if not scenario_dir.is_dir():
             continue
         if scenario_dir.name.startswith('.'):
+            continue
+
+        # Apply filters
+        if scenario_filter and scenario_dir.name != scenario_filter:
+            continue
+        if skip_list and scenario_dir.name in skip_list:
             continue
 
         # Check for index file
@@ -136,6 +154,36 @@ def find_production_scenarios():
     return scenarios
 
 
+def build_knowledge_seed() -> Dict[str, Any]:
+    """Build knowledge seed for agents (enabled by default)."""
+    from odd_agents.knowledge import (
+        build_reference_manifest,
+        default_fundamentals_sections,
+        default_sensor_sections,
+        build_memory_seed_entries,
+    )
+
+    fundamentals_artifact = "artifact:odd_cod_fundamentals_v1"
+    robot_artifact = "artifact:robot_go2_profile_v1"
+    sensors_artifact = "artifact:sensor_interpretation_core_v1"
+
+    manifest = build_reference_manifest(
+        fundamentals_artifact=fundamentals_artifact,
+        robot_artifact=robot_artifact,
+        sensors_artifact=sensors_artifact,
+    )
+
+    return build_memory_seed_entries(
+        manifest=manifest,
+        fundamentals_sections=default_fundamentals_sections(
+            fundamentals_artifact=fundamentals_artifact
+        ),
+        sensor_sections=default_sensor_sections(
+            sensors_artifact=sensors_artifact
+        ),
+    )
+
+
 def save_scenario_results(result: Dict[str, Any], scenario_name: str, output_base: Path, source_path: str = None) -> Path:
     """Save individual scenario results."""
     scenario_dir = output_base / scenario_name
@@ -150,131 +198,165 @@ def save_scenario_results(result: Dict[str, Any], scenario_name: str, output_bas
     with open(full_result_path, 'w') as f:
         json.dump(result, f, indent=2)
 
+    # Extract executive summary from new structure
+    exec_summary = {}
+    if 'reports' in result and 'executive_summary' in result['reports']:
+        exec_summary = result['reports']['executive_summary']
+    elif 'report' in result:
+        # Fallback to report agent output
+        report = result['report']
+        if isinstance(report, str):
+            try:
+                report = json.loads(report)
+            except json.JSONDecodeError:
+                report = {'raw': report}
+        exec_summary = report
+
     # Save executive summary
     summary_path = scenario_dir / "executive_summary.json"
-    compliance_data = get_compliance_data(result)
-    summary_data = {
-        'executive_summary': result['report'].get('executive_summary', ''),
-        'key_findings': result['report'].get('key_findings', []),
-        'recommendations': result['report'].get('recommendations', []),
-        'scenario_metadata': result['report'].get('scenario_metadata', {}),
-        'overall_compliance': compliance_data.get('overall_compliance', ''),
-        'violations': compliance_data.get('violations', []),
-        'warnings': compliance_data.get('warnings', [])
-    }
     with open(summary_path, 'w') as f:
-        json.dump(summary_data, f, indent=2)
+        json.dump(exec_summary, f, indent=2)
 
     return scenario_dir
 
 
-def get_compliance_data(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract compliance data, handling potential double nesting."""
-    compliance = result['full_analysis']['odd_compliance']
-    # Handle double nesting if present
-    if 'odd_compliance' in compliance:
-        return compliance['odd_compliance']
-    return compliance
+def extract_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract compliance verdict from result, handling various structures."""
+    # Try new structure first (Phase 1.4.4+)
+    full_analysis = result.get('full_analysis', {})
+
+    # Check for compliance_verdict in evaluator output
+    if 'compliance_verdict' in full_analysis:
+        verdict = full_analysis['compliance_verdict']
+        return {
+            'verdict': verdict.get('verdict', 'UNKNOWN'),
+            'confidence': verdict.get('confidence', 0.0),
+            'rationale': verdict.get('rationale', ''),
+        }
+
+    # Check reports structure
+    reports = result.get('reports', {})
+    if 'executive_summary' in reports:
+        compliance = reports['executive_summary'].get('compliance', {})
+        return {
+            'verdict': compliance.get('verdict', 'UNKNOWN'),
+            'confidence': compliance.get('confidence_value', compliance.get('confidence', 0.0)),
+        }
+
+    # Fallback: try report agent output
+    report = result.get('report', {})
+    if isinstance(report, str):
+        try:
+            report = json.loads(report)
+        except json.JSONDecodeError:
+            report = {}
+
+    if 'result' in report:
+        try:
+            inner = json.loads(report['result'])
+            compliance = inner.get('compliance', {})
+            status = compliance.get('status', 'UNKNOWN')
+            return {
+                'verdict': status,
+                'confidence': 1.0 if compliance.get('confidence') == 'HIGH' else 0.8,
+            }
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return {'verdict': 'UNKNOWN', 'confidence': 0.0}
 
 
 def generate_aggregate_report(results: List[Dict[str, Any]], timestamp: str) -> Dict[str, Any]:
     """Generate aggregate report from all scenario results."""
+    successful = [r for r in results if r['success']]
+    failed = [r for r in results if not r['success']]
+
+    # Calculate totals
+    total_windows = sum(r.get('window_count', 0) for r in successful)
+    total_tokens = sum(r.get('tokens', 0) for r in successful)
+    total_cost = sum(r.get('cost', 0.0) for r in successful)
+    total_duration = sum(r.get('duration', 0.0) for r in successful)
+
     aggregate = {
         'batch_metadata': {
             'timestamp': timestamp,
             'total_scenarios': len(results),
-            'successful_scenarios': len([r for r in results if r['success']]),
-            'failed_scenarios': len([r for r in results if not r['success']]),
-            'total_windows_analyzed': sum(r.get('window_count', 0) for r in results if r['success']),
+            'successful_scenarios': len(successful),
+            'failed_scenarios': len(failed),
+            'total_windows_analyzed': total_windows,
+            'total_tokens_used': total_tokens,
+            'total_cost_usd': round(total_cost, 4),
+            'total_duration_seconds': round(total_duration, 1),
+            'avg_cost_per_window': round(total_cost / total_windows, 4) if total_windows > 0 else 0,
         },
         'scenario_summaries': [],
+        'failed_scenarios': [
+            {'name': r['scenario_name'], 'error': r.get(
+                'error', 'Unknown error')}
+            for r in failed
+        ],
         'aggregate_statistics': {
             'compliance_distribution': {},
-            'violation_types': {},
-            'environment_distribution': {},
             'data_source_distribution': {},
         },
         'overall_findings': []
     }
 
-    # Compliance distribution
-    compliance_counts = {}
-    violation_types = {}
-    env_counts = {}
+    # Aggregate statistics
+    verdict_counts = {}
     source_counts = {}
 
-    for result in results:
-        if not result['success']:
-            continue
-
+    for result in successful:
         scenario_name = result['scenario_name']
         data = result['data']
 
-        # Extract compliance data (handle double nesting)
-        compliance_data = get_compliance_data(data)
-        compliance = compliance_data.get('overall_compliance', 'UNKNOWN')
-        violations = compliance_data.get('violations', [])
-        warnings_list = compliance_data.get('warnings', [])
+        # Extract compliance
+        compliance = extract_compliance_verdict(data)
+        verdict = compliance.get('verdict', 'UNKNOWN')
+        verdict_counts[verdict] = verdict_counts.get(verdict, 0) + 1
 
-        metadata = data['report'].get('scenario_metadata', {})
-        environment = metadata.get('environment_class', 'UNKNOWN')
-        data_source = metadata.get('data_source', 'UNKNOWN')
-
-        # Count compliance
-        compliance_counts[compliance] = compliance_counts.get(
-            compliance, 0) + 1
-
-        # Count violation types
-        for v in violations:
-            violation_types[v] = violation_types.get(v, 0) + 1
-
-        # Count environments
-        env_counts[environment] = env_counts.get(environment, 0) + 1
-
-        # Count data sources
+        # Determine data source from scenario name
+        data_source = 'sim' if 'sim' in scenario_name.lower() else 'real'
         source_counts[data_source] = source_counts.get(data_source, 0) + 1
 
         # Add to summaries
         aggregate['scenario_summaries'].append({
             'scenario_name': scenario_name,
             'windows': result['window_count'],
-            'compliance': compliance,
-            'violations_count': len(violations),
-            'warnings_count': len(warnings_list),
-            'environment': environment,
+            'verdict': verdict,
+            'confidence': compliance.get('confidence', 0.0),
             'data_source': data_source,
+            'tokens': result.get('tokens', 0),
+            'cost_usd': round(result.get('cost', 0.0), 4),
+            'duration_seconds': round(result.get('duration', 0.0), 1),
         })
 
-    aggregate['aggregate_statistics']['compliance_distribution'] = compliance_counts
-    aggregate['aggregate_statistics']['violation_types'] = violation_types
-    aggregate['aggregate_statistics']['environment_distribution'] = env_counts
+    aggregate['aggregate_statistics']['compliance_distribution'] = verdict_counts
     aggregate['aggregate_statistics']['data_source_distribution'] = source_counts
 
-    # Generate overall findings
-    total_success = aggregate['batch_metadata']['successful_scenarios']
-    total_scenarios = aggregate['batch_metadata']['total_scenarios']
-
-    if total_success > 0:
-        in_odd_count = compliance_counts.get('IN_ODD', 0)
-        violation_count = compliance_counts.get('VIOLATION', 0)
-        boundary_count = compliance_counts.get('ODD_BOUNDARY', 0)
+    # Generate findings
+    if successful:
+        in_odd = verdict_counts.get('IN_ODD', 0)
+        out_odd = verdict_counts.get('OUT_ODD', 0)
+        boundary = verdict_counts.get('ODD_BOUNDARY', 0)
 
         aggregate['overall_findings'] = [
-            f"Analyzed {total_success}/{total_scenarios} scenarios successfully",
-            f"ODD Compliance: {in_odd_count} in ODD, {boundary_count} at boundary, {violation_count} violations",
-            f"Most common environment: {max(env_counts.items(), key=lambda x: x[1])[0] if env_counts else 'N/A'}",
-            f"Data sources: {', '.join(f'{k} ({v})' for k, v in source_counts.items())}",
+            f"Analyzed {len(successful)}/{len(results)} scenarios successfully",
+            f"Compliance: {in_odd} IN_ODD, {out_odd} OUT_ODD, {boundary} BOUNDARY",
+            f"Total cost: ${total_cost:.4f} ({total_tokens:,} tokens)",
+            f"Average: ${total_cost/len(successful):.4f}/scenario, ${total_cost/total_windows:.5f}/window" if total_windows > 0 else "N/A",
+            f"Data sources: {', '.join(f'{k}={v}' for k, v in source_counts.items())}",
         ]
-
-        if violation_types:
-            top_violation = max(violation_types.items(), key=lambda x: x[1])
-            aggregate['overall_findings'].append(
-                f"Most common violation: {top_violation[0]} ({top_violation[1]} occurrences)")
 
     return aggregate
 
 
-async def process_scenario(scenario: Dict[str, Any], genai_client: Client, api_key: str) -> Dict[str, Any]:
+async def process_scenario(
+    scenario: Dict[str, Any],
+    genai_client: Client,
+    api_key: str,
+    knowledge_seed: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """Process a single scenario."""
     scenario_name = scenario['name']
     scenario_path = str(scenario['path'].absolute())
@@ -289,35 +371,96 @@ async def process_scenario(scenario: Dict[str, Any], genai_client: Client, api_k
             model_motion=MODEL_MOTION,
             model_collision=MODEL_COLLISION,
             model_odd_spec=MODEL_ODD_SPEC,
-            model_cod=MODEL_COD,
+            model_evaluator=MODEL_EVALUATOR,
             model_report=MODEL_REPORT,
+            knowledge_seed=knowledge_seed,
         )
 
         if result:
+            # Extract metrics from result
+            analysis_meta = result.get('analysis_metadata', {})
             return {
                 'success': True,
                 'scenario_name': scenario_name,
                 'window_count': scenario['windows'],
                 'source_path': scenario_path,
+                'tokens': analysis_meta.get('total_tokens_used', 0),
+                'cost': analysis_meta.get('estimated_cost_usd', 0.0),
+                'duration': analysis_meta.get('analysis_duration_seconds', 0.0),
                 'data': result
             }
         else:
             return {
                 'success': False,
                 'scenario_name': scenario_name,
+                'window_count': scenario['windows'],
                 'error': 'Workflow returned no results'
             }
 
     except Exception as e:
+        import traceback
         return {
             'success': False,
             'scenario_name': scenario_name,
-            'error': str(e)
+            'window_count': scenario.get('windows', 0),
+            'error': f"{type(e).__name__}: {str(e)}",
+            'traceback': traceback.format_exc(),
         }
+
+
+def estimate_cost(scenarios: List[Dict[str, Any]]) -> Dict[str, float]:
+    """Estimate total cost for batch run."""
+    total_windows = sum(s['windows'] for s in scenarios)
+    estimated_tokens = total_windows * ESTIMATED_TOKENS_PER_WINDOW
+    # Assume 90% input, 10% output
+    input_tokens = estimated_tokens * 0.9
+    output_tokens = estimated_tokens * 0.1
+    estimated_cost = (input_tokens / 1000 * COST_PER_1K_INPUT) + \
+        (output_tokens / 1000 * COST_PER_1K_OUTPUT)
+
+    return {
+        'total_windows': total_windows,
+        'estimated_tokens': estimated_tokens,
+        'estimated_cost_usd': round(estimated_cost, 2),
+        'cost_per_window': round(estimated_cost / total_windows, 4) if total_windows > 0 else 0,
+    }
 
 
 async def main():
     """Main execution function."""
+    parser = argparse.ArgumentParser(
+        description="Batch ODD Analysis Runner",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be processed without running",
+    )
+    parser.add_argument(
+        "--continue-on-error",
+        action="store_true",
+        help="Continue processing even if a scenario fails (default: stop on first error)",
+    )
+    parser.add_argument(
+        "--no-knowledge",
+        action="store_true",
+        help="Disable knowledge seeding",
+    )
+    parser.add_argument(
+        "--scenario",
+        type=str,
+        help="Run only a specific scenario by name",
+    )
+    parser.add_argument(
+        "--skip",
+        type=str,
+        action="append",
+        default=[],
+        help="Skip specific scenarios (can be repeated)",
+    )
+    args = parser.parse_args()
+
     # Load environment
     load_dotenv()
     api_key = os.environ.get("GOOGLE_API_KEY")
@@ -335,16 +478,23 @@ async def main():
     print(f"   Motion:      {MODEL_MOTION}")
     print(f"   Collision:   {MODEL_COLLISION}")
     print(f"   ODD Spec:    {MODEL_ODD_SPEC}")
-    print(f"   COD/Comply:  {MODEL_COD}")
+    print(f"   Evaluator:   {MODEL_EVALUATOR}")
     print(f"   Report:      {MODEL_REPORT}")
 
     # Find scenarios
     print()
     print("🔍 Scanning for production scenarios...")
-    scenarios = find_production_scenarios()
+    scenarios = find_production_scenarios(
+        scenario_filter=args.scenario,
+        skip_list=args.skip if args.skip else None,
+    )
 
     if not scenarios:
         print("❌ No production scenarios found in data/production/")
+        if args.scenario:
+            print(f"   (filter: --scenario {args.scenario})")
+        if args.skip:
+            print(f"   (skipped: {', '.join(args.skip)})")
         print("Please run extract_windows.py to create data")
         sys.exit(1)
 
@@ -353,7 +503,38 @@ async def main():
         f"✅ Found {len(scenarios)} scenarios ({total_windows} total windows)")
     print()
     for scenario in scenarios:
-        print(f"  • {scenario['name']:40s} ({scenario['windows']:3d} windows)")
+        print(f"  • {scenario['name']:20s} ({scenario['windows']:3d} windows)")
+
+    # Cost estimation
+    cost_estimate = estimate_cost(scenarios)
+    print()
+    print("💰 Cost Estimate:")
+    print(f"   Windows:        {cost_estimate['total_windows']}")
+    print(f"   Est. tokens:    {cost_estimate['estimated_tokens']:,}")
+    print(f"   Est. cost:      ${cost_estimate['estimated_cost_usd']:.2f}")
+    print(f"   Per window:     ${cost_estimate['cost_per_window']:.4f}")
+
+    if args.dry_run:
+        print()
+        print("🔍 DRY RUN - No analysis performed")
+        print("Remove --dry-run to execute")
+        sys.exit(0)
+
+    # Confirm if not in a script
+    if sys.stdin.isatty():
+        print()
+        response = input(f"Proceed with {len(scenarios)} scenarios? (y/N): ")
+        if response.lower() != 'y':
+            print("Cancelled")
+            sys.exit(0)
+
+    # Build knowledge seed
+    knowledge_seed = None
+    if not args.no_knowledge:
+        print()
+        print("📚 Building knowledge seed...")
+        knowledge_seed = build_knowledge_seed()
+        print(f"   Loaded: {list(knowledge_seed.keys())}")
 
     # Create timestamp and output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -368,14 +549,15 @@ async def main():
     print(f"  • Scenarios: {len(scenarios)}")
     print(f"  • Total windows: {total_windows}")
     print(f"  • Output: {output_base}")
-    print()
-    print("⚠️  Will exit on first error to save time and cost")
+    print(f"  • Knowledge: {'enabled' if knowledge_seed else 'disabled'}")
+    print(f"  • On error: {'continue' if args.continue_on_error else 'stop'}")
     print()
 
     # Create client
     genai_client = Client(api_key=api_key)
 
     results = []
+    stop_early = False
 
     try:
         # Process scenarios with progress bar
@@ -391,7 +573,9 @@ async def main():
                 print(
                     f"\n[{i}/{len(scenarios)}] Processing: {scenario['name']} ({scenario['windows']} windows)...")
 
-            result = await process_scenario(scenario, genai_client, api_key)
+            result = await process_scenario(
+                scenario, genai_client, api_key, knowledge_seed
+            )
             results.append(result)
 
             if result['success']:
@@ -399,14 +583,21 @@ async def main():
                 save_scenario_results(
                     result['data'], result['scenario_name'], output_base, result.get('source_path'))
                 if not HAS_TQDM:
-                    print(f"  ✅ Completed: {result['scenario_name']}")
+                    cost = result.get('cost', 0)
+                    tokens = result.get('tokens', 0)
+                    print(
+                        f"  ✅ Completed: {result['scenario_name']} (${cost:.4f}, {tokens:,} tokens)")
             else:
                 print()
                 print(f"❌ FAILED: {result['scenario_name']}")
                 print(f"   Error: {result['error']}")
-                print()
-                print("Exiting on first error (as configured)")
-                break
+
+                if not args.continue_on_error:
+                    print()
+                    print(
+                        "Stopping on first error (use --continue-on-error to continue)")
+                    stop_early = True
+                    break
 
         # Generate aggregate report
         print()
@@ -421,36 +612,57 @@ async def main():
         with open(aggregate_path, 'w') as f:
             json.dump(aggregate, f, indent=2)
 
+        # Save batch summary (lighter version for quick review)
+        summary_path = output_base / "batch_summary.json"
+        summary = {
+            'timestamp': timestamp,
+            'scenarios_processed': len(results),
+            'successful': aggregate['batch_metadata']['successful_scenarios'],
+            'failed': aggregate['batch_metadata']['failed_scenarios'],
+            'total_windows': aggregate['batch_metadata']['total_windows_analyzed'],
+            'total_cost_usd': aggregate['batch_metadata']['total_cost_usd'],
+            'compliance': aggregate['aggregate_statistics']['compliance_distribution'],
+            'stopped_early': stop_early,
+        }
+        with open(summary_path, 'w') as f:
+            json.dump(summary, f, indent=2)
+
         # Display summary
+        meta = aggregate['batch_metadata']
         print()
         print("📊 BATCH SUMMARY:")
         print("-" * 80)
-        print(
-            f"  • Total scenarios: {aggregate['batch_metadata']['total_scenarios']}")
-        print(
-            f"  • Successful: {aggregate['batch_metadata']['successful_scenarios']}")
-        print(f"  • Failed: {aggregate['batch_metadata']['failed_scenarios']}")
-        print(
-            f"  • Total windows: {aggregate['batch_metadata']['total_windows_analyzed']}")
+        print(f"  • Total scenarios: {meta['total_scenarios']}")
+        print(f"  • Successful: {meta['successful_scenarios']}")
+        print(f"  • Failed: {meta['failed_scenarios']}")
+        print(f"  • Total windows: {meta['total_windows_analyzed']}")
+        print(f"  • Total tokens: {meta['total_tokens_used']:,}")
+        print(f"  • Total cost: ${meta['total_cost_usd']:.4f}")
+        print(f"  • Avg per window: ${meta['avg_cost_per_window']:.5f}")
         print()
         print("📈 COMPLIANCE DISTRIBUTION:")
         print("-" * 80)
         for status, count in aggregate['aggregate_statistics']['compliance_distribution'].items():
             print(f"  • {status:20s}: {count}")
         print()
-        print("🌍 ENVIRONMENT DISTRIBUTION:")
-        print("-" * 80)
-        for env, count in aggregate['aggregate_statistics']['environment_distribution'].items():
-            print(f"  • {env:20s}: {count}")
-        print()
         print("💡 OVERALL FINDINGS:")
         print("-" * 80)
         for finding in aggregate['overall_findings']:
             print(f"  • {finding}")
 
+        if aggregate['failed_scenarios']:
+            print()
+            print("❌ FAILED SCENARIOS:")
+            print("-" * 80)
+            for fail in aggregate['failed_scenarios']:
+                print(f"  • {fail['name']}: {fail['error']}")
+
         print()
         print("=" * 80)
-        print("✅ BATCH ANALYSIS COMPLETE")
+        if stop_early:
+            print("⚠️  BATCH STOPPED EARLY (error encountered)")
+        else:
+            print("✅ BATCH ANALYSIS COMPLETE")
         print("=" * 80)
         print()
         print(f"📁 Results saved to:")
@@ -459,9 +671,10 @@ async def main():
         print(f"   • <scenario>/full_result.json        - Individual scenario results")
         print(f"   • <scenario>/executive_summary.json  - Individual summaries")
         print(f"   • aggregate_report.json              - Batch aggregate report")
+        print(f"   • batch_summary.json                 - Quick summary")
 
         # Exit with error if any scenarios failed
-        if aggregate['batch_metadata']['failed_scenarios'] > 0:
+        if meta['failed_scenarios'] > 0:
             sys.exit(1)
 
     except Exception as e:
@@ -472,7 +685,10 @@ async def main():
         sys.exit(1)
     finally:
         # Clean up client
-        await genai_client.aio.aclose()
+        try:
+            await genai_client.aio.aclose()
+        except Exception:
+            pass
         # Suppress cleanup warnings
         sys.stderr = open(os.devnull, 'w')
 

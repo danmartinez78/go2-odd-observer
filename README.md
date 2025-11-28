@@ -193,20 +193,21 @@ Quadruped robot designed for indoor office navigation.
 - ✅ **Multimodal Collision Detection** - IMU + camera + BEV fusion with LLM reasoning
 
 **Production Data:**
-- 📊 **62 windows** sim_1_0 production dataset + 6 test windows
+- 📊 **167 windows** across 7 scenarios (31 sim + 136 real robot data)
 - 🏭 **Auto-cropped BEVs** - 65-72% size reduction with square aspect ratio
-- ✅ **3-channel BEV fusion** - Occupancy, Height, Roughness (ground-filtered)
-- 📦 **Latest Data**: sim_1_0_v1 with transformed BEVs
+- ✅ **3-channel BEV fusion** - Occupancy (obstacles), Height (terrain), Roughness (variance)
+- 🤖 **Real robot support** - Odom-frame detection, proper ground filtering
+- 📦 **Knowledge layer** - Shared grounding docs (ODD/COD fundamentals, sensor interpretation)
 
 **Test Results:**
-- ⏱️ **6 minutes** for 2-window analysis (sim_test_w010_w011)
-- 💰 **$2.08** total cost ($1.04/window)
-- 🎯 **9/9 agents** executed successfully
-- 📊 **104K tokens** with rich observations and cross-window reasoning
+- ⏱️ **~4 minutes** for 2-window analysis
+- 💰 **~$0.05** per 2-window test (~$0.025/window)
+- 🎯 **6 agents** executed successfully
+- 📊 **38K tokens** with rich observations and cross-window reasoning
 
-**Test Data Analysis:**
-- 📝 **6 test scenarios** (sim_test_w010_w011, plus production scenarios)
-- ⚡ **2-window quick tests** + 62-window full production dataset
+**Test Data:**
+- 📝 **9 scenarios** available (7 production + 2 test)
+- ⚡ **2-window quick tests** (sim_2win, real_2win)
 - 🤖 **Validated agents**: Perception (3 BEV), Motion (IMU+camera), Collision (binary detection)
 
 ### 3. Interactive HTML Reports

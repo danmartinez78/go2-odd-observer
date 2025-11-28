@@ -2,19 +2,46 @@
 
 **Purpose:** Shared, robot-agnostic guidance for interpreting BEV, camera, and IMU data. Keep prompts slim by referencing this doc; do not override per-run ODD spec or tool outputs.
 
-**Version:** v1.0.0 (knowledge-only)
+**Version:** v1.3.0 (knowledge-only)
+
+**Changelog:**
+- v1.3.0: Major update for real data handling - added compression artifact guidance, improved sim vs real detection criteria, clarified motion blur vs artifacts
+- v1.2.0: Added LiDAR self-hit guidance section
+- v1.1.0: Updated BEV channel semantics (height/roughness use all points), added sim vs real characteristics
 
 ## BEV Basics
-- **Channels:** occupancy (obstacles/surfaces), height (vertical relief), roughness (surface variability).
+- **Channels:**
+  - **Occupancy:** Obstacles only (points >10cm above ground filtered). Use for collision detection, obstacle density, path clearance.
+  - **Height:** All points including ground (full terrain elevation). Grayscale: darker=lower, brighter=higher. Use for terrain analysis, slope detection, elevation changes.
+  - **Roughness:** All points (terrain height variance per pixel). Bright=rough/variable, dark=smooth/flat. Use for surface quality, traversability assessment.
+- **Key insight:** Height and roughness show the full terrain (richer signal), while occupancy is filtered to show only obstacles above ground level.
 - **Cropping:** BEVs are auto-cropped to remove empty borders; focus on the active region.
+- **Scale:** 0.05m/pixel (20px = 1m), ~20m × 20m coverage, robot at center facing up.
 - **Patterns to trust:** stable high-occupancy blobs near path, consistent height gradients for ramps/curbs, roughness spikes for uneven terrain.
 - **Common pitfalls:** shadows/texture in camera ≠ occupancy; sparse speckle noise near edges; LiDAR dropouts can mimic empty space.
 - **Directional conventions:** use provided window metadata for orientation; do not assume north/up without metadata.
+- **Real vs Sim:** Real LiDAR data is noisier than simulation; expect more texture/speckle in real BEVs.
 
 ## Camera Basics
 - Use for semantic context: lighting class, weather hints, obstacle/actor presence and type, surface quality cues.
 - Cross-check with BEV: obstacles in camera should align with occupancy clusters; lighting changes can explain BEV sparsity.
 - Avoid over-reliance on blur alone for motion; corroborate with IMU or per-window metadata.
+
+### Compression Artifacts (Real Data)
+- **H.264/Video Compression:** Real robot camera data often comes from H.264 video streams (ROS compressed topics). When extracted to PNG, these frames retain compression artifacts from the source video.
+- **Block artifacts:** 8×8 or 16×16 pixel blocky patterns, especially visible in smooth gradient areas or low-texture regions. This is a VIDEO CODEC artifact, NOT a sensor failure.
+- **Mosquito noise:** Ringing/halo effects around sharp edges.
+- **Color banding:** Visible bands in gradient areas instead of smooth transitions.
+- **CRITICAL:** These artifacts are NORMAL for real robot data and should NOT be interpreted as:
+  - Sensor malfunction
+  - Evidence of simulation
+  - Image corruption requiring concern
+- **Distinguishing from actual issues:** Compression artifacts are uniform across the frame and consistent across windows. A true sensor failure would show irregular patterns, missing data, or sudden quality changes.
+
+### Motion Blur vs Compression Artifacts
+- **Motion blur:** Directional smearing aligned with camera motion direction. Objects and edges appear stretched in a consistent direction. More pronounced at frame edges.
+- **Compression artifacts:** Blocky patterns NOT aligned with any motion direction. Appear as square/rectangular blocks regardless of scene content.
+- **Key distinction:** If the image shows blocky artifacts but the IMU reports low/zero motion, it is likely compression artifacts, NOT motion blur. Do not flag sensor discrepancies for this case.
 
 ## IMU Basics
 - **Signals:** gravity-corrected acceleration, angular velocity, derived jerk.
@@ -25,7 +52,48 @@
 - Collision signatures: sharp acceleration spikes, angular velocity anomalies, and high jerk within the same window.
 - Confirm with perception context when available (e.g., obstacle proximity) but avoid hallucinating collisions without IMU evidence.
 
+## Sim vs Real Data Characteristics
+
+### How to Distinguish (Priority Order)
+1. **Scenario metadata:** If the scenario path/name contains "real" or "sim", trust that designation.
+2. **LiDAR characteristics:** Real LiDAR has more noise/speckle; sim LiDAR has clean geometric shapes.
+3. **Environment realism:** Real images show natural imperfections, asymmetry, dust, wear. Sim shows idealized/perfect surfaces.
+4. **DO NOT use compression artifacts** as evidence of simulation—real data commonly has these from video codec extraction.
+
+### Simulation Indicators (High Confidence)
+- Perfectly clean, uniform textures (no dust, scratches, wear)
+- Idealized geometric shapes in furniture/objects
+- Unnaturally uniform lighting without subtle shadows
+- LiDAR scans with clean edges, no noise/speckle
+- Perfect color gradients, no banding
+
+### Real-World Indicators (High Confidence)
+- Natural surface imperfections, wear patterns, asymmetry
+- Variable lighting with natural shadows and reflections
+- LiDAR scans with noise, speckle, occasional dropouts
+- Compression artifacts (blocky patterns, color banding) - **this is EXPECTED for real data**
+- Exposure variation between frames
+- Natural clutter and imperfect object placement
+
+### Common Misclassifications to Avoid
+- **Blocky artifacts → "simulation":** WRONG. Compression artifacts indicate video-sourced real data.
+- **Smooth floor → "simulation":** Real floors can be smooth; check other indicators.
+- **Noisy image → "sensor failure":** Some noise is normal for real sensors.
+
+**Default assumption:** If metadata says "real", treat as real even if image quality appears degraded.
+
+## LiDAR Scan Types
+- **Single scan:** One LiDAR sweep at a point in time. Sparser coverage, shows instantaneous view.
+- **Accumulated map:** Multiple scans aggregated over time/motion. Denser coverage, shows traversed area.
+- BEV interpretation differs: accumulated maps show more complete environment but may have motion artifacts if robot moved significantly.
+
+## LiDAR Self-Hits
+- **What are self-hits?** LiDAR beams can reflect off the robot's own body (legs, chassis) and appear as detected points. These "self-hits" show up in the point cloud and BEV images.
+- **How they appear:** Small clusters of occupied pixels very close to the robot position (BEV center). Often appear as a consistent pattern across frames since the robot geometry is fixed.
+- **Interpretation guidance:** When analyzing BEV occupancy near the robot center, consider that very small, close-proximity clusters may be self-hits rather than external obstacles. This is especially relevant for collision or clearance analysis—a persistent pattern at the same relative position across multiple windows is more likely self-hit than a real obstacle.
+- **Not a strict rule:** Context matters. A genuine obstacle can also be very close to the robot. Use temporal consistency, motion context, and camera imagery to disambiguate when needed.
+
 ## Optional Profiles (robot/app-specific)
-- Profiles may add sensor quirks (e.g., typical IMU noise, LiDAR FOV gaps) or environment-specific patterns. Profiles should not redefine channel meanings—only add cautions/examples.
+- Profiles add robot-specific hardware details (sensor specs, known artifacts, FOV). Profiles should not redefine channel meanings—only add platform context.
 
 **Usage reminder:** Cite sections via the knowledge manifest. Always follow the current run’s ODD spec and tool interfaces as the source of truth for required axes and outputs.

@@ -21,10 +21,24 @@ This document tracks versions of processed data and the processing parameters us
 
 | Version | Date | Windows | Window Settings | BEV Settings | Notes |
 |---------|------|---------|-----------------|--------------|-------|
-| `sim_1_0` | Nov 25 | 62 | 2.0s window, 1.0s stride (50% overlap) | auto (sim default) | Legacy: overlap creates redundancy |
-| `sim_2_0_nooverlap` | Nov 28 | 31 | 2.0s window, 2.0s stride (no overlap) | auto (sim default) | **Recommended**: No redundancy, half the cost |
+| `sim_1` | Nov 28 | 31 | 2.0s window, 2.0s stride (no overlap) | auto (sim default) | Production: regenerated with improved BEV |
 
 **Note:** Sim data uses automatic BEV transformations (TF + 90° CCW rotation hardcoded in `extract_windows.py`). Do NOT specify `--bev-rotation` or `--bev-flip-horizontal` for sim data.
+
+### Real Data
+
+| Version | Date | Windows | BEV Settings | Notes |
+|---------|------|---------|--------------|-------|
+| `real_173442` | Nov 28 | 31 | auto (real default) | Office environment, full traversal |
+| `real_173813` | Nov 28 | 30 | auto (real default) | Office environment |
+| `real_174232` | Nov 28 | 11 | auto (real default) | Shorter sequence |
+| `real_174321` | Nov 28 | 29 | auto (real default) | Office environment |
+| `real_174503` | Nov 28 | 11 | auto (real default) | Shorter sequence |
+| `real_174604` | Nov 28 | 24 | auto (real default) | Office environment |
+
+**Total production windows:** 167 (31 sim + 136 real)
+
+**Note:** Real data uses odom-frame detection (point cloud already in odom frame on real robot). Ground filtering uses fixed `ground_z = 0.0m` for real data.
 
 ### Window Strategy Rationale
 
@@ -40,26 +54,19 @@ This document tracks versions of processed data and the processing parameters us
 - Very short windows (<1s) where context is limited
 - Real-time streaming analysis (not our use case)
 
-### Real Data
-
-| Version | Date | Windows | BEV Settings | Notes |
-|---------|------|---------|--------------|-------|
-| N/A | - | - | - | Awaiting per-scan LiDAR data |
-
 ## Test Data Versions
 
 ### Sim Test Data
 
 | Location | Source | Windows | Version | Notes |
 |----------|--------|---------|---------|-------|
-| `data/test/sim/` | `sim_1_v0` | 6 (w010-011, w030-031, w050-051) | v0 | Early/middle/late samples |
+| `data/test/sim_2win/` | `sim_1` | 2 (w010-011) | v1 | Quick validation |
 
 ### Real Test Data
 
 | Location | Source | Windows | Version | Notes |
 |----------|--------|---------|---------|-------|
-| `data/test/real_01_173442/` | collection_20251122_173442 | 2 | v0 | Placeholder (no BEV data yet) |
-| `data/test/real_02_173813/` | collection_20251122_173813 | 2 | v0 | Placeholder (no BEV data yet) |
+| `data/test/real_2win/` | `real_173442` | 2 (w010-011) | v1 | Quick validation |
 
 ## Version Changelog
 
