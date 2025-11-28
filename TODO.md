@@ -4,25 +4,30 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ---
 
-**Last Updated**: November 27, 2025  
+**Last Updated**: November 28, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
 **Status**: Phase 1.5 Complete (Knowledge Layer + Agent Evaluation)
 
-**Current Focus**: Decide next priority - see Next Steps below
+**Current Focus**: Production validation with `sim_2_0_nooverlap` (31 windows, no overlap)
 
 ## 🎯 Next Steps
 
-**Decision Point:** Choose next work item based on priorities:
+**In Progress:** Full production run on `sim_2_0_nooverlap` (31 windows = full ~62s scenario)
 
-| Priority | Item | Why |
-|----------|------|-----|
-| HIGH | Full Production Run (100 windows) | Validates system at scale, generates demo artifacts |
-| HIGH | Real Data Validation | Tests on actual robot data (post-Phase 1 architecture) |
-| MEDIUM | Token Accounting Bug Fix | Cost reporting accuracy (workaround: 3x estimate) |
-| MEDIUM | Sporadic Window Failures RCA | Use agent evals to isolate cause |
-| LOW | Memory Layer (Phase 2.2) | Cross-run context (nice-to-have, not blocking) |
+| Priority | Item | Status | Notes |
+|----------|------|--------|-------|
+| HIGH | Full Production Run | 🔄 IN PROGRESS | Running on `sim_2_0_nooverlap` (31 windows) |
+| HIGH | Real Data Validation | ⏳ NEXT | TF transforms ready, need to extract windows |
+| MEDIUM | Sporadic Window Failures RCA | 📋 TODO | Check results of current run for failures |
+| MEDIUM | Token Accounting Bug Fix | 📋 TODO | Cost reporting accuracy (workaround: 3x estimate) |
+| LOW | Memory Layer (Phase 2.2) | 📋 DEFERRED | Cross-run context (nice-to-have) |
 
-**Recommended**: Full Production Run → Real Data Validation → Bug fixes
+**Recent Completions (Nov 28):**
+- ✅ Created `sim_2_0_nooverlap` production data (31 windows, no overlap)
+- ✅ Added `docs/DATA_GENERATION.md` - comprehensive extraction guide
+- ✅ Fixed BEV transformation documentation (sim auto-transform, no manual params)
+
+**Recommended Path**: Current run → Check for failures → Real data extraction → Real data validation
 
 ---
 
