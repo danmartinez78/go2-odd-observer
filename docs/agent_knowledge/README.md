@@ -13,7 +13,7 @@ Agents read these as reference; the per-run ODD spec artifact remains the source
 | Artifact | File | Version | Artifact ID |
 |----------|------|---------|-------------|
 | Core fundamentals | `core/ODD_COD_FUNDAMENTALS.md` | v1.0.0 | `artifact:odd_cod_fundamentals_v1` |
-| Sensor interpretation | `core/SENSOR_INTERPRETATION.md` | v1.2.0 | `artifact:sensor_interpretation_core_v1` |
+| Sensor interpretation | `core/SENSOR_INTERPRETATION.md` | v1.3.0 | `artifact:sensor_interpretation_core_v1` |
 | Robot profile (Go2) | `profiles/ROBOT_GO2_PROFILE.md` | v1.1.0 | `artifact:robot_go2_profile_v1` |
 
 ## Versioning Policy

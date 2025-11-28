@@ -2,9 +2,10 @@
 
 **Purpose:** Shared, robot-agnostic guidance for interpreting BEV, camera, and IMU data. Keep prompts slim by referencing this doc; do not override per-run ODD spec or tool outputs.
 
-**Version:** v1.2.0 (knowledge-only)
+**Version:** v1.3.0 (knowledge-only)
 
 **Changelog:**
+- v1.3.0: Major update for real data handling - added compression artifact guidance, improved sim vs real detection criteria, clarified motion blur vs artifacts
 - v1.2.0: Added LiDAR self-hit guidance section
 - v1.1.0: Updated BEV channel semantics (height/roughness use all points), added sim vs real characteristics
 
@@ -26,6 +27,22 @@
 - Cross-check with BEV: obstacles in camera should align with occupancy clusters; lighting changes can explain BEV sparsity.
 - Avoid over-reliance on blur alone for motion; corroborate with IMU or per-window metadata.
 
+### Compression Artifacts (Real Data)
+- **H.264/Video Compression:** Real robot camera data often comes from H.264 video streams (ROS compressed topics). When extracted to PNG, these frames retain compression artifacts from the source video.
+- **Block artifacts:** 8×8 or 16×16 pixel blocky patterns, especially visible in smooth gradient areas or low-texture regions. This is a VIDEO CODEC artifact, NOT a sensor failure.
+- **Mosquito noise:** Ringing/halo effects around sharp edges.
+- **Color banding:** Visible bands in gradient areas instead of smooth transitions.
+- **CRITICAL:** These artifacts are NORMAL for real robot data and should NOT be interpreted as:
+  - Sensor malfunction
+  - Evidence of simulation
+  - Image corruption requiring concern
+- **Distinguishing from actual issues:** Compression artifacts are uniform across the frame and consistent across windows. A true sensor failure would show irregular patterns, missing data, or sudden quality changes.
+
+### Motion Blur vs Compression Artifacts
+- **Motion blur:** Directional smearing aligned with camera motion direction. Objects and edges appear stretched in a consistent direction. More pronounced at frame edges.
+- **Compression artifacts:** Blocky patterns NOT aligned with any motion direction. Appear as square/rectangular blocks regardless of scene content.
+- **Key distinction:** If the image shows blocky artifacts but the IMU reports low/zero motion, it is likely compression artifacts, NOT motion blur. Do not flag sensor discrepancies for this case.
+
 ## IMU Basics
 - **Signals:** gravity-corrected acceleration, angular velocity, derived jerk.
 - **Motion states:** combine magnitude + stability (smooth vs jerky) to infer steady walk, start/stop, turns.
@@ -36,12 +53,34 @@
 - Confirm with perception context when available (e.g., obstacle proximity) but avoid hallucinating collisions without IMU evidence.
 
 ## Sim vs Real Data Characteristics
-- **Simulation:** Clean, idealized sensor data. Uniform lighting, perfect textures, low noise.
-- **Real-world:** Expect sensor noise, lighting variation, motion blur, occasional artifacts.
-- **LiDAR:** Real scans are noisier with more speckle; sim scans are clean geometric shapes.
-- **Camera:** Real images have natural imperfections, compression artifacts, exposure variation.
-- **IMU:** Real IMU has more baseline noise; sim IMU is smoother.
-- When analyzing data, consider whether observed patterns are sensor artifacts vs actual environment features.
+
+### How to Distinguish (Priority Order)
+1. **Scenario metadata:** If the scenario path/name contains "real" or "sim", trust that designation.
+2. **LiDAR characteristics:** Real LiDAR has more noise/speckle; sim LiDAR has clean geometric shapes.
+3. **Environment realism:** Real images show natural imperfections, asymmetry, dust, wear. Sim shows idealized/perfect surfaces.
+4. **DO NOT use compression artifacts** as evidence of simulation—real data commonly has these from video codec extraction.
+
+### Simulation Indicators (High Confidence)
+- Perfectly clean, uniform textures (no dust, scratches, wear)
+- Idealized geometric shapes in furniture/objects
+- Unnaturally uniform lighting without subtle shadows
+- LiDAR scans with clean edges, no noise/speckle
+- Perfect color gradients, no banding
+
+### Real-World Indicators (High Confidence)
+- Natural surface imperfections, wear patterns, asymmetry
+- Variable lighting with natural shadows and reflections
+- LiDAR scans with noise, speckle, occasional dropouts
+- Compression artifacts (blocky patterns, color banding) - **this is EXPECTED for real data**
+- Exposure variation between frames
+- Natural clutter and imperfect object placement
+
+### Common Misclassifications to Avoid
+- **Blocky artifacts → "simulation":** WRONG. Compression artifacts indicate video-sourced real data.
+- **Smooth floor → "simulation":** Real floors can be smooth; check other indicators.
+- **Noisy image → "sensor failure":** Some noise is normal for real sensors.
+
+**Default assumption:** If metadata says "real", treat as real even if image quality appears degraded.
 
 ## LiDAR Scan Types
 - **Single scan:** One LiDAR sweep at a point in time. Sparser coverage, shows instantaneous view.
