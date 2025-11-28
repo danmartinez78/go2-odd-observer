@@ -470,12 +470,12 @@ class WindowExtractor:
                     bev_features[feature_name], 1)
 
         # FINAL ROTATION: Align with camera view (robot center, facing up)
-        # For sim data with TF transforms, base_link frame needs 90° CCW rotation
-        # This makes forward (x-axis) point up in the image
-        if self.data_source == 'sim':
-            for feature_name in bev_features:
-                bev_features[feature_name] = cv2.rotate(
-                    bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
+        # In base_link frame: X=forward, Y=left. Raw BEV has forward=right.
+        # Apply 90° CCW rotation to make forward point up in the image.
+        # This applies to both sim and real data since both use ROS standard frames.
+        for feature_name in bev_features:
+            bev_features[feature_name] = cv2.rotate(
+                bev_features[feature_name], cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         # Apply auto-crop to preserve obstacles while reducing size
         for feature_name in bev_features:
@@ -706,30 +706,44 @@ class WindowExtractor:
                 'roughness': empty.copy(),
             }
 
-        points_sensor = np.array(points, dtype=np.float32)
+        points_raw = np.array(points, dtype=np.float32)
 
         # Determine frame names based on data source
         if self.data_source == 'sim':
             sensor_frame = 'robot0/UnitreeL1_link'
             base_frame = 'robot0/base_link'
             odom_frame = 'robot0/odom'
+            # Sim: points are in sensor frame, need transform to odom
+            points_already_in_odom = False
         else:  # real
-            sensor_frame = 'UnitreeL1_link'
+            sensor_frame = 'UnitreeL1_link'  # May not exist - real lidar publishes in odom
             base_frame = 'base_link'
             odom_frame = 'odom'
+            # Real: Check the point cloud frame_id to determine if already in odom
+            # Real robot lidar driver typically publishes directly in odom frame
+            pc_frame = pc_msg.header.frame_id
+            points_already_in_odom = (pc_frame == odom_frame)
 
-        # Strategy: Transform sensor → odom (gravity-aligned) for ground filtering,
+        # Strategy: Get points into odom frame (gravity-aligned) for ground filtering,
         # then transform filtered points odom → base_link for robot-centric BEV
 
-        # Step 1: Transform points from sensor frame to odom frame (if TF available)
-        transform_sensor_to_odom = self._lookup_transform(
-            odom_frame, sensor_frame, timestamp)
+        # Step 1: Get points into odom frame
+        if points_already_in_odom:
+            # Real data: Points are already in odom frame (no transform needed)
+            points_odom = points_raw
+            have_odom_points = True
+        else:
+            # Sim data: Transform from sensor frame to odom
+            transform_sensor_to_odom = self._lookup_transform(
+                odom_frame, sensor_frame, timestamp)
+            if transform_sensor_to_odom is not None:
+                points_odom = self._apply_transform(
+                    points_raw, transform_sensor_to_odom)
+                have_odom_points = True
+            else:
+                have_odom_points = False
 
-        if transform_sensor_to_odom is not None:
-            # Use TF transforms (reliable, gravity-aligned)
-            points_odom = self._apply_transform(
-                points_sensor, transform_sensor_to_odom)
-
+        if have_odom_points:
             # Find ground level in odom frame (z-axis is up, gravity-aligned)
             z_values = points_odom[:, 2]
             hist, bin_edges = np.histogram(z_values, bins=100)
@@ -759,11 +773,11 @@ class WindowExtractor:
                 obstacles_base = obstacles_odom
                 all_points_base = points_odom
         else:
-            # Fallback: Use points in sensor frame (old behavior)
+            # Fallback: Use points in raw frame (old behavior)
             print(
-                f"Warning: No TF transforms available, using sensor frame without ground filtering")
-            obstacles_base = points_sensor
-            all_points_base = points_sensor
+                f"Warning: No TF transforms available, using raw frame without ground filtering")
+            obstacles_base = points_raw
+            all_points_base = points_raw
 
         # Create accumulator grids for feature calculation
         occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)

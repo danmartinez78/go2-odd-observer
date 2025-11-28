@@ -82,12 +82,20 @@ When `data_source == 'sim'`, the tool automatically:
 **⚠️ DO NOT specify `--bev-rotation` or `--bev-flip-horizontal` for sim data!**  
 The automatic transformations handle everything. Adding manual rotation/flip will produce incorrect results.
 
-### Real Data Transformations
+### Real Data Transformations (Automatic)
 
 When `data_source == 'real'`:
-- Uses different topic names (`/point_cloud2` instead of `/robot0/point_cloud2_L1`)
-- Uses different frame names (`base_link` instead of `robot0/base_link`)
-- No automatic rotation applied (real data may need different handling)
+
+1. **Detects point cloud frame** - Real robot publishes LiDAR directly in odom frame (no sensor→odom transform needed)
+2. **Uses TF transforms** to convert from odom frame → base_link frame
+3. **Applies ground filtering** in the gravity-aligned odom frame
+4. **Renders robot-centric BEV** with robot at center
+5. **Applies 90° CCW rotation** to align BEV with camera view (forward = up)
+
+Uses different topic names (`/point_cloud2` instead of `/robot0/point_cloud2_L1`) and frame names (`base_link` instead of `robot0/base_link`).
+
+**⚠️ DO NOT specify `--bev-rotation` or `--bev-flip-horizontal` for real data either!**  
+Both sim and real use the same final orientation convention.
 
 ---
 
@@ -179,9 +187,7 @@ This matches the camera's perspective for intuitive comparison.
 
 ### BEV appears mirrored or rotated incorrectly
 
-**For sim data:** Remove any `--bev-rotation` or `--bev-flip-horizontal` flags. The automatic transformation handles alignment.
-
-**For real data:** May require manual `--bev-rotation` tuning (coordinate frames differ).
+**For both sim and real data:** Remove any `--bev-rotation` or `--bev-flip-horizontal` flags. The automatic transformation handles alignment for both data sources.
 
 ### "No TF transforms available" warning
 
@@ -235,6 +241,7 @@ python scripts/extract_windows.py \
 
 | Date | Change |
 |------|--------|
+| 2025-11-28 | Real data BEV fix: unified rotation, auto-detect odom frame point cloud |
 | 2025-11-28 | Added no-overlap recommendation, clarified auto-transformation for sim data |
 | 2025-11-25 | Initial BEV transformation work, TF integration |
 
