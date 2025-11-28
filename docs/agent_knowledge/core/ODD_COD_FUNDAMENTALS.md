@@ -33,9 +33,10 @@
 Use the axis definitions from the ODD spec artifact as the source of truth for ranges and allowed values. This list is for naming consistency only.
 
 ## Sensor Interpretation Guidance
-- **LiDAR BEV (3 channels):** Occupancy, height, roughness. Occupancy = obstacles/present surfaces; height = vertical relief; roughness = surface variability. Empty borders are auto-cropped—focus on the active area.
-- **Camera:** Use for semantic cues (lighting, weather hints, obstacles/actors) and for corroborating BEV patterns.
-- **IMU:** Primary source for motion state, acceleration/jerk spikes, and collision signatures. Treat gravity-corrected horizontal acceleration as the main signal.
+See `core/SENSOR_INTERPRETATION.md` for detailed sensor guidance. Brief summary:
+- **LiDAR BEV:** 3 channels (occupancy, height, roughness) with different filtering—see sensor doc for semantics.
+- **Camera:** Semantic context (lighting, obstacles, actors). Cross-check with BEV.
+- **IMU:** Motion state, acceleration/jerk, collision signatures.
 
 ## Reasoning Patterns
 - Prefer the ODD spec artifact for thresholds; use this doc only for definitions and patterns.

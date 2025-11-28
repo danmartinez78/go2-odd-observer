@@ -34,10 +34,13 @@ try:
     from nav_msgs.msg import Odometry
     from geometry_msgs.msg import Twist, TransformStamped
     from tf2_msgs.msg import TFMessage
+    from tf2_ros import Buffer as TF2Buffer
     from cv_bridge import CvBridge
     import sensor_msgs_py.point_cloud2 as pc2
     from rclpy.time import Time
+    from rclpy.duration import Duration
     ROS2_AVAILABLE = True
+    TF2_AVAILABLE = True
     # Try to import Go2 custom IMU message (optional)
     try:
         from go2_interfaces.msg import IMU as Go2IMU
@@ -52,9 +55,11 @@ except ImportError as e:
     print("Please source ROS2 workspace: source /opt/ros/humble/setup.bash")
     ROS2_AVAILABLE = False
     GO2_IMU_AVAILABLE = False
+    TF2_AVAILABLE = False
     # Define dummy types to prevent NameError in type hints
     PointCloud2 = None
     Go2IMU = None
+    TF2Buffer = None
 
 try:
     import cv2
@@ -171,8 +176,13 @@ class WindowExtractor:
         # Data buffers - dict of lists indexed by topic
         self.messages = defaultdict(list)
 
-        # TF buffer for transforms (populated during bag reading)
-        self.tf_transforms = []  # List of (timestamp, TransformStamped) tuples
+        # TF2 buffer for transforms (populated during bag reading)
+        # Using tf2_ros.Buffer for proper transform lookups with interpolation
+        # Set cache_time to 5 minutes for offline bag processing (bags can be long)
+        if TF2_AVAILABLE:
+            self.tf_buffer = TF2Buffer(cache_time=Duration(seconds=300))
+        else:
+            self.tf_buffer = None
 
         # CV Bridge for image conversion
         if ROS2_AVAILABLE:
@@ -511,71 +521,46 @@ class WindowExtractor:
 
     def _lookup_transform(self, target_frame: str, source_frame: str, timestamp: float) -> Optional[TransformStamped]:
         """
-        Look up transform from TF data at specific timestamp.
-        Handles direct transforms and simple 2-hop chains (source→intermediate→target).
+        Look up transform using tf2_ros.Buffer.
+
+        The tf2 library handles:
+        - Transform chain composition (multi-hop lookups)
+        - Transform inversion (automatic)
+        - Time interpolation (automatic)
 
         Args:
-            target_frame: Target frame (e.g., 'robot0/odom')
-            source_frame: Source frame (e.g., 'robot0/UnitreeL1_link')
+            target_frame: Target frame (e.g., 'base_link')
+            source_frame: Source frame (e.g., 'odom')
             timestamp: Timestamp in seconds
 
         Returns:
             TransformStamped if found, None otherwise
         """
-        if not self.tf_transforms:
+        if self.tf_buffer is None:
             return None
 
-        # Try direct transform first
-        best_transform = None
-        best_time_diff = float('inf')
+        try:
+            # Convert timestamp to ROS Time
+            sec = int(timestamp)
+            nanosec = int((timestamp - sec) * 1e9)
+            ros_time = Time(seconds=sec, nanoseconds=nanosec)
 
-        for tf_time, transform in self.tf_transforms:
-            # Check if frames match
-            if transform.header.frame_id == target_frame and transform.child_frame_id == source_frame:
-                time_diff = abs(tf_time - timestamp)
-                if time_diff < best_time_diff:
-                    best_time_diff = time_diff
-                    best_transform = transform
+            # Use tf2 buffer to look up transform
+            # This handles chains, inversions, and interpolation automatically
+            transform = self.tf_buffer.lookup_transform(
+                target_frame,
+                source_frame,
+                ros_time,
+                # No blocking - data should already be in buffer
+                timeout=Duration(seconds=0)
+            )
+            return transform
+        except Exception as e:
+            # Transform not available at this time
+            return None
 
-        if best_transform:
-            return best_transform
-
-        # Try inverse transform (target←source means we need source→target inverted)
-        for tf_time, transform in self.tf_transforms:
-            # Check if we have the inverse
-            if transform.header.frame_id == source_frame and transform.child_frame_id == target_frame:
-                time_diff = abs(tf_time - timestamp)
-                if time_diff < best_time_diff:
-                    best_time_diff = time_diff
-                    # Invert the transform
-                    best_transform = self._invert_transform(transform)
-
-        if best_transform:
-            return best_transform
-
-        # Try 2-hop chain: source → intermediate → target
-        # Find all transforms at this timestamp
-        transforms_at_t = []
-        for tf_time, transform in self.tf_transforms:
-            if abs(tf_time - timestamp) < 0.1:  # Within 100ms
-                transforms_at_t.append(transform)
-
-        # Try to find a chain
-        for intermediate in transforms_at_t:
-            # Check if we can go source → intermediate.parent
-            if intermediate.child_frame_id == source_frame:
-                intermediate_frame = intermediate.header.frame_id
-                # Now find intermediate → target
-                for second_hop in transforms_at_t:
-                    if second_hop.child_frame_id == intermediate_frame and second_hop.header.frame_id == target_frame:
-                        # Compose transforms: T_target_source = T_target_intermediate @ T_intermediate_source
-                        composed = self._compose_transforms(
-                            second_hop, intermediate)
-                        return composed
-
-        return None
-
-    def _compose_transforms(self, t1: TransformStamped, t2: TransformStamped) -> TransformStamped:
+    # Legacy manual transform methods kept for reference but not used
+    def _compose_transforms_legacy(self, t1: TransformStamped, t2: TransformStamped) -> TransformStamped:
         """
         Compose two transforms: result = t1 @ t2
         (t1.parent → t1.child) @ (t2.parent → t2.child) = (t1.parent → t2.child)
@@ -614,9 +599,10 @@ class WindowExtractor:
 
         return composed
 
-    def _invert_transform(self, transform: TransformStamped) -> TransformStamped:
+    def _invert_transform_legacy(self, transform: TransformStamped) -> TransformStamped:
         """
-        Invert a transform: if T is parent→child, return child→parent.
+        LEGACY: Invert a transform: if T is parent→child, return child→parent.
+        Note: tf2_ros.Buffer handles inversions automatically, so this is unused.
         """
         # Extract transform
         trans = np.array([transform.transform.translation.x,
@@ -744,15 +730,25 @@ class WindowExtractor:
                 have_odom_points = False
 
         if have_odom_points:
-            # Find ground level in odom frame (z-axis is up, gravity-aligned)
-            z_values = points_odom[:, 2]
-            hist, bin_edges = np.histogram(z_values, bins=100)
-            ground_bin_idx = np.argmax(hist)
-            ground_z = (bin_edges[ground_bin_idx] +
-                        bin_edges[ground_bin_idx + 1]) / 2
+            # Ground filtering in odom frame (z-axis is gravity-aligned, up)
+            if self.data_source == 'real':
+                # For real data: odom frame has ground at Z ≈ 0
+                # Use a fixed threshold above ground (more robust than histogram)
+                ground_z = 0.0  # Ground is at Z=0 in odom frame
+                # Filter points above ground + threshold (e.g., z > 0.15m)
+                obstacle_mask = points_odom[:, 2] > (
+                    ground_z + ground_threshold)
+            else:
+                # For sim data: use histogram to find ground (works well)
+                z_values = points_odom[:, 2]
+                hist, bin_edges = np.histogram(z_values, bins=100)
+                ground_bin_idx = np.argmax(hist)
+                ground_z = (bin_edges[ground_bin_idx] +
+                            bin_edges[ground_bin_idx + 1]) / 2
+                obstacle_mask = points_odom[:, 2] > (
+                    ground_z + ground_threshold)
 
             # Create masks for obstacles (above ground) vs all points (for roughness)
-            obstacle_mask = points_odom[:, 2] > (ground_z + ground_threshold)
             obstacles_odom = points_odom[obstacle_mask]
 
             # Step 2: Transform back to base_link for robot-centric BEV rendering
@@ -780,11 +776,11 @@ class WindowExtractor:
             all_points_base = points_raw
 
         # Create accumulator grids for feature calculation
-        occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.uint8)
+        occupancy_grid = np.zeros((bev_size, bev_size), dtype=np.float32)
         height_grid = np.full((bev_size, bev_size), np.nan, dtype=np.float32)
         height_sum = np.zeros((bev_size, bev_size), dtype=np.float32)
         height_sq_sum = np.zeros((bev_size, bev_size), dtype=np.float32)
-        point_count = np.zeros((bev_size, bev_size), dtype=np.int32)
+        point_count = np.zeros((bev_size, bev_size), dtype=np.float32)
         height_min = np.full((bev_size, bev_size), np.inf, dtype=np.float32)
         height_max = np.full((bev_size, bev_size), -np.inf, dtype=np.float32)
 
@@ -792,73 +788,120 @@ class WindowExtractor:
         roughness_height_sum = np.zeros((bev_size, bev_size), dtype=np.float32)
         roughness_height_sq_sum = np.zeros(
             (bev_size, bev_size), dtype=np.float32)
-        roughness_point_count = np.zeros((bev_size, bev_size), dtype=np.int32)
+        roughness_point_count = np.zeros(
+            (bev_size, bev_size), dtype=np.float32)
 
-        # First pass: accumulate statistics for OBSTACLES ONLY (occupancy & height)
+        # Helper function for bilinear splatting (anti-aliased point rendering)
+        def splat_point(grid, px, py, value=1.0):
+            """Splat a point using bilinear interpolation for anti-aliasing."""
+            x0, y0 = int(px), int(py)
+            x1, y1 = x0 + 1, y0 + 1
+
+            # Bilinear weights
+            wx1 = px - x0
+            wx0 = 1.0 - wx1
+            wy1 = py - y0
+            wy0 = 1.0 - wy1
+
+            # Splat to 4 neighboring pixels
+            if 0 <= x0 < bev_size and 0 <= y0 < bev_size:
+                grid[y0, x0] += value * wx0 * wy0
+            if 0 <= x1 < bev_size and 0 <= y0 < bev_size:
+                grid[y0, x1] += value * wx1 * wy0
+            if 0 <= x0 < bev_size and 0 <= y1 < bev_size:
+                grid[y1, x0] += value * wx0 * wy1
+            if 0 <= x1 < bev_size and 0 <= y1 < bev_size:
+                grid[y1, x1] += value * wx1 * wy1
+
+        # First pass: OBSTACLES ONLY → occupancy
         for point in obstacles_base:
             x, y, z = point
 
-            # Convert to pixel coordinates (x forward, y left in base_link)
-            pixel_x = int((x / meters_per_pixel) + bev_size / 2)
-            pixel_y = int((-y / meters_per_pixel) + bev_size / 2)
+            # Convert to sub-pixel coordinates (x forward, y left in base_link)
+            pixel_x = (x / meters_per_pixel) + bev_size / 2
+            pixel_y = (-y / meters_per_pixel) + bev_size / 2
 
-            # Check bounds
-            if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
-                # Accumulate height statistics
-                point_count[pixel_y, pixel_x] += 1
-                height_sum[pixel_y, pixel_x] += z
-                height_sq_sum[pixel_y, pixel_x] += z * z
-                height_min[pixel_y, pixel_x] = min(
-                    height_min[pixel_y, pixel_x], z)
-                height_max[pixel_y, pixel_x] = max(
-                    height_max[pixel_y, pixel_x], z)
+            # Splat occupancy with anti-aliasing
+            splat_point(occupancy_grid, pixel_x, pixel_y, 1.0)
 
-        # Second pass: accumulate statistics for ALL POINTS (roughness - terrain variance)
+            # Track obstacle point count for normalization
+            px_int = int(pixel_x)
+            py_int = int(pixel_y)
+            if 0 <= px_int < bev_size and 0 <= py_int < bev_size:
+                point_count[py_int, px_int] += 1
+
+        # Second pass: ALL POINTS → height and roughness (richer terrain signal)
+        # Use splatting for smoother coverage
         for point in all_points_base:
             x, y, z = point
 
-            # Convert to pixel coordinates
-            pixel_x = int((x / meters_per_pixel) + bev_size / 2)
-            pixel_y = int((-y / meters_per_pixel) + bev_size / 2)
+            # Convert to sub-pixel coordinates
+            pixel_x = (x / meters_per_pixel) + bev_size / 2
+            pixel_y = (-y / meters_per_pixel) + bev_size / 2
 
-            # Check bounds
-            if 0 <= pixel_x < bev_size and 0 <= pixel_y < bev_size:
-                # Accumulate for roughness calculation
-                roughness_point_count[pixel_y, pixel_x] += 1
-                roughness_height_sum[pixel_y, pixel_x] += z
-                roughness_height_sq_sum[pixel_y, pixel_x] += z * z
+            # Bilinear splatting for height/roughness accumulation
+            x0, y0 = int(pixel_x), int(pixel_y)
+            x1, y1 = x0 + 1, y0 + 1
 
-        # Mark occupancy for pixels with obstacle points
-        occupancy_grid[point_count > 0] = 255
+            wx1 = pixel_x - x0
+            wx0 = 1.0 - wx1
+            wy1 = pixel_y - y0
+            wy0 = 1.0 - wy1
+
+            # Splat to 4 neighboring pixels with weighted height values
+            for (px, py, w) in [(x0, y0, wx0*wy0), (x1, y0, wx1*wy0),
+                                (x0, y1, wx0*wy1), (x1, y1, wx1*wy1)]:
+                if 0 <= px < bev_size and 0 <= py < bev_size:
+                    # Weighted accumulation for height
+                    height_sum[py, px] += z * w
+                    height_sq_sum[py, px] += z * z * w
+
+                    # Weighted accumulation for roughness
+                    roughness_point_count[py, px] += w
+                    roughness_height_sum[py, px] += z * w
+                    roughness_height_sq_sum[py, px] += z * z * w
+
+        # Normalize occupancy to 0-255 and apply threshold
+        # The splatted values accumulate, so normalize and threshold
+        max_occ = occupancy_grid.max()
+        if max_occ > 0:
+            occupancy_grid = (occupancy_grid / max_occ *
+                              255).astype(np.float32)
+        # Also set any cell with obstacle points to max for consistency
+        occupancy_grid[point_count > 0] = np.maximum(
+            occupancy_grid[point_count > 0], 200)
 
         # Calculate derived features
 
-        # 1. Height map (average elevation of OBSTACLES)
-        mask = point_count > 0
-        height_grid[mask] = height_sum[mask] / point_count[mask]
+        # 1. Height map (average elevation of ALL POINTS - full terrain)
+        all_points_mask = roughness_point_count > 0
+        height_grid[all_points_mask] = height_sum[all_points_mask] / \
+            roughness_point_count[all_points_mask]
         # Normalize to 0-255 range (assuming ±2m range)
         height_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
-        height_img[mask] = np.clip(
-            (height_grid[mask] + 2.0) * 63.75, 0, 255).astype(np.uint8)
+        height_img[all_points_mask] = np.clip(
+            (height_grid[all_points_mask] + 2.0) * 63.75, 0, 255).astype(np.uint8)
 
-        # 2. Roughness map (terrain variance - includes ground)
+        # 2. Roughness map (terrain variance - all points including ground)
         roughness_img = np.zeros((bev_size, bev_size), dtype=np.uint8)
-        roughness_mask = roughness_point_count > 0
         # Calculate variance: Var(X) = E[X²] - E[X]²
         variance = np.zeros((bev_size, bev_size), dtype=np.float32)
-        variance[roughness_mask] = (roughness_height_sq_sum[roughness_mask] / roughness_point_count[roughness_mask]) - \
-            (roughness_height_sum[roughness_mask] /
-             roughness_point_count[roughness_mask]) ** 2
+        variance[all_points_mask] = (roughness_height_sq_sum[all_points_mask] / roughness_point_count[all_points_mask]) - \
+            (roughness_height_sum[all_points_mask] /
+             roughness_point_count[all_points_mask]) ** 2
         # Ensure non-negative due to floating point errors
         variance = np.maximum(variance, 0)
         std_dev = np.sqrt(variance)
         # Normalize: 0.5m std = 255 (very rough)
         roughness_img = np.clip(std_dev * 510, 0, 255).astype(np.uint8)
 
-        # Apply slight blur to make features more visible
-        occupancy_grid = cv2.GaussianBlur(occupancy_grid, (3, 3), 0)
-        height_img = cv2.GaussianBlur(height_img, (3, 3), 0)
-        roughness_img = cv2.GaussianBlur(roughness_img, (3, 3), 0)
+        # Convert occupancy to uint8 for output
+        occupancy_grid = np.clip(occupancy_grid, 0, 255).astype(np.uint8)
+
+        # Apply slight blur to make features more visible and reduce aliasing
+        occupancy_grid = cv2.GaussianBlur(occupancy_grid, (5, 5), 1.0)
+        height_img = cv2.GaussianBlur(height_img, (5, 5), 1.0)
+        roughness_img = cv2.GaussianBlur(roughness_img, (5, 5), 1.0)
 
         return {
             'occupancy': occupancy_grid,
@@ -926,17 +969,22 @@ class WindowExtractor:
         while reader.has_next():
             (topic, data, t) = reader.read_next()
 
-            # Handle TF messages separately (for sim data with /tf topic)
-            if topic == '/tf':
+            # Handle TF messages - add to tf2 buffer
+            if topic == '/tf' or topic == '/tf_static':
                 try:
                     msg_type = msg_type_dict.get('tf2_msgs/msg/TFMessage')
-                    if msg_type:
+                    if msg_type and self.tf_buffer is not None:
                         tf_msg = deserialize_message(data, msg_type)
-                        timestamp = t / 1e9
                         # TFMessage contains multiple TransformStamped messages
                         for transform in tf_msg.transforms:
-                            self.tf_transforms.append((timestamp, transform))
-                        tf_count += len(tf_msg.transforms)
+                            # Use appropriate method for static vs dynamic transforms
+                            if topic == '/tf_static':
+                                self.tf_buffer.set_transform_static(
+                                    transform, 'bag_reader')
+                            else:
+                                self.tf_buffer.set_transform(
+                                    transform, 'bag_reader')
+                            tf_count += 1
                 except Exception as e:
                     print(f"Warning: Failed to parse TF message: {e}")
                 continue
