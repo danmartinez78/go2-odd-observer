@@ -10,18 +10,22 @@
 ```bash
 python scripts/extract_windows.py \
   --rosbag data/raw_rosbags/sim/1/sim_1_0.db3 \
-  --output data/production \
-  --data-source sim \
-  --bev-rotation 90 \
-  --bev-flip-horizontal
+  --output data/production/my_scenario \
+  --run-id my_scenario \
+  --data-source sim
 ```
 
-**Transformations Applied (sim only):**
-1. **Rotation**: 90° clockwise (fixes orientation)
-2. **Flip**: Horizontal flip (fixes left/right mirror)
-3. **Auto-crop**: Preserves all obstacles, reduces size 65-72%
+**⚠️ IMPORTANT: Do NOT specify `--bev-rotation` or `--bev-flip-horizontal` for sim data!**
+
+**Automatic Transformations (sim only, hardcoded in code):**
+1. **TF transforms**: sensor frame → odom frame → base_link frame
+2. **Ground filtering**: In gravity-aligned odom frame
+3. **90° CCW rotation**: Aligns BEV with camera view (forward = up)
+4. **Auto-crop**: Preserves all obstacles, reduces size 65-72%
 
 **Result:** Clean, correctly oriented BEVs with robot centered and forward=up
+
+See [`docs/DATA_GENERATION.md`](DATA_GENERATION.md) for full documentation.
 
 ### Production Data Generated
 - **Sim data**: `data/production/sim_1_0/` (62 windows)

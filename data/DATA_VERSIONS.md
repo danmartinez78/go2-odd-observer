@@ -21,8 +21,10 @@ This document tracks versions of processed data and the processing parameters us
 
 | Version | Date | Windows | Window Settings | BEV Settings | Notes |
 |---------|------|---------|-----------------|--------------|-------|
-| `sim_1_0` | Nov 25 | 62 | 2.0s window, 1.0s stride (50% overlap) | rotation=180°, flip=horizontal | Legacy: overlap creates redundancy |
-| `sim_2_0_nooverlap` | Nov 28 | 31 | 2.0s window, 2.0s stride (no overlap) | rotation=180°, flip=horizontal | **Recommended**: No redundancy, half the cost |
+| `sim_1_0` | Nov 25 | 62 | 2.0s window, 1.0s stride (50% overlap) | auto (sim default) | Legacy: overlap creates redundancy |
+| `sim_2_0_nooverlap` | Nov 28 | 31 | 2.0s window, 2.0s stride (no overlap) | auto (sim default) | **Recommended**: No redundancy, half the cost |
+
+**Note:** Sim data uses automatic BEV transformations (TF + 90° CCW rotation hardcoded in `extract_windows.py`). Do NOT specify `--bev-rotation` or `--bev-flip-horizontal` for sim data.
 
 ### Window Strategy Rationale
 
