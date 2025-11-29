@@ -1,0 +1,997 @@
+{
+  "report": {
+    "result": "{\n  \"compliance\": {\n    \"status\": \"OUT_ODD\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The operation was outside the Operational Design Domain due to repeated environmental violations, including non-traversable paths and excessive obstacle density, which led to numerous collisions.\"\n  },\n  \"executive_summary\": \"The robot operated in a simulated indoor office and living room environment. It failed to navigate the space safely, repeatedly encountering blocked paths and cluttered areas that violated its operational limits. This resulted in 11 low-speed collisions with furniture and an inefficient stop-and-go motion pattern, confirming the scenario was outside its designed capabilities.\",\n  \"key_findings\": {\n    \"perception\": \"The simulated indoor environment featured smooth floors and acceptable lighting, but the layout of static furniture frequently blocked the robot's path and created non-traversable situations.\",\n    \"motion\": \"The robot failed to achieve sustained forward motion, exhibiting a stop-and-go pattern with brief, reactive turns and remaining stationary for long periods.\",\n    \"safety\": \"There was a critical safety failure, with 11 low-speed collisions detected as the robot repeatedly pushed into or stalled against large, static furniture.\",\n    \"temporal_trends\": \"The robot's performance was consistently poor and degrading, characterized by a repetitive cycle of getting stuck, turning, and colliding with obstacles without improvement.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 31,\n    \"environment\": \"indoor commercial/residential\",\n    \"data_quality\": \"complete\",\n    \"data_source\": \"simulated\"\n  },\n  \"issues\": [\n    \"The robot's path was frequently blocked, leading to multiple violations of the minimum 'traversability_score' (0.5) and one violation of the maximum 'obstacle_density' (0.5).\",\n    \"A total of 11 collisions were detected in 31 windows, indicating a systemic failure in the obstacle avoidance and path planning systems.\",\n    \"The robot exhibited inefficient stop-and-go motion, failing to make meaningful progress through the environment.\",\n    \"Several collisions occurred where the LiDAR sensor appeared not to detect the obstacle, suggesting a potential sensor blind spot or perception failure.\"\n  ],\n  \"recommendations\": [\n    \"Do not operate the robot in this or similar environments until the navigation failures are resolved.\",\n    \"Investigate the root cause of the frequent collisions, focusing on the path planning and obstacle avoidance logic.\",\n    \"Review the robot's strategy for handling blocked paths to prevent repeated stalls and collisions.\",\n    \"Analyze the sensor data from collision events (e.g., windows '001', '028') to identify and mitigate potential LiDAR blind spots.\"\n  ]\n}"
+  },
+  "full_analysis": {
+    "cod_region": {
+      "environment_type": {
+        "workspace": 0.1935483870967742,
+        "office": 0.12903225806451613,
+        "living_room": 0.6774193548387096,
+        "type": "enum"
+      },
+      "lighting_conditions": {
+        "dim": 0.3548387096774194,
+        "moderate": 0.4838709677419355,
+        "bright": 0.16129032258064516,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "smooth": 1.0,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.05,
+        "max": 0.6
+      },
+      "traversability_score": {
+        "type": "range",
+        "min": 0.2,
+        "max": 0.95
+      },
+      "stairs_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "outdoor_environment": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "max_speed_mps": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.0175,
+        "max": 1.0771
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 0.39,
+        "max": 11.05
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 0.51,
+        "max": 12.33
+      }
+    },
+    "region_metrics": {
+      "region_distance": 0.4503,
+      "fraction_outside_per_axis": {
+        "environment_type": 0.0,
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0,
+        "obstacle_density": 0.1818,
+        "traversability_score": 0.4,
+        "stairs_present": 0.0,
+        "outdoor_environment": 0.0,
+        "max_speed_mps": 0.0,
+        "max_accel_mps2": 0.0,
+        "max_roll_deg": 0.0985,
+        "max_pitch_deg": 0.0
+      },
+      "total_windows": 31,
+      "windows_in_odd": 27,
+      "windows_violated": [
+        "000",
+        "011",
+        "014",
+        "025"
+      ],
+      "first_violation_window": "000"
+    },
+    "compliance_verdict": {
+      "verdict": "OUT_ODD",
+      "confidence": 1.0,
+      "rationale": "The Current Operating Domain is definitively OUT_ODD, driven by a high region distance of 0.45. This is caused by severe and repeated violations on critical environmental axes. Specifically, the 'traversability_score' fell below the minimum required value of 0.5 in multiple windows ('000', '011', '025'), indicating the robot's path was blocked. Furthermore, 'obstacle_density' exceeded its maximum limit in window '025', placing the robot in a cluttered space it is not designed for. While the robot's own motion (acceleration, pitch, roll) remained largely within limits, the environment itself was unsuitable. This is corroborated by the Collision Agent, which detected 11 separate collision events, a fundamental failure to operate safely within the intended domain.",
+      "critical_axes": [
+        "traversability_score",
+        "obstacle_density",
+        "max_roll_deg"
+      ],
+      "temporal_stability": "DEGRADING"
+    },
+    "key_concerns": [
+      "Frequent Environmental Violations: The robot repeatedly encountered non-traversable paths and excessive clutter, indicating a fundamental mismatch between the scenario and the robot's capabilities as defined by the ODD.",
+      "Systemic Collision Failures: A total of 11 collisions were detected in a 31-window scenario. This represents a critical safety and operational failure, demonstrating the robot's inability to navigate the environment even when its motion parameters were technically within limits.",
+      "Inefficient and Unstable Motion: The robot exhibited a constant stop-start-turn pattern, never achieving sustained forward motion. This behavior, likely a reaction to the challenging environment, is inconsistent with the 'smooth' and 'controlled' motion specified in the ODD's intent."
+    ]
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-11-29T09:16:54.868756+00:00",
+    "analysis_duration_seconds": 2245.44,
+    "total_agents_executed": 6,
+    "total_tokens_used": 227256,
+    "estimated_cost_usd": 0.285589,
+    "cost_breakdown": {
+      "total_input_tokens": 220127,
+      "total_output_tokens": 1043,
+      "input_cost_usd": 0.275159,
+      "output_cost_usd": 0.01043
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.00855,
+      "PerceptionAgent": 0.003135,
+      "MotionAgent": 0.041146,
+      "CollisionAgent": 0.066486,
+      "EvaluatorAgent": 0.078446,
+      "ReportAgent": 0.087825
+    },
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-11-29T09:16:54.868756+00:00",
+    "pipeline_duration_seconds": 2245.44,
+    "odd_specification": {
+      "hash": "3ca33cfc4fb54c53",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/production/sim_1",
+      "scenario_name": "sim_1"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "6.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "2be77b23eb83856a",
+        "timestamp": "2025-11-29T09:16:54.870620+00:00",
+        "invocation_id": "e-aef3c13d-0a60-4e23-8330-42d1a0c963d0",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 3160,
+          "completion_tokens": 460,
+          "total_tokens": 5693
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "7.5.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "4e3ff80c88ddec1e",
+        "timestamp": "2025-11-29T09:17:20.351741+00:00",
+        "invocation_id": "e-aef3c13d-0a60-4e23-8330-42d1a0c963d0",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 2412,
+          "completion_tokens": 12,
+          "total_tokens": 3298
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "8322eaf78af90267",
+        "timestamp": "2025-11-29T09:31:51.833717+00:00",
+        "invocation_id": "e-aef3c13d-0a60-4e23-8330-42d1a0c963d0",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 32821,
+          "completion_tokens": 12,
+          "total_tokens": 33609
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "72f2f428efb51c85",
+        "timestamp": "2025-11-29T09:43:47.420612+00:00",
+        "invocation_id": "e-aef3c13d-0a60-4e23-8330-42d1a0c963d0",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 53093,
+          "completion_tokens": 12,
+          "total_tokens": 53789
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "5.1.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "67903167e9d3cd0c",
+        "timestamp": "2025-11-29T09:53:39.812801+00:00",
+        "invocation_id": "e-aef3c13d-0a60-4e23-8330-42d1a0c963d0",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 62661,
+          "completion_tokens": 12,
+          "total_tokens": 63430
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "9.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "cb0d28adcd44cc9f",
+        "timestamp": "2025-11-29T09:54:00.294348+00:00",
+        "invocation_id": "e-aef3c13d-0a60-4e23-8330-42d1a0c963d0",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 65980,
+          "completion_tokens": 535,
+          "total_tokens": 67437
+        }
+      }
+    },
+    "total_agents_executed": 6,
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-11-29T09:54:20.331492Z",
+      "scenario_overview": "",
+      "key_observations": [],
+      "recommendations": [],
+      "pipeline_quality_assessment": "",
+      "compliance": {
+        "verdict": "OUT_ODD",
+        "confidence": "HIGH",
+        "confidence_value": 1.0,
+        "stability": "DEGRADING",
+        "critical_axes": [
+          "traversability_score",
+          "obstacle_density",
+          "max_roll_deg"
+        ]
+      },
+      "data_quality": {
+        "all_agents_healthy": true,
+        "warnings": [
+          "No perception data available",
+          "No motion data available",
+          "No collision data available"
+        ],
+        "anomalies": []
+      },
+      "measurement_summary": {},
+      "scenario": {
+        "name": "sim_1",
+        "windows_analyzed": 0
+      },
+      "analysis": {
+        "duration_seconds": 2245.44,
+        "total_tokens": 227256,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-11-29T09:54:20.331529Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [],
+        "pipeline_quality_assessment": "",
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        },
+        "measurement_summary": {}
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "OUT_ODD",
+          "confidence": 1.0,
+          "rationale": "The Current Operating Domain is definitively OUT_ODD, driven by a high region distance of 0.45. This is caused by severe and repeated violations on critical environmental axes. Specifically, the 'traversability_score' fell below the minimum required value of 0.5 in multiple windows ('000', '011', '025'), indicating the robot's path was blocked. Furthermore, 'obstacle_density' exceeded its maximum limit in window '025', placing the robot in a cluttered space it is not designed for. While the robot's own motion (acceleration, pitch, roll) remained largely within limits, the environment itself was unsuitable. This is corroborated by the Collision Agent, which detected 11 separate collision events, a fundamental failure to operate safely within the intended domain.",
+          "critical_axes": [
+            "traversability_score",
+            "obstacle_density",
+            "max_roll_deg"
+          ],
+          "temporal_stability": "DEGRADING"
+        },
+        "cod_region": {
+          "environment_type": {
+            "workspace": 0.1935483870967742,
+            "office": 0.12903225806451613,
+            "living_room": 0.6774193548387096,
+            "type": "enum"
+          },
+          "lighting_conditions": {
+            "dim": 0.3548387096774194,
+            "moderate": 0.4838709677419355,
+            "bright": 0.16129032258064516,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "smooth": 1.0,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.05,
+            "max": 0.6
+          },
+          "traversability_score": {
+            "type": "range",
+            "min": 0.2,
+            "max": 0.95
+          },
+          "stairs_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "outdoor_environment": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "max_speed_mps": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.0175,
+            "max": 1.0771
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 0.39,
+            "max": 11.05
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 0.51,
+            "max": 12.33
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.4503,
+          "fraction_outside_per_axis": {
+            "environment_type": 0.0,
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0,
+            "obstacle_density": 0.1818,
+            "traversability_score": 0.4,
+            "stairs_present": 0.0,
+            "outdoor_environment": 0.0,
+            "max_speed_mps": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0985,
+            "max_pitch_deg": 0.0
+          },
+          "total_windows": 31,
+          "windows_in_odd": 27,
+          "windows_violated": [
+            "000",
+            "011",
+            "014",
+            "025"
+          ],
+          "first_violation_window": "000"
+        },
+        "key_concerns": [
+          "Frequent Environmental Violations: The robot repeatedly encountered non-traversable paths and excessive clutter, indicating a fundamental mismatch between the scenario and the robot's capabilities as defined by the ODD.",
+          "Systemic Collision Failures: A total of 11 collisions were detected in a 31-window scenario. This represents a critical safety and operational failure, demonstrating the robot's inability to navigate the environment even when its motion parameters were technically within limits.",
+          "Inefficient and Unstable Motion: The robot exhibited a constant stop-start-turn pattern, never achieving sustained forward motion. This behavior, likely a reaction to the challenging environment, is inconsistent with the 'smooth' and 'controlled' motion specified in the ODD's intent."
+        ]
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0,
+          "window_ids": []
+        },
+        "agent_health": {
+          "perception": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "status": "OK"
+          },
+          "motion": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "zero_acceleration_windows": [],
+            "status": "OK"
+          },
+          "collision": {
+            "windows_processed": 0,
+            "collision_detected_windows": [],
+            "collision_count": 0,
+            "status": "OK"
+          }
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "OUT_ODD",
+          "confidence": 1.0,
+          "temporal_stability": "DEGRADING",
+          "critical_axes": [
+            "traversability_score",
+            "obstacle_density",
+            "max_roll_deg"
+          ]
+        },
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        }
+      },
+      "odd_specification": {},
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "odd_trends": "Across the scenario, the environment type transitions from 'workspace'/'office' to 'living_room'. The terrain is consistently 'smooth' and lighting conditions vary within ODD limits ('dim', 'moderate', 'bright'). The most significant trend is the highly fluctuating 'traversability_score', which is mostly high but frequently drops to ODD minimums or below when the robot's path is blocked by furniture. 'Obstacle_density' remains low, except for a few spikes in cluttered situations.",
+          "anomalies": [
+            "Window '025' shows an obstacle_density of 0.6, exceeding the ODD maximum of 0.5.",
+            "Windows '000', '011', and '025' have traversability_score values (0.3, 0.2, 0.2) that are below the ODD minimum of 0.5.",
+            "The traversability_score exhibits a highly volatile, oscillating pattern, frequently dropping to the ODD minimum (0.5), which is anomalous for a mission that should involve smooth navigation."
+          ],
+          "concerns": [
+            "The repeated instances of low traversability suggest the scenario's path or environment is poorly suited for the robot, causing it to frequently get stuck or blocked.",
+            "The ODD violation for obstacle_density in window '025' is a major concern, as the robot was forced into a 'super cluttered' space it is not designed to handle.",
+            "Multiple traversability_score values fell below the ODD floor, representing periods where the robot's environment was unsafe or impossible for navigation as defined by the ODD."
+          ]
+        },
+        "motion": {
+          "odd_trends": "The robot's motion follows a clear, repetitive stop-and-go pattern. It remains stationary for extended periods (e.g., windows 0-3, 9-18, 24-28), then executes a brief, complex turning or rotational maneuver before stopping again. There is no evidence of sustained forward motion. Acceleration, roll, and pitch values remain within ODD limits, with acceleration peaks corresponding to the brief motion events. A significant portion of the measured acceleration during stationary periods is due to gravity leakage from the robot's body tilt.",
+          "anomalies": [
+            "A recurring anomaly involves high peak yaw rate measurements from the gyroscope during windows where the camera shows a completely static scene (e.g., 005, 006, 009-015). These were correctly classified as sensor anomalies rather than true motion.",
+            "The overall motion pattern is anomalous for a navigation task, characterized by jerky, reactive turns rather than smooth, continuous movement."
+          ],
+          "concerns": [
+            "The consistent stop-start-turn behavior indicates the robot is struggling with the navigation task, likely due to the frequent path blockages identified by the PerceptionAgent. This inefficient motion is a concern for task completion time and overall performance.",
+            "Although roll and pitch values are within ODD limits, the frequent high pitch angles (e.g., over 10 degrees in windows 006, 007, 008) on a supposedly flat surface suggest the robot's own maneuvers might be causing minor instability."
+          ]
+        },
+        "collision": {
+          "odd_trends": "Collisions occur intermittently throughout the scenario, often following periods of stationary behavior, suggesting failures during motion initiation or turning. There is no trend of improvement; the robot continues to collide with objects until the end of the scenario.",
+          "anomalies": [
+            "000",
+            "001",
+            "002",
+            "005",
+            "024",
+            "025",
+            "026",
+            "028",
+            "029",
+            "030"
+          ],
+          "concerns": [
+            "The high frequency of collisions (11/31 windows) indicates a systemic failure in the robot's obstacle avoidance or path planning logic.",
+            "The robot repeatedly collides with large, static objects that should be easily detectable, pointing to a critical perception or control flaw.",
+            "Sensor blind spots or failures (e.g., LiDAR not seeing an object the camera collides with) represent a significant safety risk."
+          ]
+        }
+      },
+      "summary_insights": {
+        "perception": [
+          "The entire scenario is definitively identified as a simulation, based on consistent indicators like perfectly flat terrain, sharp LiDAR edges, and synthetic camera textures across all 31 windows.",
+          "The robot navigates through simulated indoor environments (office, living room) characterized by smooth floors and acceptable lighting, which are within the specified ODD.",
+          "The primary challenge is the layout of static obstacles (furniture), which frequently obstructs the robot's path, causing highly variable and often critically low traversability scores.",
+          "The scenario explicitly tests ODD boundaries, with at least one clear violation for obstacle_density (window '025') and multiple violations for traversability_score (windows '000', '011', '025'), where the environment became non-navigable."
+        ],
+        "motion": [
+          "The robot exhibits a highly inefficient 'stop-and-turn' motion pattern, with very brief periods of rotation or complex maneuvers separated by long stationary periods.",
+          "No sustained forward velocity was achieved; all motion is characterized by short, reactive adjustments.",
+          "While all individual motion measurements (acceleration, roll, pitch) remained within their specified ODD limits, the overall motion pattern lacks the smoothness and control described in the ODD.",
+          "Several instances of anomalous high yaw rate readings from the IMU were detected, but these were correctly filtered out by the analysis tool using static camera evidence, pointing to potential sensor data quality issues."
+        ],
+        "collision": [
+          "11 collisions were detected across 31 windows, representing a major safety failure.",
+          "All collisions were low-speed pushing or stall events, confirmed by visual evidence (camera/BEV) without significant IMU spikes.",
+          "Several collisions (e.g., in windows 001, 028) indicate a failure of the LiDAR sensor to detect the obstacle, with the camera providing the only evidence of contact."
+        ]
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/production/sim_1",
+          "scenario_name": "sim_1"
+        },
+        "odd_spec_hash": "3ca33cfc4fb54c53",
+        "timing": {
+          "start_time": "2025-11-29T09:16:54.868756+00:00",
+          "duration_seconds": 2245.44
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "6.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 5693
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "7.5.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 3298
+          },
+          {
+            "name": "MotionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 33609
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 53789
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "5.1.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 63430
+          },
+          {
+            "name": "ReportAgent",
+            "version": "9.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 67437
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 220127,
+          "completion_tokens": 1043,
+          "total_tokens": 227256,
+          "estimated_cost_usd": 0.285589,
+          "cost_breakdown": {
+            "total_input_tokens": 220127,
+            "total_output_tokens": 1043,
+            "input_cost_usd": 0.275159,
+            "output_cost_usd": 0.01043
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.00855,
+            "PerceptionAgent": 0.003135,
+            "MotionAgent": 0.041146,
+            "CollisionAgent": 0.066486,
+            "EvaluatorAgent": 0.078446,
+            "ReportAgent": 0.087825
+          }
+        }
+      },
+      "raw_agent_outputs": {
+        "odd_spec": {},
+        "perception": {
+          "windows_analyzed": 31,
+          "data_source": {
+            "type": "simulated",
+            "confidence": 0.97,
+            "indicators": [
+              "uniform textures",
+              "synthetic lighting",
+              "sharp, thin obstacle edges in BEV",
+              "empty rear BEV half"
+            ]
+          },
+          "temporal_analysis": {
+            "odd_trends": "Across the scenario, the environment type transitions from 'workspace'/'office' to 'living_room'. The terrain is consistently 'smooth' and lighting conditions vary within ODD limits ('dim', 'moderate', 'bright'). The most significant trend is the highly fluctuating 'traversability_score', which is mostly high but frequently drops to ODD minimums or below when the robot's path is blocked by furniture. 'Obstacle_density' remains low, except for a few spikes in cluttered situations.",
+            "anomalies": [
+              "Window '025' shows an obstacle_density of 0.6, exceeding the ODD maximum of 0.5.",
+              "Windows '000', '011', and '025' have traversability_score values (0.3, 0.2, 0.2) that are below the ODD minimum of 0.5.",
+              "The traversability_score exhibits a highly volatile, oscillating pattern, frequently dropping to the ODD minimum (0.5), which is anomalous for a mission that should involve smooth navigation."
+            ],
+            "concerns": [
+              "The repeated instances of low traversability suggest the scenario's path or environment is poorly suited for the robot, causing it to frequently get stuck or blocked.",
+              "The ODD violation for obstacle_density in window '025' is a major concern, as the robot was forced into a 'super cluttered' space it is not designed to handle.",
+              "Multiple traversability_score values fell below the ODD floor, representing periods where the robot's environment was unsafe or impossible for navigation as defined by the ODD."
+            ]
+          },
+          "summary_insights": [
+            "The entire scenario is definitively identified as a simulation, based on consistent indicators like perfectly flat terrain, sharp LiDAR edges, and synthetic camera textures across all 31 windows.",
+            "The robot navigates through simulated indoor environments (office, living room) characterized by smooth floors and acceptable lighting, which are within the specified ODD.",
+            "The primary challenge is the layout of static obstacles (furniture), which frequently obstructs the robot's path, causing highly variable and often critically low traversability scores.",
+            "The scenario explicitly tests ODD boundaries, with at least one clear violation for obstacle_density (window '025') and multiple violations for traversability_score (windows '000', '011', '025'), where the environment became non-navigable."
+          ]
+        },
+        "motion": {
+          "windows_analyzed": 31,
+          "temporal_analysis": {
+            "odd_trends": "The robot's motion follows a clear, repetitive stop-and-go pattern. It remains stationary for extended periods (e.g., windows 0-3, 9-18, 24-28), then executes a brief, complex turning or rotational maneuver before stopping again. There is no evidence of sustained forward motion. Acceleration, roll, and pitch values remain within ODD limits, with acceleration peaks corresponding to the brief motion events. A significant portion of the measured acceleration during stationary periods is due to gravity leakage from the robot's body tilt.",
+            "anomalies": [
+              "A recurring anomaly involves high peak yaw rate measurements from the gyroscope during windows where the camera shows a completely static scene (e.g., 005, 006, 009-015). These were correctly classified as sensor anomalies rather than true motion.",
+              "The overall motion pattern is anomalous for a navigation task, characterized by jerky, reactive turns rather than smooth, continuous movement."
+            ],
+            "concerns": [
+              "The consistent stop-start-turn behavior indicates the robot is struggling with the navigation task, likely due to the frequent path blockages identified by the PerceptionAgent. This inefficient motion is a concern for task completion time and overall performance.",
+              "Although roll and pitch values are within ODD limits, the frequent high pitch angles (e.g., over 10 degrees in windows 006, 007, 008) on a supposedly flat surface suggest the robot's own maneuvers might be causing minor instability."
+            ]
+          },
+          "summary_insights": [
+            "The robot exhibits a highly inefficient 'stop-and-turn' motion pattern, with very brief periods of rotation or complex maneuvers separated by long stationary periods.",
+            "No sustained forward velocity was achieved; all motion is characterized by short, reactive adjustments.",
+            "While all individual motion measurements (acceleration, roll, pitch) remained within their specified ODD limits, the overall motion pattern lacks the smoothness and control described in the ODD.",
+            "Several instances of anomalous high yaw rate readings from the IMU were detected, but these were correctly filtered out by the analysis tool using static camera evidence, pointing to potential sensor data quality issues."
+          ]
+        },
+        "collision": {
+          "windows_analyzed": 31,
+          "collisions_detected": 11,
+          "temporal_analysis": {
+            "odd_trends": "Collisions occur intermittently throughout the scenario, often following periods of stationary behavior, suggesting failures during motion initiation or turning. There is no trend of improvement; the robot continues to collide with objects until the end of the scenario.",
+            "anomalies": [
+              "000",
+              "001",
+              "002",
+              "005",
+              "024",
+              "025",
+              "026",
+              "028",
+              "029",
+              "030"
+            ],
+            "concerns": [
+              "The high frequency of collisions (11/31 windows) indicates a systemic failure in the robot's obstacle avoidance or path planning logic.",
+              "The robot repeatedly collides with large, static objects that should be easily detectable, pointing to a critical perception or control flaw.",
+              "Sensor blind spots or failures (e.g., LiDAR not seeing an object the camera collides with) represent a significant safety risk."
+            ]
+          },
+          "summary_insights": [
+            "11 collisions were detected across 31 windows, representing a major safety failure.",
+            "All collisions were low-speed pushing or stall events, confirmed by visual evidence (camera/BEV) without significant IMU spikes.",
+            "Several collisions (e.g., in windows 001, 028) indicate a failure of the LiDAR sensor to detect the obstacle, with the camera providing the only evidence of contact."
+          ]
+        },
+        "evaluator": {
+          "cod_region": {
+            "environment_type": {
+              "workspace": 0.1935483870967742,
+              "office": 0.12903225806451613,
+              "living_room": 0.6774193548387096,
+              "type": "enum"
+            },
+            "lighting_conditions": {
+              "dim": 0.3548387096774194,
+              "moderate": 0.4838709677419355,
+              "bright": 0.16129032258064516,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "smooth": 1.0,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.05,
+              "max": 0.6
+            },
+            "traversability_score": {
+              "type": "range",
+              "min": 0.2,
+              "max": 0.95
+            },
+            "stairs_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "outdoor_environment": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.0175,
+              "max": 1.0771
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0.39,
+              "max": 11.05
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0.51,
+              "max": 12.33
+            }
+          },
+          "region_metrics": {
+            "region_distance": 0.4503,
+            "fraction_outside_per_axis": {
+              "environment_type": 0.0,
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0,
+              "obstacle_density": 0.1818,
+              "traversability_score": 0.4,
+              "stairs_present": 0.0,
+              "outdoor_environment": 0.0,
+              "max_speed_mps": 0.0,
+              "max_accel_mps2": 0.0,
+              "max_roll_deg": 0.0985,
+              "max_pitch_deg": 0.0
+            },
+            "total_windows": 31,
+            "windows_in_odd": 27,
+            "windows_violated": [
+              "000",
+              "011",
+              "014",
+              "025"
+            ],
+            "first_violation_window": "000"
+          },
+          "compliance_verdict": {
+            "verdict": "OUT_ODD",
+            "confidence": 1.0,
+            "rationale": "The Current Operating Domain is definitively OUT_ODD, driven by a high region distance of 0.45. This is caused by severe and repeated violations on critical environmental axes. Specifically, the 'traversability_score' fell below the minimum required value of 0.5 in multiple windows ('000', '011', '025'), indicating the robot's path was blocked. Furthermore, 'obstacle_density' exceeded its maximum limit in window '025', placing the robot in a cluttered space it is not designed for. While the robot's own motion (acceleration, pitch, roll) remained largely within limits, the environment itself was unsuitable. This is corroborated by the Collision Agent, which detected 11 separate collision events, a fundamental failure to operate safely within the intended domain.",
+            "critical_axes": [
+              "traversability_score",
+              "obstacle_density",
+              "max_roll_deg"
+            ],
+            "temporal_stability": "DEGRADING"
+          },
+          "key_concerns": [
+            "Frequent Environmental Violations: The robot repeatedly encountered non-traversable paths and excessive clutter, indicating a fundamental mismatch between the scenario and the robot's capabilities as defined by the ODD.",
+            "Systemic Collision Failures: A total of 11 collisions were detected in a 31-window scenario. This represents a critical safety and operational failure, demonstrating the robot's inability to navigate the environment even when its motion parameters were technically within limits.",
+            "Inefficient and Unstable Motion: The robot exhibited a constant stop-start-turn pattern, never achieving sustained forward motion. This behavior, likely a reaction to the challenging environment, is inconsistent with the 'smooth' and 'controlled' motion specified in the ODD's intent."
+          ]
+        },
+        "report": {}
+      }
+    }
+  },
+  "agent_outputs": {
+    "PerceptionAgent": {
+      "windows_analyzed": 31,
+      "data_source": {
+        "type": "simulated",
+        "confidence": 0.97,
+        "indicators": [
+          "uniform textures",
+          "synthetic lighting",
+          "sharp, thin obstacle edges in BEV",
+          "empty rear BEV half"
+        ]
+      },
+      "temporal_analysis": {
+        "odd_trends": "Across the scenario, the environment type transitions from 'workspace'/'office' to 'living_room'. The terrain is consistently 'smooth' and lighting conditions vary within ODD limits ('dim', 'moderate', 'bright'). The most significant trend is the highly fluctuating 'traversability_score', which is mostly high but frequently drops to ODD minimums or below when the robot's path is blocked by furniture. 'Obstacle_density' remains low, except for a few spikes in cluttered situations.",
+        "anomalies": [
+          "Window '025' shows an obstacle_density of 0.6, exceeding the ODD maximum of 0.5.",
+          "Windows '000', '011', and '025' have traversability_score values (0.3, 0.2, 0.2) that are below the ODD minimum of 0.5.",
+          "The traversability_score exhibits a highly volatile, oscillating pattern, frequently dropping to the ODD minimum (0.5), which is anomalous for a mission that should involve smooth navigation."
+        ],
+        "concerns": [
+          "The repeated instances of low traversability suggest the scenario's path or environment is poorly suited for the robot, causing it to frequently get stuck or blocked.",
+          "The ODD violation for obstacle_density in window '025' is a major concern, as the robot was forced into a 'super cluttered' space it is not designed to handle.",
+          "Multiple traversability_score values fell below the ODD floor, representing periods where the robot's environment was unsafe or impossible for navigation as defined by the ODD."
+        ]
+      },
+      "summary_insights": [
+        "The entire scenario is definitively identified as a simulation, based on consistent indicators like perfectly flat terrain, sharp LiDAR edges, and synthetic camera textures across all 31 windows.",
+        "The robot navigates through simulated indoor environments (office, living room) characterized by smooth floors and acceptable lighting, which are within the specified ODD.",
+        "The primary challenge is the layout of static obstacles (furniture), which frequently obstructs the robot's path, causing highly variable and often critically low traversability scores.",
+        "The scenario explicitly tests ODD boundaries, with at least one clear violation for obstacle_density (window '025') and multiple violations for traversability_score (windows '000', '011', '025'), where the environment became non-navigable."
+      ]
+    },
+    "MotionAgent": {
+      "windows_analyzed": 31,
+      "temporal_analysis": {
+        "odd_trends": "The robot's motion follows a clear, repetitive stop-and-go pattern. It remains stationary for extended periods (e.g., windows 0-3, 9-18, 24-28), then executes a brief, complex turning or rotational maneuver before stopping again. There is no evidence of sustained forward motion. Acceleration, roll, and pitch values remain within ODD limits, with acceleration peaks corresponding to the brief motion events. A significant portion of the measured acceleration during stationary periods is due to gravity leakage from the robot's body tilt.",
+        "anomalies": [
+          "A recurring anomaly involves high peak yaw rate measurements from the gyroscope during windows where the camera shows a completely static scene (e.g., 005, 006, 009-015). These were correctly classified as sensor anomalies rather than true motion.",
+          "The overall motion pattern is anomalous for a navigation task, characterized by jerky, reactive turns rather than smooth, continuous movement."
+        ],
+        "concerns": [
+          "The consistent stop-start-turn behavior indicates the robot is struggling with the navigation task, likely due to the frequent path blockages identified by the PerceptionAgent. This inefficient motion is a concern for task completion time and overall performance.",
+          "Although roll and pitch values are within ODD limits, the frequent high pitch angles (e.g., over 10 degrees in windows 006, 007, 008) on a supposedly flat surface suggest the robot's own maneuvers might be causing minor instability."
+        ]
+      },
+      "summary_insights": [
+        "The robot exhibits a highly inefficient 'stop-and-turn' motion pattern, with very brief periods of rotation or complex maneuvers separated by long stationary periods.",
+        "No sustained forward velocity was achieved; all motion is characterized by short, reactive adjustments.",
+        "While all individual motion measurements (acceleration, roll, pitch) remained within their specified ODD limits, the overall motion pattern lacks the smoothness and control described in the ODD.",
+        "Several instances of anomalous high yaw rate readings from the IMU were detected, but these were correctly filtered out by the analysis tool using static camera evidence, pointing to potential sensor data quality issues."
+      ]
+    },
+    "CollisionAgent": {
+      "windows_analyzed": 31,
+      "collisions_detected": 11,
+      "temporal_analysis": {
+        "odd_trends": "Collisions occur intermittently throughout the scenario, often following periods of stationary behavior, suggesting failures during motion initiation or turning. There is no trend of improvement; the robot continues to collide with objects until the end of the scenario.",
+        "anomalies": [
+          "000",
+          "001",
+          "002",
+          "005",
+          "024",
+          "025",
+          "026",
+          "028",
+          "029",
+          "030"
+        ],
+        "concerns": [
+          "The high frequency of collisions (11/31 windows) indicates a systemic failure in the robot's obstacle avoidance or path planning logic.",
+          "The robot repeatedly collides with large, static objects that should be easily detectable, pointing to a critical perception or control flaw.",
+          "Sensor blind spots or failures (e.g., LiDAR not seeing an object the camera collides with) represent a significant safety risk."
+        ]
+      },
+      "summary_insights": [
+        "11 collisions were detected across 31 windows, representing a major safety failure.",
+        "All collisions were low-speed pushing or stall events, confirmed by visual evidence (camera/BEV) without significant IMU spikes.",
+        "Several collisions (e.g., in windows 001, 028) indicate a failure of the LiDAR sensor to detect the obstacle, with the camera providing the only evidence of contact."
+      ]
+    },
+    "EvaluatorAgent": {
+      "cod_region": {
+        "environment_type": {
+          "workspace": 0.1935483870967742,
+          "office": 0.12903225806451613,
+          "living_room": 0.6774193548387096,
+          "type": "enum"
+        },
+        "lighting_conditions": {
+          "dim": 0.3548387096774194,
+          "moderate": 0.4838709677419355,
+          "bright": 0.16129032258064516,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "smooth": 1.0,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.05,
+          "max": 0.6
+        },
+        "traversability_score": {
+          "type": "range",
+          "min": 0.2,
+          "max": 0.95
+        },
+        "stairs_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "outdoor_environment": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "max_speed_mps": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.0175,
+          "max": 1.0771
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 0.39,
+          "max": 11.05
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 0.51,
+          "max": 12.33
+        }
+      },
+      "region_metrics": {
+        "region_distance": 0.4503,
+        "fraction_outside_per_axis": {
+          "environment_type": 0.0,
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0,
+          "obstacle_density": 0.1818,
+          "traversability_score": 0.4,
+          "stairs_present": 0.0,
+          "outdoor_environment": 0.0,
+          "max_speed_mps": 0.0,
+          "max_accel_mps2": 0.0,
+          "max_roll_deg": 0.0985,
+          "max_pitch_deg": 0.0
+        },
+        "total_windows": 31,
+        "windows_in_odd": 27,
+        "windows_violated": [
+          "000",
+          "011",
+          "014",
+          "025"
+        ],
+        "first_violation_window": "000"
+      },
+      "compliance_verdict": {
+        "verdict": "OUT_ODD",
+        "confidence": 1.0,
+        "rationale": "The Current Operating Domain is definitively OUT_ODD, driven by a high region distance of 0.45. This is caused by severe and repeated violations on critical environmental axes. Specifically, the 'traversability_score' fell below the minimum required value of 0.5 in multiple windows ('000', '011', '025'), indicating the robot's path was blocked. Furthermore, 'obstacle_density' exceeded its maximum limit in window '025', placing the robot in a cluttered space it is not designed for. While the robot's own motion (acceleration, pitch, roll) remained largely within limits, the environment itself was unsuitable. This is corroborated by the Collision Agent, which detected 11 separate collision events, a fundamental failure to operate safely within the intended domain.",
+        "critical_axes": [
+          "traversability_score",
+          "obstacle_density",
+          "max_roll_deg"
+        ],
+        "temporal_stability": "DEGRADING"
+      },
+      "key_concerns": [
+        "Frequent Environmental Violations: The robot repeatedly encountered non-traversable paths and excessive clutter, indicating a fundamental mismatch between the scenario and the robot's capabilities as defined by the ODD.",
+        "Systemic Collision Failures: A total of 11 collisions were detected in a 31-window scenario. This represents a critical safety and operational failure, demonstrating the robot's inability to navigate the environment even when its motion parameters were technically within limits.",
+        "Inefficient and Unstable Motion: The robot exhibited a constant stop-start-turn pattern, never achieving sustained forward motion. This behavior, likely a reaction to the challenging environment, is inconsistent with the 'smooth' and 'controlled' motion specified in the ODD's intent."
+      ]
+    }
+  },
+  "source_scenario_path": "/workspaces/go2-odd-observer/data/production/sim_1"
+}

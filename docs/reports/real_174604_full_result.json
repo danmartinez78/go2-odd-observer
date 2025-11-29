@@ -1,0 +1,949 @@
+{
+  "report": {
+    "result": "{\n  \"compliance\": {\n    \"status\": \"OUT_ODD\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot operated in a highly cluttered environment where obstacle density and traversability were severely outside its design limits.\"\n  },\n  \"executive_summary\": \"The robot was tested in a stationary position within a cluttered indoor residential living room. It persistently encountered humans and multiple dogs, creating conditions that severely violated its operational design domain (ODD) for obstacle density and traversability. This resulted in numerous low-impact collisions and stalled states against these obstacles, indicating a critical failure to operate within the defined safe envelope.\",\n  \"key_findings\": {\n    \"perception\": \"The environment was an indoor residential space with moderate lighting and smooth, carpeted terrain that was frequently blocked by dynamic obstacles, including a human and multiple dogs.\",\n    \"motion\": \"The robot remained completely stationary for the entire scenario, with zero speed or acceleration, and was stable on a flat surface.\",\n    \"safety\": \"Persistent safety failures occurred, with low-impact collisions detected in 15 of the 24 analyzed windows, primarily involving contact with people and pets.\",\n    \"temporal_trends\": \"While the general environment remained stable, conditions degraded significantly after the first few moments due to the persistent presence of people and pets, leading to continuous and severe ODD violations.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 24,\n    \"environment\": \"indoor residential\",\n    \"data_quality\": \"degraded\",\n    \"data_source\": \"real\"\n  },\n  \"issues\": [\n    \"Severe ODD Violations: The robot operated in an environment where obstacle density was up to 70% higher and traversability was as low as 10% of the minimum safe ODD limit.\",\n    \"High Frequency of Collisions: Collisions were detected in 62.5% of the operational windows, many involving direct contact with people and pets.\",\n    \"Critical Perception Failures: In at least two instances (windows '005', '023'), the LiDAR system failed to detect large dogs directly in the path that were clearly visible to the camera.\",\n    \"Degraded Data Quality: Camera feeds were frequently degraded by severe compression artifacts and motion blur, reducing the reliability of visual perception.\"\n  ],\n  \"recommendations\": [\n    \"Immediately cease operations in this type of cluttered, dynamic residential environment as it is far outside the current ODD.\",\n    \"Investigate the root cause of the LiDAR perception failures to prevent collisions with undetected obstacles.\",\n    \"Review the robot's planning and obstacle avoidance systems to understand why it repeatedly entered a stalled or pushing state against obstacles.\",\n    \"Update the ODD to either explicitly restrict operation around mobile pets or establish more robust parameters for such dynamic environments.\"\n  ]\n}"
+  },
+  "full_analysis": {
+    "cod_region": {
+      "environment_type": {
+        "indoor": 0.9583333333333334,
+        "indoor_residential": 0.041666666666666664,
+        "type": "enum"
+      },
+      "lighting_conditions": {
+        "moderate": 0.9583333333333334,
+        "bright": 0.041666666666666664,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "smooth": 1.0,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.05,
+        "max": 0.85
+      },
+      "traversability_score": {
+        "type": "range",
+        "min": 0.1,
+        "max": 0.9
+      },
+      "stairs_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "outdoor_environment": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "max_speed_mps": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 0.74,
+        "max": 0.82
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 1.2,
+        "max": 1.38
+      }
+    },
+    "region_metrics": {
+      "region_distance": 0.8683,
+      "fraction_outside_per_axis": {
+        "environment_type": 0.0,
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0,
+        "obstacle_density": 0.4375,
+        "traversability_score": 0.75,
+        "stairs_present": 0.0,
+        "outdoor_environment": 0.0,
+        "max_speed_mps": 0.0,
+        "max_accel_mps2": 0.0,
+        "max_roll_deg": 0.0,
+        "max_pitch_deg": 0.0
+      },
+      "total_windows": 24,
+      "windows_in_odd": 18,
+      "windows_violated": [
+        "004",
+        "006",
+        "007",
+        "014",
+        "016",
+        "023"
+      ],
+      "first_violation_window": "004",
+      "categorical_semantic_distances": {
+        "environment_type": 0.0
+      }
+    },
+    "compliance_verdict": {
+      "verdict": "OUT_ODD",
+      "confidence": 1.0,
+      "rationale": "The Current Operating Domain (COD) is severely outside the ODD. The region_distance of 0.8683 is driven by persistent and extreme violations on two critical environmental axes: `obstacle_density` (max observed 0.85 vs ODD max 0.5) and `traversability_score` (min observed 0.1 vs ODD min 0.7). Sensor analysis shows the robot was stationary in a highly cluttered residential environment, frequently blocked by humans and pets. This hazardous condition, far beyond the specified ODD, is confirmed by the detection of collisions in 15 of 24 windows, representing a complete failure to operate within the defined safe envelope.",
+      "critical_axes": [
+        "obstacle_density",
+        "traversability_score"
+      ],
+      "temporal_stability": "STABLE"
+    },
+    "key_concerns": [
+      "Extreme Environmental Mismatch: The robot operated in an environment where obstacle density was up to 70% higher and traversability was as low as 10% of the minimum safe ODD limit.",
+      "Critical Safety Failure: Collisions were detected in 62.5% of the operational windows, many involving direct contact with people and pets, indicating a complete breakdown of the robot's navigation and safety systems.",
+      "Sensor Unreliability: Perception analysis noted critical failures where the LiDAR system failed to detect large, dynamic obstacles directly in the robot's path, creating a high risk of collision and an inaccurate assessment of the operating domain."
+    ]
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-11-29T08:47:56.369681+00:00",
+    "analysis_duration_seconds": 1738.44,
+    "total_agents_executed": 6,
+    "total_tokens_used": 154828,
+    "estimated_cost_usd": 0.195384,
+    "cost_breakdown": {
+      "total_input_tokens": 148307,
+      "total_output_tokens": 1000,
+      "input_cost_usd": 0.185384,
+      "output_cost_usd": 0.01
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.007996,
+      "PerceptionAgent": 0.002921,
+      "MotionAgent": 0.026361,
+      "CollisionAgent": 0.043161,
+      "EvaluatorAgent": 0.052873,
+      "ReportAgent": 0.062071
+    },
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-11-29T08:47:56.369681+00:00",
+    "pipeline_duration_seconds": 1738.44,
+    "odd_specification": {
+      "hash": "3ca33cfc4fb54c53",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/production/real_174604",
+      "scenario_name": "real_174604"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "6.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "2be77b23eb83856a",
+        "timestamp": "2025-11-29T08:47:56.371402+00:00",
+        "invocation_id": "e-b901a8f6-f8dd-4900-a8fd-1330220d0fb8",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 3165,
+          "completion_tokens": 404,
+          "total_tokens": 5202
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "7.5.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "4e3ff80c88ddec1e",
+        "timestamp": "2025-11-29T08:48:20.363140+00:00",
+        "invocation_id": "e-b901a8f6-f8dd-4900-a8fd-1330220d0fb8",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 2241,
+          "completion_tokens": 12,
+          "total_tokens": 3055
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "8322eaf78af90267",
+        "timestamp": "2025-11-29T09:01:11.753661+00:00",
+        "invocation_id": "e-b901a8f6-f8dd-4900-a8fd-1330220d0fb8",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 20993,
+          "completion_tokens": 12,
+          "total_tokens": 21625
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "72f2f428efb51c85",
+        "timestamp": "2025-11-29T09:07:33.165558+00:00",
+        "invocation_id": "e-b901a8f6-f8dd-4900-a8fd-1330220d0fb8",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 34433,
+          "completion_tokens": 12,
+          "total_tokens": 35011
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "5.1.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "67903167e9d3cd0c",
+        "timestamp": "2025-11-29T09:15:57.660985+00:00",
+        "invocation_id": "e-b901a8f6-f8dd-4900-a8fd-1330220d0fb8",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 42202,
+          "completion_tokens": 12,
+          "total_tokens": 43146
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "9.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "cb0d28adcd44cc9f",
+        "timestamp": "2025-11-29T09:16:33.733875+00:00",
+        "invocation_id": "e-b901a8f6-f8dd-4900-a8fd-1330220d0fb8",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 45273,
+          "completion_tokens": 548,
+          "total_tokens": 46789
+        }
+      }
+    },
+    "total_agents_executed": 6,
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-11-29T09:16:54.829899Z",
+      "scenario_overview": "",
+      "key_observations": [],
+      "recommendations": [],
+      "pipeline_quality_assessment": "",
+      "compliance": {
+        "verdict": "OUT_ODD",
+        "confidence": "HIGH",
+        "confidence_value": 1.0,
+        "stability": "STABLE",
+        "critical_axes": [
+          "obstacle_density",
+          "traversability_score"
+        ]
+      },
+      "data_quality": {
+        "all_agents_healthy": true,
+        "warnings": [
+          "No perception data available",
+          "No motion data available",
+          "No collision data available"
+        ],
+        "anomalies": []
+      },
+      "measurement_summary": {},
+      "scenario": {
+        "name": "real_174604",
+        "windows_analyzed": 0
+      },
+      "analysis": {
+        "duration_seconds": 1738.44,
+        "total_tokens": 154828,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-11-29T09:16:54.829926Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [],
+        "pipeline_quality_assessment": "",
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        },
+        "measurement_summary": {}
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "OUT_ODD",
+          "confidence": 1.0,
+          "rationale": "The Current Operating Domain (COD) is severely outside the ODD. The region_distance of 0.8683 is driven by persistent and extreme violations on two critical environmental axes: `obstacle_density` (max observed 0.85 vs ODD max 0.5) and `traversability_score` (min observed 0.1 vs ODD min 0.7). Sensor analysis shows the robot was stationary in a highly cluttered residential environment, frequently blocked by humans and pets. This hazardous condition, far beyond the specified ODD, is confirmed by the detection of collisions in 15 of 24 windows, representing a complete failure to operate within the defined safe envelope.",
+          "critical_axes": [
+            "obstacle_density",
+            "traversability_score"
+          ],
+          "temporal_stability": "STABLE"
+        },
+        "cod_region": {
+          "environment_type": {
+            "indoor": 0.9583333333333334,
+            "indoor_residential": 0.041666666666666664,
+            "type": "enum"
+          },
+          "lighting_conditions": {
+            "moderate": 0.9583333333333334,
+            "bright": 0.041666666666666664,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "smooth": 1.0,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.05,
+            "max": 0.85
+          },
+          "traversability_score": {
+            "type": "range",
+            "min": 0.1,
+            "max": 0.9
+          },
+          "stairs_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "outdoor_environment": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "max_speed_mps": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 0.74,
+            "max": 0.82
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 1.2,
+            "max": 1.38
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.8683,
+          "fraction_outside_per_axis": {
+            "environment_type": 0.0,
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0,
+            "obstacle_density": 0.4375,
+            "traversability_score": 0.75,
+            "stairs_present": 0.0,
+            "outdoor_environment": 0.0,
+            "max_speed_mps": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_pitch_deg": 0.0
+          },
+          "total_windows": 24,
+          "windows_in_odd": 18,
+          "windows_violated": [
+            "004",
+            "006",
+            "007",
+            "014",
+            "016",
+            "023"
+          ],
+          "first_violation_window": "004",
+          "categorical_semantic_distances": {
+            "environment_type": 0.0
+          }
+        },
+        "key_concerns": [
+          "Extreme Environmental Mismatch: The robot operated in an environment where obstacle density was up to 70% higher and traversability was as low as 10% of the minimum safe ODD limit.",
+          "Critical Safety Failure: Collisions were detected in 62.5% of the operational windows, many involving direct contact with people and pets, indicating a complete breakdown of the robot's navigation and safety systems.",
+          "Sensor Unreliability: Perception analysis noted critical failures where the LiDAR system failed to detect large, dynamic obstacles directly in the robot's path, creating a high risk of collision and an inaccurate assessment of the operating domain."
+        ]
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0,
+          "window_ids": []
+        },
+        "agent_health": {
+          "perception": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "status": "OK"
+          },
+          "motion": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "zero_acceleration_windows": [],
+            "status": "OK"
+          },
+          "collision": {
+            "windows_processed": 0,
+            "collision_detected_windows": [],
+            "collision_count": 0,
+            "status": "OK"
+          }
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "OUT_ODD",
+          "confidence": 1.0,
+          "temporal_stability": "STABLE",
+          "critical_axes": [
+            "obstacle_density",
+            "traversability_score"
+          ]
+        },
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        }
+      },
+      "odd_specification": {},
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "odd_trends": "The scenario remains in a stable indoor, smooth-terrain environment. However, after window 002, a human and multiple dogs are persistently detected, causing obstacle density to fluctuate wildly and often spike far beyond the ODD maximum of 0.5. Consequently, the traversability score frequently drops well below the ODD minimum of 0.7, indicating a consistently out-of-spec and hazardous operational environment.",
+          "anomalies": [
+            "005",
+            "023"
+          ],
+          "concerns": [
+            "Persistent ODD Violations: The robot continuously operates in an environment with obstacle densities and traversability far outside the specified safe limits.",
+            "Critical Perception Failure: The LiDAR system repeatedly fails to detect large, dynamic obstacles (pets) directly in the robot's path, creating a high risk of collision.",
+            "Degraded Camera Quality: Frequent and severe motion blur and compression artifacts in the camera feed reduce the reliability of vision-based perception."
+          ]
+        },
+        "motion": {
+          "odd_trends": "The robot's motion state was consistently stationary across all 24 windows. Speed, acceleration, and angular velocity remained at zero throughout. Roll and pitch values showed minor fluctuations (0.74\u00b0 to 0.82\u00b0 for roll, 1.20\u00b0 to 1.38\u00b0 for pitch) consistent with resting on a stable, nearly flat surface.",
+          "anomalies": [],
+          "concerns": []
+        },
+        "collision": {
+          "odd_trends": "The scenario exhibits a recurring pattern of collisions. The robot frequently enters a state of direct contact with obstacles, as evidenced by BEV/camera data showing zero proximity. This pattern is consistent across the majority of the analyzed windows, with no indication of successful avoidance maneuvers after an initial collision is detected.",
+          "anomalies": [
+            "014",
+            "023"
+          ],
+          "concerns": [
+            "The high frequency of collisions (62.5% of windows) demonstrates a critical failure in the robot's obstacle avoidance or planning system.",
+            "The robot repeatedly makes contact with living beings (pets and people), posing a significant safety risk.",
+            "Sensor discrepancies were noted, particularly in window '014' and '023', where LiDAR failed to detect obstacles visible on camera, and IMU data was anomalously zero, suggesting potential sensor or data logging failures."
+          ]
+        }
+      },
+      "summary_insights": {
+        "perception": [
+          "The scenario consistently violates the ODD for obstacle density (max 0.5) and traversability (min 0.7), with the robot's path frequently blocked by a human and multiple dogs.",
+          "A critical safety risk was identified where the LiDAR failed to detect path-blocking obstacles (dogs) that were clearly visible in the camera (windows '005', '023'), leading to a dangerously incorrect assessment of high traversability.",
+          "The environment is a high-risk, dynamic residential setting with unpredictable actors, for which the specified ODD for simple indoor navigation appears inadequate."
+        ],
+        "motion": [
+          "The robot remained completely stationary throughout the entire scenario, with all motion metrics at zero.",
+          "The robot's stability was excellent, with negligible roll and pitch, indicating it was on a flat, stable surface."
+        ],
+        "collision": [
+          "Collisions were detected in 15 of the 24 windows, indicating a major and persistent safety issue.",
+          "All detected collisions were low-impact events, characterized by zero IMU spikes but confirmed by BEV and camera data showing direct contact with soft obstacles (pets, people, rug).",
+          "There is a recurring pattern of BEV/camera data confirming contact while IMU data remains flat, suggesting the robot is frequently in a stalled or pushing state against obstacles."
+        ]
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/production/real_174604",
+          "scenario_name": "real_174604"
+        },
+        "odd_spec_hash": "3ca33cfc4fb54c53",
+        "timing": {
+          "start_time": "2025-11-29T08:47:56.369681+00:00",
+          "duration_seconds": 1738.44
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "6.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 5202
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "7.5.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 3055
+          },
+          {
+            "name": "MotionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 21625
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 35011
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "5.1.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 43146
+          },
+          {
+            "name": "ReportAgent",
+            "version": "9.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 46789
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 148307,
+          "completion_tokens": 1000,
+          "total_tokens": 154828,
+          "estimated_cost_usd": 0.195384,
+          "cost_breakdown": {
+            "total_input_tokens": 148307,
+            "total_output_tokens": 1000,
+            "input_cost_usd": 0.185384,
+            "output_cost_usd": 0.01
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.007996,
+            "PerceptionAgent": 0.002921,
+            "MotionAgent": 0.026361,
+            "CollisionAgent": 0.043161,
+            "EvaluatorAgent": 0.052873,
+            "ReportAgent": 0.062071
+          }
+        }
+      },
+      "raw_agent_outputs": {
+        "odd_spec": {},
+        "perception": {
+          "windows_analyzed": 24,
+          "data_source": {
+            "type": "real",
+            "confidence": 0.95,
+            "indicators": [
+              "accumulated BEV data with thickened edges",
+              "natural lighting and shadows",
+              "presence of humans and animals",
+              "camera motion blur and compression artifacts"
+            ]
+          },
+          "temporal_analysis": {
+            "odd_trends": "The scenario remains in a stable indoor, smooth-terrain environment. However, after window 002, a human and multiple dogs are persistently detected, causing obstacle density to fluctuate wildly and often spike far beyond the ODD maximum of 0.5. Consequently, the traversability score frequently drops well below the ODD minimum of 0.7, indicating a consistently out-of-spec and hazardous operational environment.",
+            "anomalies": [
+              "005",
+              "023"
+            ],
+            "concerns": [
+              "Persistent ODD Violations: The robot continuously operates in an environment with obstacle densities and traversability far outside the specified safe limits.",
+              "Critical Perception Failure: The LiDAR system repeatedly fails to detect large, dynamic obstacles (pets) directly in the robot's path, creating a high risk of collision.",
+              "Degraded Camera Quality: Frequent and severe motion blur and compression artifacts in the camera feed reduce the reliability of vision-based perception."
+            ]
+          },
+          "summary_insights": [
+            "The scenario consistently violates the ODD for obstacle density (max 0.5) and traversability (min 0.7), with the robot's path frequently blocked by a human and multiple dogs.",
+            "A critical safety risk was identified where the LiDAR failed to detect path-blocking obstacles (dogs) that were clearly visible in the camera (windows '005', '023'), leading to a dangerously incorrect assessment of high traversability.",
+            "The environment is a high-risk, dynamic residential setting with unpredictable actors, for which the specified ODD for simple indoor navigation appears inadequate."
+          ]
+        },
+        "motion": {
+          "windows_analyzed": 24,
+          "temporal_analysis": {
+            "odd_trends": "The robot's motion state was consistently stationary across all 24 windows. Speed, acceleration, and angular velocity remained at zero throughout. Roll and pitch values showed minor fluctuations (0.74\u00b0 to 0.82\u00b0 for roll, 1.20\u00b0 to 1.38\u00b0 for pitch) consistent with resting on a stable, nearly flat surface.",
+            "anomalies": [],
+            "concerns": []
+          },
+          "summary_insights": [
+            "The robot remained completely stationary throughout the entire scenario, with all motion metrics at zero.",
+            "The robot's stability was excellent, with negligible roll and pitch, indicating it was on a flat, stable surface."
+          ]
+        },
+        "collision": {
+          "windows_analyzed": 24,
+          "collisions_detected": 15,
+          "temporal_analysis": {
+            "odd_trends": "The scenario exhibits a recurring pattern of collisions. The robot frequently enters a state of direct contact with obstacles, as evidenced by BEV/camera data showing zero proximity. This pattern is consistent across the majority of the analyzed windows, with no indication of successful avoidance maneuvers after an initial collision is detected.",
+            "anomalies": [
+              "014",
+              "023"
+            ],
+            "concerns": [
+              "The high frequency of collisions (62.5% of windows) demonstrates a critical failure in the robot's obstacle avoidance or planning system.",
+              "The robot repeatedly makes contact with living beings (pets and people), posing a significant safety risk.",
+              "Sensor discrepancies were noted, particularly in window '014' and '023', where LiDAR failed to detect obstacles visible on camera, and IMU data was anomalously zero, suggesting potential sensor or data logging failures."
+            ]
+          },
+          "summary_insights": [
+            "Collisions were detected in 15 of the 24 windows, indicating a major and persistent safety issue.",
+            "All detected collisions were low-impact events, characterized by zero IMU spikes but confirmed by BEV and camera data showing direct contact with soft obstacles (pets, people, rug).",
+            "There is a recurring pattern of BEV/camera data confirming contact while IMU data remains flat, suggesting the robot is frequently in a stalled or pushing state against obstacles."
+          ]
+        },
+        "evaluator": {
+          "cod_region": {
+            "environment_type": {
+              "indoor": 0.9583333333333334,
+              "indoor_residential": 0.041666666666666664,
+              "type": "enum"
+            },
+            "lighting_conditions": {
+              "moderate": 0.9583333333333334,
+              "bright": 0.041666666666666664,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "smooth": 1.0,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.05,
+              "max": 0.85
+            },
+            "traversability_score": {
+              "type": "range",
+              "min": 0.1,
+              "max": 0.9
+            },
+            "stairs_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "outdoor_environment": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0.74,
+              "max": 0.82
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 1.2,
+              "max": 1.38
+            }
+          },
+          "region_metrics": {
+            "region_distance": 0.8683,
+            "fraction_outside_per_axis": {
+              "environment_type": 0.0,
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0,
+              "obstacle_density": 0.4375,
+              "traversability_score": 0.75,
+              "stairs_present": 0.0,
+              "outdoor_environment": 0.0,
+              "max_speed_mps": 0.0,
+              "max_accel_mps2": 0.0,
+              "max_roll_deg": 0.0,
+              "max_pitch_deg": 0.0
+            },
+            "total_windows": 24,
+            "windows_in_odd": 18,
+            "windows_violated": [
+              "004",
+              "006",
+              "007",
+              "014",
+              "016",
+              "023"
+            ],
+            "first_violation_window": "004",
+            "categorical_semantic_distances": {
+              "environment_type": 0.0
+            }
+          },
+          "compliance_verdict": {
+            "verdict": "OUT_ODD",
+            "confidence": 1.0,
+            "rationale": "The Current Operating Domain (COD) is severely outside the ODD. The region_distance of 0.8683 is driven by persistent and extreme violations on two critical environmental axes: `obstacle_density` (max observed 0.85 vs ODD max 0.5) and `traversability_score` (min observed 0.1 vs ODD min 0.7). Sensor analysis shows the robot was stationary in a highly cluttered residential environment, frequently blocked by humans and pets. This hazardous condition, far beyond the specified ODD, is confirmed by the detection of collisions in 15 of 24 windows, representing a complete failure to operate within the defined safe envelope.",
+            "critical_axes": [
+              "obstacle_density",
+              "traversability_score"
+            ],
+            "temporal_stability": "STABLE"
+          },
+          "key_concerns": [
+            "Extreme Environmental Mismatch: The robot operated in an environment where obstacle density was up to 70% higher and traversability was as low as 10% of the minimum safe ODD limit.",
+            "Critical Safety Failure: Collisions were detected in 62.5% of the operational windows, many involving direct contact with people and pets, indicating a complete breakdown of the robot's navigation and safety systems.",
+            "Sensor Unreliability: Perception analysis noted critical failures where the LiDAR system failed to detect large, dynamic obstacles directly in the robot's path, creating a high risk of collision and an inaccurate assessment of the operating domain."
+          ]
+        },
+        "report": {}
+      }
+    }
+  },
+  "agent_outputs": {
+    "PerceptionAgent": {
+      "windows_analyzed": 24,
+      "data_source": {
+        "type": "real",
+        "confidence": 0.95,
+        "indicators": [
+          "accumulated BEV data with thickened edges",
+          "natural lighting and shadows",
+          "presence of humans and animals",
+          "camera motion blur and compression artifacts"
+        ]
+      },
+      "temporal_analysis": {
+        "odd_trends": "The scenario remains in a stable indoor, smooth-terrain environment. However, after window 002, a human and multiple dogs are persistently detected, causing obstacle density to fluctuate wildly and often spike far beyond the ODD maximum of 0.5. Consequently, the traversability score frequently drops well below the ODD minimum of 0.7, indicating a consistently out-of-spec and hazardous operational environment.",
+        "anomalies": [
+          "005",
+          "023"
+        ],
+        "concerns": [
+          "Persistent ODD Violations: The robot continuously operates in an environment with obstacle densities and traversability far outside the specified safe limits.",
+          "Critical Perception Failure: The LiDAR system repeatedly fails to detect large, dynamic obstacles (pets) directly in the robot's path, creating a high risk of collision.",
+          "Degraded Camera Quality: Frequent and severe motion blur and compression artifacts in the camera feed reduce the reliability of vision-based perception."
+        ]
+      },
+      "summary_insights": [
+        "The scenario consistently violates the ODD for obstacle density (max 0.5) and traversability (min 0.7), with the robot's path frequently blocked by a human and multiple dogs.",
+        "A critical safety risk was identified where the LiDAR failed to detect path-blocking obstacles (dogs) that were clearly visible in the camera (windows '005', '023'), leading to a dangerously incorrect assessment of high traversability.",
+        "The environment is a high-risk, dynamic residential setting with unpredictable actors, for which the specified ODD for simple indoor navigation appears inadequate."
+      ]
+    },
+    "MotionAgent": {
+      "windows_analyzed": 24,
+      "temporal_analysis": {
+        "odd_trends": "The robot's motion state was consistently stationary across all 24 windows. Speed, acceleration, and angular velocity remained at zero throughout. Roll and pitch values showed minor fluctuations (0.74\u00b0 to 0.82\u00b0 for roll, 1.20\u00b0 to 1.38\u00b0 for pitch) consistent with resting on a stable, nearly flat surface.",
+        "anomalies": [],
+        "concerns": []
+      },
+      "summary_insights": [
+        "The robot remained completely stationary throughout the entire scenario, with all motion metrics at zero.",
+        "The robot's stability was excellent, with negligible roll and pitch, indicating it was on a flat, stable surface."
+      ]
+    },
+    "CollisionAgent": {
+      "windows_analyzed": 24,
+      "collisions_detected": 15,
+      "temporal_analysis": {
+        "odd_trends": "The scenario exhibits a recurring pattern of collisions. The robot frequently enters a state of direct contact with obstacles, as evidenced by BEV/camera data showing zero proximity. This pattern is consistent across the majority of the analyzed windows, with no indication of successful avoidance maneuvers after an initial collision is detected.",
+        "anomalies": [
+          "014",
+          "023"
+        ],
+        "concerns": [
+          "The high frequency of collisions (62.5% of windows) demonstrates a critical failure in the robot's obstacle avoidance or planning system.",
+          "The robot repeatedly makes contact with living beings (pets and people), posing a significant safety risk.",
+          "Sensor discrepancies were noted, particularly in window '014' and '023', where LiDAR failed to detect obstacles visible on camera, and IMU data was anomalously zero, suggesting potential sensor or data logging failures."
+        ]
+      },
+      "summary_insights": [
+        "Collisions were detected in 15 of the 24 windows, indicating a major and persistent safety issue.",
+        "All detected collisions were low-impact events, characterized by zero IMU spikes but confirmed by BEV and camera data showing direct contact with soft obstacles (pets, people, rug).",
+        "There is a recurring pattern of BEV/camera data confirming contact while IMU data remains flat, suggesting the robot is frequently in a stalled or pushing state against obstacles."
+      ]
+    },
+    "EvaluatorAgent": {
+      "cod_region": {
+        "environment_type": {
+          "indoor": 0.9583333333333334,
+          "indoor_residential": 0.041666666666666664,
+          "type": "enum"
+        },
+        "lighting_conditions": {
+          "moderate": 0.9583333333333334,
+          "bright": 0.041666666666666664,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "smooth": 1.0,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.05,
+          "max": 0.85
+        },
+        "traversability_score": {
+          "type": "range",
+          "min": 0.1,
+          "max": 0.9
+        },
+        "stairs_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "outdoor_environment": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "max_speed_mps": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 0.74,
+          "max": 0.82
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 1.2,
+          "max": 1.38
+        }
+      },
+      "region_metrics": {
+        "region_distance": 0.8683,
+        "fraction_outside_per_axis": {
+          "environment_type": 0.0,
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0,
+          "obstacle_density": 0.4375,
+          "traversability_score": 0.75,
+          "stairs_present": 0.0,
+          "outdoor_environment": 0.0,
+          "max_speed_mps": 0.0,
+          "max_accel_mps2": 0.0,
+          "max_roll_deg": 0.0,
+          "max_pitch_deg": 0.0
+        },
+        "total_windows": 24,
+        "windows_in_odd": 18,
+        "windows_violated": [
+          "004",
+          "006",
+          "007",
+          "014",
+          "016",
+          "023"
+        ],
+        "first_violation_window": "004",
+        "categorical_semantic_distances": {
+          "environment_type": 0.0
+        }
+      },
+      "compliance_verdict": {
+        "verdict": "OUT_ODD",
+        "confidence": 1.0,
+        "rationale": "The Current Operating Domain (COD) is severely outside the ODD. The region_distance of 0.8683 is driven by persistent and extreme violations on two critical environmental axes: `obstacle_density` (max observed 0.85 vs ODD max 0.5) and `traversability_score` (min observed 0.1 vs ODD min 0.7). Sensor analysis shows the robot was stationary in a highly cluttered residential environment, frequently blocked by humans and pets. This hazardous condition, far beyond the specified ODD, is confirmed by the detection of collisions in 15 of 24 windows, representing a complete failure to operate within the defined safe envelope.",
+        "critical_axes": [
+          "obstacle_density",
+          "traversability_score"
+        ],
+        "temporal_stability": "STABLE"
+      },
+      "key_concerns": [
+        "Extreme Environmental Mismatch: The robot operated in an environment where obstacle density was up to 70% higher and traversability was as low as 10% of the minimum safe ODD limit.",
+        "Critical Safety Failure: Collisions were detected in 62.5% of the operational windows, many involving direct contact with people and pets, indicating a complete breakdown of the robot's navigation and safety systems.",
+        "Sensor Unreliability: Perception analysis noted critical failures where the LiDAR system failed to detect large, dynamic obstacles directly in the robot's path, creating a high risk of collision and an inaccurate assessment of the operating domain."
+      ]
+    }
+  },
+  "source_scenario_path": "/workspaces/go2-odd-observer/data/production/real_174604"
+}

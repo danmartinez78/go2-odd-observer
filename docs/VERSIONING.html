@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Go2 ODD Observer – Versioning</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem 0 4rem 0;
+      color: #2d3748;
+    }
+
+    .container {
+      max-width: 1100px;
+    }
+
+    .shell {
+      background: white;
+      border-radius: 18px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+    }
+
+    body.dark .shell {
+      background: #0b1021;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      color: #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      color: #1f2937;
+    }
+
+    body.dark h1,
+    body.dark h2,
+    body.dark h3 {
+      color: #f9fafb;
+    }
+
+    .badge-tag {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #4338ca;
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    body.dark a {
+      color: #a5b4fc;
+    }
+
+    .theme-toggle {
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: transparent;
+      color: #4f46e5;
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      font-weight: 600;
+    }
+
+    body.dark .theme-toggle {
+      color: #e5e7eb;
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+
+    .callout {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    body.dark .callout {
+      background: rgba(165, 180, 252, 0.1);
+      border-color: rgba(165, 180, 252, 0.25);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="shell">
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge-tag">Versioning</span>
+          <span class="badge-tag">Go2 ODD Observer</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button id="themeToggle" class="theme-toggle">🌓 Toggle theme</button>
+          <a href="index.html" class="badge-tag">← Back to overview</a>
+        </div>
+      </div>
+
+      <h1 class="mb-3">Versioning Guide</h1>
+      <p class="text-secondary mb-4">How we track versions across agents, prompts, knowledge, data, and reports.</p>
+
+      <h2 class="h4 mt-3">What We Version</h2>
+      <ul>
+        <li><strong>Agents & prompts:</strong> Semantic versions (badges on the site). Source: <code>odd_agents/agent_prompts.py</code> and agent/tool modules.</li>
+        <li><strong>Tools:</strong> Function tools mirror agent versions when their prompts or behavior change (<code>odd_agents/tools/</code>).</li>
+        <li><strong>Knowledge & ODD docs:</strong> Core knowledge, robot profiles, and overlays tracked via revision/date in each doc header.</li>
+        <li><strong>Data:</strong> Processed datasets are versioned in <code>data/DATA_VERSIONS.md</code> (production/test, processing params).</li>
+        <li><strong>Reports & runs:</strong> Reports include pipeline/agent versions and the scenario/data version (see report metadata and archived results).</li>
+      </ul>
+
+      <h2 class="h4 mt-4">Naming & Bumping</h2>
+      <ul>
+        <li><strong>Agents/Tools:</strong> <code>vMAJOR.MINOR.PATCH</code> (e.g., PerceptionAgent v7.4.0). Minor = behavior/prompt changes; Patch = small wording/stability tweaks.</li>
+        <li><strong>Knowledge:</strong> Update revision/date in the doc header; summarize what changed and why.</li>
+        <li><strong>Data:</strong> Follow <code>{source}_{id}_v{n}</code> and log params in <code>data/DATA_VERSIONS.md</code>.</li>
+        <li><strong>Reports:</strong> Ensure generated artifacts stamp pipeline/agent/data versions.</li>
+      </ul>
+
+      <h2 class="h4 mt-4">Where Versions Surface</h2>
+      <ul>
+        <li><strong>UI:</strong> Badges on the homepage and architecture page.</li>
+        <li><strong>Artifacts:</strong> <code>full_result.json</code>, <code>executive_summary.json</code>, and HTML reports carry pipeline/agent/data versions.</li>
+        <li><strong>Docs:</strong> This guide (overview), <code>data/DATA_VERSIONS.md</code> (data), knowledge doc headers (knowledge revisions).</li>
+      </ul>
+
+      <h2 class="h4 mt-4">How to Update</h2>
+      <ol>
+        <li>Change code/prompt/knowledge/data.</li>
+        <li>Bump the relevant version (agent/tool prompt file, knowledge header, or data manifest).</li>
+        <li>Log the change (HISTORY/RESULTS where relevant; data changes in <code>data/DATA_VERSIONS.md</code>).</li>
+        <li>Rerun workflows so reports pick up the new versions.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>Quick checklist:</strong>
+        <ul class="mb-0">
+          <li>Agent or tool prompt changed → bump agent/tool version.</li>
+          <li>Knowledge doc edited → update its revision/date.</li>
+          <li>Data regenerated → add entry to <code>data/DATA_VERSIONS.md</code>.</li>
+          <li>Reports shipping → confirm pipeline/agent/data versions appear in metadata.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    toggle?.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+    });
+  </script>
+</body>
+
+</html>

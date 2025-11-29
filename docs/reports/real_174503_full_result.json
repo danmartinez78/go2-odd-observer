@@ -1,0 +1,918 @@
+{
+  "report": {
+    "result": "{\n  \"compliance\": {\n    \"status\": \"BOUNDARY\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot's operation was a boundary case due to a brief but critical stability failure where its pitch angle of 17.63\\u00b0 exceeded the 15\\u00b0 ODD limit.\"\n  },\n  \"executive_summary\": \"The robot operated in a cluttered indoor residential environment where it encountered significant navigation challenges. While most environmental conditions were within its design limits, the robot repeatedly stalled against objects and, in one instance, became unstable, pitching forward beyond its specified safety limit of 15 degrees. This indicates a failure to safely navigate common indoor clutter.\",\n  \"key_findings\": {\n    \"perception\": \"The robot navigated a cluttered indoor residential space with varied but adequate lighting on smooth and low-pile carpeted surfaces, though it often misinterpreted thick carpets as impassable obstacles.\",\n    \"motion\": \"The robot was stationary for most of the scenario but experienced a brief, unstable movement where its pitch angle peaked at 17.63\\u00b0, exceeding the 15\\u00b0 operational limit.\",\n    \"safety\": \"The robot experienced multiple low-force collisions in 7 of the 11 analyzed windows, indicating it repeatedly stalled against obstacles it failed to navigate around.\",\n    \"temporal_trends\": \"The robot operated in a consistently challenging, highly cluttered environment that led to a degrading situation, culminating in a stability failure before the scene abruptly transitioned to an open path.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 11,\n    \"environment\": \"indoor residential\",\n    \"data_quality\": \"partial\",\n    \"data_source\": \"real\"\n  },\n  \"issues\": [\n    \"Robot's pitch angle reached 17.63\\u00b0, exceeding the 15\\u00b0 ODD stability limit in window '008'.\",\n    \"The perception system consistently misinterpreted high-pile or shag carpets as impassable obstacles, leading to navigation failures.\",\n    \"The robot repeatedly stalled against or pushed objects, indicating a failure in the local planning or obstacle avoidance system.\"\n  ],\n  \"recommendations\": [\n    \"Investigate the stability failure in window '008' to understand the cause of the excessive pitch and prevent future tip-over risks.\",\n    \"Improve the perception model's ability to differentiate between traversable high-pile carpets and genuine obstacles to avoid unnecessary stalls.\",\n    \"Review the local planner's behavior in cluttered environments to prevent prolonged contact and pushing against static obstacles.\"\n  ]\n}"
+  },
+  "full_analysis": {
+    "cod_region": {
+      "environment_type": {
+        "indoor": 1.0,
+        "type": "enum"
+      },
+      "lighting_conditions": {
+        "moderate": 0.45454545454545453,
+        "bright": 0.45454545454545453,
+        "dim": 0.09090909090909091,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "smooth": 0.2727272727272727,
+        "low_pile_carpet": 0.7272727272727273,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.5
+      },
+      "stairs_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "outdoor_environment": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "max_speed_mps": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "peak_jerk_mps3": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 0.45,
+        "max": 8.62
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 0.98,
+        "max": 17.63
+      }
+    },
+    "region_metrics": {
+      "region_distance": 0.158,
+      "fraction_outside_per_axis": {
+        "environment_type": 0.0,
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0,
+        "obstacle_density": 0.0,
+        "stairs_present": 0.0,
+        "outdoor_environment": 0.0,
+        "max_speed_mps": 0.0,
+        "max_accel_mps2": 0.0,
+        "peak_jerk_mps3": 0.0,
+        "max_roll_deg": 0.0,
+        "max_pitch_deg": 0.158
+      },
+      "total_windows": 11,
+      "windows_in_odd": 10,
+      "windows_violated": [
+        "008"
+      ],
+      "first_violation_window": "008"
+    },
+    "compliance_verdict": {
+      "verdict": "BOUNDARY",
+      "confidence": 1.0,
+      "rationale": "The Current Operating Domain (COD) is assessed as BOUNDARY due to a single, significant violation in robot stability. In window '008', the maximum pitch angle reached 17.63 degrees, exceeding the ODD limit of 15 degrees. This stability breach, confirmed by the Motion Agent, pushed the overall region distance to 0.158, indicating operation at the edge of the ODD. While other ego-motion and environmental parameters remained within spec, this brief but critical failure in platform stability is the primary driver for the verdict. The situation was temporally stable but consistently challenging, with obstacle density at the maximum ODD limit for most of the scenario, culminating in the stability failure during a likely collision or stall.",
+      "critical_axes": [
+        "max_pitch_deg"
+      ],
+      "temporal_stability": "DEGRADING"
+    },
+    "key_concerns": [
+      "A critical stability failure occurred in window '008' where the robot's pitch exceeded the ODD limit. This suggests a risk of tipping or unsafe operation when encountering obstacles.",
+      "The robot operated at the absolute maximum limit for obstacle_density (0.5) for a majority of the scenario (7 of 11 windows). This sustained edge-case operation increases risk and contributed to the repeated collisions and eventual stability failure.",
+      "The perception system's misinterpretation of high-pile carpets as obstacles, combined with the planner's inability to navigate them, led to repeated stalls and collisions, which are undesirable even if they don't directly violate a defined ODD axis."
+    ]
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-11-29T08:33:51.599943+00:00",
+    "analysis_duration_seconds": 844.72,
+    "total_agents_executed": 6,
+    "total_tokens_used": 86419,
+    "estimated_cost_usd": 0.10958,
+    "cost_breakdown": {
+      "total_input_tokens": 79480,
+      "total_output_tokens": 1023,
+      "input_cost_usd": 0.09935,
+      "output_cost_usd": 0.01023
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.008816,
+      "PerceptionAgent": 0.00324,
+      "MotionAgent": 0.012981,
+      "CollisionAgent": 0.022311,
+      "EvaluatorAgent": 0.027056,
+      "ReportAgent": 0.035175
+    },
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-11-29T08:33:51.599943+00:00",
+    "pipeline_duration_seconds": 844.72,
+    "odd_specification": {
+      "hash": "3ca33cfc4fb54c53",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/production/real_174503",
+      "scenario_name": "real_174503"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "6.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "2be77b23eb83856a",
+        "timestamp": "2025-11-29T08:33:51.601542+00:00",
+        "invocation_id": "e-8c91e82f-84db-4b03-b36a-96a686a3df4e",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 3165,
+          "completion_tokens": 486,
+          "total_tokens": 5593
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "7.5.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "4e3ff80c88ddec1e",
+        "timestamp": "2025-11-29T08:34:15.944433+00:00",
+        "invocation_id": "e-8c91e82f-84db-4b03-b36a-96a686a3df4e",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 2496,
+          "completion_tokens": 12,
+          "total_tokens": 3113
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "8322eaf78af90267",
+        "timestamp": "2025-11-29T08:40:05.477771+00:00",
+        "invocation_id": "e-8c91e82f-84db-4b03-b36a-96a686a3df4e",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 10289,
+          "completion_tokens": 12,
+          "total_tokens": 10965
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "72f2f428efb51c85",
+        "timestamp": "2025-11-29T08:43:13.430403+00:00",
+        "invocation_id": "e-8c91e82f-84db-4b03-b36a-96a686a3df4e",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 17753,
+          "completion_tokens": 12,
+          "total_tokens": 18479
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "5.1.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "67903167e9d3cd0c",
+        "timestamp": "2025-11-29T08:47:17.443674+00:00",
+        "invocation_id": "e-8c91e82f-84db-4b03-b36a-96a686a3df4e",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 21549,
+          "completion_tokens": 12,
+          "total_tokens": 22381
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "9.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "cb0d28adcd44cc9f",
+        "timestamp": "2025-11-29T08:47:37.166756+00:00",
+        "invocation_id": "e-8c91e82f-84db-4b03-b36a-96a686a3df4e",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 24228,
+          "completion_tokens": 489,
+          "total_tokens": 25888
+        }
+      }
+    },
+    "total_agents_executed": 6,
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-11-29T08:47:56.331269Z",
+      "scenario_overview": "",
+      "key_observations": [],
+      "recommendations": [],
+      "pipeline_quality_assessment": "",
+      "compliance": {
+        "verdict": "BOUNDARY",
+        "confidence": "HIGH",
+        "confidence_value": 1.0,
+        "stability": "DEGRADING",
+        "critical_axes": [
+          "max_pitch_deg"
+        ]
+      },
+      "data_quality": {
+        "all_agents_healthy": true,
+        "warnings": [
+          "No perception data available",
+          "No motion data available",
+          "No collision data available"
+        ],
+        "anomalies": []
+      },
+      "measurement_summary": {},
+      "scenario": {
+        "name": "real_174503",
+        "windows_analyzed": 0
+      },
+      "analysis": {
+        "duration_seconds": 844.72,
+        "total_tokens": 86419,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-11-29T08:47:56.331311Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [],
+        "pipeline_quality_assessment": "",
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        },
+        "measurement_summary": {}
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "BOUNDARY",
+          "confidence": 1.0,
+          "rationale": "The Current Operating Domain (COD) is assessed as BOUNDARY due to a single, significant violation in robot stability. In window '008', the maximum pitch angle reached 17.63 degrees, exceeding the ODD limit of 15 degrees. This stability breach, confirmed by the Motion Agent, pushed the overall region distance to 0.158, indicating operation at the edge of the ODD. While other ego-motion and environmental parameters remained within spec, this brief but critical failure in platform stability is the primary driver for the verdict. The situation was temporally stable but consistently challenging, with obstacle density at the maximum ODD limit for most of the scenario, culminating in the stability failure during a likely collision or stall.",
+          "critical_axes": [
+            "max_pitch_deg"
+          ],
+          "temporal_stability": "DEGRADING"
+        },
+        "cod_region": {
+          "environment_type": {
+            "indoor": 1.0,
+            "type": "enum"
+          },
+          "lighting_conditions": {
+            "moderate": 0.45454545454545453,
+            "bright": 0.45454545454545453,
+            "dim": 0.09090909090909091,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "smooth": 0.2727272727272727,
+            "low_pile_carpet": 0.7272727272727273,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.5
+          },
+          "stairs_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "outdoor_environment": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "max_speed_mps": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "peak_jerk_mps3": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 0.45,
+            "max": 8.62
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 0.98,
+            "max": 17.63
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.158,
+          "fraction_outside_per_axis": {
+            "environment_type": 0.0,
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0,
+            "obstacle_density": 0.0,
+            "stairs_present": 0.0,
+            "outdoor_environment": 0.0,
+            "max_speed_mps": 0.0,
+            "max_accel_mps2": 0.0,
+            "peak_jerk_mps3": 0.0,
+            "max_roll_deg": 0.0,
+            "max_pitch_deg": 0.158
+          },
+          "total_windows": 11,
+          "windows_in_odd": 10,
+          "windows_violated": [
+            "008"
+          ],
+          "first_violation_window": "008"
+        },
+        "key_concerns": [
+          "A critical stability failure occurred in window '008' where the robot's pitch exceeded the ODD limit. This suggests a risk of tipping or unsafe operation when encountering obstacles.",
+          "The robot operated at the absolute maximum limit for obstacle_density (0.5) for a majority of the scenario (7 of 11 windows). This sustained edge-case operation increases risk and contributed to the repeated collisions and eventual stability failure.",
+          "The perception system's misinterpretation of high-pile carpets as obstacles, combined with the planner's inability to navigate them, led to repeated stalls and collisions, which are undesirable even if they don't directly violate a defined ODD axis."
+        ]
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0,
+          "window_ids": []
+        },
+        "agent_health": {
+          "perception": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "status": "OK"
+          },
+          "motion": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "zero_acceleration_windows": [],
+            "status": "OK"
+          },
+          "collision": {
+            "windows_processed": 0,
+            "collision_detected_windows": [],
+            "collision_count": 0,
+            "status": "OK"
+          }
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "BOUNDARY",
+          "confidence": 1.0,
+          "temporal_stability": "DEGRADING",
+          "critical_axes": [
+            "max_pitch_deg"
+          ]
+        },
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        }
+      },
+      "odd_specification": {},
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "odd_trends": "Obstacle density remains extremely high (at or near the ODD max of 0.5) for the first nine windows before dropping to zero in the final two. Lighting conditions fluctuate between bright, moderate, and dim, all within spec. The environment is consistently identified as 'indoor' on a 'smooth' or 'low_pile_carpet' surface, though LiDAR often perceives high roughness from carpets.",
+          "anomalies": [
+            "Windows '004' and '008' show a critical sensor-terrain mismatch where LiDAR interprets high-pile rugs as solid obstacles.",
+            "Windows '009' and '010' show a sharp, sudden transition from a highly obstructed environment to a completely clear one."
+          ],
+          "concerns": [
+            "The recurring misinterpretation of common indoor terrain (shag carpets) as impassable obstacles poses a significant risk to navigation reliability in the intended operational domain.",
+            "Operation at the maximum ODD limit for obstacle density for most of the scenario (windows 000-008) indicates the robot is navigating in an edge-case environment that challenges its capabilities."
+          ]
+        },
+        "motion": {
+          "odd_trends": "With the exception of a single anomalous window, all motion parameters (speed, acceleration, jerk) were consistently zero throughout the scenario. Platform stability (roll and pitch) was also well within ODD limits, except for the pitch violation in window '008'.",
+          "anomalies": [
+            "Window '008' is a significant anomaly, showing brief, unstable motion that violated the pitch ODD, and featured conflicting motion blur in the camera vs. zero-value IMU data."
+          ],
+          "concerns": [
+            "The stability breach in window '008', with pitch exceeding the 15\u00b0 ODD limit, represents a safety concern and a failure to maintain stable operation on flat ground."
+          ]
+        },
+        "collision": {
+          "odd_trends": "The scenario is characterized by a series of low-force collisions or stalls against static obstacles. The robot repeatedly makes contact with its environment without generating significant IMU spikes, indicating persistent, low-speed pushes rather than high-impact events.",
+          "anomalies": [
+            "Windows '001', '002', '007', and '010' are anomalous as they are the only periods where the robot is not in contact with an obstacle.",
+            "The collision in window '008' coincides with the unstable motion and pitch violation identified by the MotionAgent, suggesting a physical struggle against an obstacle."
+          ],
+          "concerns": [
+            "The primary concern is the robot's inability to recognize and navigate around impassable obstacles, leading to repeated, prolonged contact (stalls). This indicates a failure in the local planning or obstacle avoidance system."
+          ]
+        }
+      },
+      "summary_insights": {
+        "perception": [
+          "The perception system frequently misinterprets high-pile or shag carpets as impassable obstacles, a critical failure mode for an indoor robot, as seen in windows '004' and '008'.",
+          "The environment is consistently at the upper limit of the ODD for obstacle density for the majority of the scenario (windows 000-008), indicating operation in a highly cluttered space.",
+          "There's a sudden environmental shift in the last two windows ('009', '010'), where the robot's forward path becomes completely clear, contrasting sharply with the preceding obstructed views."
+        ],
+        "motion": [
+          "The robot remained stationary for 10 of the 11 windows, consistent with perception data showing a blocked path.",
+          "A critical stability failure occurred in window '008', where the robot's pitch (17.63\u00b0) exceeded the ODD limit of 15\u00b0, indicating a brief, unstable movement.",
+          "The robot did not initiate movement in the final windows ('009', '010') even though perception analysis indicated the path was clear."
+        ],
+        "collision": [
+          "Multiple low-force collisions (stalls) were detected in 7 of the 11 windows, indicating the robot repeatedly pushed against obstacles it could not traverse.",
+          "The lack of IMU spikes during these events suggests a failure in the planning system (commanding motion into known obstacles) rather than a failure to detect and react to a sudden impact."
+        ]
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/production/real_174503",
+          "scenario_name": "real_174503"
+        },
+        "odd_spec_hash": "3ca33cfc4fb54c53",
+        "timing": {
+          "start_time": "2025-11-29T08:33:51.599943+00:00",
+          "duration_seconds": 844.72
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "6.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 5593
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "7.5.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 3113
+          },
+          {
+            "name": "MotionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 10965
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 18479
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "5.1.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 22381
+          },
+          {
+            "name": "ReportAgent",
+            "version": "9.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 25888
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 79480,
+          "completion_tokens": 1023,
+          "total_tokens": 86419,
+          "estimated_cost_usd": 0.10958,
+          "cost_breakdown": {
+            "total_input_tokens": 79480,
+            "total_output_tokens": 1023,
+            "input_cost_usd": 0.09935,
+            "output_cost_usd": 0.01023
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.008816,
+            "PerceptionAgent": 0.00324,
+            "MotionAgent": 0.012981,
+            "CollisionAgent": 0.022311,
+            "EvaluatorAgent": 0.027056,
+            "ReportAgent": 0.035175
+          }
+        }
+      },
+      "raw_agent_outputs": {
+        "odd_spec": {},
+        "perception": {
+          "windows_analyzed": 11,
+          "data_source": {
+            "type": "real",
+            "confidence": 0.95,
+            "indicators": [
+              "thickened/blurred BEV obstacle edges",
+              "natural lighting variation",
+              "accumulated point cloud artifacts",
+              "realistic object textures"
+            ]
+          },
+          "temporal_analysis": {
+            "odd_trends": "Obstacle density remains extremely high (at or near the ODD max of 0.5) for the first nine windows before dropping to zero in the final two. Lighting conditions fluctuate between bright, moderate, and dim, all within spec. The environment is consistently identified as 'indoor' on a 'smooth' or 'low_pile_carpet' surface, though LiDAR often perceives high roughness from carpets.",
+            "anomalies": [
+              "Windows '004' and '008' show a critical sensor-terrain mismatch where LiDAR interprets high-pile rugs as solid obstacles.",
+              "Windows '009' and '010' show a sharp, sudden transition from a highly obstructed environment to a completely clear one."
+            ],
+            "concerns": [
+              "The recurring misinterpretation of common indoor terrain (shag carpets) as impassable obstacles poses a significant risk to navigation reliability in the intended operational domain.",
+              "Operation at the maximum ODD limit for obstacle density for most of the scenario (windows 000-008) indicates the robot is navigating in an edge-case environment that challenges its capabilities."
+            ]
+          },
+          "summary_insights": [
+            "The perception system frequently misinterprets high-pile or shag carpets as impassable obstacles, a critical failure mode for an indoor robot, as seen in windows '004' and '008'.",
+            "The environment is consistently at the upper limit of the ODD for obstacle density for the majority of the scenario (windows 000-008), indicating operation in a highly cluttered space.",
+            "There's a sudden environmental shift in the last two windows ('009', '010'), where the robot's forward path becomes completely clear, contrasting sharply with the preceding obstructed views."
+          ]
+        },
+        "motion": {
+          "windows_analyzed": 11,
+          "temporal_analysis": {
+            "odd_trends": "With the exception of a single anomalous window, all motion parameters (speed, acceleration, jerk) were consistently zero throughout the scenario. Platform stability (roll and pitch) was also well within ODD limits, except for the pitch violation in window '008'.",
+            "anomalies": [
+              "Window '008' is a significant anomaly, showing brief, unstable motion that violated the pitch ODD, and featured conflicting motion blur in the camera vs. zero-value IMU data."
+            ],
+            "concerns": [
+              "The stability breach in window '008', with pitch exceeding the 15\u00b0 ODD limit, represents a safety concern and a failure to maintain stable operation on flat ground."
+            ]
+          },
+          "summary_insights": [
+            "The robot remained stationary for 10 of the 11 windows, consistent with perception data showing a blocked path.",
+            "A critical stability failure occurred in window '008', where the robot's pitch (17.63\u00b0) exceeded the ODD limit of 15\u00b0, indicating a brief, unstable movement.",
+            "The robot did not initiate movement in the final windows ('009', '010') even though perception analysis indicated the path was clear."
+          ]
+        },
+        "collision": {
+          "windows_analyzed": 11,
+          "collisions_detected": 7,
+          "temporal_analysis": {
+            "odd_trends": "The scenario is characterized by a series of low-force collisions or stalls against static obstacles. The robot repeatedly makes contact with its environment without generating significant IMU spikes, indicating persistent, low-speed pushes rather than high-impact events.",
+            "anomalies": [
+              "Windows '001', '002', '007', and '010' are anomalous as they are the only periods where the robot is not in contact with an obstacle.",
+              "The collision in window '008' coincides with the unstable motion and pitch violation identified by the MotionAgent, suggesting a physical struggle against an obstacle."
+            ],
+            "concerns": [
+              "The primary concern is the robot's inability to recognize and navigate around impassable obstacles, leading to repeated, prolonged contact (stalls). This indicates a failure in the local planning or obstacle avoidance system."
+            ]
+          },
+          "summary_insights": [
+            "Multiple low-force collisions (stalls) were detected in 7 of the 11 windows, indicating the robot repeatedly pushed against obstacles it could not traverse.",
+            "The lack of IMU spikes during these events suggests a failure in the planning system (commanding motion into known obstacles) rather than a failure to detect and react to a sudden impact."
+          ]
+        },
+        "evaluator": {
+          "cod_region": {
+            "environment_type": {
+              "indoor": 1.0,
+              "type": "enum"
+            },
+            "lighting_conditions": {
+              "moderate": 0.45454545454545453,
+              "bright": 0.45454545454545453,
+              "dim": 0.09090909090909091,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "smooth": 0.2727272727272727,
+              "low_pile_carpet": 0.7272727272727273,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.5
+            },
+            "stairs_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "outdoor_environment": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "peak_jerk_mps3": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0.45,
+              "max": 8.62
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0.98,
+              "max": 17.63
+            }
+          },
+          "region_metrics": {
+            "region_distance": 0.158,
+            "fraction_outside_per_axis": {
+              "environment_type": 0.0,
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0,
+              "obstacle_density": 0.0,
+              "stairs_present": 0.0,
+              "outdoor_environment": 0.0,
+              "max_speed_mps": 0.0,
+              "max_accel_mps2": 0.0,
+              "peak_jerk_mps3": 0.0,
+              "max_roll_deg": 0.0,
+              "max_pitch_deg": 0.158
+            },
+            "total_windows": 11,
+            "windows_in_odd": 10,
+            "windows_violated": [
+              "008"
+            ],
+            "first_violation_window": "008"
+          },
+          "compliance_verdict": {
+            "verdict": "BOUNDARY",
+            "confidence": 1.0,
+            "rationale": "The Current Operating Domain (COD) is assessed as BOUNDARY due to a single, significant violation in robot stability. In window '008', the maximum pitch angle reached 17.63 degrees, exceeding the ODD limit of 15 degrees. This stability breach, confirmed by the Motion Agent, pushed the overall region distance to 0.158, indicating operation at the edge of the ODD. While other ego-motion and environmental parameters remained within spec, this brief but critical failure in platform stability is the primary driver for the verdict. The situation was temporally stable but consistently challenging, with obstacle density at the maximum ODD limit for most of the scenario, culminating in the stability failure during a likely collision or stall.",
+            "critical_axes": [
+              "max_pitch_deg"
+            ],
+            "temporal_stability": "DEGRADING"
+          },
+          "key_concerns": [
+            "A critical stability failure occurred in window '008' where the robot's pitch exceeded the ODD limit. This suggests a risk of tipping or unsafe operation when encountering obstacles.",
+            "The robot operated at the absolute maximum limit for obstacle_density (0.5) for a majority of the scenario (7 of 11 windows). This sustained edge-case operation increases risk and contributed to the repeated collisions and eventual stability failure.",
+            "The perception system's misinterpretation of high-pile carpets as obstacles, combined with the planner's inability to navigate them, led to repeated stalls and collisions, which are undesirable even if they don't directly violate a defined ODD axis."
+          ]
+        },
+        "report": {}
+      }
+    }
+  },
+  "agent_outputs": {
+    "PerceptionAgent": {
+      "windows_analyzed": 11,
+      "data_source": {
+        "type": "real",
+        "confidence": 0.95,
+        "indicators": [
+          "thickened/blurred BEV obstacle edges",
+          "natural lighting variation",
+          "accumulated point cloud artifacts",
+          "realistic object textures"
+        ]
+      },
+      "temporal_analysis": {
+        "odd_trends": "Obstacle density remains extremely high (at or near the ODD max of 0.5) for the first nine windows before dropping to zero in the final two. Lighting conditions fluctuate between bright, moderate, and dim, all within spec. The environment is consistently identified as 'indoor' on a 'smooth' or 'low_pile_carpet' surface, though LiDAR often perceives high roughness from carpets.",
+        "anomalies": [
+          "Windows '004' and '008' show a critical sensor-terrain mismatch where LiDAR interprets high-pile rugs as solid obstacles.",
+          "Windows '009' and '010' show a sharp, sudden transition from a highly obstructed environment to a completely clear one."
+        ],
+        "concerns": [
+          "The recurring misinterpretation of common indoor terrain (shag carpets) as impassable obstacles poses a significant risk to navigation reliability in the intended operational domain.",
+          "Operation at the maximum ODD limit for obstacle density for most of the scenario (windows 000-008) indicates the robot is navigating in an edge-case environment that challenges its capabilities."
+        ]
+      },
+      "summary_insights": [
+        "The perception system frequently misinterprets high-pile or shag carpets as impassable obstacles, a critical failure mode for an indoor robot, as seen in windows '004' and '008'.",
+        "The environment is consistently at the upper limit of the ODD for obstacle density for the majority of the scenario (windows 000-008), indicating operation in a highly cluttered space.",
+        "There's a sudden environmental shift in the last two windows ('009', '010'), where the robot's forward path becomes completely clear, contrasting sharply with the preceding obstructed views."
+      ]
+    },
+    "MotionAgent": {
+      "windows_analyzed": 11,
+      "temporal_analysis": {
+        "odd_trends": "With the exception of a single anomalous window, all motion parameters (speed, acceleration, jerk) were consistently zero throughout the scenario. Platform stability (roll and pitch) was also well within ODD limits, except for the pitch violation in window '008'.",
+        "anomalies": [
+          "Window '008' is a significant anomaly, showing brief, unstable motion that violated the pitch ODD, and featured conflicting motion blur in the camera vs. zero-value IMU data."
+        ],
+        "concerns": [
+          "The stability breach in window '008', with pitch exceeding the 15\u00b0 ODD limit, represents a safety concern and a failure to maintain stable operation on flat ground."
+        ]
+      },
+      "summary_insights": [
+        "The robot remained stationary for 10 of the 11 windows, consistent with perception data showing a blocked path.",
+        "A critical stability failure occurred in window '008', where the robot's pitch (17.63\u00b0) exceeded the ODD limit of 15\u00b0, indicating a brief, unstable movement.",
+        "The robot did not initiate movement in the final windows ('009', '010') even though perception analysis indicated the path was clear."
+      ]
+    },
+    "CollisionAgent": {
+      "windows_analyzed": 11,
+      "collisions_detected": 7,
+      "temporal_analysis": {
+        "odd_trends": "The scenario is characterized by a series of low-force collisions or stalls against static obstacles. The robot repeatedly makes contact with its environment without generating significant IMU spikes, indicating persistent, low-speed pushes rather than high-impact events.",
+        "anomalies": [
+          "Windows '001', '002', '007', and '010' are anomalous as they are the only periods where the robot is not in contact with an obstacle.",
+          "The collision in window '008' coincides with the unstable motion and pitch violation identified by the MotionAgent, suggesting a physical struggle against an obstacle."
+        ],
+        "concerns": [
+          "The primary concern is the robot's inability to recognize and navigate around impassable obstacles, leading to repeated, prolonged contact (stalls). This indicates a failure in the local planning or obstacle avoidance system."
+        ]
+      },
+      "summary_insights": [
+        "Multiple low-force collisions (stalls) were detected in 7 of the 11 windows, indicating the robot repeatedly pushed against obstacles it could not traverse.",
+        "The lack of IMU spikes during these events suggests a failure in the planning system (commanding motion into known obstacles) rather than a failure to detect and react to a sudden impact."
+      ]
+    },
+    "EvaluatorAgent": {
+      "cod_region": {
+        "environment_type": {
+          "indoor": 1.0,
+          "type": "enum"
+        },
+        "lighting_conditions": {
+          "moderate": 0.45454545454545453,
+          "bright": 0.45454545454545453,
+          "dim": 0.09090909090909091,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "smooth": 0.2727272727272727,
+          "low_pile_carpet": 0.7272727272727273,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.5
+        },
+        "stairs_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "outdoor_environment": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "max_speed_mps": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "peak_jerk_mps3": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 0.45,
+          "max": 8.62
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 0.98,
+          "max": 17.63
+        }
+      },
+      "region_metrics": {
+        "region_distance": 0.158,
+        "fraction_outside_per_axis": {
+          "environment_type": 0.0,
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0,
+          "obstacle_density": 0.0,
+          "stairs_present": 0.0,
+          "outdoor_environment": 0.0,
+          "max_speed_mps": 0.0,
+          "max_accel_mps2": 0.0,
+          "peak_jerk_mps3": 0.0,
+          "max_roll_deg": 0.0,
+          "max_pitch_deg": 0.158
+        },
+        "total_windows": 11,
+        "windows_in_odd": 10,
+        "windows_violated": [
+          "008"
+        ],
+        "first_violation_window": "008"
+      },
+      "compliance_verdict": {
+        "verdict": "BOUNDARY",
+        "confidence": 1.0,
+        "rationale": "The Current Operating Domain (COD) is assessed as BOUNDARY due to a single, significant violation in robot stability. In window '008', the maximum pitch angle reached 17.63 degrees, exceeding the ODD limit of 15 degrees. This stability breach, confirmed by the Motion Agent, pushed the overall region distance to 0.158, indicating operation at the edge of the ODD. While other ego-motion and environmental parameters remained within spec, this brief but critical failure in platform stability is the primary driver for the verdict. The situation was temporally stable but consistently challenging, with obstacle density at the maximum ODD limit for most of the scenario, culminating in the stability failure during a likely collision or stall.",
+        "critical_axes": [
+          "max_pitch_deg"
+        ],
+        "temporal_stability": "DEGRADING"
+      },
+      "key_concerns": [
+        "A critical stability failure occurred in window '008' where the robot's pitch exceeded the ODD limit. This suggests a risk of tipping or unsafe operation when encountering obstacles.",
+        "The robot operated at the absolute maximum limit for obstacle_density (0.5) for a majority of the scenario (7 of 11 windows). This sustained edge-case operation increases risk and contributed to the repeated collisions and eventual stability failure.",
+        "The perception system's misinterpretation of high-pile carpets as obstacles, combined with the planner's inability to navigate them, led to repeated stalls and collisions, which are undesirable even if they don't directly violate a defined ODD axis."
+      ]
+    }
+  },
+  "source_scenario_path": "/workspaces/go2-odd-observer/data/production/real_174503"
+}

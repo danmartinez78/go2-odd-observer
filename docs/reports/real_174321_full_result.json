@@ -1,0 +1,1010 @@
+{
+  "report": {
+    "result": "{\n  \"compliance\": {\n    \"status\": \"OUT_ODD\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot operated outside its design domain due to excessive obstacle density and platform instability, with pitch and roll angles far exceeding specified limits.\"\n  },\n  \"executive_summary\": \"The robot operated in a cluttered indoor residential environment. It consistently failed to stay within its operational design domain, navigating areas that were too crowded and causing the robot to tilt beyond its stability limits. This resulted in frequent, low-speed collisions where the robot became stuck against furniture and rugs.\",\n  \"key_findings\": {\n    \"perception\": \"The environment was a cluttered indoor residential space with varied lighting and smooth floors, but the high density of obstacles frequently blocked the robot's path.\",\n    \"motion\": \"The robot's movement was intermittent, but it repeatedly exceeded its 10-degree stability limits for pitch and roll, and a critical failure was noted where the IMU sensor did not report motion.\",\n    \"safety\": \"A very high number of collisions were detected (20 of 29 instances), primarily low-speed events where the robot became stuck against furniture and high-pile rugs.\",\n    \"temporal_trends\": \"The operational conditions were unstable and degrading, with the robot repeatedly encountering situations that violated its design limits.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 29,\n    \"environment\": \"indoor residential\",\n    \"data_quality\": \"degraded\",\n    \"data_source\": \"real\"\n  },\n  \"issues\": [\n    \"The robot consistently operated in an environment with obstacle density up to 0.9, far exceeding the 0.5 ODD limit.\",\n    \"The robot's stability limits were frequently breached, with pitch and roll angles reaching up to 18.44 degrees, well above the 10-degree maximum.\",\n    \"A critical IMU sensor failure was detected; the sensor often reported zero motion during clear movement and collisions.\",\n    \"Camera image quality was frequently degraded by severe motion blur and compression artifacts, making it unreliable.\",\n    \"The robot repeatedly got stuck on high-pile rugs, indicating poor terrain negotiation for common indoor surfaces.\"\n  ],\n  \"recommendations\": [\n    \"Cease operations in highly cluttered environments where the robot cannot maintain safe distances from obstacles.\",\n    \"Investigate the critical IMU failure immediately, as the robot lacks reliable motion and impact data.\",\n    \"Review the robot's stability control and path planning to prevent exceeding pitch and roll limits.\",\n    \"Address the causes of poor camera image quality to ensure sensor redundancy.\",\n    \"Improve the robot's ability to navigate common indoor terrains like high-pile rugs to avoid getting stuck.\"\n  ]\n}"
+  },
+  "full_analysis": {
+    "cod_region": {
+      "environment_type": {
+        "indoor_residential": 0.8620689655172413,
+        "indoor": 0.06896551724137931,
+        "indoor_commercial": 0.06896551724137931,
+        "type": "enum"
+      },
+      "lighting_conditions": {
+        "moderate": 0.5517241379310345,
+        "bright": 0.27586206896551724,
+        "dim": 0.1724137931034483,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "smooth": 0.9310344827586207,
+        "slightly_rough": 0.034482758620689655,
+        "rough": 0.034482758620689655,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.9
+      },
+      "stairs_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 0.52,
+        "max": 17.17
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 0.53,
+        "max": 18.44
+      }
+    },
+    "region_metrics": {
+      "region_distance": 0.7786,
+      "fraction_outside_per_axis": {
+        "environment_type": 0.0,
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0345,
+        "obstacle_density": 0.4444,
+        "stairs_present": 0.0,
+        "max_accel_mps2": 0.0,
+        "max_pitch_deg": 0.4306,
+        "max_roll_deg": 0.4712
+      },
+      "total_windows": 29,
+      "windows_in_odd": 2,
+      "windows_violated": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012",
+        "013",
+        "015",
+        "016",
+        "017",
+        "018",
+        "019",
+        "020",
+        "21",
+        "22",
+        "024",
+        "025",
+        "026",
+        "027",
+        "028"
+      ],
+      "first_violation_window": "000",
+      "categorical_semantic_distances": {
+        "environment_type": 0.0,
+        "terrain_type": 0.5
+      }
+    },
+    "compliance_verdict": {
+      "verdict": "OUT_ODD",
+      "confidence": 0.95,
+      "rationale": "The Current Operating Domain (COD) is unequivocally outside the specified ODD, with an aggregate region distance of 0.7786. Violations are persistent and severe across multiple critical axes. The robot consistently operated in environments with obstacle density (max 0.9) far exceeding the ODD limit of 0.5, leading to 20 documented collision events. Furthermore, the robot's stability was compromised, with maximum pitch and roll angles reaching 17.17 and 18.44 degrees respectively, far beyond the 10-degree safety threshold. These breaches indicate operation in an environment that is both too cluttered and too unstable for the robot's design specifications.",
+      "critical_axes": [
+        "obstacle_density",
+        "max_pitch_deg",
+        "max_roll_deg",
+        "terrain_type"
+      ],
+      "temporal_stability": "DEGRADING"
+    },
+    "key_concerns": [
+      "Extreme Environmental Mismatch: The robot was consistently operated in a highly cluttered environment (obstacle density up to 0.9 vs 0.5 limit), causing frequent navigation failures and collisions.",
+      "Critical Platform Instability: The robot frequently exceeded its pitch and roll stability limits (max 18.44 vs 10 deg limit), indicating a high risk of tipping or unstable behavior.",
+      "IMU Sensor Failure: The motion agent identified a critical anomaly where the IMU reported zero acceleration and angular velocity during periods of clear motion and collision. This sensor failure presents a major safety risk, as the robot cannot reliably detect its own motion or impacts."
+    ]
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-11-29T08:03:22.042321+00:00",
+    "analysis_duration_seconds": 1829.5,
+    "total_agents_executed": 6,
+    "total_tokens_used": 162215,
+    "estimated_cost_usd": 0.20418,
+    "cost_breakdown": {
+      "total_input_tokens": 155688,
+      "total_output_tokens": 957,
+      "input_cost_usd": 0.19461,
+      "output_cost_usd": 0.00957
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.007746,
+      "PerceptionAgent": 0.002992,
+      "MotionAgent": 0.026344,
+      "CollisionAgent": 0.04473,
+      "EvaluatorAgent": 0.056384,
+      "ReportAgent": 0.065984
+    },
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-11-29T08:03:22.042321+00:00",
+    "pipeline_duration_seconds": 1829.5,
+    "odd_specification": {
+      "hash": "3ca33cfc4fb54c53",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/production/real_174321",
+      "scenario_name": "real_174321"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "6.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "2be77b23eb83856a",
+        "timestamp": "2025-11-29T08:03:22.044035+00:00",
+        "invocation_id": "e-2244980d-4b29-4833-8bd5-3aeaf4b11d8d",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 3165,
+          "completion_tokens": 379,
+          "total_tokens": 5168
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "7.5.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "4e3ff80c88ddec1e",
+        "timestamp": "2025-11-29T08:03:44.597357+00:00",
+        "invocation_id": "e-2244980d-4b29-4833-8bd5-3aeaf4b11d8d",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 2298,
+          "completion_tokens": 12,
+          "total_tokens": 2966
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "8322eaf78af90267",
+        "timestamp": "2025-11-29T08:15:26.530519+00:00",
+        "invocation_id": "e-2244980d-4b29-4833-8bd5-3aeaf4b11d8d",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 20979,
+          "completion_tokens": 12,
+          "total_tokens": 21491
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "7.4.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "72f2f428efb51c85",
+        "timestamp": "2025-11-29T08:23:20.912309+00:00",
+        "invocation_id": "e-2244980d-4b29-4833-8bd5-3aeaf4b11d8d",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 35688,
+          "completion_tokens": 12,
+          "total_tokens": 36343
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "5.1.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "67903167e9d3cd0c",
+        "timestamp": "2025-11-29T08:32:57.275002+00:00",
+        "invocation_id": "e-2244980d-4b29-4833-8bd5-3aeaf4b11d8d",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 45011,
+          "completion_tokens": 12,
+          "total_tokens": 46271
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "9.2.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "cb0d28adcd44cc9f",
+        "timestamp": "2025-11-29T08:33:32.982079+00:00",
+        "invocation_id": "e-2244980d-4b29-4833-8bd5-3aeaf4b11d8d",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 48547,
+          "completion_tokens": 530,
+          "total_tokens": 49976
+        }
+      }
+    },
+    "total_agents_executed": 6,
+    "knowledge_refs": {
+      "manifest": {
+        "fundamentals": "artifact:odd_cod_fundamentals_v1",
+        "robot": "artifact:robot_go2_profile_v1",
+        "sensors": "artifact:sensor_interpretation_core_v1"
+      },
+      "fundamentals": {
+        "artifact": "artifact:odd_cod_fundamentals_v1",
+        "sections": {
+          "definitions": "artifact:odd_cod_fundamentals_v1#core-definitions",
+          "verdicts": "artifact:odd_cod_fundamentals_v1#verdict-criteria",
+          "axis_naming": "artifact:odd_cod_fundamentals_v1#axis-types--naming-stay-aligned-with-odd-spec-agent",
+          "sensors": "artifact:odd_cod_fundamentals_v1#sensor-interpretation-guidance",
+          "reasoning": "artifact:odd_cod_fundamentals_v1#reasoning-patterns"
+        }
+      },
+      "sensors": {
+        "artifact": "artifact:sensor_interpretation_core_v1",
+        "sections": {
+          "bev": "artifact:sensor_interpretation_core_v1#bev-basics",
+          "camera": "artifact:sensor_interpretation_core_v1#camera-basics",
+          "imu": "artifact:sensor_interpretation_core_v1#imu-basics",
+          "collision_cues": "artifact:sensor_interpretation_core_v1#collisionanomaly-cues"
+        }
+      }
+    }
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-11-29T08:33:51.561532Z",
+      "scenario_overview": "",
+      "key_observations": [],
+      "recommendations": [],
+      "pipeline_quality_assessment": "",
+      "compliance": {
+        "verdict": "OUT_ODD",
+        "confidence": "HIGH",
+        "confidence_value": 0.95,
+        "stability": "DEGRADING",
+        "critical_axes": [
+          "obstacle_density",
+          "max_pitch_deg",
+          "max_roll_deg",
+          "terrain_type"
+        ]
+      },
+      "data_quality": {
+        "all_agents_healthy": true,
+        "warnings": [
+          "No perception data available",
+          "No motion data available",
+          "No collision data available"
+        ],
+        "anomalies": []
+      },
+      "measurement_summary": {},
+      "scenario": {
+        "name": "real_174321",
+        "windows_analyzed": 0
+      },
+      "analysis": {
+        "duration_seconds": 1829.5,
+        "total_tokens": 162215,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-11-29T08:33:51.561558Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [],
+        "pipeline_quality_assessment": "",
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        },
+        "measurement_summary": {}
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "OUT_ODD",
+          "confidence": 0.95,
+          "rationale": "The Current Operating Domain (COD) is unequivocally outside the specified ODD, with an aggregate region distance of 0.7786. Violations are persistent and severe across multiple critical axes. The robot consistently operated in environments with obstacle density (max 0.9) far exceeding the ODD limit of 0.5, leading to 20 documented collision events. Furthermore, the robot's stability was compromised, with maximum pitch and roll angles reaching 17.17 and 18.44 degrees respectively, far beyond the 10-degree safety threshold. These breaches indicate operation in an environment that is both too cluttered and too unstable for the robot's design specifications.",
+          "critical_axes": [
+            "obstacle_density",
+            "max_pitch_deg",
+            "max_roll_deg",
+            "terrain_type"
+          ],
+          "temporal_stability": "DEGRADING"
+        },
+        "cod_region": {
+          "environment_type": {
+            "indoor_residential": 0.8620689655172413,
+            "indoor": 0.06896551724137931,
+            "indoor_commercial": 0.06896551724137931,
+            "type": "enum"
+          },
+          "lighting_conditions": {
+            "moderate": 0.5517241379310345,
+            "bright": 0.27586206896551724,
+            "dim": 0.1724137931034483,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "smooth": 0.9310344827586207,
+            "slightly_rough": 0.034482758620689655,
+            "rough": 0.034482758620689655,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.9
+          },
+          "stairs_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 0.52,
+            "max": 17.17
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 0.53,
+            "max": 18.44
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.7786,
+          "fraction_outside_per_axis": {
+            "environment_type": 0.0,
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0345,
+            "obstacle_density": 0.4444,
+            "stairs_present": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_pitch_deg": 0.4306,
+            "max_roll_deg": 0.4712
+          },
+          "total_windows": 29,
+          "windows_in_odd": 2,
+          "windows_violated": [
+            "000",
+            "001",
+            "002",
+            "003",
+            "004",
+            "005",
+            "006",
+            "007",
+            "008",
+            "009",
+            "010",
+            "011",
+            "012",
+            "013",
+            "015",
+            "016",
+            "017",
+            "018",
+            "019",
+            "020",
+            "21",
+            "22",
+            "024",
+            "025",
+            "026",
+            "027",
+            "028"
+          ],
+          "first_violation_window": "000",
+          "categorical_semantic_distances": {
+            "environment_type": 0.0,
+            "terrain_type": 0.5
+          }
+        },
+        "key_concerns": [
+          "Extreme Environmental Mismatch: The robot was consistently operated in a highly cluttered environment (obstacle density up to 0.9 vs 0.5 limit), causing frequent navigation failures and collisions.",
+          "Critical Platform Instability: The robot frequently exceeded its pitch and roll stability limits (max 18.44 vs 10 deg limit), indicating a high risk of tipping or unstable behavior.",
+          "IMU Sensor Failure: The motion agent identified a critical anomaly where the IMU reported zero acceleration and angular velocity during periods of clear motion and collision. This sensor failure presents a major safety risk, as the robot cannot reliably detect its own motion or impacts."
+        ]
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0,
+          "window_ids": []
+        },
+        "agent_health": {
+          "perception": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "status": "OK"
+          },
+          "motion": {
+            "windows_processed": 0,
+            "empty_windows": [],
+            "zero_acceleration_windows": [],
+            "status": "OK"
+          },
+          "collision": {
+            "windows_processed": 0,
+            "collision_detected_windows": [],
+            "collision_count": 0,
+            "status": "OK"
+          }
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "OUT_ODD",
+          "confidence": 0.95,
+          "temporal_stability": "DEGRADING",
+          "critical_axes": [
+            "obstacle_density",
+            "max_pitch_deg",
+            "max_roll_deg",
+            "terrain_type"
+          ]
+        },
+        "data_quality": {
+          "all_agents_healthy": true,
+          "warnings": [
+            "No perception data available",
+            "No motion data available",
+            "No collision data available"
+          ],
+          "anomalies": []
+        }
+      },
+      "odd_specification": {},
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "odd_trends": "The scenario is characterized by extreme fluctuations in obstacle density, alternating between periods where the path is completely blocked (density >0.8) and brief moments of clear passage (density <0.1). Lighting and terrain are stable and within ODD, with minor exceptions for rough texture from high-pile rugs. The analysis tool did not provide measurements for ego-motion axes like acceleration or pitch/roll.",
+          "anomalies": [
+            "Windows 005, 007, 008, 009, 011, 015, 017, 021, 022, 023, 025, 026: These windows exhibit severe camera degradation (heavy motion blur, compression artifacts, or focus issues), making the camera sensor unreliable.",
+            "Window 005: Measures 'rough' terrain, an outlier compared to the otherwise 'smooth' measurements."
+          ],
+          "concerns": [
+            "High Obstacle Density: The robot frequently operates in an environment with obstacle density (often >0.8) far exceeding the ODD maximum of 0.5, leading to its path being constantly blocked.",
+            "Camera Reliability: The frequent and severe degradation of the camera image is a major quality and safety concern. If LiDAR were to fail, the robot would be effectively blind."
+          ]
+        },
+        "motion": {
+          "odd_trends": "The robot's motion is intermittent, characterized by long periods of being stationary followed by sudden, rapid movements that cause significant motion blur. A persistent trend is the unreliability of IMU data, which frequently reports zero activity during these movements. Additionally, the robot's platform stability often exceeds ODD limits for pitch and roll, even when stationary.",
+          "anomalies": [
+            "Windows 006, 008, 12, 13, 18, 19, 21: Camera shows clear motion blur while IMU data is all zero, indicating a sensor conflict or data pipeline failure.",
+            "Windows 006, 007, 008, 009, 010, 011, 012, 018, 019, 025: Robot's pitch or roll exceeds the 10-degree ODD limit, indicating unstable states or operation on steep inclines."
+          ],
+          "concerns": [
+            "IMU Unreliability: The frequent failure of the IMU to report any motion when the robot is clearly moving is a major safety concern. It removes a critical source of state estimation and could lead to uncontrolled behavior if other sensors (like the camera) fail.",
+            "Stability Limits: The robot is frequently tilted beyond its specified 10-degree roll/pitch limits, which could indicate a risk of instability or operation in environments steeper than designed for."
+          ]
+        },
+        "collision": {
+          "odd_trends": "The scenario shows a pattern of repeated, low-impact collisions. The robot frequently enters states where it is physically stuck against an obstacle (furniture, rugs), attempts to push through, and fails. This cycle repeats throughout the log, indicating a persistent failure in navigation and recovery behaviors rather than isolated, high-speed accidents.",
+          "anomalies": [
+            "IMU Data: A recurring anomaly across all 20 detected collision windows is the complete absence of IMU spikes. This indicates a systemic issue, as physical contact, even low-speed pushing, should register some non-zero acceleration or jerk.",
+            "Windows 005, 006, 014, 018: Collisions with terrain (high-pile rugs) where the robot becomes stuck."
+          ],
+          "concerns": [
+            "IMU Failure/Insensitivity: The lack of IMU feedback during collisions is a major safety concern. The system is entirely dependent on visual sensors (LiDAR/camera) to detect 'stuck' or 'pushing' states, which could fail in adverse conditions.",
+            "Terrain Negotiation: The robot frequently gets stuck on soft, high-pile rugs, treating them as impassable obstacles. This indicates a failure in either perception (misclassifying terrain) or motion planning (inability to traverse challenging but common indoor surfaces)."
+          ]
+        }
+      },
+      "summary_insights": {
+        "perception": [
+          "The scenario depicts a robot navigating a highly cluttered indoor residential environment, frequently encountering situations where its path is completely blocked by furniture and other objects.",
+          "A recurring and critical issue is the poor quality of the camera feed, which is often unusable due to motion blur and compression artifacts, forcing total reliance on LiDAR for safe navigation.",
+          "The robot is consistently operating outside its specified ODD for 'obstacle_density,' which has a maximum of 0.5. Many windows show measurements of 0.85 or higher, indicating the environment is too cluttered for the robot's intended design."
+        ],
+        "motion": [
+          "Robot motion is characterized by periods of stationarity punctuated by abrupt movements, evidenced by severe motion blur in the camera.",
+          "A critical anomaly was detected: IMU motion data (acceleration, angular velocity) is frequently zero even when the camera clearly shows high-speed motion, indicating a likely sensor or data pipeline failure.",
+          "The robot repeatedly operates outside its stability ODD, with numerous instances of pitch and roll angles exceeding the specified 10-degree maximum."
+        ],
+        "collision": [
+          "A high number of collisions (20 out of 29 windows) were detected, primarily characterized by low-speed contact rather than high-impact events.",
+          "The primary cause of collisions was the robot getting stuck on or pushing against obstacles like high-pile rugs, furniture, and ramps, confirmed by visual evidence (BEV and camera) showing direct contact.",
+          "A critical data anomaly was observed: in all collision events, IMU data (acceleration, jerk) was zero, suggesting these sensors are either failing or the events are below the detectable threshold, forcing reliance on visual sensors for collision detection."
+        ]
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/production/real_174321",
+          "scenario_name": "real_174321"
+        },
+        "odd_spec_hash": "3ca33cfc4fb54c53",
+        "timing": {
+          "start_time": "2025-11-29T08:03:22.042321+00:00",
+          "duration_seconds": 1829.5
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "6.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 5168
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "7.5.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 2966
+          },
+          {
+            "name": "MotionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 21491
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "7.4.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 36343
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "5.1.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 46271
+          },
+          {
+            "name": "ReportAgent",
+            "version": "9.2.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 49976
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 155688,
+          "completion_tokens": 957,
+          "total_tokens": 162215,
+          "estimated_cost_usd": 0.20418,
+          "cost_breakdown": {
+            "total_input_tokens": 155688,
+            "total_output_tokens": 957,
+            "input_cost_usd": 0.19461,
+            "output_cost_usd": 0.00957
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.007746,
+            "PerceptionAgent": 0.002992,
+            "MotionAgent": 0.026344,
+            "CollisionAgent": 0.04473,
+            "EvaluatorAgent": 0.056384,
+            "ReportAgent": 0.065984
+          }
+        }
+      },
+      "raw_agent_outputs": {
+        "odd_spec": {},
+        "perception": {
+          "windows_analyzed": 29,
+          "data_source": {
+            "type": "real",
+            "confidence": 0.94,
+            "indicators": [
+              "thickened/blurred obstacle edges from accumulation",
+              "natural lighting and shadows",
+              "camera motion blur",
+              "camera compression artifacts",
+              "camera lens distortion"
+            ]
+          },
+          "temporal_analysis": {
+            "odd_trends": "The scenario is characterized by extreme fluctuations in obstacle density, alternating between periods where the path is completely blocked (density >0.8) and brief moments of clear passage (density <0.1). Lighting and terrain are stable and within ODD, with minor exceptions for rough texture from high-pile rugs. The analysis tool did not provide measurements for ego-motion axes like acceleration or pitch/roll.",
+            "anomalies": [
+              "Windows 005, 007, 008, 009, 011, 015, 017, 021, 022, 023, 025, 026: These windows exhibit severe camera degradation (heavy motion blur, compression artifacts, or focus issues), making the camera sensor unreliable.",
+              "Window 005: Measures 'rough' terrain, an outlier compared to the otherwise 'smooth' measurements."
+            ],
+            "concerns": [
+              "High Obstacle Density: The robot frequently operates in an environment with obstacle density (often >0.8) far exceeding the ODD maximum of 0.5, leading to its path being constantly blocked.",
+              "Camera Reliability: The frequent and severe degradation of the camera image is a major quality and safety concern. If LiDAR were to fail, the robot would be effectively blind."
+            ]
+          },
+          "summary_insights": [
+            "The scenario depicts a robot navigating a highly cluttered indoor residential environment, frequently encountering situations where its path is completely blocked by furniture and other objects.",
+            "A recurring and critical issue is the poor quality of the camera feed, which is often unusable due to motion blur and compression artifacts, forcing total reliance on LiDAR for safe navigation.",
+            "The robot is consistently operating outside its specified ODD for 'obstacle_density,' which has a maximum of 0.5. Many windows show measurements of 0.85 or higher, indicating the environment is too cluttered for the robot's intended design."
+          ]
+        },
+        "motion": {
+          "windows_analyzed": 29,
+          "temporal_analysis": {
+            "odd_trends": "The robot's motion is intermittent, characterized by long periods of being stationary followed by sudden, rapid movements that cause significant motion blur. A persistent trend is the unreliability of IMU data, which frequently reports zero activity during these movements. Additionally, the robot's platform stability often exceeds ODD limits for pitch and roll, even when stationary.",
+            "anomalies": [
+              "Windows 006, 008, 12, 13, 18, 19, 21: Camera shows clear motion blur while IMU data is all zero, indicating a sensor conflict or data pipeline failure.",
+              "Windows 006, 007, 008, 009, 010, 011, 012, 018, 019, 025: Robot's pitch or roll exceeds the 10-degree ODD limit, indicating unstable states or operation on steep inclines."
+            ],
+            "concerns": [
+              "IMU Unreliability: The frequent failure of the IMU to report any motion when the robot is clearly moving is a major safety concern. It removes a critical source of state estimation and could lead to uncontrolled behavior if other sensors (like the camera) fail.",
+              "Stability Limits: The robot is frequently tilted beyond its specified 10-degree roll/pitch limits, which could indicate a risk of instability or operation in environments steeper than designed for."
+            ]
+          },
+          "summary_insights": [
+            "Robot motion is characterized by periods of stationarity punctuated by abrupt movements, evidenced by severe motion blur in the camera.",
+            "A critical anomaly was detected: IMU motion data (acceleration, angular velocity) is frequently zero even when the camera clearly shows high-speed motion, indicating a likely sensor or data pipeline failure.",
+            "The robot repeatedly operates outside its stability ODD, with numerous instances of pitch and roll angles exceeding the specified 10-degree maximum."
+          ]
+        },
+        "collision": {
+          "windows_analyzed": 29,
+          "collisions_detected": 20,
+          "temporal_analysis": {
+            "odd_trends": "The scenario shows a pattern of repeated, low-impact collisions. The robot frequently enters states where it is physically stuck against an obstacle (furniture, rugs), attempts to push through, and fails. This cycle repeats throughout the log, indicating a persistent failure in navigation and recovery behaviors rather than isolated, high-speed accidents.",
+            "anomalies": [
+              "IMU Data: A recurring anomaly across all 20 detected collision windows is the complete absence of IMU spikes. This indicates a systemic issue, as physical contact, even low-speed pushing, should register some non-zero acceleration or jerk.",
+              "Windows 005, 006, 014, 018: Collisions with terrain (high-pile rugs) where the robot becomes stuck."
+            ],
+            "concerns": [
+              "IMU Failure/Insensitivity: The lack of IMU feedback during collisions is a major safety concern. The system is entirely dependent on visual sensors (LiDAR/camera) to detect 'stuck' or 'pushing' states, which could fail in adverse conditions.",
+              "Terrain Negotiation: The robot frequently gets stuck on soft, high-pile rugs, treating them as impassable obstacles. This indicates a failure in either perception (misclassifying terrain) or motion planning (inability to traverse challenging but common indoor surfaces)."
+            ]
+          },
+          "summary_insights": [
+            "A high number of collisions (20 out of 29 windows) were detected, primarily characterized by low-speed contact rather than high-impact events.",
+            "The primary cause of collisions was the robot getting stuck on or pushing against obstacles like high-pile rugs, furniture, and ramps, confirmed by visual evidence (BEV and camera) showing direct contact.",
+            "A critical data anomaly was observed: in all collision events, IMU data (acceleration, jerk) was zero, suggesting these sensors are either failing or the events are below the detectable threshold, forcing reliance on visual sensors for collision detection."
+          ]
+        },
+        "evaluator": {
+          "cod_region": {
+            "environment_type": {
+              "indoor_residential": 0.8620689655172413,
+              "indoor": 0.06896551724137931,
+              "indoor_commercial": 0.06896551724137931,
+              "type": "enum"
+            },
+            "lighting_conditions": {
+              "moderate": 0.5517241379310345,
+              "bright": 0.27586206896551724,
+              "dim": 0.1724137931034483,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "smooth": 0.9310344827586207,
+              "slightly_rough": 0.034482758620689655,
+              "rough": 0.034482758620689655,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.9
+            },
+            "stairs_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0.52,
+              "max": 17.17
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0.53,
+              "max": 18.44
+            }
+          },
+          "region_metrics": {
+            "region_distance": 0.7786,
+            "fraction_outside_per_axis": {
+              "environment_type": 0.0,
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0345,
+              "obstacle_density": 0.4444,
+              "stairs_present": 0.0,
+              "max_accel_mps2": 0.0,
+              "max_pitch_deg": 0.4306,
+              "max_roll_deg": 0.4712
+            },
+            "total_windows": 29,
+            "windows_in_odd": 2,
+            "windows_violated": [
+              "000",
+              "001",
+              "002",
+              "003",
+              "004",
+              "005",
+              "006",
+              "007",
+              "008",
+              "009",
+              "010",
+              "011",
+              "012",
+              "013",
+              "015",
+              "016",
+              "017",
+              "018",
+              "019",
+              "020",
+              "21",
+              "22",
+              "024",
+              "025",
+              "026",
+              "027",
+              "028"
+            ],
+            "first_violation_window": "000",
+            "categorical_semantic_distances": {
+              "environment_type": 0.0,
+              "terrain_type": 0.5
+            }
+          },
+          "compliance_verdict": {
+            "verdict": "OUT_ODD",
+            "confidence": 0.95,
+            "rationale": "The Current Operating Domain (COD) is unequivocally outside the specified ODD, with an aggregate region distance of 0.7786. Violations are persistent and severe across multiple critical axes. The robot consistently operated in environments with obstacle density (max 0.9) far exceeding the ODD limit of 0.5, leading to 20 documented collision events. Furthermore, the robot's stability was compromised, with maximum pitch and roll angles reaching 17.17 and 18.44 degrees respectively, far beyond the 10-degree safety threshold. These breaches indicate operation in an environment that is both too cluttered and too unstable for the robot's design specifications.",
+            "critical_axes": [
+              "obstacle_density",
+              "max_pitch_deg",
+              "max_roll_deg",
+              "terrain_type"
+            ],
+            "temporal_stability": "DEGRADING"
+          },
+          "key_concerns": [
+            "Extreme Environmental Mismatch: The robot was consistently operated in a highly cluttered environment (obstacle density up to 0.9 vs 0.5 limit), causing frequent navigation failures and collisions.",
+            "Critical Platform Instability: The robot frequently exceeded its pitch and roll stability limits (max 18.44 vs 10 deg limit), indicating a high risk of tipping or unstable behavior.",
+            "IMU Sensor Failure: The motion agent identified a critical anomaly where the IMU reported zero acceleration and angular velocity during periods of clear motion and collision. This sensor failure presents a major safety risk, as the robot cannot reliably detect its own motion or impacts."
+          ]
+        },
+        "report": {}
+      }
+    }
+  },
+  "agent_outputs": {
+    "PerceptionAgent": {
+      "windows_analyzed": 29,
+      "data_source": {
+        "type": "real",
+        "confidence": 0.94,
+        "indicators": [
+          "thickened/blurred obstacle edges from accumulation",
+          "natural lighting and shadows",
+          "camera motion blur",
+          "camera compression artifacts",
+          "camera lens distortion"
+        ]
+      },
+      "temporal_analysis": {
+        "odd_trends": "The scenario is characterized by extreme fluctuations in obstacle density, alternating between periods where the path is completely blocked (density >0.8) and brief moments of clear passage (density <0.1). Lighting and terrain are stable and within ODD, with minor exceptions for rough texture from high-pile rugs. The analysis tool did not provide measurements for ego-motion axes like acceleration or pitch/roll.",
+        "anomalies": [
+          "Windows 005, 007, 008, 009, 011, 015, 017, 021, 022, 023, 025, 026: These windows exhibit severe camera degradation (heavy motion blur, compression artifacts, or focus issues), making the camera sensor unreliable.",
+          "Window 005: Measures 'rough' terrain, an outlier compared to the otherwise 'smooth' measurements."
+        ],
+        "concerns": [
+          "High Obstacle Density: The robot frequently operates in an environment with obstacle density (often >0.8) far exceeding the ODD maximum of 0.5, leading to its path being constantly blocked.",
+          "Camera Reliability: The frequent and severe degradation of the camera image is a major quality and safety concern. If LiDAR were to fail, the robot would be effectively blind."
+        ]
+      },
+      "summary_insights": [
+        "The scenario depicts a robot navigating a highly cluttered indoor residential environment, frequently encountering situations where its path is completely blocked by furniture and other objects.",
+        "A recurring and critical issue is the poor quality of the camera feed, which is often unusable due to motion blur and compression artifacts, forcing total reliance on LiDAR for safe navigation.",
+        "The robot is consistently operating outside its specified ODD for 'obstacle_density,' which has a maximum of 0.5. Many windows show measurements of 0.85 or higher, indicating the environment is too cluttered for the robot's intended design."
+      ]
+    },
+    "MotionAgent": {
+      "windows_analyzed": 29,
+      "temporal_analysis": {
+        "odd_trends": "The robot's motion is intermittent, characterized by long periods of being stationary followed by sudden, rapid movements that cause significant motion blur. A persistent trend is the unreliability of IMU data, which frequently reports zero activity during these movements. Additionally, the robot's platform stability often exceeds ODD limits for pitch and roll, even when stationary.",
+        "anomalies": [
+          "Windows 006, 008, 12, 13, 18, 19, 21: Camera shows clear motion blur while IMU data is all zero, indicating a sensor conflict or data pipeline failure.",
+          "Windows 006, 007, 008, 009, 010, 011, 012, 018, 019, 025: Robot's pitch or roll exceeds the 10-degree ODD limit, indicating unstable states or operation on steep inclines."
+        ],
+        "concerns": [
+          "IMU Unreliability: The frequent failure of the IMU to report any motion when the robot is clearly moving is a major safety concern. It removes a critical source of state estimation and could lead to uncontrolled behavior if other sensors (like the camera) fail.",
+          "Stability Limits: The robot is frequently tilted beyond its specified 10-degree roll/pitch limits, which could indicate a risk of instability or operation in environments steeper than designed for."
+        ]
+      },
+      "summary_insights": [
+        "Robot motion is characterized by periods of stationarity punctuated by abrupt movements, evidenced by severe motion blur in the camera.",
+        "A critical anomaly was detected: IMU motion data (acceleration, angular velocity) is frequently zero even when the camera clearly shows high-speed motion, indicating a likely sensor or data pipeline failure.",
+        "The robot repeatedly operates outside its stability ODD, with numerous instances of pitch and roll angles exceeding the specified 10-degree maximum."
+      ]
+    },
+    "CollisionAgent": {
+      "windows_analyzed": 29,
+      "collisions_detected": 20,
+      "temporal_analysis": {
+        "odd_trends": "The scenario shows a pattern of repeated, low-impact collisions. The robot frequently enters states where it is physically stuck against an obstacle (furniture, rugs), attempts to push through, and fails. This cycle repeats throughout the log, indicating a persistent failure in navigation and recovery behaviors rather than isolated, high-speed accidents.",
+        "anomalies": [
+          "IMU Data: A recurring anomaly across all 20 detected collision windows is the complete absence of IMU spikes. This indicates a systemic issue, as physical contact, even low-speed pushing, should register some non-zero acceleration or jerk.",
+          "Windows 005, 006, 014, 018: Collisions with terrain (high-pile rugs) where the robot becomes stuck."
+        ],
+        "concerns": [
+          "IMU Failure/Insensitivity: The lack of IMU feedback during collisions is a major safety concern. The system is entirely dependent on visual sensors (LiDAR/camera) to detect 'stuck' or 'pushing' states, which could fail in adverse conditions.",
+          "Terrain Negotiation: The robot frequently gets stuck on soft, high-pile rugs, treating them as impassable obstacles. This indicates a failure in either perception (misclassifying terrain) or motion planning (inability to traverse challenging but common indoor surfaces)."
+        ]
+      },
+      "summary_insights": [
+        "A high number of collisions (20 out of 29 windows) were detected, primarily characterized by low-speed contact rather than high-impact events.",
+        "The primary cause of collisions was the robot getting stuck on or pushing against obstacles like high-pile rugs, furniture, and ramps, confirmed by visual evidence (BEV and camera) showing direct contact.",
+        "A critical data anomaly was observed: in all collision events, IMU data (acceleration, jerk) was zero, suggesting these sensors are either failing or the events are below the detectable threshold, forcing reliance on visual sensors for collision detection."
+      ]
+    },
+    "EvaluatorAgent": {
+      "cod_region": {
+        "environment_type": {
+          "indoor_residential": 0.8620689655172413,
+          "indoor": 0.06896551724137931,
+          "indoor_commercial": 0.06896551724137931,
+          "type": "enum"
+        },
+        "lighting_conditions": {
+          "moderate": 0.5517241379310345,
+          "bright": 0.27586206896551724,
+          "dim": 0.1724137931034483,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "smooth": 0.9310344827586207,
+          "slightly_rough": 0.034482758620689655,
+          "rough": 0.034482758620689655,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.9
+        },
+        "stairs_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 0.52,
+          "max": 17.17
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 0.53,
+          "max": 18.44
+        }
+      },
+      "region_metrics": {
+        "region_distance": 0.7786,
+        "fraction_outside_per_axis": {
+          "environment_type": 0.0,
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0345,
+          "obstacle_density": 0.4444,
+          "stairs_present": 0.0,
+          "max_accel_mps2": 0.0,
+          "max_pitch_deg": 0.4306,
+          "max_roll_deg": 0.4712
+        },
+        "total_windows": 29,
+        "windows_in_odd": 2,
+        "windows_violated": [
+          "000",
+          "001",
+          "002",
+          "003",
+          "004",
+          "005",
+          "006",
+          "007",
+          "008",
+          "009",
+          "010",
+          "011",
+          "012",
+          "013",
+          "015",
+          "016",
+          "017",
+          "018",
+          "019",
+          "020",
+          "21",
+          "22",
+          "024",
+          "025",
+          "026",
+          "027",
+          "028"
+        ],
+        "first_violation_window": "000",
+        "categorical_semantic_distances": {
+          "environment_type": 0.0,
+          "terrain_type": 0.5
+        }
+      },
+      "compliance_verdict": {
+        "verdict": "OUT_ODD",
+        "confidence": 0.95,
+        "rationale": "The Current Operating Domain (COD) is unequivocally outside the specified ODD, with an aggregate region distance of 0.7786. Violations are persistent and severe across multiple critical axes. The robot consistently operated in environments with obstacle density (max 0.9) far exceeding the ODD limit of 0.5, leading to 20 documented collision events. Furthermore, the robot's stability was compromised, with maximum pitch and roll angles reaching 17.17 and 18.44 degrees respectively, far beyond the 10-degree safety threshold. These breaches indicate operation in an environment that is both too cluttered and too unstable for the robot's design specifications.",
+        "critical_axes": [
+          "obstacle_density",
+          "max_pitch_deg",
+          "max_roll_deg",
+          "terrain_type"
+        ],
+        "temporal_stability": "DEGRADING"
+      },
+      "key_concerns": [
+        "Extreme Environmental Mismatch: The robot was consistently operated in a highly cluttered environment (obstacle density up to 0.9 vs 0.5 limit), causing frequent navigation failures and collisions.",
+        "Critical Platform Instability: The robot frequently exceeded its pitch and roll stability limits (max 18.44 vs 10 deg limit), indicating a high risk of tipping or unstable behavior.",
+        "IMU Sensor Failure: The motion agent identified a critical anomaly where the IMU reported zero acceleration and angular velocity during periods of clear motion and collision. This sensor failure presents a major safety risk, as the robot cannot reliably detect its own motion or impacts."
+      ]
+    }
+  },
+  "source_scenario_path": "/workspaces/go2-odd-observer/data/production/real_174321"
+}
