@@ -174,13 +174,13 @@ def get_issues_and_recommendations(result: Dict[str, Any]) -> tuple:
 
 def discover_windows(scenario_dir: Path, scenario_name: str) -> tuple[List[str], str]:
     """Discover available windows from image files.
-    
+
     Returns:
         Tuple of (list of window IDs, detected scenario prefix for images)
     """
     windows = set()
     detected_prefix = scenario_name  # Default to provided name
-    
+
     # First try exact match with provided scenario_name
     for img_file in scenario_dir.glob(f"cam_{scenario_name}_w*.png"):
         name = img_file.stem
@@ -188,7 +188,7 @@ def discover_windows(scenario_dir: Path, scenario_name: str) -> tuple[List[str],
         if len(parts) >= 2:
             window_id = parts[-1]
             windows.add(window_id)
-    
+
     # If no windows found, try to auto-detect from any cam_*_w*.png files
     if not windows:
         for img_file in scenario_dir.glob("cam_*_w*.png"):
@@ -199,9 +199,10 @@ def discover_windows(scenario_dir: Path, scenario_name: str) -> tuple[List[str],
                 window_id = parts[-1]
                 windows.add(window_id)
                 # Extract the prefix (everything between "cam_" and "_w")
-                prefix = name[4:name.rfind('_w')]  # Skip "cam_" and go up to "_w"
+                # Skip "cam_" and go up to "_w"
+                prefix = name[4:name.rfind('_w')]
                 detected_prefix = prefix
-    
+
     return sorted(list(windows)), detected_prefix
 
 
@@ -507,7 +508,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     status = status_config.get(verdict, default_status)
 
     # Discover windows and load images (auto-detects image prefix)
-    windows, image_scenario_name = discover_windows(scenario_dir, image_scenario_name)
+    windows, image_scenario_name = discover_windows(
+        scenario_dir, image_scenario_name)
 
     # Sample windows evenly across the scenario (max 6 for display)
     MAX_DISPLAY_WINDOWS = 6
@@ -625,15 +627,116 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         recommendations_html += f"<li class='mb-2'>{rec}</li>"
 
     # Build scenario overview (representative windows)
-    scenario_overview_html = ""
+    total_windows = len(windows)
     display_windows = windows_with_images[:4]  # Show first 4 windows
+    
+    # Extract environment info from per-window data or agent outputs
+    per_window_data = result.get('per_window_data', [])
+    environment_type = "Unknown"
+    surface_type = "Unknown"
+    if per_window_data:
+        first_window = per_window_data[0] if isinstance(per_window_data, list) else {}
+        perception = first_window.get('perception', {})
+        environment_type = perception.get('environment_type', 'Unknown')
+        surface_type = perception.get('surface_type', 'Unknown')
+    
+    # Data source info - check multiple locations in schema
+    # New schema: agent_outputs.PerceptionAgent.data_source
+    # Old schema: scenario_metadata.data_source
+    agent_outputs_ds = result.get('agent_outputs', {})
+    perception_output_ds = agent_outputs_ds.get('PerceptionAgent', {})
+    perception_data_source = perception_output_ds.get('data_source', {})
+
+    if isinstance(perception_data_source, dict) and perception_data_source.get('type'):
+        # New schema format
+        data_source = perception_data_source.get('type', 'unknown')
+        data_source_confidence = perception_data_source.get('confidence', 0)
+    else:
+        # Fall back to old schema
+        data_source = scenario_meta.get('data_source', 'unknown')
+        data_source_classification = scenario_meta.get(
+            'data_source_classification', {})
+        data_source_confidence = data_source_classification.get(
+            'confidence', 0)
+
+    # Build data source display string
+    if data_source in ('simulated', 'sim'):
+        data_source_display = f"Simulation ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Simulation"
+    elif data_source == 'real':
+        data_source_display = f"Real Robot ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Real Robot"
+    else:
+        data_source_display = data_source.title() if data_source else "Unknown"
+
+    # Build visual timeline showing all windows
+    timeline_dots_html = ""
+    for i, wid in enumerate(windows):
+        is_displayed = wid in [w['id'] for w in display_windows]
+        dot_class = "timeline-dot-active" if is_displayed else "timeline-dot"
+        tooltip = f"Window {wid}" + (" (shown below)" if is_displayed else "")
+        timeline_dots_html += f'<div class="{dot_class}" title="{tooltip}"></div>'
+    
+    # Scenario context card
+    scenario_context_html = f"""
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center border-end">
+                        <div class="metric-value">{total_windows}</div>
+                        <div class="metric-label">Total Windows</div>
+                    </div>
+                    <div class="col-md-3 text-center border-end">
+                        <div class="h5 mb-1">{environment_type.replace('_', ' ').title()}</div>
+                        <div class="metric-label">Environment</div>
+                    </div>
+                    <div class="col-md-3 text-center border-end">
+                        <div class="h5 mb-1">{surface_type.replace('_', ' ').title()}</div>
+                        <div class="metric-label">Surface Type</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="h5 mb-1">{data_source_display}</div>
+                        <div class="metric-label">Data Source</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    
+    # Timeline visualization
+    timeline_html = ""
+    if total_windows > 1:
+        timeline_html = f"""
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="metric-card">
+                <h6 class="text-primary mb-3">📊 Window Timeline</h6>
+                <p class="text-muted small mb-2">Showing {len(display_windows)} of {total_windows} windows (highlighted = displayed below)</p>
+                <div class="timeline-container">
+                    <div class="timeline-track">
+                        {timeline_dots_html}
+                    </div>
+                    <div class="timeline-labels d-flex justify-content-between mt-2">
+                        <small class="text-muted">Start (W{windows[0] if windows else '?'})</small>
+                        <small class="text-muted">End (W{windows[-1] if windows else '?'})</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    
+    # Build window cards
+    scenario_overview_html = scenario_context_html + timeline_html
+    
     for window in display_windows:
         camera_img = window['images'].get('camera', '')
         bev_img = window['images'].get('bev_occupancy', '')
+        window_idx = windows.index(window['id']) + 1 if window['id'] in windows else '?'
         scenario_overview_html += f"""
         <div class="col-md-6 col-lg-3 mb-4">
             <div class="metric-card h-100">
-                <h6 class="text-primary mb-2">Window {window['id']}</h6>
+                <h6 class="text-primary mb-2">Window {window['id']} <small class="text-muted">({window_idx}/{total_windows})</small></h6>
                 <div class="mb-2">
                     <img src="{camera_img}" alt="Window {window['id']} camera" 
                          style="width: 100%; border-radius: 8px; margin-bottom: 4px;">
@@ -653,33 +756,6 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         critical_axes_html += f"<span class='badge bg-danger me-1'>{axis}</span>"
     if not critical_axes_html:
         critical_axes_html = "<span class='text-muted'>None</span>"
-
-    # Data source info - check multiple locations in schema
-    # New schema: agent_outputs.PerceptionAgent.data_source
-    # Old schema: scenario_metadata.data_source
-    agent_outputs = result.get('agent_outputs', {})
-    perception_output = agent_outputs.get('PerceptionAgent', {})
-    perception_data_source = perception_output.get('data_source', {})
-
-    if isinstance(perception_data_source, dict) and perception_data_source.get('type'):
-        # New schema format
-        data_source = perception_data_source.get('type', 'unknown')
-        data_source_confidence = perception_data_source.get('confidence', 0)
-    else:
-        # Fall back to old schema
-        data_source = scenario_meta.get('data_source', 'unknown')
-        data_source_classification = scenario_meta.get(
-            'data_source_classification', {})
-        data_source_confidence = data_source_classification.get(
-            'confidence', 0)
-
-    # Build data source display string (only if known)
-    if data_source in ('simulated', 'sim'):
-        data_source_display = f"Simulation ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Simulation"
-    elif data_source == 'real':
-        data_source_display = f"Real Robot ({data_source_confidence:.0%} confidence)" if data_source_confidence > 0 else "Real Robot"
-    else:
-        data_source_display = None  # Will omit from display
 
     # Windows violated - handle both list and int
     windows_violated = region_metrics.get('windows_violated', [])
@@ -756,6 +832,53 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         .metric-card:hover {{
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }}
+        
+        /* Timeline visualization styles */
+        .timeline-container {{
+            padding: 0.5rem 0;
+        }}
+        
+        .timeline-track {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(90deg, var(--border-color) 0%, var(--border-color) 100%);
+            background-size: 100% 3px;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 0.5rem 0;
+            gap: 2px;
+        }}
+        
+        .timeline-dot {{
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            border: 2px solid var(--bg-secondary);
+            transition: transform 0.2s;
+            cursor: pointer;
+            flex-shrink: 0;
+        }}
+        
+        .timeline-dot:hover {{
+            transform: scale(1.3);
+        }}
+        
+        .timeline-dot-active {{
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: var(--status-color);
+            border: 2px solid var(--bg-secondary);
+            box-shadow: 0 0 6px var(--status-color);
+            cursor: pointer;
+            flex-shrink: 0;
+        }}
+        
+        .timeline-dot-active:hover {{
+            transform: scale(1.2);
         }}
         
         .metric-value {{
