@@ -172,17 +172,37 @@ def get_issues_and_recommendations(result: Dict[str, Any]) -> tuple:
     return issues, recommendations
 
 
-def discover_windows(scenario_dir: Path, scenario_name: str) -> List[str]:
-    """Discover available windows from image files."""
+def discover_windows(scenario_dir: Path, scenario_name: str) -> tuple[List[str], str]:
+    """Discover available windows from image files.
+    
+    Returns:
+        Tuple of (list of window IDs, detected scenario prefix for images)
+    """
     windows = set()
+    detected_prefix = scenario_name  # Default to provided name
+    
+    # First try exact match with provided scenario_name
     for img_file in scenario_dir.glob(f"cam_{scenario_name}_w*.png"):
-        # Extract window ID from filename
         name = img_file.stem
         parts = name.split('_w')
         if len(parts) >= 2:
             window_id = parts[-1]
             windows.add(window_id)
-    return sorted(list(windows))
+    
+    # If no windows found, try to auto-detect from any cam_*_w*.png files
+    if not windows:
+        for img_file in scenario_dir.glob("cam_*_w*.png"):
+            name = img_file.stem  # e.g., "cam_real_173442_w010"
+            # Extract window ID (last part after _w)
+            parts = name.split('_w')
+            if len(parts) >= 2:
+                window_id = parts[-1]
+                windows.add(window_id)
+                # Extract the prefix (everything between "cam_" and "_w")
+                prefix = name[4:name.rfind('_w')]  # Skip "cam_" and go up to "_w"
+                detected_prefix = prefix
+    
+    return sorted(list(windows)), detected_prefix
 
 
 def generate_svg_radar_chart(axes_names: list, axes_values: list, title: str = "ODD Distance by Axis") -> str:
@@ -466,7 +486,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     issues, recommendations = get_issues_and_recommendations(result)
 
     scenario_name = scenario_meta.get('scenario_name', scenario_dir.name)
-    image_scenario_name = scenario_dir.name  # Use dir name for image matching
+    image_scenario_name = scenario_dir.name  # Default, may be overridden
 
     # Determine compliance status
     verdict = compliance.get('verdict', compliance.get('status', 'UNKNOWN'))
@@ -486,16 +506,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     default_status = {'color': '#6c757d', 'icon': '❓', 'label': 'UNKNOWN'}
     status = status_config.get(verdict, default_status)
 
-    # Discover windows and load images
-    windows = discover_windows(scenario_dir, image_scenario_name)
-
-    # Simple timeline badges for context (window IDs in order)
-    if windows:
-        timeline_html = " ".join(
-            [f"<span class='badge bg-secondary me-1 mb-1'>w{wid}</span>" for wid in windows]
-        )
-    else:
-        timeline_html = "<span class='text-muted'>No windows found</span>"
+    # Discover windows and load images (auto-detects image prefix)
+    windows, image_scenario_name = discover_windows(scenario_dir, image_scenario_name)
 
     # Sample windows evenly across the scenario (max 6 for display)
     MAX_DISPLAY_WINDOWS = 6
@@ -892,9 +904,6 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 <div class="container mb-5">
     <h2 class="mb-4">🎬 Scenario Overview</h2>
     <p class="text-muted mb-3">Representative windows from the analysis</p>
-    <div class="mb-3">
-        <strong>Timeline:</strong> {timeline_html}
-    </div>
     <div class="row">
         {scenario_overview_html if scenario_overview_html else '<div class="col-12"><p class="text-muted">No window images available</p></div>'}
     </div>
