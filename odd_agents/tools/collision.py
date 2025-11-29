@@ -18,7 +18,9 @@ from .common import get_window_file_paths
 # Tool agent version
 # v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
 # v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
-COLLISION_TOOL_AGENT_VERSION = "5.0.0"
+# v6.0.0: Bulletproof prompt - full BEV interpretation, threshold comparison, decision logic
+# v6.1.0: BEV-first collision detection, cropping awareness, sim/real voxel map detection, LiDAR 180° FOV
+COLLISION_TOOL_AGENT_VERSION = "6.1.0"
 
 
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -108,38 +110,161 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
             peak_jerk = max(jerk_samples) if jerk_samples else 0.0
 
             # Build multimodal prompt
-            prompt_parts = [types.Part(text=f"""You are analyzing window {window_id} for collision detection.
+            prompt_parts = [types.Part(text=f"""You are a collision detection expert analyzing window {window_id}.
 
-=== PRE-COMPUTED IMU METRICS ===
-- peak_accel: {peak_accel:.4f} m/s²
-- peak_gyro: {peak_gyro:.4f} rad/s
-- peak_jerk: {peak_jerk:.4f} m/s³
-- max_tilt: {max_tilt:.2f}°
+═══════════════════════════════════════════════════════════════════════════════
+SENSOR INPUTS
+═══════════════════════════════════════════════════════════════════════════════
 
-COLLISION THRESHOLDS:
-- Accel >10 m/s² OR gyro >5 rad/s OR jerk >50 m/s³ → likely collision
-- BEV: Obstacle penetration into robot zone (exclude 15px center = robot body)
-- Camera: Impact blur, scene discontinuity
+PRE-COMPUTED IMU METRICS:
+- Peak horizontal acceleration: {peak_accel:.4f} m/s²
+- Peak angular velocity (yaw): {peak_gyro:.4f} rad/s
+- Peak jerk: {peak_jerk:.4f} m/s³
+- Max platform tilt: {max_tilt:.2f}°
 
-OUTPUT (JSON only, no markdown):
+IMAGES PROVIDED:
+- Camera: RGB forward-facing view (impact blur, obstacle contact)
+- BEV Occupancy: Bird's eye obstacle map (400x400px, 0.05m/pixel, robot at center)
+- BEV Height: Terrain elevation map
+- BEV Roughness: Surface variation map
+
+═══════════════════════════════════════════════════════════════════════════════
+BEV INTERPRETATION GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+BEV OCCUPANCY (Obstacles):
+- AUTO-CROPPED to occupied region (typically 150-250px, varies per window)
+- Scale: 0.05m per pixel (20px = 1m, 40px = 2m) - SCALE IS PRESERVED after cropping
+- Robot is ALWAYS at CENTER of cropped image, facing UPWARD (top = forward)
+- BRIGHT pixels = OBSTACLES (objects >10cm above ground)
+- DARK pixels = FREE SPACE (navigable)
+- CRITICAL: Small bright cluster at center (~15px radius) = robot body/LiDAR self-hit - IGNORE THIS
+- NOTE: Image size varies - use pixel distance from center × 0.05 for meters
+
+PROXIMITY ESTIMATION FROM BEV:
+- Measure pixels from center to nearest bright obstacle cluster
+- Convert: distance_m = pixels × 0.05
+- Example: 40 bright pixels from center = 2.0m proximity
+
+═══════════════════════════════════════════════════════════════════════════════
+BEV DATA SOURCE DETECTION (Infer from BEV visual characteristics)
+═══════════════════════════════════════════════════════════════════════════════
+
+LIDAR CONFIGURATION:
+- 180° FORWARD-FACING FOV (both sim and real)
+- Robot at CENTER of BEV, facing UPWARD (top = forward)
+- Upper half = forward path (primary LiDAR coverage)
+- Lower half = rear (no direct coverage, may be empty or filled from accumulation)
+
+SIMULATED DATA (Single LiDAR Scan at timestamp):
+- Sharp, thin obstacle edges
+- Small self-hit zone at center (~15px radius)
+- Clean, minimal noise
+- Precise geometric features
+- Lower half likely empty (180° FOV, no rear coverage)
+
+REAL DATA (Accumulated Voxel Map over time):
+- Thickened/blurred obstacle edges (accumulation from multiple poses)
+- Larger self-hit zone at center (~20-30px) from robot motion over time
+- More scattered noise, possible ghost artifacts from moved objects
+- Registration drift may cause duplicated/offset features
+- Lower half may have older accumulated data (filled in from prior motion)
+- Thickened walls ≠ larger obstacles, it's accumulation artifact
+
+CRITICAL FOR COLLISION DETECTION:
+- Trust UPPER HALF (forward path) more than LOWER HALF (rear)
+- Expect larger exclusion zone at center for real data self-hits (~20-30px vs ~15px)
+- Isolated single bright pixels = likely noise, not obstacles
+- Real obstacles form connected clusters of bright pixels
+- Sparse rear coverage is NORMAL for 180° FOV, not sensor failure
+
+═══════════════════════════════════════════════════════════════════════════════
+COLLISION DETECTION THRESHOLDS
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIMARY COLLISION INDICATORS (any one strongly suggests collision):
+1. Acceleration spike: peak_accel > 10.0 m/s² (sudden impact deceleration)
+2. Angular velocity anomaly: peak_gyro > 5.0 rad/s (severe spin/tip-over)
+3. Jerk spike: peak_jerk > 50.0 m/s³ (sudden acceleration change)
+
+CURRENT VALUES vs THRESHOLDS:
+- Acceleration: {peak_accel:.4f} m/s² (threshold: 10.0) → {"⚠️ EXCEEDS" if peak_accel > 10.0 else "✓ Below"}
+- Angular velocity: {peak_gyro:.4f} rad/s (threshold: 5.0) → {"⚠️ EXCEEDS" if peak_gyro > 5.0 else "✓ Below"}
+- Jerk: {peak_jerk:.4f} m/s³ (threshold: 50.0) → {"⚠️ EXCEEDS" if peak_jerk > 50.0 else "✓ Below"}
+
+SECONDARY INDICATORS (supporting evidence):
+- BEV: Obstacle pixels penetrating robot zone (beyond 15px center exclusion)
+- Camera: Impact blur, scene discontinuity, visible contact with obstacle
+- Tilt: Sudden large tilt change may indicate tip-over
+
+═══════════════════════════════════════════════════════════════════════════════
+COLLISION ANALYSIS FRAMEWORK (BEV-PRIMARY WITH CONFIRMATION)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. BEV-FIRST APPROACH (Primary Evidence):
+   - BEV occupancy is GROUND TRUTH - LiDAR physically detected objects
+   - Check BEV for obstacles in robot contact zone (20-50px from center)
+   - CRITICAL: IGNORE 15px center radius (robot body / LiDAR self-hits)
+
+2. CONFIRMATION REQUIRED (Rules Out Self-Hits):
+   IF BEV shows obstacle in robot zone:
+     - Camera confirms obstacle visible in that direction? → REAL OBSTACLE
+     - IMU shows impact spike (accel >3-5 m/s²)? → PHYSICAL CONTACT
+     - EITHER confirms → collision_detected = true
+     - NEITHER confirms → likely SELF-HIT ARTIFACT → collision_detected = false
+
+3. SELF-HIT DETECTION:
+   - Small bright clusters at exact BEV center = robot legs/body
+   - If BEV shows contact BUT camera shows clear path AND IMU is calm
+     → This is a self-hit false positive, NOT a collision
+
+4. EDGE CASE - IMU SPIKE WITHOUT BEV CONTACT:
+   - If IMU spike >10 m/s² but no BEV obstacle → unmapped collision
+   - collision_detected = true (high confidence)
+
+5. CONFIDENCE CALIBRATION:
+   - High (0.9+): BEV contact + camera confirms + IMU spike
+   - Medium-High (0.7-0.9): BEV contact + camera OR IMU confirms
+   - Medium (0.5-0.7): BEV contact but neither confirms (ambiguous)
+   - Low (<0.5): No BEV contact, no significant IMU (no collision)
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
+═══════════════════════════════════════════════════════════════════════════════
+
 {{
   "window_id": "{window_id}",
-  "collision_detected": true or false,
-  "confidence": 0.0-1.0,
-  "explanation": "1-2 sentence collision assessment",
+  "collision_detected": false,
+  "confidence": 0.95,
+  "proximity_estimate_m": 2.5,
+  "explanation": "No collision indicators. IMU values well below thresholds (accel: 0.21 m/s², gyro: 0.02 rad/s). BEV shows clear forward path with nearest obstacle ~2.5m away. Camera shows stable scene.",
   "key_insights": [
-    "Notable collision evidence or safety concern (if any)"
-  ],
-  "proximity_estimate_m": 0.0
+    "All IMU metrics below collision thresholds",
+    "Clear forward path in BEV occupancy"
+  ]
 }}
 
-ANALYSIS RULES:
-1. IMU spikes are primary collision indicator
-2. BEV shows obstacle contact (ignore 15px robot center)
-3. Camera blur/discontinuity supports collision hypothesis
-4. proximity_estimate_m: Nearest obstacle distance from BEV (estimate)
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL RULES
+═══════════════════════════════════════════════════════════════════════════════
 
-Be CONCISE. Focus on collision YES/NO with reasoning.""")]
+1. collision_detected MUST be true or false (boolean)
+2. IMU thresholds are PRIMARY - if exceeded, collision is likely true
+3. IGNORE bright pixels at BEV center (~15px radius) - that's robot body
+4. proximity_estimate_m: Distance to nearest obstacle from BEV (20px = 1m)
+5. Be BINARY - collision is YES or NO, not "maybe"
+6. Output JSON only - no markdown code blocks
+
+DECISION LOGIC:
+IF (BEV shows obstacle in robot zone, beyond 15px center):
+    IF (camera shows obstacle nearby OR peak_accel > 3.0):
+        collision_detected = true (confirmed real obstacle)
+    ELSE:
+        collision_detected = false (likely self-hit artifact)
+ELSE IF (peak_accel > 10.0 OR peak_gyro > 5.0 OR peak_jerk > 50.0):
+    collision_detected = true (IMU spike without BEV = unmapped collision)
+ELSE:
+    collision_detected = false (no collision evidence)""")]
 
             # Add camera image
             if cam_file.exists():

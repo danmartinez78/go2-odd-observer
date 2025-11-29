@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Go2 ODD Observer – Kaggle Capstone</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem 0 4rem 0;
+      color: #2d3748;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark {
+      background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+      color: #e5e7eb;
+    }
+
+    .container {
+      max-width: 1200px;
+    }
+
+    .card-shell {
+      background: white;
+      border-radius: 18px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+    }
+
+    body.dark .card-shell {
+      background: #0b1021;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      color: #e5e7eb;
+    }
+
+    .badge-capstone {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .badge-tag {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #4338ca;
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    h1, h2, h3 {
+      color: #1f2937;
+    }
+
+    body.dark h1, body.dark h2, body.dark h3 {
+      color: #f9fafb;
+    }
+
+    .section-title {
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 0.15rem 0.7rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-sim {
+      background: rgba(79, 70, 229, 0.12);
+      color: #4338ca;
+    }
+
+    .pill-real {
+      background: rgba(16, 185, 129, 0.12);
+      color: #0f9f7c;
+    }
+
+    .code-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+      background: #020617;
+      border-radius: 999px;
+      padding: 0.15rem 0.6rem;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #e5e7eb;
+    }
+
+    a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    body.dark a {
+      color: #a5b4fc;
+    }
+
+    .result-card {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 1.25rem 1.4rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      height: 100%;
+      transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    body.dark .result-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      color: #e5e7eb;
+    }
+
+    .result-pill {
+      border-radius: 999px;
+      padding: 0.15rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .result-pill-in {
+      background: rgba(34, 197, 94, 0.14);
+      color: #22c55e;
+    }
+
+    .result-pill-out {
+      background: rgba(239, 68, 68, 0.14);
+      color: #ef4444;
+    }
+
+    .result-pill-boundary {
+      background: rgba(234, 179, 8, 0.14);
+      color: #eab308;
+    }
+
+    .flow-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .flow-box {
+      flex: 1 1 120px;
+      min-width: 120px;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 0.45rem 0.9rem;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      font-size: 0.85rem;
+      text-align: center;
+      white-space: nowrap;
+      color: #1f2937;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: background 0.3s ease, color 0.3s ease, border 0.3s ease;
+    }
+
+    body.dark .flow-box {
+      background: rgba(31, 41, 55, 0.8);
+      color: #e5e7eb;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+
+    .code-block {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      background: #0b1021;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #e5e7eb;
+      overflow-x: auto;
+      white-space: pre;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .theme-toggle {
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: transparent;
+      color: #4f46e5;
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      font-weight: 600;
+    }
+
+    body.dark .theme-toggle {
+      color: #e5e7eb;
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card-shell">
+      <!-- Header -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge-capstone">Kaggle – Agents Intensive Capstone</span>
+          <span class="badge-tag">Go2 ODD Observer</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button id="themeToggle" class="theme-toggle">🌓 Toggle theme</button>
+          <a href="index.html" class="badge-tag">← Back to overview</a>
+        </div>
+      </div>
+
+      <h1 class="mb-2">AI ODD Observer for Quadruped Robots</h1>
+      <p class="text-secondary mb-4">
+        Capstone project for Kaggle&rsquo;s Agents Intensive: a multi-agent system that reads ROS2 logs from a Unitree
+        Go2, reconstructs its Current Operating Domain (COD), and determines whether it stayed inside its Operational
+        Design Domain (ODD).
+      </p>
+
+      <!-- Problem & Objectives -->
+      <h2 class="section-title">1. Problem &amp; Objectives</h2>
+      <p>
+        The goal is to answer a simple but safety‑critical question:
+        <strong>&ldquo;Did the robot operate within its ODD for this run?&rdquo;</strong>
+        We take raw sensor logs (camera, LiDAR‑derived BEV, IMU) and an ODD definition, then:
+      </p>
+      <ul>
+        <li>Extract per‑window ODD‑aligned measurements for perception, motion, and collision risk.</li>
+        <li>Aggregate them into a COD region and compare against the ODD spec.</li>
+        <li>Produce an explainable compliance verdict plus a human‑readable report.</li>
+      </ul>
+
+      <!-- Architecture summary -->
+      <h2 class="section-title">2. Agent System Overview</h2>
+      <p class="mb-2">We use Google ADK + Gemini 2.5 Pro to orchestrate six agents:</p>
+      <ul>
+        <li><strong>ODD Spec Agent</strong> – parses the natural‑language ODD into axes and limits.</li>
+        <li><strong>Perception Agent</strong> – reads camera + BEV and estimates lighting, terrain, obstacle density, stairs, humans, and data source (sim/real).</li>
+        <li><strong>Motion Agent</strong> – uses IMU + camera to classify motion state and quantify dynamic limits (accel, jerk, angular velocity).</li>
+        <li><strong>Collision Agent</strong> – fuses IMU spikes, BEV obstacles, and camera evidence to detect collisions or near‑misses.</li>
+        <li><strong>Evaluator Agent</strong> – constructs the COD region and checks COD ⊆ ODD.</li>
+        <li><strong>Report Agent</strong> – synthesizes a narrative report and saves it as an artifact.</li>
+      </ul>
+      <p class="mb-0">
+        All data loading, metric computation, and vision calls are implemented as ADK <code>FunctionTool</code>s with
+        explicit prompts. Agent instructions focus on tool sequencing and aggregating outputs.
+      </p>
+
+      <!-- Sample results strip (placeholders for now) -->
+      <h2 class="section-title">2.1 Sample Outcomes (snapshot)</h2>
+      <div class="row g-3 mb-2">
+        <div class="col-md-4">
+          <div class="result-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="pill pill-sim">Sim</span>
+              <span class="result-pill result-pill-in">IN_ODD</span>
+            </div>
+            <h6 class="mb-1">Indoor clean run</h6>
+            <ul class="mb-0" style="font-size: 0.85rem;">
+              <li>Stable lighting, smooth floor.</li>
+              <li>No collisions; low obstacle density.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="result-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="pill pill-sim">Sim</span>
+              <span class="result-pill result-pill-out">OUT_ODD</span>
+            </div>
+            <h6 class="mb-1">Deliberate collision</h6>
+            <ul class="mb-0" style="font-size: 0.85rem;">
+              <li>IMU spike far beyond ODD limits.</li>
+              <li>BEV + camera confirm obstacle impact.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="result-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="pill pill-real">Real</span>
+              <span class="result-pill result-pill-boundary">BOUNDARY</span>
+            </div>
+            <h6 class="mb-1">Real indoor logs</h6>
+            <ul class="mb-0" style="font-size: 0.85rem;">
+              <li>Compression artifacts, dim lighting.</li>
+              <li>COD approaches ODD limits but stays mostly within.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="text-secondary" style="font-size: 0.85rem;">
+        (Numbers above are representative; see archived runs in <code>data/archive/analysis_results/</code> for full details.)
+      </p>
+
+      <!-- Data & scenarios stub -->
+      <h2 class="section-title">3. Data &amp; Scenarios (overview)</h2>
+      <div class="mb-3">
+        <span class="pill pill-sim">Sim</span>
+        <span class="pill pill-real">Real</span>
+      </div>
+      <p>
+        We evaluate on both simulated and real Go2 runs, windowed into short time slices:
+      </p>
+      <ul>
+        <li>Simulation: curated scenarios (e.g., indoor residential, deliberate collisions) with known expected behavior.</li>
+        <li>Real: bagfile‑derived runs with compression artifacts, lighting changes, and real terrain irregularities.</li>
+      </ul>
+      <p class="mb-0">
+        Each window bundles synchronized camera frames, BEV images, and IMU signals, giving all loop agents an aligned view
+        of the robot&rsquo;s state.
+      </p>
+
+      <!-- Pipeline flow -->
+      <h2 class="section-title">3.1 Pipeline Flow</h2>
+      <p class="mb-2">At a glance, a single analysis run looks like:</p>
+      <div class="flow-row">
+        <div class="flow-box">ODD Spec Agent</div>
+        <div class="flow-box">Perception</div>
+        <div class="flow-box">Motion</div>
+        <div class="flow-box">Collision</div>
+        <div class="flow-box">Evaluator</div>
+        <div class="flow-box">Report</div>
+      </div>
+      <p class="text-secondary mt-2" style="font-size: 0.85rem;">
+        Loop agents operate per window and write artifacts; downstream agents consume those artifacts instead of raw traces.
+      </p>
+
+      <!-- Implementation & reproducibility stub -->
+      <h2 class="section-title">4. Implementation &amp; Reproducibility</h2>
+      <p class="mb-2">Key commands (run from the repo root):</p>
+      <ul>
+        <li><span class="code-pill">python scripts/run_odd_analysis.py</span> – interactive single‑scenario run.</li>
+        <li><span class="code-pill">python scripts/run_odd_batch_analysis.py</span> – batch runs over multiple scenarios.</li>
+        <li><span class="code-pill">pytest tests/test_adk_evaluation.py -q</span> – rubric‑based agent evaluation.</li>
+      </ul>
+      <p class="mb-0">
+        Detailed write‑up and design notes live in
+        <code>docs/guides/KAGGLE_CAPSTONE_REPORT.md</code> and related docs under <code>docs/</code>.
+      </p>
+
+      <!-- Link to full report -->
+      <h2 class="section-title">5. Full Capstone Report</h2>
+      <p class="mb-3">
+        The full report covers architecture, tools, evaluation setup, limitations, and future work. It is written to match
+        the Kaggle submission format and can be dropped into a notebook or PDF.
+      </p>
+      <a class="btn btn-outline-light btn-sm" href="guides/KAGGLE_CAPSTONE_REPORT.md">
+        View Markdown report
+      </a>
+
+      <!-- JSON glimpse -->
+      <h2 class="section-title">6. Output Glimpse</h2>
+      <p class="text-secondary mb-2">
+        A typical per‑scenario summary (trimmed) from <code>full_result.json</code> looks like:
+      </p>
+      <div class="code-block mb-0">
+{
+  "full_analysis": {
+    "cod_region": {
+      "environment": "indoor_residential",
+      "lighting": "bright → dim",
+      "terrain": "smooth",
+      "collision_detected": true
+    },
+    "compliance_verdict": {
+      "status": "OUT_ODD",
+      "reason": "Impact acceleration exceeded ODD limit on window 011."
+    }
+  }
+}
+      </div>
+    </div>
+  </div>
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    toggle?.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+    });
+  </script>
+</body>
+
+</html>

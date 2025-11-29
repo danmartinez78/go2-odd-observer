@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Go2 ODD Observer – Agent Evaluation</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem 0 4rem 0;
+      color: #2d3748;
+    }
+
+    .container {
+      max-width: 1100px;
+    }
+
+    .shell {
+      background: white;
+      border-radius: 18px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+    }
+
+    body.dark .shell {
+      background: #0b1021;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      color: #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      color: #1f2937;
+    }
+
+    body.dark h1,
+    body.dark h2,
+    body.dark h3 {
+      color: #f9fafb;
+    }
+
+    .badge-tag {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #4338ca;
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .code-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+      background: #0b1021;
+      border-radius: 999px;
+      padding: 0.15rem 0.6rem;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #e5e7eb;
+    }
+
+    .score-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      font-size: 0.9rem;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+      transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    body.dark .score-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+      color: #e5e7eb;
+    }
+
+    .score-card table {
+      color: #1f2937;
+      margin-bottom: 0;
+    }
+
+    .score-card thead {
+      background: rgba(99, 102, 241, 0.12);
+    }
+
+    body.dark .score-card thead {
+      background: rgba(99, 102, 241, 0.25);
+    }
+
+    .theme-toggle {
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: transparent;
+      color: #4f46e5;
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      font-weight: 600;
+    }
+
+    body.dark .theme-toggle {
+      color: #e5e7eb;
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="shell">
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge-tag">Agent Evaluation</span>
+          <span class="badge-tag">Google ADK + Gemini</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button id="themeToggle" class="theme-toggle">🌓 Toggle theme</button>
+          <a href="index.html" class="badge-tag">← Back to overview</a>
+        </div>
+      </div>
+
+      <h1 class="mb-2">Evaluation &amp; Testing</h1>
+      <p class="text-secondary mb-4">
+        We use Google ADK&rsquo;s evaluation framework plus hand‑picked scenarios to verify that each agent uses its tools
+        correctly and produces grounded, useful outputs.
+      </p>
+
+      <h2 class="h4 mb-2">1. ADK Rubric Evaluations</h2>
+      <p>Core evaluation entrypoint:</p>
+      <p><span class="code-pill">pytest tests/test_adk_evaluation.py -q</span></p>
+      <p>Key metrics (as defined by ADK):</p>
+      <ul>
+        <li><strong>rubric_based_tool_use_quality_v1</strong> – checks that agents call the right tools with appropriate coverage.</li>
+        <li><strong>rubric_based_final_response_quality_v1</strong> – evaluates JSON shape, completeness, and clarity.</li>
+        <li><strong>hallucinations_v1</strong> – measures groundedness against provided context (enabled for loop agents and evaluator).</li>
+      </ul>
+      <p class="mb-3">
+        Detailed configuration and guidelines are documented in
+        <a href="guides/AGENT_EVALUATION.md">guides/AGENT_EVALUATION.md</a>. Latest scores are recorded in
+        <code>tests/evaluation/RESULTS.md</code>.
+      </p>
+
+      <div class="score-card mb-4">
+        <h2 class="h6 mb-2">Scorecard (thresholds)</h2>
+        <table class="table table-sm table-borderless align-middle">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Tool-use quality ≥</th>
+              <th>Final-response quality ≥</th>
+              <th>Hallucinations</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Perception</td>
+              <td>0.70</td>
+              <td>0.70</td>
+              <td>Enabled</td>
+            </tr>
+            <tr>
+              <td>Motion</td>
+              <td>0.70</td>
+              <td>0.70</td>
+              <td>Enabled</td>
+            </tr>
+            <tr>
+              <td>Collision</td>
+              <td>0.70</td>
+              <td>0.70</td>
+              <td>Enabled</td>
+            </tr>
+            <tr>
+              <td>Evaluator</td>
+              <td>0.70</td>
+              <td>0.70</td>
+              <td>Relaxed (0.5) due to fixtures</td>
+            </tr>
+            <tr>
+              <td>Report</td>
+              <td>0.70</td>
+              <td>0.70</td>
+              <td>Disabled (function_call grounding limits)</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-secondary mb-0" style="font-size: 0.8rem;">
+          Actual scores are logged per run in <code>tests/evaluation/RESULTS.md</code>; values above are target thresholds.
+        </p>
+      </div>
+
+      <h2 class="h4 mb-2">2. Scenario-Based Checks</h2>
+      <ul>
+        <li><strong>Sim test scenarios</strong> – Known “clean” vs “collision” runs to sanity‑check ODD/COD behavior.</li>
+        <li><strong>Real runs</strong> – Real Go2 logs used to check robustness to sensor artifacts and lighting changes.</li>
+      </ul>
+      <p class="mb-0">
+        These checks are run via <code>scripts/run_odd_analysis.py</code> (single scenario) and
+        <code>scripts/run_odd_batch_analysis.py</code> (batch), with results archived under
+        <code>data/archive/analysis_results/</code>.
+      </p>
+    </div>
+  </div>
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    toggle?.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+    });
+  </script>
+</body>
+
+</html>
+
+*** Add File: docs/quickstart.html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Go2 ODD Observer – Quick Start</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: radial-gradient(circle at top, #6366f1 0%, #020617 55%, #000 100%);
+      min-height: 100vh;
+      padding: 2rem 0 4rem 0;
+      color: #e5e7eb;
+    }
+
+    .container {
+      max-width: 900px;
+    }
+
+    .shell {
+      background: rgba(15, 23, 42, 0.97);
+      border-radius: 18px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(129, 140, 248, 0.5);
+    }
+
+    h1, h2, h3 {
+      color: #f9fafb;
+    }
+
+    .badge-tag {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(129, 140, 248, 0.6);
+      color: #e5e7eb;
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.85rem;
+    }
+
+    .code-block {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      background: #020617;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #e5e7eb;
+      margin-bottom: 1rem;
+    }
+
+    a {
+      color: #c4b5fd;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="shell">
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge-tag">Quick Start</span>
+          <span class="badge-tag">Go2 ODD Observer</span>
+        </div>
+        <a href="index.html" class="badge-tag">← Back to overview</a>
+      </div>
+
+      <h1 class="mb-3">Quick Start</h1>
+      <p class="text-secondary mb-4">
+        This page summarizes the minimum steps to get the ODD Observer pipeline running locally. For deeper background,
+        see <code>docs/guides/GETTING_STARTED.md</code> and the capstone report.
+      </p>
+
+      <h2 class="h4 mb-2">1. Prerequisites</h2>
+      <ul>
+        <li>Python 3.10+ and virtual environment (recommended).</li>
+        <li>Dependencies installed: <code>pip install -r requirements.txt</code>.</li>
+        <li>Valid Gemini API key exported (e.g., via <code>.env</code> or environment variable).</li>
+      </ul>
+
+      <h2 class="h4 mb-2">2. Single Scenario Run</h2>
+      <p>From the repo root:</p>
+      <div class="code-block">python scripts/run_odd_analysis.py</div>
+      <p>
+        Select a scenario when prompted (e.g., a sim or real dataset). The script will run the full pipeline
+        (ODD Spec → Perception/Motion/Collision → Evaluator → Report) and write results to
+        <code>data/archive/analysis_results/manual/&lt;timestamp&gt;/&lt;scenario&gt;/</code>.
+      </p>
+
+      <h2 class="h4 mb-2">3. Batch Run</h2>
+      <p>To run across a set of scenarios (e.g., all production data):</p>
+      <div class="code-block">python scripts/run_odd_batch_analysis.py</div>
+      <p class="mb-4">
+        Batch runs aggregate summaries and still archive per‑scenario results under
+        <code>data/archive/analysis_results/automated/</code>.
+      </p>
+
+      <h2 class="h4 mb-2">4. Agent Evaluation</h2>
+      <p>To run the ADK rubric‑based evaluation suite:</p>
+      <div class="code-block">pytest tests/test_adk_evaluation.py -q</div>
+      <p class="mb-0">
+        See <a href="guides/AGENT_EVALUATION.md">guides/AGENT_EVALUATION.md</a> for details on metrics and thresholds, and
+        <code>tests/evaluation/RESULTS.md</code> for the latest scores.
+      </p>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -18,7 +18,9 @@ from .common import get_window_file_paths
 # Tool agent version
 # v4.0.0: Outputs odd_measurements (strict), explanation, key_insights (flexible)
 # v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
-MOTION_TOOL_AGENT_VERSION = "5.0.0"
+# v6.0.0: Bulletproof prompt - gravity vs motion reasoning, camera priority, temporal patterns
+# v6.1.0: Image artifact awareness (compression, blur, noise vs motion detection)
+MOTION_TOOL_AGENT_VERSION = "6.1.0"
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -124,34 +126,120 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             # Build multimodal prompt with IMU + camera
             prompt_parts = [types.Part(text=f"""You are a robotics motion analyst for window {window_id}.
 
-**IMPORTANT**: Wheel odometry is UNAVAILABLE. Use only IMU and camera evidence.
+═══════════════════════════════════════════════════════════════════════════════
+SENSOR INPUTS
+═══════════════════════════════════════════════════════════════════════════════
 
-=== PRE-COMPUTED IMU METRICS (use these for odd_measurements) ===
-- peak_horiz_accel: {peak_horiz_accel:.4f} m/s²
-- peak_gyro_z: {peak_gyro_z:.4f} rad/s
-- max_roll: {max_roll:.2f}°, max_pitch: {max_pitch:.2f}°
-- peak_jerk: {peak_jerk:.4f} m/s³
+**IMPORTANT**: Wheel odometry is UNAVAILABLE/UNRELIABLE. Use only IMU and camera.
 
-ODD CONTEXT (use these axis names if present):
-{json.dumps(odd_context, indent=2) if odd_context else "No ODD context - use default motion metrics"}
+IMAGE: RGB camera frame (forward-facing) - use for visual motion evidence
 
-OUTPUT (JSON only, no markdown):
+PRE-COMPUTED IMU METRICS:
+- Peak horizontal acceleration: {peak_horiz_accel:.4f} m/s²
+- Average horizontal acceleration: {avg_horiz_accel:.4f} m/s²
+- Peak yaw rate (gyro_z): {peak_gyro_z:.4f} rad/s
+- Peak roll rate (gyro_x): {peak_gyro_x:.4f} rad/s
+- Peak pitch rate (gyro_y): {peak_gyro_y:.4f} rad/s
+- Max roll angle: {max_roll:.2f}°
+- Max pitch angle: {max_pitch:.2f}°
+- Peak jerk: {peak_jerk:.4f} m/s³
+- Average jerk: {avg_jerk:.4f} m/s³
+
+═══════════════════════════════════════════════════════════════════════════════
+ODD CONTEXT (Axes to evaluate)
+═══════════════════════════════════════════════════════════════════════════════
+{json.dumps(odd_context, indent=2) if odd_context else "No ODD context provided - use default motion metrics"}
+
+═══════════════════════════════════════════════════════════════════════════════
+MOTION REASONING FRAMEWORK (CRITICAL - READ CAREFULLY)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. IMU ACCELEROMETER INTERPRETATION:
+   - Small constant acceleration (<1.0 m/s²) + platform tilt = GRAVITY LEAKAGE, not motion
+   - Reference: 1° of tilt contributes ~0.17 m/s² to horizontal acceleration
+   - True translation shows VARYING acceleration patterns, not constant values
+   - Stationary robot on tilted platform shows steady horizontal accel from gravity
+   - Example: pitch=1.25° and roll=-0.74° → ~0.21 m/s² horizontal (NOT motion!)
+
+2. CAMERA VISUAL EVIDENCE (PRIMARY MOTION INDICATOR):
+   - Sharp textures, clear edges, no blur → STATIONARY or very slow
+   - Blurred edges, motion streaks → MOVING at significant speed
+   - Visible optical flow, scene shift → Active translation
+   - Stable static scene → STATIONARY
+   - CRITICAL: Camera evidence OVERRIDES IMU when they conflict!
+
+   IMAGE ARTIFACT WARNING (Real Camera Data):
+   - JPEG compression artifacts: Blocky patterns, ringing around edges - NOT motion
+   - Lens blur/defocus: Uniform soft focus across image - NOT motion blur
+   - Rolling shutter: Diagonal distortion of vertical lines - may indicate motion OR artifact
+   - Sensor noise: Grainy/speckled appearance, especially in low light - NOT motion
+   - Exposure issues: Over/underexposed areas, washed out regions - NOT motion evidence
+   
+   MOTION BLUR vs ARTIFACTS:
+   - True motion blur: Directional streaking along motion vector, sharp→blurred transition
+   - Compression artifact: Block-shaped, affects entire image uniformly
+   - Defocus blur: Circular/uniform blur, no directional component
+   - If blur is UNIFORM across frame → likely artifact, not motion
+   - If blur is DIRECTIONAL with clear motion vector → likely real motion
+
+3. GYROSCOPE ANALYSIS:
+   - Very small values (<0.05 rad/s) = sensor noise/drift, NOT rotation
+   - Sustained varying angular velocity = genuine rotation
+   - Constant low values = stationary with sensor bias
+
+4. JERK ANALYSIS (Smoothness):
+   - Low jerk (<5 m/s³): Smooth motion or stationary
+   - High jerk (>10 m/s³): Abrupt starts/stops, actual dynamic maneuvers
+   - Very high jerk (>50 m/s³): Possible collision or impact
+
+5. PLATFORM STABILITY:
+   - Roll/pitch < 5°: Stable, flat surface
+   - Roll/pitch 5-15°: Mild incline or uneven terrain
+   - Roll/pitch > 15°: Unstable, climbing, or on significant slope
+
+═══════════════════════════════════════════════════════════════════════════════
+DECISION PRIORITY (in order of reliability)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Camera visual evidence (most reliable for motion detection)
+2. Temporal patterns in IMU (varying = motion, constant = artifact)
+3. Gyroscope for rotation detection
+4. Accelerometer magnitude (only after gravity/tilt compensation)
+
+CRITICAL RULE:
+If camera shows SHARP, CLEAR images BUT IMU shows acceleration:
+→ Check if acceleration is constant and small (<1.0 m/s²)
+→ Check if platform tilt explains the acceleration
+→ If yes to both: Classify as STATIONARY (gravity leakage artifact)
+
+═══════════════════════════════════════════════════════════════════════════════
+MOTION STATE CLASSIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+- "stationary": No visual motion AND (low varying accel OR constant accel matching tilt)
+- "moving": Camera shows optical flow/blur AND varying acceleration pattern
+- "rotating": Sustained gyro activity with scene rotation but no translation
+- "complex": Both rotation and translation with corresponding IMU patterns
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
+═══════════════════════════════════════════════════════════════════════════════
+
 {{
   "window_id": "{window_id}",
-  "explanation": "1-2 sentence motion state assessment based on IMU + camera",
+  "motion_state": "stationary",
+  "explanation": "Camera shows sharp, static indoor scene. IMU acceleration of 0.21 m/s² is explained by 1.2° platform tilt (gravity leakage). No evidence of actual motion.",
   "key_insights": [
-    "Notable motion pattern or anomaly (if any)",
-    "Safety concern (if any)"
-  ],
-  "motion_state": "stationary|moving|rotating|complex"
+    "Sharp camera image confirms stationary state",
+    "Small IMU acceleration attributed to platform tilt, not motion"
+  ]
 }}
 
-ANALYSIS RULES:
-1. Camera blur = motion, sharp = stationary
-2. Small constant accel (<0.5 m/s²) + tilt = gravity leakage, NOT motion
-3. Focus on WHAT the robot is doing, not raw numbers
-
-Be CONCISE. The pre-computed metrics will be added programmatically.""")]
+RULES:
+1. Camera evidence OVERRIDES IMU when they conflict
+2. Account for gravity leakage before concluding motion from accelerometer
+3. Explain your reasoning, especially when camera and IMU appear to conflict
+4. Output JSON only - no markdown code blocks""")]
 
             # Add camera image if available
             if cam_file.exists():

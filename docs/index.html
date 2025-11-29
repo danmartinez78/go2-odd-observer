@@ -7,55 +7,141 @@
     <title>ODD Observer - AI-Powered Robot Safety Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-top: #f4f5fb;
+            --fg: #1f2937;
+            --muted: #4b5563;
+            --card: #ffffff;
+            --border: rgba(0, 0, 0, 0.05);
+            --accent: #4f46e5;
+            --accent-2: #7c3aed;
+            --shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+            --chip-bg: rgba(79, 70, 229, 0.08);
+            --chip-fg: #312e81;
+        }
+
+        body.dark {
+            --bg-top: #0f172a;
+            --fg: #e5e7eb;
+            --muted: #cbd5e1;
+            --card: #0b1021;
+            --border: rgba(148, 163, 184, 0.25);
+            --accent: #a5b4fc;
+            --accent-2: #c084fc;
+            --shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+            --chip-bg: rgba(165, 180, 252, 0.12);
+            --chip-fg: #c7d2fe;
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.15), transparent 30%),
+                radial-gradient(circle at 80% 0%, rgba(124, 58, 237, 0.15), transparent 30%),
+                linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
             min-height: 100vh;
-            padding: 2rem 0;
+            padding: 2rem 0 4rem 0;
+            color: var(--fg);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark {
+            background: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.25), transparent 28%),
+                radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.18), transparent 32%),
+                linear-gradient(135deg, #0f172a 0%, #0b1120 100%);
         }
 
         @media (min-width: 1200px) {
             body {
-                padding: 4rem 0;
+                padding: 3.5rem 0 5rem 0;
             }
 
             .container {
                 max-width: 1400px;
             }
+        }
 
-            .hero {
-                padding: 5rem 4rem !important;
-            }
+        .nav-shell {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.9rem 1.5rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
 
-            h1.display-4 {
-                font-size: 4rem !important;
-            }
+        .nav-links a {
+            color: var(--muted);
+            font-weight: 600;
+            text-decoration: none;
+            margin-right: 1rem;
+        }
 
-            .lead {
-                font-size: 1.5rem !important;
-            }
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .theme-toggle {
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            background: transparent;
+            color: var(--fg);
+            border-radius: 999px;
+            padding: 0.35rem 0.9rem;
+            font-weight: 700;
+        }
+
+        body.dark .theme-toggle {
+            color: var(--fg);
         }
 
         .hero {
-            background: white;
-            border-radius: 16px;
-            padding: 4rem 2rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: var(--card);
+            border-radius: 18px;
+            padding: 3.5rem 2rem;
+            box-shadow: var(--shadow);
             margin-bottom: 3rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
         }
 
-        .report-card {
-            background: white;
-            border-radius: 12px;
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.08), transparent 38%),
+                radial-gradient(circle at 80% 30%, rgba(124, 58, 237, 0.08), transparent 36%);
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-weight: 800;
+        }
+
+        .chip {
+            background: var(--chip-bg);
+            color: var(--chip-fg);
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+        }
+
+        .section-shell {
+            background: var(--card);
+            border-radius: 16px;
             padding: 2rem;
-            margin-bottom: 2rem;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: 2px solid transparent;
+            margin-bottom: 2.5rem;
+            transition: transform 0.3s, box-shadow 0.3s, background 0.3s ease, color 0.3s ease, border 0.3s ease;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
         }
 
-        .report-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
-            border-color: #667eea;
+        .section-shell:hover {
+            transform: translateY(-4px);
         }
 
         .badge-status {
@@ -76,13 +162,14 @@
             color: #000;
         }
 
-        h1 {
-            color: #2d3748;
-            font-weight: 700;
+        h1,
+        h2,
+        h3 {
+            color: var(--fg);
         }
 
         .lead {
-            color: #4a5568;
+            color: var(--muted);
         }
 
         .btn-view-report {
@@ -94,7 +181,7 @@
         }
 
         .btn-view-report:hover {
-            transform: scale(1.05);
+            transform: scale(1.04);
         }
 
         .feature-list {
@@ -103,8 +190,8 @@
         }
 
         .feature-list li {
-            padding: 0.5rem 0;
-            font-size: 1.1rem;
+            padding: 0.45rem 0;
+            font-size: 1rem;
         }
 
         .feature-list li::before {
@@ -114,69 +201,149 @@
             margin-right: 0.5rem;
         }
 
+        .subtle-box {
+            background: rgba(99, 102, 241, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        body.dark .subtle-box {
+            background: rgba(165, 180, 252, 0.08);
+        }
+
         .version-badge {
-            background: #667eea;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.45rem 1rem;
             border-radius: 20px;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .agent-card {
-            background: #f8f9fa;
-            border-radius: 8px;
+            background: rgba(99, 102, 241, 0.06);
+            border-radius: 12px;
             padding: 1rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.65rem;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        body.dark .agent-card {
+            background: rgba(165, 180, 252, 0.08);
+            border-color: rgba(165, 180, 252, 0.25);
+        }
+
+        .highlight-note {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(253, 230, 138, 0.14));
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--fg);
+        }
+
+        body.dark .highlight-note {
+            background: linear-gradient(135deg, rgba(250, 204, 21, 0.14), rgba(251, 191, 36, 0.12));
         }
 
         .section-header {
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            margin-bottom: 1.5rem;
+            color: var(--fg) !important;
+            text-shadow: none;
         }
 
         .content-section {
-            margin-bottom: 4rem;
+            margin-bottom: 3rem;
         }
 
         .phase-badge {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.45rem 1rem;
             border-radius: 20px;
-            font-weight: 600;
+            font-weight: 700;
+        }
+
+        .pill-grid .chip {
+            margin: 0.25rem;
+            display: inline-block;
+        }
+
+        .tag-link {
+            color: var(--fg);
+            text-decoration: none;
+        }
+
+        .tag-link:hover {
+            color: var(--accent);
+        }
+
+        body.dark a.btn-outline-dark {
+            color: var(--fg);
+            border-color: rgba(148, 163, 184, 0.4);
+        }
+
+        body.dark a.btn-outline-dark:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        body.dark .badge.bg-secondary {
+            background-color: #374151 !important;
+            color: #e5e7eb !important;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- Hero Section -->
-        <div class="hero text-center">
-            <div class="d-flex justify-content-center gap-2 mb-3">
+        <div class="nav-shell">
+            <div class="d-flex align-items-center gap-2">
                 <span class="phase-badge">Phase 1.4.5</span>
                 <span class="version-badge">Pipeline v2.0.0</span>
+            </div>
+            <div class="d-none d-md-flex nav-links">
+                <a href="#reports">Reports</a>
+                <a href="quickstart.html">Quickstart</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="evaluation.html">Evaluation</a>
+                <a href="capstone.html">Capstone</a>
+            </div>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌓</button>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero text-center">
+            <div class="d-flex justify-content-center gap-2 mb-3 flex-wrap">
+                <span class="chip">Google ADK + Gemini 2.5</span>
+                <span class="chip">6 Pipeline Agents</span>
+                <span class="chip">Artifact-Based Architecture</span>
             </div>
             <h1 class="display-4 mb-3">🤖 ODD Observer</h1>
             <p class="lead mb-4">AI-Powered Operational Design Domain Analysis for Quadruped Robots</p>
             <p class="text-muted mb-4">Built with Google ADK + Gemini 2.5 | 6 Pipeline Agents + 4 Tool Agents |
-                Artifact-Based
-                Architecture</p>
+                Artifact-Based Architecture</p>
 
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <div class="d-flex justify-content-center gap-3 flex-wrap mb-4">
                 <a href="#reports" class="btn btn-primary btn-lg">📊 View Reports</a>
                 <a href="guides/getting_started.html" class="btn btn-outline-dark btn-lg">📖 Documentation</a>
                 <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-outline-dark btn-lg">💻
                     GitHub</a>
+            </div>
+
+            <div class="d-flex justify-content-center flex-wrap gap-2 pill-grid">
+                <a class="chip tag-link" href="quickstart.html">Launch: Quickstart</a>
+                <a class="chip tag-link" href="architecture.html">Agent & Tool Architecture</a>
+                <a class="chip tag-link" href="evaluation.html">Rubric-Based Evaluation</a>
+                <a class="chip tag-link" href="capstone.html">Kaggle Capstone</a>
             </div>
         </div>
 
         <!-- ODD/COD Explanation Section -->
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
-                <h2 class="text-white mb-4 section-header">📐 What is ODD & COD?</h2>
-                <div class="report-card">
+                <h2 class="text-white mb-4 section-header">📐 What are ODD & COD?</h2>
+                <div class="section-shell">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <h5 class="text-primary">🎯 ODD - Operational Design Domain</h5>
@@ -200,7 +367,7 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="text-center mt-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
+                    <div class="text-center mt-3 subtle-box">
                         <strong>Verdict:</strong>
                         <span class="badge bg-success">IN_ODD</span> COD fully within ODD |
                         <span class="badge bg-warning text-dark">BOUNDARY</span> COD at or near edge of ODD |
@@ -214,7 +381,7 @@
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
                 <h2 class="text-white mb-4 section-header">✨ What's New in Phase 1.4.5</h2>
-                <div class="report-card">
+                <div class="section-shell">
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <h5 class="text-primary">🎯 Artifact Handoff</h5>
@@ -240,7 +407,7 @@
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
                 <h2 class="text-white mb-4 section-header">🧪 Agent Evaluation</h2>
-                <div class="report-card">
+                <div class="section-shell">
                     <p class="mb-3">Rubric-based ADK evaluations for all agents using the sim_test_w010_w011 scenario and shared fixtures.</p>
                     <ul class="feature-list">
                         <li>Tool-use + final-response rubrics; hallucination checks where supported</li>
@@ -256,7 +423,7 @@
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
                 <h2 class="text-white mb-4 section-header">🤖 Agent Architecture</h2>
-                <div class="report-card">
+                <div class="section-shell">
                     <div class="row">
                         <div class="col-md-6">
                             <h5 class="mb-3">6 Pipeline Agents</h5>
@@ -289,7 +456,7 @@
                         </div>
                         <div class="col-md-6">
                             <h5 class="mb-3">Pipeline Flow</h5>
-                            <div class="p-3" style="background: #f8f9fa; border-radius: 8px;">
+                            <div class="subtle-box">
                                 <!-- Stage 1 -->
                                 <div class="text-center mb-2">
                                     <div class="d-inline-block px-3 py-2"
@@ -342,10 +509,11 @@
                                     <li>Temporal stability tracking</li>
                                 </ul>
                             </div>
-                            <div class="mt-3 p-2" style="background: #fff3cd; border-radius: 6px; font-size: 0.85rem;">
+                            <div class="mt-3 p-3 highlight-note" style="font-size: 0.9rem;">
                                 <strong>Note:</strong> Sensor agents (Perception, Motion, Collision) + Evaluator each
                                 call embedded <strong>tool agents</strong> that make additional LLM API calls for
-                                multimodal analysis. Total: 6 pipeline agents + 4 tool agents = 10 LLM-calling entities.
+                                multimodal analysis. Total: <strong>6 pipeline agents + 4 tool agents = 10
+                                    LLM-calling entities.</strong>
                             </div>
                         </div>
                     </div>
@@ -357,7 +525,7 @@
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
                 <h2 class="text-white mb-4 section-header">🧠 Agent Reasoning Capabilities</h2>
-                <div class="report-card">
+                <div class="section-shell">
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <h5 class="text-primary">👁️ Visual Grounding</h5>
@@ -411,13 +579,14 @@
             <div class="col-12 col-lg-10 offset-lg-1">
                 <h2 class="text-white mb-4 section-header">📊 Sample Analysis Reports</h2>
 
-                <div class="alert alert-info mb-4">
-                    <strong>Note:</strong> Reports below were generated with the Phase 1.4.5 pipeline.
-                    Each includes COD region analysis, compliance verdict, agent execution details, and cost breakdown.
-                </div>
+                <div class="section-shell">
+                    <div class="alert alert-info mb-4">
+                        <strong>Note:</strong> Reports below were generated with the Phase 1.4.5 pipeline.
+                        Each includes COD region analysis, compliance verdict, agent execution details, and cost breakdown.
+                    </div>
 
                 <!-- Featured: 10-Window Production Run -->
-                <div class="report-card" style="border-color: #28a745; border-width: 3px;">
+                <div class="section-shell" style="border-color: #28a745; border-width: 3px;">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <div class="d-flex align-items-center gap-2 mb-2">
@@ -458,7 +627,7 @@
                 </div>
 
                 <!-- chunk_020_029 -->
-                <div class="report-card" style="border-color: #28a745; border-width: 2px;">
+                <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <h3 class="mb-2">sim_1_0_chunk_020_029</h3>
@@ -491,7 +660,7 @@
                 </div>
 
                 <!-- chunk_040_049 -->
-                <div class="report-card" style="border-color: #28a745; border-width: 2px;">
+                <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <h3 class="mb-2">sim_1_0_chunk_040_049</h3>
@@ -528,7 +697,7 @@
         <!-- Technical Details -->
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
-                <div class="hero">
+                <div class="section-shell">
                     <h2 class="mb-4">🔬 Technical Details</h2>
 
                     <div class="row mb-4">
@@ -592,7 +761,18 @@
             <p class="small">Phase 1.4.5 - November 2025</p>
         </div>
     </div>
-
+    <script>
+        const toggle = document.getElementById('themeToggle');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const saved = localStorage.getItem('odd-theme');
+        if (saved === 'dark' || (!saved && prefersDark)) {
+            document.body.classList.add('dark');
+        }
+        toggle?.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('odd-theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
