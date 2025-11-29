@@ -6,7 +6,7 @@ Factory functions that create tools with specific configuration.
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 from google.adk.tools import FunctionTool
 from google.genai import types
 from google import genai
@@ -44,7 +44,7 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
     async def analyze_collision_tool(
         window_id: str,
         odd_context: dict,
-        motion_state: dict = None
+        motion_state: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Tool: Multimodal collision detection using IMU + camera + BEV, plus advisory risk.
 
