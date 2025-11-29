@@ -513,7 +513,8 @@ def _build_token_summary(agent_executions: Dict[str, Any]) -> Dict[str, Any]:
 def generate_reports(
     events: list,
     pipeline_metadata: Dict[str, Any],
-    output_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None,
+    artifact_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Generate all reports from pipeline events.
@@ -528,6 +529,36 @@ def generate_reports(
     """
     # Extract all agent outputs
     agent_outputs = extract_all_agent_outputs(events)
+
+    # If per-window data is missing, try to merge from saved artifacts
+    def _load_json(path: Path) -> Optional[Dict[str, Any]]:
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except Exception:
+            return None
+
+    if artifact_dir:
+        mapping = {
+            "PerceptionAgent": "perception_output.json",
+            "MotionAgent": "motion_output.json",
+            "CollisionAgent": "collision_output.json",
+            "OddSpecAgent": "odd_spec.json",
+        }
+        artifact_dir = Path(artifact_dir)
+        for agent, fname in mapping.items():
+            artifact_path = artifact_dir / fname
+            if not artifact_path.exists():
+                continue
+            artifact_data = _load_json(artifact_path)
+            if not artifact_data:
+                continue
+            existing = agent_outputs.get(agent, {})
+            if isinstance(existing, dict):
+                merged = {**existing, **artifact_data}
+            else:
+                merged = artifact_data
+            agent_outputs[agent] = merged
 
     # Build reports
     executive_summary = build_executive_summary_report(

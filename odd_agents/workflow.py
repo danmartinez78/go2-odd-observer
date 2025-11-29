@@ -283,7 +283,10 @@ async def run_odd_workflow(
     for call in tool_calls:
         print(f"   • {call}")
 
-    # Check artifacts saved
+    # Check artifacts saved and persist them to disk for downstream reporting
+    artifact_base = scenario_path_obj / "artifacts"
+    artifact_base.mkdir(parents=True, exist_ok=True)
+    artifacts = []
     try:
         artifacts = await artifact_service.list_artifact_keys(
             app_name="OddWorkflowApp",
@@ -291,8 +294,29 @@ async def run_odd_workflow(
             session_id=session.id
         )
         print(f"\n📦 Artifacts saved: {artifacts}")
+
+        for filename in artifacts:
+            part = await artifact_service.load_artifact(
+                app_name="OddWorkflowApp",
+                user_id=user_id,
+                session_id=session.id,
+                filename=filename,
+            )
+            if not part:
+                continue
+            # Handle inline bytes or text
+            data_bytes = None
+            if part.inline_data and part.inline_data.data:
+                data_bytes = part.inline_data.data
+            elif part.text:
+                data_bytes = part.text.encode("utf-8")
+            if data_bytes is not None:
+                out_path = artifact_base / filename
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(out_path, "wb") as f:
+                    f.write(data_bytes)
     except Exception as e:
-        print(f"\n⚠️ Could not list artifacts: {e}")
+        print(f"\n⚠️ Could not list/persist artifacts: {e}")
 
     pipeline_duration = time.time() - pipeline_start
 
@@ -390,11 +414,39 @@ async def run_odd_workflow(
         # Extract all agent outputs for full report
         all_agent_outputs = extract_all_agent_outputs(events)
 
+        # Merge in saved artifacts to restore per-window data (if present)
+        def _load_artifact(filename: str) -> Any:
+            path = artifact_base / filename
+            if path.exists():
+                with open(path, "r") as f:
+                    return json.load(f)
+            return None
+
+        def _merge_agent_output(agent_outputs: dict, agent: str, artifact_data: dict):
+            if not artifact_data:
+                return
+            existing = agent_outputs.get(agent, {})
+            if isinstance(existing, dict):
+                merged = {**existing, **artifact_data}
+            else:
+                merged = artifact_data
+            agent_outputs[agent] = merged
+
+        _merge_agent_output(all_agent_outputs, "PerceptionAgent",
+                            _load_artifact("perception_output.json"))
+        _merge_agent_output(all_agent_outputs, "MotionAgent",
+                            _load_artifact("motion_output.json"))
+        _merge_agent_output(all_agent_outputs, "CollisionAgent",
+                            _load_artifact("collision_output.json"))
+        _merge_agent_output(all_agent_outputs, "OddSpecAgent",
+                            _load_artifact("odd_spec.json"))
+
         # Generate both executive summary and full technical report
         reports = generate_reports(
             events=events,
             pipeline_metadata=pipeline_metadata,
             output_dir=scenario_path_obj,  # Save to scenario directory
+            artifact_dir=artifact_base,  # Allow report builder to read artifacts
         )
 
         # Return report + metadata
