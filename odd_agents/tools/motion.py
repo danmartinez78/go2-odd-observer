@@ -20,7 +20,8 @@ from .common import get_window_file_paths
 # v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
 # v6.0.0: Bulletproof prompt - gravity vs motion reasoning, camera priority, temporal patterns
 # v6.1.0: Image artifact awareness (compression, blur, noise vs motion detection)
-MOTION_TOOL_AGENT_VERSION = "6.1.0"
+# v7.0.0: Added is_stationary with confidence, clearer roll/pitch reporting with max+windows+rationale
+MOTION_TOOL_AGENT_VERSION = "7.0.0"
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -222,12 +223,56 @@ MOTION STATE CLASSIFICATION
 - "complex": Both rotation and translation with corresponding IMU patterns
 
 ═══════════════════════════════════════════════════════════════════════════════
+STATIONARITY OUTPUT (Required for cross-agent consistency)
+═══════════════════════════════════════════════════════════════════════════════
+
+"is_stationary": {{
+  "value": true/false,
+  "confidence": 0.0-1.0,
+  "evidence": "Brief description of why stationary/not"
+}}
+
+Use high confidence (>0.9) when camera and IMU agree.
+Use lower confidence (0.5-0.8) when evidence is mixed.
+This output is CRITICAL for collision agent to use for motion-state gating.
+
+═══════════════════════════════════════════════════════════════════════════════
+ROLL/PITCH REPORTING (Detailed)
+═══════════════════════════════════════════════════════════════════════════════
+
+"roll_pitch_analysis": {{
+  "max_roll_deg": <float>,
+  "max_pitch_deg": <float>,
+  "roll_concern": "none" | "mild" | "moderate" | "severe",
+  "pitch_concern": "none" | "mild" | "moderate" | "severe",
+  "rationale": "Why this concern level (e.g., 'Within normal indoor operation', 'Indicates ramp traversal')"
+}}
+
+Concern levels:
+- none: <5° - Normal indoor operation
+- mild: 5-10° - Minor incline or terrain variation
+- moderate: 10-15° - Significant slope, near ODD boundary
+- severe: >15° - Likely out of ODD, steep terrain or instability
+
+═══════════════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
 ═══════════════════════════════════════════════════════════════════════════════
 
 {{
   "window_id": "{window_id}",
   "motion_state": "stationary",
+  "is_stationary": {{
+    "value": true,
+    "confidence": 0.95,
+    "evidence": "Sharp camera image with no blur, constant IMU values match platform tilt"
+  }},
+  "roll_pitch_analysis": {{
+    "max_roll_deg": 0.74,
+    "max_pitch_deg": 1.25,
+    "roll_concern": "none",
+    "pitch_concern": "none",
+    "rationale": "Both well within normal indoor operation (<5°)"
+  }},
   "explanation": "Camera shows sharp, static indoor scene. IMU acceleration of 0.21 m/s² is explained by 1.2° platform tilt (gravity leakage). No evidence of actual motion.",
   "key_insights": [
     "Sharp camera image confirms stationary state",
@@ -238,8 +283,10 @@ OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
 RULES:
 1. Camera evidence OVERRIDES IMU when they conflict
 2. Account for gravity leakage before concluding motion from accelerometer
-3. Explain your reasoning, especially when camera and IMU appear to conflict
-4. Output JSON only - no markdown code blocks""")]
+3. ALWAYS output is_stationary with confidence - collision agent depends on this
+4. ALWAYS output roll_pitch_analysis with concern level and rationale
+5. Explain your reasoning, especially when camera and IMU appear to conflict
+6. Output JSON only - no markdown code blocks""")]
 
             # Add camera image if available
             if cam_file.exists():
@@ -271,6 +318,18 @@ RULES:
                     "max_pitch_deg": round(max_pitch, 2),
                     "peak_jerk_mps3": round(peak_jerk, 4),
                 },
+                "is_stationary": llm_data.get("is_stationary", {
+                    "value": False,
+                    "confidence": 0.5,
+                    "evidence": "Not determined"
+                }),
+                "roll_pitch_analysis": llm_data.get("roll_pitch_analysis", {
+                    "max_roll_deg": round(max_roll, 2),
+                    "max_pitch_deg": round(max_pitch, 2),
+                    "roll_concern": "none" if max_roll < 5 else "mild" if max_roll < 10 else "moderate" if max_roll < 15 else "severe",
+                    "pitch_concern": "none" if max_pitch < 5 else "mild" if max_pitch < 10 else "moderate" if max_pitch < 15 else "severe",
+                    "rationale": "Computed from max values"
+                }),
                 "explanation": llm_data.get("explanation", "Motion analysis from IMU data"),
                 "key_insights": llm_data.get("key_insights", []),
                 "motion_state": llm_data.get("motion_state", "unknown"),

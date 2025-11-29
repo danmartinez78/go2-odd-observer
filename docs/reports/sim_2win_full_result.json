@@ -1,31 +1,26 @@
 {
   "report": {
-    "result": "{\n  \"compliance\": {\n    \"status\": \"IN_ODD\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot operated entirely within its specified limits, although environmental traversability degraded to the minimum allowed threshold.\"\n  },\n  \"executive_summary\": \"The robot operated in a simulated indoor environment, moving from an open area into a confined dead-end where it stopped. Throughout this process, the robot's actions and the environmental conditions it encountered remained entirely within its specified operational limits.\",\n  \"key_findings\": {\n    \"perception\": \"The robot operated in a simulated indoor environment with moderate lighting, moving from an open area with low obstacle density to a confined dead-end where its path was blocked.\",\n    \"motion\": \"The robot remained stationary and stable throughout the analysis, with zero velocity and all motion parameters well within the defined safety limits.\",\n    \"safety\": \"No collisions were detected, and the robot maintained a safe distance from obstacles, with the minimum proximity recorded at 2.25 meters.\",\n    \"temporal_trends\": \"The environment became more challenging over time as the robot moved into a confined area, with traversability degrading to the minimum allowed ODD limit.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 2,\n    \"environment\": \"indoor commercial/residential\",\n    \"data_quality\": \"complete\",\n    \"data_source\": \"simulated\"\n  },\n  \"issues\": [\n    \"Environmental traversability degraded to the ODD's minimum allowed value (0.6) as the robot entered a dead-end.\",\n    \"The robot's ability to reverse and navigate away from a boundary condition (blocked path) was not tested in this scenario.\"\n  ],\n  \"recommendations\": [\n    \"Monitor operations near ODD boundaries, particularly for traversability.\",\n    \"Conduct a follow-up test to ensure the robot can safely reverse and navigate away from blocked paths and dead-ends.\"\n  ]\n}"
+    "result": "{\n  \"compliance\": {\n    \"status\": \"BOUNDARY\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot operated at the boundary of its ODD because its path became fully obstructed, pushing the 'traversability_score' to the absolute minimum allowed limit.\"\n  },\n  \"executive_summary\": \"The robot operated in a simulated indoor environment, initially navigating a clear corridor. Its situation changed when it encountered a large couch that completely blocked its forward path, causing it to operate at the very edge of its defined traversability limits and resulting in a low-speed collision.\",\n  \"key_findings\": {\n    \"perception\": \"The robot perceived a simulated indoor environment with moderate lighting, transitioning from a clear corridor with static furniture to a path fully obstructed by a large couch.\",\n    \"motion\": \"The robot remained stationary throughout the scenario with speed and acceleration near zero, despite some anomalous gyroscope readings that were correctly disregarded.\",\n    \"safety\": \"The scenario degraded from a safe condition with over 3m of clearance to a critical state involving a low-speed collision with a couch.\",\n    \"temporal_trends\": \"Conditions degraded significantly as the robot moved from a highly traversable space to a fully blocked dead-end, resulting in a collision.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 2,\n    \"environment\": \"indoor commercial/residential\",\n    \"data_quality\": \"complete\",\n    \"data_source\": \"simulated\"\n  },\n  \"issues\": [\n    \"Robot's path became fully obstructed, operating at the minimum traversability limit (0.3).\",\n    \"A low-speed collision occurred when the robot made contact with an obstacle, indicating a failure of the planning system to stop or re-route in time.\"\n  ],\n  \"recommendations\": [\n    \"Investigate the motion planner's behavior to understand why it failed to stop or reroute before reaching a dead-end.\",\n    \"Review the robot's safety protocols for reacting to imminent collisions, especially in low-speed, low-traversability scenarios.\"\n  ]\n}"
   },
   "full_analysis": {
     "cod_region": {
-      "environment_type": {
-        "indoor_commercial": 0.5,
-        "indoor_residential": 0.5,
-        "type": "enum"
-      },
       "lighting_conditions": {
         "moderate": 1.0,
         "type": "enum"
       },
       "terrain_type": {
-        "low_pile_carpet": 0.5,
+        "smooth": 0.5,
         "tile": 0.5,
         "type": "enum"
       },
       "obstacle_density": {
-        "max": 0.4,
-        "min": 0.25,
+        "min": 0.1,
+        "max": 0.15,
         "type": "range"
       },
       "traversability_score": {
-        "max": 0.8,
-        "min": 0.6,
+        "min": 0.3,
+        "max": 0.9,
         "type": "range"
       },
       "stairs_present": {
@@ -34,30 +29,29 @@
         "type": "bool"
       },
       "max_speed_mps": {
-        "max": 0.0,
         "min": 0.0,
+        "max": 0.0,
         "type": "range"
       },
       "max_accel_mps2": {
-        "max": 0.1455,
         "min": 0.1009,
+        "max": 0.1455,
         "type": "range"
       },
       "max_pitch_deg": {
-        "max": 6.95,
         "min": 5.45,
+        "max": 6.95,
         "type": "range"
       },
       "max_roll_deg": {
-        "max": 4.99,
         "min": 2.49,
+        "max": 4.99,
         "type": "range"
       }
     },
     "region_metrics": {
       "region_distance": 0.0,
       "fraction_outside_per_axis": {
-        "environment_type": 0.0,
         "lighting_conditions": 0.0,
         "terrain_type": 0.0,
         "obstacle_density": 0.0,
@@ -69,45 +63,49 @@
         "max_roll_deg": 0.0
       },
       "total_windows": 2,
-      "windows_in_odd": 2,
-      "windows_violated": [],
-      "first_violation_window": null,
+      "windows_in_odd": 1,
+      "windows_violated": [
+        "010"
+      ],
+      "first_violation_window": "010",
       "categorical_semantic_distances": {
-        "environment_type": 0.0
+        "terrain_type": 0.0
       }
     },
     "compliance_verdict": {
-      "verdict": "IN_ODD",
-      "confidence": 0.9,
-      "rationale": "The Current Operating Domain (COD) is fully contained within the ODD, with an overall region distance of 0.0. All measured axes, including ego motion and environmental parameters, remained within their specified limits across all windows. Notably, in window '011', the 'traversability_score' reached its minimum allowed value of 0.6, indicating that the robot navigated to the very edge of its operational boundary for that axis. While this is a challenging condition, it does not constitute a violation.",
-      "critical_axes": [],
+      "verdict": "BOUNDARY",
+      "confidence": 1.0,
+      "rationale": "The Current Operating Domain (COD) is at the boundary of the ODD. The 'traversability_score' in window 011 dropped to 0.3, which is the absolute minimum defined in the ODD (range 0.3-1.0). This indicates a critical navigation event where the robot's path was completely blocked. While all other axes remained well within limits, operation at an ODD boundary is inherently high-risk and led to a collision event in the same window. The overall region_distance of 0.0 confirms the COD touched but did not exceed the ODD boundary.",
+      "critical_axes": [
+        "traversability_score"
+      ],
       "temporal_stability": "DEGRADING"
     },
     "key_concerns": [
-      "The robot's traversability score degraded from a safe 0.8 to the ODD minimum of 0.6 as it entered a blocked dead-end. While still compliant, this trend indicates navigation into an increasingly challenging and borderline out-of-spec environment.",
-      "The robot became stationary upon encountering the dead-end, which is an appropriate response. However, this scenario highlights the need to verify the robot's capability to safely reverse and navigate away from such boundary conditions."
+      "The robot's path became fully obstructed in window 011, pushing the 'traversability_score' to the ODD minimum limit of 0.3. Operating at the boundary of traversability is a critical state.",
+      "A collision was detected in window 011, which appears to be a direct consequence of the robot failing to navigate away from the zero-traversability situation. This highlights a failure in the planning system's response to a boundary condition."
     ]
   },
   "analysis_metadata": {
     "pipeline_version": "2.0.0",
-    "analysis_timestamp": "2025-11-29T18:05:21.558232+00:00",
-    "analysis_duration_seconds": 261.59,
+    "analysis_timestamp": "2025-11-29T19:52:45.498644+00:00",
+    "analysis_duration_seconds": 258.41,
     "total_agents_executed": 6,
-    "total_tokens_used": 41732,
-    "estimated_cost_usd": 0.051682,
+    "total_tokens_used": 40879,
+    "estimated_cost_usd": 0.051324,
     "cost_breakdown": {
-      "total_input_tokens": 34442,
-      "total_output_tokens": 863,
-      "input_cost_usd": 0.043052,
-      "output_cost_usd": 0.00863
+      "total_input_tokens": 33651,
+      "total_output_tokens": 926,
+      "input_cost_usd": 0.042064,
+      "output_cost_usd": 0.00926
     },
     "cost_per_agent": {
-      "OddSpecAgent": 0.008663,
-      "PerceptionAgent": 0.003272,
-      "MotionAgent": 0.006213,
-      "CollisionAgent": 0.008513,
-      "EvaluatorAgent": 0.009371,
-      "ReportAgent": 0.015651
+      "OddSpecAgent": 0.009184,
+      "PerceptionAgent": 0.003335,
+      "MotionAgent": 0.005855,
+      "CollisionAgent": 0.008048,
+      "EvaluatorAgent": 0.009231,
+      "ReportAgent": 0.015671
     },
     "knowledge_refs": {
       "manifest": {
@@ -138,10 +136,10 @@
   },
   "pipeline_metadata": {
     "pipeline_version": "2.0.0",
-    "pipeline_start_time": "2025-11-29T18:05:21.558232+00:00",
-    "pipeline_duration_seconds": 261.59,
+    "pipeline_start_time": "2025-11-29T19:52:45.498644+00:00",
+    "pipeline_duration_seconds": 258.41,
     "odd_specification": {
-      "hash": "aa9de8b1bdbd0f27",
+      "hash": "45e5bb66d7ba2be5",
       "version": "embedded"
     },
     "scenario_info": {
@@ -153,14 +151,14 @@
         "agent_name": "OddSpecAgent",
         "version": "6.2.0",
         "declared_model": "gemini-2.5-pro",
-        "prompt_hash": "2be77b23eb83856a",
-        "timestamp": "2025-11-29T18:05:21.571302+00:00",
-        "invocation_id": "e-0c66be6f-f478-4f88-b34a-b43a580a5929",
+        "prompt_hash": "1952675accbe3260",
+        "timestamp": "2025-11-29T19:52:45.510760+00:00",
+        "invocation_id": "e-62250812-cc1a-488c-9f81-16d9520b31b9",
         "actual_model": "gemini-2.5-pro",
         "token_usage": {
-          "prompt_tokens": 3402,
-          "completion_tokens": 441,
-          "total_tokens": 5578
+          "prompt_tokens": 3523,
+          "completion_tokens": 478,
+          "total_tokens": 5380
         }
       },
       "PerceptionAgent": {
@@ -168,13 +166,13 @@
         "version": "7.5.0",
         "declared_model": "gemini-2.5-pro",
         "prompt_hash": "4e3ff80c88ddec1e",
-        "timestamp": "2025-11-29T18:05:42.547678+00:00",
-        "invocation_id": "e-0c66be6f-f478-4f88-b34a-b43a580a5929",
+        "timestamp": "2025-11-29T19:53:04.959578+00:00",
+        "invocation_id": "e-62250812-cc1a-488c-9f81-16d9520b31b9",
         "actual_model": "gemini-2.5-pro",
         "token_usage": {
-          "prompt_tokens": 2522,
+          "prompt_tokens": 2572,
           "completion_tokens": 12,
-          "total_tokens": 3031
+          "total_tokens": 3413
         }
       },
       "MotionAgent": {
@@ -182,13 +180,13 @@
         "version": "7.4.0",
         "declared_model": "gemini-2.5-pro",
         "prompt_hash": "8322eaf78af90267",
-        "timestamp": "2025-11-29T18:07:02.870588+00:00",
-        "invocation_id": "e-0c66be6f-f478-4f88-b34a-b43a580a5929",
+        "timestamp": "2025-11-29T19:54:27.840984+00:00",
+        "invocation_id": "e-62250812-cc1a-488c-9f81-16d9520b31b9",
         "actual_model": "gemini-2.5-pro",
         "token_usage": {
-          "prompt_tokens": 4874,
+          "prompt_tokens": 4588,
           "completion_tokens": 12,
-          "total_tokens": 5523
+          "total_tokens": 5583
         }
       },
       "CollisionAgent": {
@@ -196,13 +194,13 @@
         "version": "7.4.0",
         "declared_model": "gemini-2.5-pro",
         "prompt_hash": "72f2f428efb51c85",
-        "timestamp": "2025-11-29T18:08:02.525816+00:00",
-        "invocation_id": "e-0c66be6f-f478-4f88-b34a-b43a580a5929",
+        "timestamp": "2025-11-29T19:55:35.208950+00:00",
+        "invocation_id": "e-62250812-cc1a-488c-9f81-16d9520b31b9",
         "actual_model": "gemini-2.5-pro",
         "token_usage": {
-          "prompt_tokens": 6714,
+          "prompt_tokens": 6342,
           "completion_tokens": 12,
-          "total_tokens": 7619
+          "total_tokens": 7095
         }
       },
       "EvaluatorAgent": {
@@ -210,13 +208,13 @@
         "version": "5.1.0",
         "declared_model": "gemini-2.5-pro",
         "prompt_hash": "67903167e9d3cd0c",
-        "timestamp": "2025-11-29T18:09:03.702234+00:00",
-        "invocation_id": "e-0c66be6f-f478-4f88-b34a-b43a580a5929",
+        "timestamp": "2025-11-29T19:56:28.733489+00:00",
+        "invocation_id": "e-62250812-cc1a-488c-9f81-16d9520b31b9",
         "actual_model": "gemini-2.5-pro",
         "token_usage": {
-          "prompt_tokens": 7401,
+          "prompt_tokens": 7289,
           "completion_tokens": 12,
-          "total_tokens": 8571
+          "total_tokens": 8030
         }
       },
       "ReportAgent": {
@@ -224,13 +222,13 @@
         "version": "9.2.0",
         "declared_model": "gemini-2.5-pro",
         "prompt_hash": "cb0d28adcd44cc9f",
-        "timestamp": "2025-11-29T18:09:24.539118+00:00",
-        "invocation_id": "e-0c66be6f-f478-4f88-b34a-b43a580a5929",
+        "timestamp": "2025-11-29T19:56:45.585029+00:00",
+        "invocation_id": "e-62250812-cc1a-488c-9f81-16d9520b31b9",
         "actual_model": "gemini-2.5-pro",
         "token_usage": {
-          "prompt_tokens": 9529,
-          "completion_tokens": 374,
-          "total_tokens": 11410
+          "prompt_tokens": 9337,
+          "completion_tokens": 400,
+          "total_tokens": 11378
         }
       }
     },
@@ -265,17 +263,19 @@
   "reports": {
     "executive_summary": {
       "report_type": "executive_summary",
-      "generated_at": "2025-11-29T18:09:43.231010Z",
+      "generated_at": "2025-11-29T19:57:03.980943Z",
       "scenario_overview": "",
       "key_observations": [],
       "recommendations": [],
       "pipeline_quality_assessment": "",
       "compliance": {
-        "verdict": "IN_ODD",
+        "verdict": "BOUNDARY",
         "confidence": "HIGH",
-        "confidence_value": 0.9,
+        "confidence_value": 1.0,
         "stability": "DEGRADING",
-        "critical_axes": []
+        "critical_axes": [
+          "traversability_score"
+        ]
       },
       "data_quality": {
         "all_agents_healthy": true,
@@ -283,16 +283,10 @@
         "anomalies": []
       },
       "measurement_summary": {
-        "traversability_score": {
-          "min": 0.6,
-          "max": 0.8,
-          "mean": 0.7,
-          "samples": 2
-        },
         "obstacle_density": {
-          "min": 0.25,
-          "max": 0.4,
-          "mean": 0.325,
+          "min": 0.1,
+          "max": 0.15,
+          "mean": 0.125,
           "samples": 2
         },
         "stairs_present": {
@@ -301,16 +295,16 @@
           "mean": 0.0,
           "samples": 2
         },
+        "traversability_score": {
+          "min": 0.3,
+          "max": 0.9,
+          "mean": 0.6,
+          "samples": 2
+        },
         "humans_detected": {
           "min": 0,
           "max": 0,
           "mean": 0.0,
-          "samples": 2
-        },
-        "max_accel_mps2": {
-          "min": 0.1009,
-          "max": 0.1455,
-          "mean": 0.1232,
           "samples": 2
         },
         "max_angular_velocity_radps": {
@@ -325,34 +319,28 @@
           "mean": 0.0,
           "samples": 2
         },
-        "max_pitch_deg": {
-          "min": 5.45,
-          "max": 6.95,
-          "mean": 6.2,
-          "samples": 2
-        },
-        "max_roll_deg": {
-          "min": 2.49,
-          "max": 4.99,
-          "mean": 3.74,
-          "samples": 2
-        },
         "peak_jerk_mps3": {
           "min": 0.1495,
           "max": 0.2224,
           "mean": 0.186,
           "samples": 2
         },
-        "min_proximity_m": {
-          "min": 2.25,
-          "max": 2.5,
-          "mean": 2.375,
+        "max_pitch_deg": {
+          "min": 5.45,
+          "max": 6.95,
+          "mean": 6.2,
           "samples": 2
         },
-        "collision_detected": {
-          "min": 0,
-          "max": 0,
-          "mean": 0.0,
+        "max_accel_mps2": {
+          "min": 0.1009,
+          "max": 0.1455,
+          "mean": 0.1232,
+          "samples": 2
+        },
+        "max_roll_deg": {
+          "min": 2.49,
+          "max": 4.99,
+          "mean": 3.74,
           "samples": 2
         }
       },
@@ -361,14 +349,14 @@
         "windows_analyzed": 2
       },
       "analysis": {
-        "duration_seconds": 261.59,
-        "total_tokens": 41732,
+        "duration_seconds": 258.41,
+        "total_tokens": 40879,
         "pipeline_version": "2.0.0"
       }
     },
     "full_technical": {
       "report_type": "full_technical",
-      "generated_at": "2025-11-29T18:09:43.231156Z",
+      "generated_at": "2025-11-29T19:57:03.981042Z",
       "pipeline_version": "2.0.0",
       "executive_summary": {
         "scenario_overview": "",
@@ -381,16 +369,10 @@
           "anomalies": []
         },
         "measurement_summary": {
-          "traversability_score": {
-            "min": 0.6,
-            "max": 0.8,
-            "mean": 0.7,
-            "samples": 2
-          },
           "obstacle_density": {
-            "min": 0.25,
-            "max": 0.4,
-            "mean": 0.325,
+            "min": 0.1,
+            "max": 0.15,
+            "mean": 0.125,
             "samples": 2
           },
           "stairs_present": {
@@ -399,16 +381,16 @@
             "mean": 0.0,
             "samples": 2
           },
+          "traversability_score": {
+            "min": 0.3,
+            "max": 0.9,
+            "mean": 0.6,
+            "samples": 2
+          },
           "humans_detected": {
             "min": 0,
             "max": 0,
             "mean": 0.0,
-            "samples": 2
-          },
-          "max_accel_mps2": {
-            "min": 0.1009,
-            "max": 0.1455,
-            "mean": 0.1232,
             "samples": 2
           },
           "max_angular_velocity_radps": {
@@ -423,10 +405,22 @@
             "mean": 0.0,
             "samples": 2
           },
+          "peak_jerk_mps3": {
+            "min": 0.1495,
+            "max": 0.2224,
+            "mean": 0.186,
+            "samples": 2
+          },
           "max_pitch_deg": {
             "min": 5.45,
             "max": 6.95,
             "mean": 6.2,
+            "samples": 2
+          },
+          "max_accel_mps2": {
+            "min": 0.1009,
+            "max": 0.1455,
+            "mean": 0.1232,
             "samples": 2
           },
           "max_roll_deg": {
@@ -434,58 +428,37 @@
             "max": 4.99,
             "mean": 3.74,
             "samples": 2
-          },
-          "peak_jerk_mps3": {
-            "min": 0.1495,
-            "max": 0.2224,
-            "mean": 0.186,
-            "samples": 2
-          },
-          "min_proximity_m": {
-            "min": 2.25,
-            "max": 2.5,
-            "mean": 2.375,
-            "samples": 2
-          },
-          "collision_detected": {
-            "min": 0,
-            "max": 0,
-            "mean": 0.0,
-            "samples": 2
           }
         }
       },
       "compliance": {
         "verdict": {
-          "verdict": "IN_ODD",
-          "confidence": 0.9,
-          "rationale": "The Current Operating Domain (COD) is fully contained within the ODD, with an overall region distance of 0.0. All measured axes, including ego motion and environmental parameters, remained within their specified limits across all windows. Notably, in window '011', the 'traversability_score' reached its minimum allowed value of 0.6, indicating that the robot navigated to the very edge of its operational boundary for that axis. While this is a challenging condition, it does not constitute a violation.",
-          "critical_axes": [],
+          "verdict": "BOUNDARY",
+          "confidence": 1.0,
+          "rationale": "The Current Operating Domain (COD) is at the boundary of the ODD. The 'traversability_score' in window 011 dropped to 0.3, which is the absolute minimum defined in the ODD (range 0.3-1.0). This indicates a critical navigation event where the robot's path was completely blocked. While all other axes remained well within limits, operation at an ODD boundary is inherently high-risk and led to a collision event in the same window. The overall region_distance of 0.0 confirms the COD touched but did not exceed the ODD boundary.",
+          "critical_axes": [
+            "traversability_score"
+          ],
           "temporal_stability": "DEGRADING"
         },
         "cod_region": {
-          "environment_type": {
-            "indoor_commercial": 0.5,
-            "indoor_residential": 0.5,
-            "type": "enum"
-          },
           "lighting_conditions": {
             "moderate": 1.0,
             "type": "enum"
           },
           "terrain_type": {
-            "low_pile_carpet": 0.5,
+            "smooth": 0.5,
             "tile": 0.5,
             "type": "enum"
           },
           "obstacle_density": {
-            "max": 0.4,
-            "min": 0.25,
+            "min": 0.1,
+            "max": 0.15,
             "type": "range"
           },
           "traversability_score": {
-            "max": 0.8,
-            "min": 0.6,
+            "min": 0.3,
+            "max": 0.9,
             "type": "range"
           },
           "stairs_present": {
@@ -494,30 +467,29 @@
             "type": "bool"
           },
           "max_speed_mps": {
-            "max": 0.0,
             "min": 0.0,
+            "max": 0.0,
             "type": "range"
           },
           "max_accel_mps2": {
-            "max": 0.1455,
             "min": 0.1009,
+            "max": 0.1455,
             "type": "range"
           },
           "max_pitch_deg": {
-            "max": 6.95,
             "min": 5.45,
+            "max": 6.95,
             "type": "range"
           },
           "max_roll_deg": {
-            "max": 4.99,
             "min": 2.49,
+            "max": 4.99,
             "type": "range"
           }
         },
         "region_metrics": {
           "region_distance": 0.0,
           "fraction_outside_per_axis": {
-            "environment_type": 0.0,
             "lighting_conditions": 0.0,
             "terrain_type": 0.0,
             "obstacle_density": 0.0,
@@ -529,16 +501,18 @@
             "max_roll_deg": 0.0
           },
           "total_windows": 2,
-          "windows_in_odd": 2,
-          "windows_violated": [],
-          "first_violation_window": null,
+          "windows_in_odd": 1,
+          "windows_violated": [
+            "010"
+          ],
+          "first_violation_window": "010",
           "categorical_semantic_distances": {
-            "environment_type": 0.0
+            "terrain_type": 0.0
           }
         },
         "key_concerns": [
-          "The robot's traversability score degraded from a safe 0.8 to the ODD minimum of 0.6 as it entered a blocked dead-end. While still compliant, this trend indicates navigation into an increasingly challenging and borderline out-of-spec environment.",
-          "The robot became stationary upon encountering the dead-end, which is an appropriate response. However, this scenario highlights the need to verify the robot's capability to safely reverse and navigate away from such boundary conditions."
+          "The robot's path became fully obstructed in window 011, pushing the 'traversability_score' to the ODD minimum limit of 0.3. Operating at the boundary of traversability is a critical state.",
+          "A collision was detected in window 011, which appears to be a direct consequence of the robot failing to navigate away from the zero-traversability situation. This highlights a failure in the planning system's response to a boundary condition."
         ]
       },
       "statistics": {
@@ -572,16 +546,10 @@
           }
         },
         "measurement_stats": {
-          "traversability_score": {
-            "min": 0.6,
-            "max": 0.8,
-            "mean": 0.7,
-            "samples": 2
-          },
           "obstacle_density": {
-            "min": 0.25,
-            "max": 0.4,
-            "mean": 0.325,
+            "min": 0.1,
+            "max": 0.15,
+            "mean": 0.125,
             "samples": 2
           },
           "stairs_present": {
@@ -590,16 +558,16 @@
             "mean": 0.0,
             "samples": 2
           },
+          "traversability_score": {
+            "min": 0.3,
+            "max": 0.9,
+            "mean": 0.6,
+            "samples": 2
+          },
           "humans_detected": {
             "min": 0,
             "max": 0,
             "mean": 0.0,
-            "samples": 2
-          },
-          "max_accel_mps2": {
-            "min": 0.1009,
-            "max": 0.1455,
-            "mean": 0.1232,
             "samples": 2
           },
           "max_angular_velocity_radps": {
@@ -614,10 +582,22 @@
             "mean": 0.0,
             "samples": 2
           },
+          "peak_jerk_mps3": {
+            "min": 0.1495,
+            "max": 0.2224,
+            "mean": 0.186,
+            "samples": 2
+          },
           "max_pitch_deg": {
             "min": 5.45,
             "max": 6.95,
             "mean": 6.2,
+            "samples": 2
+          },
+          "max_accel_mps2": {
+            "min": 0.1009,
+            "max": 0.1455,
+            "mean": 0.1232,
             "samples": 2
           },
           "max_roll_deg": {
@@ -625,31 +605,15 @@
             "max": 4.99,
             "mean": 3.74,
             "samples": 2
-          },
-          "peak_jerk_mps3": {
-            "min": 0.1495,
-            "max": 0.2224,
-            "mean": 0.186,
-            "samples": 2
-          },
-          "min_proximity_m": {
-            "min": 2.25,
-            "max": 2.5,
-            "mean": 2.375,
-            "samples": 2
-          },
-          "collision_detected": {
-            "min": 0,
-            "max": 0,
-            "mean": 0.0,
-            "samples": 2
           }
         },
         "compliance_stats": {
-          "verdict": "IN_ODD",
-          "confidence": 0.9,
+          "verdict": "BOUNDARY",
+          "confidence": 1.0,
           "temporal_stability": "DEGRADING",
-          "critical_axes": []
+          "critical_axes": [
+            "traversability_score"
+          ]
         },
         "data_quality": {
           "all_agents_healthy": true,
@@ -660,14 +624,6 @@
       "odd_specification": {
         "environment": {
           "categorical": {
-            "environment_type": {
-              "type": "enum",
-              "allowed": [
-                "residential",
-                "commercial"
-              ],
-              "description": "The general type of indoor space."
-            },
             "lighting_conditions": {
               "type": "enum",
               "allowed": [
@@ -675,7 +631,7 @@
                 "moderate",
                 "dim"
               ],
-              "description": "Ambient light level, pitch-black is excluded."
+              "description": "Acceptable ambient light levels for camera perception"
             },
             "terrain_type": {
               "type": "enum",
@@ -684,7 +640,7 @@
                 "hardwood",
                 "low_pile_carpet"
               ],
-              "description": "Type of indoor flooring."
+              "description": "Allowed indoor floor surfaces"
             }
           },
           "numeric": {
@@ -692,32 +648,45 @@
               "type": "range",
               "min": 0,
               "max": 0.7,
-              "description": "Spatial obstacle density (0-1), allows for moderate to high density but not extreme clutter."
+              "description": "Permissible obstacle density, from moderate to high, excluding extreme clutter"
             },
             "traversability_score": {
               "type": "range",
-              "min": 0.6,
+              "min": 0.3,
               "max": 1,
-              "description": "Navigation ease (0-1), requires stable, mostly clear floor surfaces."
+              "description": "Required minimum traversability, ensuring clear navigation paths exist"
             }
           },
           "boolean": {
             "stairs_present": {
               "type": "bool",
               "allowed": 0,
-              "description": "Whether stairs are accessible in the operational area."
+              "description": "Operation on staircases is not supported"
             },
             "outdoor_environment": {
               "type": "bool",
               "allowed": 0,
-              "description": "Whether the robot is operating outdoors."
+              "description": "Operation is restricted to indoor environments only"
             }
           }
         },
         "actors": {
           "categorical": {},
-          "numeric": {},
-          "boolean": {}
+          "numeric": {
+            "min_proximity_m": {
+              "type": "range",
+              "min": 0.5,
+              "max": 10,
+              "description": "Minimum safe distance to humans or pets"
+            }
+          },
+          "boolean": {
+            "humans_present": {
+              "type": "bool",
+              "allowed": 1,
+              "description": "Whether humans or pets may be present in the operational area"
+            }
+          }
         },
         "ego": {
           "categorical": {},
@@ -726,25 +695,25 @@
               "type": "range",
               "min": 0,
               "max": 1.5,
-              "description": "Maximum linear velocity, suitable for indoor navigation."
+              "description": "Maximum linear velocity of the robot"
             },
             "max_accel_mps2": {
               "type": "range",
               "min": 0,
               "max": 10,
-              "description": "Maximum horizontal acceleration for reactive maneuvers."
+              "description": "Maximum horizontal acceleration for reactive maneuvers"
             },
             "max_pitch_deg": {
               "type": "range",
               "min": 0,
               "max": 15,
-              "description": "Maximum pitch angle, related to ramp/incline limits."
+              "description": "Maximum pitch angle, derived from the 15-degree ramp limit"
             },
             "max_roll_deg": {
               "type": "range",
               "min": 0,
               "max": 15,
-              "description": "Maximum roll angle to maintain stability."
+              "description": "Maximum roll angle, assumed to be similar to pitch for stability"
             }
           },
           "boolean": {}
@@ -754,87 +723,85 @@
         {
           "window_id": "010",
           "perception": {
-            "traversability_score": 0.8,
-            "environment_type": "indoor_commercial",
-            "terrain_type": "low_pile_carpet",
-            "obstacle_density": 0.25,
-            "stairs_present": 0,
+            "obstacle_density": 0.15,
             "lighting_conditions": "moderate",
+            "stairs_present": 0,
+            "traversability_score": 0.9,
+            "environment_type": "indoor_residential",
+            "terrain_type": "smooth",
             "humans_detected": 0
           },
           "motion": {
-            "max_accel_mps2": 0.1455,
             "max_angular_velocity_radps": 1.1364,
             "max_speed_mps": 0,
+            "peak_jerk_mps3": 0.2224,
             "max_pitch_deg": 6.95,
-            "max_roll_deg": 4.99,
-            "peak_jerk_mps3": 0.2224
+            "max_accel_mps2": 0.1455,
+            "max_roll_deg": 4.99
           },
-          "collision": {
-            "min_proximity_m": 2.25,
-            "collision_detected": 0
-          }
+          "collision": {}
         },
         {
           "window_id": "011",
           "perception": {
-            "obstacle_density": 0.4,
-            "traversability_score": 0.6,
+            "traversability_score": 0.3,
+            "environment_type": "indoor_commercial",
+            "obstacle_density": 0.1,
+            "lighting_conditions": "moderate",
             "humans_detected": 0,
             "stairs_present": 0,
-            "environment_type": "indoor_residential",
-            "lighting_conditions": "moderate",
             "terrain_type": "tile"
           },
           "motion": {
             "max_speed_mps": 0,
-            "max_pitch_deg": 5.45,
             "max_angular_velocity_radps": 0.9079,
-            "max_accel_mps2": 0.1009,
             "peak_jerk_mps3": 0.1495,
+            "max_accel_mps2": 0.1009,
+            "max_pitch_deg": 5.45,
             "max_roll_deg": 2.49
           },
-          "collision": {
-            "min_proximity_m": 2.5,
-            "collision_detected": 0
-          }
+          "collision": {}
         }
       ],
       "temporal_analysis": {
         "perception": {
-          "anomalies": [],
+          "odd_trends": "The robot moves from an open, highly traversable corridor (traversability: 0.9) to a fully obstructed path (traversability: 0.3). Lighting conditions remain stable.",
           "concerns": [
-            "The transition to a fully blocked path in window '011', indicated by the minimum traversability score, presents a critical navigation test case for the robot's ability to recognize and reverse from a dead-end."
+            "The primary concern is the complete path blockage in window 011, which requires the robot's planning system to identify the dead end and execute a non-forward maneuver to continue operating."
           ],
-          "odd_trends": "Obstacle density increased (0.25 to 0.4) and traversability decreased (0.8 to 0.6) as the robot moved from an open space into a confined area. Lighting remained moderate, but terrain type changed."
+          "anomalies": [
+            "Window 011 represents a navigation anomaly, where traversability drops to the ODD minimum, signifying a dead-end or fully blocked path."
+          ]
         },
         "motion": {
-          "anomalies": [],
-          "odd_trends": "The robot maintained a stationary state across both windows. Pitch and roll angles were stable and low, indicating no stability issues. All motion parameters remained near zero.",
-          "concerns": [
-            "There are no motion-related concerns as the robot is stationary. The perceptual analysis indicating the robot is in a blocked dead-end explains the lack of motion."
+          "concerns": [],
+          "odd_trends": "The robot remained stationary across both windows. All ODD-relevant motion metrics (speed, acceleration, pitch, roll) were stable and consistently near-zero, well within operational limits.",
+          "anomalies": [
+            "Anomalous, non-credible gyroscope spikes were detected in both windows (010 and 011), but were overruled by definitive visual evidence of a stationary state."
           ]
         },
         "collision": {
-          "odd_trends": "No collision events were detected across all windows. The robot maintained a safe distance from obstacles.",
-          "anomalies": [],
-          "concerns": []
+          "concerns": [
+            "The primary concern is the collision in window 011. While a low-speed stall, it represents a failure in the navigation or planning system to stop before making contact."
+          ],
+          "odd_trends": "The scenario transitions from a safe, non-contact state in window 010 to a definitive collision state in window 011.",
+          "anomalies": [
+            "Window 011 shows a clear collision event, where the robot makes physical contact with an obstacle."
+          ]
         }
       },
       "summary_insights": {
         "perception": [
-          "The scenario shows the robot moving from an open area in window '010' to a confined dead-end in window '011' where its path is blocked.",
-          "The traversability score dropped from a safe 0.8 to the ODD's minimum threshold of 0.6, indicating a significant, though in-spec, navigation challenge.",
-          "The data source for both windows was consistently identified as simulated with high confidence."
+          "The analysis confirms a simulated indoor environment, transitioning from a clear navigable corridor in window 010 to a dead-end blocked by a large obstacle in window 011.",
+          "A key cross-window pattern is the dramatic decrease in the traversability score from 0.9 to the ODD minimum of 0.3, indicating a critical navigation event where the robot's path becomes fully obstructed."
         ],
         "motion": [
-          "The robot was stationary in both windows, with zero velocity confirmed by visual evidence from the camera.",
-          "All ego-motion metrics (speed, acceleration, pitch, roll) were well within the ODD specifications.",
-          "Observed acceleration was minimal and correctly attributed to gravity leakage due to the robot's static pitch angle, not actual movement."
+          "Motion analysis, relying on visual evidence over conflicting IMU data, confirms the robot was stationary in both windows, with speed and acceleration effectively zero.",
+          "A consistent cross-window pattern of anomalous gyroscope readings was detected. These were correctly dismissed as non-motion events because they were contradicted by the lack of motion blur in camera data."
         ],
         "collision": [
-          "No collisions were detected in any window.",
-          "Analysis of IMU, BEV, and camera data confirms the robot did not make contact with any obstacles."
+          "No collision was detected in window 010, with all sensors confirming a clear path.",
+          "A collision was detected in window 011, characterized by a low-speed contact/stall event against a soft obstacle (couch)."
         ]
       },
       "pipeline_metadata": {
@@ -842,67 +809,67 @@
           "scenario_path": "/workspaces/go2-odd-observer/data/test/sim_2win",
           "scenario_name": "sim_2win"
         },
-        "odd_spec_hash": "aa9de8b1bdbd0f27",
+        "odd_spec_hash": "45e5bb66d7ba2be5",
         "timing": {
-          "start_time": "2025-11-29T18:05:21.558232+00:00",
-          "duration_seconds": 261.59
+          "start_time": "2025-11-29T19:52:45.498644+00:00",
+          "duration_seconds": 258.41
         },
         "agents": [
           {
             "name": "OddSpecAgent",
             "version": "6.2.0",
             "model": "gemini-2.5-pro",
-            "tokens": 5578
+            "tokens": 5380
           },
           {
             "name": "PerceptionAgent",
             "version": "7.5.0",
             "model": "gemini-2.5-pro",
-            "tokens": 3031
+            "tokens": 3413
           },
           {
             "name": "MotionAgent",
             "version": "7.4.0",
             "model": "gemini-2.5-pro",
-            "tokens": 5523
+            "tokens": 5583
           },
           {
             "name": "CollisionAgent",
             "version": "7.4.0",
             "model": "gemini-2.5-pro",
-            "tokens": 7619
+            "tokens": 7095
           },
           {
             "name": "EvaluatorAgent",
             "version": "5.1.0",
             "model": "gemini-2.5-pro",
-            "tokens": 8571
+            "tokens": 8030
           },
           {
             "name": "ReportAgent",
             "version": "9.2.0",
             "model": "gemini-2.5-pro",
-            "tokens": 11410
+            "tokens": 11378
           }
         ],
         "token_summary": {
-          "prompt_tokens": 34442,
-          "completion_tokens": 863,
-          "total_tokens": 41732,
-          "estimated_cost_usd": 0.051682,
+          "prompt_tokens": 33651,
+          "completion_tokens": 926,
+          "total_tokens": 40879,
+          "estimated_cost_usd": 0.051324,
           "cost_breakdown": {
-            "total_input_tokens": 34442,
-            "total_output_tokens": 863,
-            "input_cost_usd": 0.043052,
-            "output_cost_usd": 0.00863
+            "total_input_tokens": 33651,
+            "total_output_tokens": 926,
+            "input_cost_usd": 0.042064,
+            "output_cost_usd": 0.00926
           },
           "cost_per_agent": {
-            "OddSpecAgent": 0.008663,
-            "PerceptionAgent": 0.003272,
-            "MotionAgent": 0.006213,
-            "CollisionAgent": 0.008513,
-            "EvaluatorAgent": 0.009371,
-            "ReportAgent": 0.015651
+            "OddSpecAgent": 0.009184,
+            "PerceptionAgent": 0.003335,
+            "MotionAgent": 0.005855,
+            "CollisionAgent": 0.008048,
+            "EvaluatorAgent": 0.009231,
+            "ReportAgent": 0.015671
           }
         }
       },
@@ -911,14 +878,6 @@
           "odd_specification": {
             "environment": {
               "categorical": {
-                "environment_type": {
-                  "type": "enum",
-                  "allowed": [
-                    "residential",
-                    "commercial"
-                  ],
-                  "description": "The general type of indoor space."
-                },
                 "lighting_conditions": {
                   "type": "enum",
                   "allowed": [
@@ -926,7 +885,7 @@
                     "moderate",
                     "dim"
                   ],
-                  "description": "Ambient light level, pitch-black is excluded."
+                  "description": "Acceptable ambient light levels for camera perception"
                 },
                 "terrain_type": {
                   "type": "enum",
@@ -935,7 +894,7 @@
                     "hardwood",
                     "low_pile_carpet"
                   ],
-                  "description": "Type of indoor flooring."
+                  "description": "Allowed indoor floor surfaces"
                 }
               },
               "numeric": {
@@ -943,32 +902,45 @@
                   "type": "range",
                   "min": 0,
                   "max": 0.7,
-                  "description": "Spatial obstacle density (0-1), allows for moderate to high density but not extreme clutter."
+                  "description": "Permissible obstacle density, from moderate to high, excluding extreme clutter"
                 },
                 "traversability_score": {
                   "type": "range",
-                  "min": 0.6,
+                  "min": 0.3,
                   "max": 1,
-                  "description": "Navigation ease (0-1), requires stable, mostly clear floor surfaces."
+                  "description": "Required minimum traversability, ensuring clear navigation paths exist"
                 }
               },
               "boolean": {
                 "stairs_present": {
                   "type": "bool",
                   "allowed": 0,
-                  "description": "Whether stairs are accessible in the operational area."
+                  "description": "Operation on staircases is not supported"
                 },
                 "outdoor_environment": {
                   "type": "bool",
                   "allowed": 0,
-                  "description": "Whether the robot is operating outdoors."
+                  "description": "Operation is restricted to indoor environments only"
                 }
               }
             },
             "actors": {
               "categorical": {},
-              "numeric": {},
-              "boolean": {}
+              "numeric": {
+                "min_proximity_m": {
+                  "type": "range",
+                  "min": 0.5,
+                  "max": 10,
+                  "description": "Minimum safe distance to humans or pets"
+                }
+              },
+              "boolean": {
+                "humans_present": {
+                  "type": "bool",
+                  "allowed": 1,
+                  "description": "Whether humans or pets may be present in the operational area"
+                }
+              }
             },
             "ego": {
               "categorical": {},
@@ -977,25 +949,25 @@
                   "type": "range",
                   "min": 0,
                   "max": 1.5,
-                  "description": "Maximum linear velocity, suitable for indoor navigation."
+                  "description": "Maximum linear velocity of the robot"
                 },
                 "max_accel_mps2": {
                   "type": "range",
                   "min": 0,
                   "max": 10,
-                  "description": "Maximum horizontal acceleration for reactive maneuvers."
+                  "description": "Maximum horizontal acceleration for reactive maneuvers"
                 },
                 "max_pitch_deg": {
                   "type": "range",
                   "min": 0,
                   "max": 15,
-                  "description": "Maximum pitch angle, related to ramp/incline limits."
+                  "description": "Maximum pitch angle, derived from the 15-degree ramp limit"
                 },
                 "max_roll_deg": {
                   "type": "range",
                   "min": 0,
                   "max": 15,
-                  "description": "Maximum roll angle to maintain stability."
+                  "description": "Maximum roll angle, assumed to be similar to pitch for stability"
                 }
               },
               "boolean": {}
@@ -1006,49 +978,49 @@
           "windows_analyzed": 2,
           "data_source": {
             "type": "simulated",
-            "confidence": 0.95,
+            "confidence": 0.975,
             "indicators": [
-              "Perfectly clean surfaces and textures in camera",
-              "Sharp, non-accumulated LiDAR features",
-              "Artificial lighting model with sharp highlights",
+              "uniform textures",
+              "synthetic lighting",
               "sharp, thin obstacle edges in BEV",
-              "completely empty rear half of BEV",
+              "empty lower half of BEV",
               "perfectly flat ground plane"
             ]
           },
           "temporal_analysis": {
-            "anomalies": [],
+            "odd_trends": "The robot moves from an open, highly traversable corridor (traversability: 0.9) to a fully obstructed path (traversability: 0.3). Lighting conditions remain stable.",
             "concerns": [
-              "The transition to a fully blocked path in window '011', indicated by the minimum traversability score, presents a critical navigation test case for the robot's ability to recognize and reverse from a dead-end."
+              "The primary concern is the complete path blockage in window 011, which requires the robot's planning system to identify the dead end and execute a non-forward maneuver to continue operating."
             ],
-            "odd_trends": "Obstacle density increased (0.25 to 0.4) and traversability decreased (0.8 to 0.6) as the robot moved from an open space into a confined area. Lighting remained moderate, but terrain type changed."
+            "anomalies": [
+              "Window 011 represents a navigation anomaly, where traversability drops to the ODD minimum, signifying a dead-end or fully blocked path."
+            ]
           },
           "summary_insights": [
-            "The scenario shows the robot moving from an open area in window '010' to a confined dead-end in window '011' where its path is blocked.",
-            "The traversability score dropped from a safe 0.8 to the ODD's minimum threshold of 0.6, indicating a significant, though in-spec, navigation challenge.",
-            "The data source for both windows was consistently identified as simulated with high confidence."
+            "The analysis confirms a simulated indoor environment, transitioning from a clear navigable corridor in window 010 to a dead-end blocked by a large obstacle in window 011.",
+            "A key cross-window pattern is the dramatic decrease in the traversability score from 0.9 to the ODD minimum of 0.3, indicating a critical navigation event where the robot's path becomes fully obstructed."
           ],
           "per_window": [
             {
               "measurements": {
-                "traversability_score": 0.8,
-                "environment_type": "indoor_commercial",
-                "terrain_type": "low_pile_carpet",
-                "obstacle_density": 0.25,
-                "stairs_present": 0,
+                "obstacle_density": 0.15,
                 "lighting_conditions": "moderate",
+                "stairs_present": 0,
+                "traversability_score": 0.9,
+                "environment_type": "indoor_residential",
+                "terrain_type": "smooth",
                 "humans_detected": 0
               },
               "window_id": "010"
             },
             {
               "measurements": {
-                "obstacle_density": 0.4,
-                "traversability_score": 0.6,
+                "traversability_score": 0.3,
+                "environment_type": "indoor_commercial",
+                "obstacle_density": 0.1,
+                "lighting_conditions": "moderate",
                 "humans_detected": 0,
                 "stairs_present": 0,
-                "environment_type": "indoor_residential",
-                "lighting_conditions": "moderate",
                 "terrain_type": "tile"
               },
               "window_id": "011"
@@ -1058,37 +1030,36 @@
         "motion": {
           "windows_analyzed": 2,
           "temporal_analysis": {
-            "anomalies": [],
-            "odd_trends": "The robot maintained a stationary state across both windows. Pitch and roll angles were stable and low, indicating no stability issues. All motion parameters remained near zero.",
-            "concerns": [
-              "There are no motion-related concerns as the robot is stationary. The perceptual analysis indicating the robot is in a blocked dead-end explains the lack of motion."
+            "concerns": [],
+            "odd_trends": "The robot remained stationary across both windows. All ODD-relevant motion metrics (speed, acceleration, pitch, roll) were stable and consistently near-zero, well within operational limits.",
+            "anomalies": [
+              "Anomalous, non-credible gyroscope spikes were detected in both windows (010 and 011), but were overruled by definitive visual evidence of a stationary state."
             ]
           },
           "summary_insights": [
-            "The robot was stationary in both windows, with zero velocity confirmed by visual evidence from the camera.",
-            "All ego-motion metrics (speed, acceleration, pitch, roll) were well within the ODD specifications.",
-            "Observed acceleration was minimal and correctly attributed to gravity leakage due to the robot's static pitch angle, not actual movement."
+            "Motion analysis, relying on visual evidence over conflicting IMU data, confirms the robot was stationary in both windows, with speed and acceleration effectively zero.",
+            "A consistent cross-window pattern of anomalous gyroscope readings was detected. These were correctly dismissed as non-motion events because they were contradicted by the lack of motion blur in camera data."
           ],
           "per_window": [
             {
+              "window_id": "010",
               "measurements": {
-                "max_accel_mps2": 0.1455,
                 "max_angular_velocity_radps": 1.1364,
                 "max_speed_mps": 0,
+                "peak_jerk_mps3": 0.2224,
                 "max_pitch_deg": 6.95,
-                "max_roll_deg": 4.99,
-                "peak_jerk_mps3": 0.2224
-              },
-              "window_id": "010"
+                "max_accel_mps2": 0.1455,
+                "max_roll_deg": 4.99
+              }
             },
             {
               "window_id": "011",
               "measurements": {
                 "max_speed_mps": 0,
-                "max_pitch_deg": 5.45,
                 "max_angular_velocity_radps": 0.9079,
-                "max_accel_mps2": 0.1009,
                 "peak_jerk_mps3": 0.1495,
+                "max_accel_mps2": 0.1009,
+                "max_pitch_deg": 5.45,
                 "max_roll_deg": 2.49
               }
             }
@@ -1096,61 +1067,54 @@
         },
         "collision": {
           "windows_analyzed": 2,
-          "collisions_detected": 0,
+          "collisions_detected": 1,
           "temporal_analysis": {
-            "odd_trends": "No collision events were detected across all windows. The robot maintained a safe distance from obstacles.",
-            "anomalies": [],
-            "concerns": []
+            "concerns": [
+              "The primary concern is the collision in window 011. While a low-speed stall, it represents a failure in the navigation or planning system to stop before making contact."
+            ],
+            "odd_trends": "The scenario transitions from a safe, non-contact state in window 010 to a definitive collision state in window 011.",
+            "anomalies": [
+              "Window 011 shows a clear collision event, where the robot makes physical contact with an obstacle."
+            ]
           },
           "summary_insights": [
-            "No collisions were detected in any window.",
-            "Analysis of IMU, BEV, and camera data confirms the robot did not make contact with any obstacles."
+            "No collision was detected in window 010, with all sensors confirming a clear path.",
+            "A collision was detected in window 011, characterized by a low-speed contact/stall event against a soft obstacle (couch)."
           ],
           "per_window": [
             {
-              "window_id": "010",
-              "measurements": {
-                "min_proximity_m": 2.25,
-                "collision_detected": 0
-              }
+              "measurements": {},
+              "window_id": "010"
             },
             {
               "window_id": "011",
-              "measurements": {
-                "min_proximity_m": 2.5,
-                "collision_detected": 0
-              }
+              "measurements": {}
             }
           ],
           "collision_stats": {
-            "collisions_detected": 0,
-            "total_windows": 2
+            "total_windows": 2,
+            "collisions_detected": 1
           }
         },
         "evaluator": {
           "cod_region": {
-            "environment_type": {
-              "indoor_commercial": 0.5,
-              "indoor_residential": 0.5,
-              "type": "enum"
-            },
             "lighting_conditions": {
               "moderate": 1.0,
               "type": "enum"
             },
             "terrain_type": {
-              "low_pile_carpet": 0.5,
+              "smooth": 0.5,
               "tile": 0.5,
               "type": "enum"
             },
             "obstacle_density": {
-              "max": 0.4,
-              "min": 0.25,
+              "min": 0.1,
+              "max": 0.15,
               "type": "range"
             },
             "traversability_score": {
-              "max": 0.8,
-              "min": 0.6,
+              "min": 0.3,
+              "max": 0.9,
               "type": "range"
             },
             "stairs_present": {
@@ -1159,30 +1123,29 @@
               "type": "bool"
             },
             "max_speed_mps": {
-              "max": 0.0,
               "min": 0.0,
+              "max": 0.0,
               "type": "range"
             },
             "max_accel_mps2": {
-              "max": 0.1455,
               "min": 0.1009,
+              "max": 0.1455,
               "type": "range"
             },
             "max_pitch_deg": {
-              "max": 6.95,
               "min": 5.45,
+              "max": 6.95,
               "type": "range"
             },
             "max_roll_deg": {
-              "max": 4.99,
               "min": 2.49,
+              "max": 4.99,
               "type": "range"
             }
           },
           "region_metrics": {
             "region_distance": 0.0,
             "fraction_outside_per_axis": {
-              "environment_type": 0.0,
               "lighting_conditions": 0.0,
               "terrain_type": 0.0,
               "obstacle_density": 0.0,
@@ -1194,23 +1157,27 @@
               "max_roll_deg": 0.0
             },
             "total_windows": 2,
-            "windows_in_odd": 2,
-            "windows_violated": [],
-            "first_violation_window": null,
+            "windows_in_odd": 1,
+            "windows_violated": [
+              "010"
+            ],
+            "first_violation_window": "010",
             "categorical_semantic_distances": {
-              "environment_type": 0.0
+              "terrain_type": 0.0
             }
           },
           "compliance_verdict": {
-            "verdict": "IN_ODD",
-            "confidence": 0.9,
-            "rationale": "The Current Operating Domain (COD) is fully contained within the ODD, with an overall region distance of 0.0. All measured axes, including ego motion and environmental parameters, remained within their specified limits across all windows. Notably, in window '011', the 'traversability_score' reached its minimum allowed value of 0.6, indicating that the robot navigated to the very edge of its operational boundary for that axis. While this is a challenging condition, it does not constitute a violation.",
-            "critical_axes": [],
+            "verdict": "BOUNDARY",
+            "confidence": 1.0,
+            "rationale": "The Current Operating Domain (COD) is at the boundary of the ODD. The 'traversability_score' in window 011 dropped to 0.3, which is the absolute minimum defined in the ODD (range 0.3-1.0). This indicates a critical navigation event where the robot's path was completely blocked. While all other axes remained well within limits, operation at an ODD boundary is inherently high-risk and led to a collision event in the same window. The overall region_distance of 0.0 confirms the COD touched but did not exceed the ODD boundary.",
+            "critical_axes": [
+              "traversability_score"
+            ],
             "temporal_stability": "DEGRADING"
           },
           "key_concerns": [
-            "The robot's traversability score degraded from a safe 0.8 to the ODD minimum of 0.6 as it entered a blocked dead-end. While still compliant, this trend indicates navigation into an increasingly challenging and borderline out-of-spec environment.",
-            "The robot became stationary upon encountering the dead-end, which is an appropriate response. However, this scenario highlights the need to verify the robot's capability to safely reverse and navigate away from such boundary conditions."
+            "The robot's path became fully obstructed in window 011, pushing the 'traversability_score' to the ODD minimum limit of 0.3. Operating at the boundary of traversability is a critical state.",
+            "A collision was detected in window 011, which appears to be a direct consequence of the robot failing to navigate away from the zero-traversability situation. This highlights a failure in the planning system's response to a boundary condition."
           ]
         },
         "report": {}
@@ -1222,49 +1189,49 @@
       "windows_analyzed": 2,
       "data_source": {
         "type": "simulated",
-        "confidence": 0.95,
+        "confidence": 0.975,
         "indicators": [
-          "Perfectly clean surfaces and textures in camera",
-          "Sharp, non-accumulated LiDAR features",
-          "Artificial lighting model with sharp highlights",
+          "uniform textures",
+          "synthetic lighting",
           "sharp, thin obstacle edges in BEV",
-          "completely empty rear half of BEV",
+          "empty lower half of BEV",
           "perfectly flat ground plane"
         ]
       },
       "temporal_analysis": {
-        "anomalies": [],
+        "odd_trends": "The robot moves from an open, highly traversable corridor (traversability: 0.9) to a fully obstructed path (traversability: 0.3). Lighting conditions remain stable.",
         "concerns": [
-          "The transition to a fully blocked path in window '011', indicated by the minimum traversability score, presents a critical navigation test case for the robot's ability to recognize and reverse from a dead-end."
+          "The primary concern is the complete path blockage in window 011, which requires the robot's planning system to identify the dead end and execute a non-forward maneuver to continue operating."
         ],
-        "odd_trends": "Obstacle density increased (0.25 to 0.4) and traversability decreased (0.8 to 0.6) as the robot moved from an open space into a confined area. Lighting remained moderate, but terrain type changed."
+        "anomalies": [
+          "Window 011 represents a navigation anomaly, where traversability drops to the ODD minimum, signifying a dead-end or fully blocked path."
+        ]
       },
       "summary_insights": [
-        "The scenario shows the robot moving from an open area in window '010' to a confined dead-end in window '011' where its path is blocked.",
-        "The traversability score dropped from a safe 0.8 to the ODD's minimum threshold of 0.6, indicating a significant, though in-spec, navigation challenge.",
-        "The data source for both windows was consistently identified as simulated with high confidence."
+        "The analysis confirms a simulated indoor environment, transitioning from a clear navigable corridor in window 010 to a dead-end blocked by a large obstacle in window 011.",
+        "A key cross-window pattern is the dramatic decrease in the traversability score from 0.9 to the ODD minimum of 0.3, indicating a critical navigation event where the robot's path becomes fully obstructed."
       ],
       "per_window": [
         {
           "measurements": {
-            "traversability_score": 0.8,
-            "environment_type": "indoor_commercial",
-            "terrain_type": "low_pile_carpet",
-            "obstacle_density": 0.25,
-            "stairs_present": 0,
+            "obstacle_density": 0.15,
             "lighting_conditions": "moderate",
+            "stairs_present": 0,
+            "traversability_score": 0.9,
+            "environment_type": "indoor_residential",
+            "terrain_type": "smooth",
             "humans_detected": 0
           },
           "window_id": "010"
         },
         {
           "measurements": {
-            "obstacle_density": 0.4,
-            "traversability_score": 0.6,
+            "traversability_score": 0.3,
+            "environment_type": "indoor_commercial",
+            "obstacle_density": 0.1,
+            "lighting_conditions": "moderate",
             "humans_detected": 0,
             "stairs_present": 0,
-            "environment_type": "indoor_residential",
-            "lighting_conditions": "moderate",
             "terrain_type": "tile"
           },
           "window_id": "011"
@@ -1274,37 +1241,36 @@
     "MotionAgent": {
       "windows_analyzed": 2,
       "temporal_analysis": {
-        "anomalies": [],
-        "odd_trends": "The robot maintained a stationary state across both windows. Pitch and roll angles were stable and low, indicating no stability issues. All motion parameters remained near zero.",
-        "concerns": [
-          "There are no motion-related concerns as the robot is stationary. The perceptual analysis indicating the robot is in a blocked dead-end explains the lack of motion."
+        "concerns": [],
+        "odd_trends": "The robot remained stationary across both windows. All ODD-relevant motion metrics (speed, acceleration, pitch, roll) were stable and consistently near-zero, well within operational limits.",
+        "anomalies": [
+          "Anomalous, non-credible gyroscope spikes were detected in both windows (010 and 011), but were overruled by definitive visual evidence of a stationary state."
         ]
       },
       "summary_insights": [
-        "The robot was stationary in both windows, with zero velocity confirmed by visual evidence from the camera.",
-        "All ego-motion metrics (speed, acceleration, pitch, roll) were well within the ODD specifications.",
-        "Observed acceleration was minimal and correctly attributed to gravity leakage due to the robot's static pitch angle, not actual movement."
+        "Motion analysis, relying on visual evidence over conflicting IMU data, confirms the robot was stationary in both windows, with speed and acceleration effectively zero.",
+        "A consistent cross-window pattern of anomalous gyroscope readings was detected. These were correctly dismissed as non-motion events because they were contradicted by the lack of motion blur in camera data."
       ],
       "per_window": [
         {
+          "window_id": "010",
           "measurements": {
-            "max_accel_mps2": 0.1455,
             "max_angular_velocity_radps": 1.1364,
             "max_speed_mps": 0,
+            "peak_jerk_mps3": 0.2224,
             "max_pitch_deg": 6.95,
-            "max_roll_deg": 4.99,
-            "peak_jerk_mps3": 0.2224
-          },
-          "window_id": "010"
+            "max_accel_mps2": 0.1455,
+            "max_roll_deg": 4.99
+          }
         },
         {
           "window_id": "011",
           "measurements": {
             "max_speed_mps": 0,
-            "max_pitch_deg": 5.45,
             "max_angular_velocity_radps": 0.9079,
-            "max_accel_mps2": 0.1009,
             "peak_jerk_mps3": 0.1495,
+            "max_accel_mps2": 0.1009,
+            "max_pitch_deg": 5.45,
             "max_roll_deg": 2.49
           }
         }
@@ -1312,61 +1278,54 @@
     },
     "CollisionAgent": {
       "windows_analyzed": 2,
-      "collisions_detected": 0,
+      "collisions_detected": 1,
       "temporal_analysis": {
-        "odd_trends": "No collision events were detected across all windows. The robot maintained a safe distance from obstacles.",
-        "anomalies": [],
-        "concerns": []
+        "concerns": [
+          "The primary concern is the collision in window 011. While a low-speed stall, it represents a failure in the navigation or planning system to stop before making contact."
+        ],
+        "odd_trends": "The scenario transitions from a safe, non-contact state in window 010 to a definitive collision state in window 011.",
+        "anomalies": [
+          "Window 011 shows a clear collision event, where the robot makes physical contact with an obstacle."
+        ]
       },
       "summary_insights": [
-        "No collisions were detected in any window.",
-        "Analysis of IMU, BEV, and camera data confirms the robot did not make contact with any obstacles."
+        "No collision was detected in window 010, with all sensors confirming a clear path.",
+        "A collision was detected in window 011, characterized by a low-speed contact/stall event against a soft obstacle (couch)."
       ],
       "per_window": [
         {
-          "window_id": "010",
-          "measurements": {
-            "min_proximity_m": 2.25,
-            "collision_detected": 0
-          }
+          "measurements": {},
+          "window_id": "010"
         },
         {
           "window_id": "011",
-          "measurements": {
-            "min_proximity_m": 2.5,
-            "collision_detected": 0
-          }
+          "measurements": {}
         }
       ],
       "collision_stats": {
-        "collisions_detected": 0,
-        "total_windows": 2
+        "total_windows": 2,
+        "collisions_detected": 1
       }
     },
     "EvaluatorAgent": {
       "cod_region": {
-        "environment_type": {
-          "indoor_commercial": 0.5,
-          "indoor_residential": 0.5,
-          "type": "enum"
-        },
         "lighting_conditions": {
           "moderate": 1.0,
           "type": "enum"
         },
         "terrain_type": {
-          "low_pile_carpet": 0.5,
+          "smooth": 0.5,
           "tile": 0.5,
           "type": "enum"
         },
         "obstacle_density": {
-          "max": 0.4,
-          "min": 0.25,
+          "min": 0.1,
+          "max": 0.15,
           "type": "range"
         },
         "traversability_score": {
-          "max": 0.8,
-          "min": 0.6,
+          "min": 0.3,
+          "max": 0.9,
           "type": "range"
         },
         "stairs_present": {
@@ -1375,30 +1334,29 @@
           "type": "bool"
         },
         "max_speed_mps": {
-          "max": 0.0,
           "min": 0.0,
+          "max": 0.0,
           "type": "range"
         },
         "max_accel_mps2": {
-          "max": 0.1455,
           "min": 0.1009,
+          "max": 0.1455,
           "type": "range"
         },
         "max_pitch_deg": {
-          "max": 6.95,
           "min": 5.45,
+          "max": 6.95,
           "type": "range"
         },
         "max_roll_deg": {
-          "max": 4.99,
           "min": 2.49,
+          "max": 4.99,
           "type": "range"
         }
       },
       "region_metrics": {
         "region_distance": 0.0,
         "fraction_outside_per_axis": {
-          "environment_type": 0.0,
           "lighting_conditions": 0.0,
           "terrain_type": 0.0,
           "obstacle_density": 0.0,
@@ -1410,37 +1368,33 @@
           "max_roll_deg": 0.0
         },
         "total_windows": 2,
-        "windows_in_odd": 2,
-        "windows_violated": [],
-        "first_violation_window": null,
+        "windows_in_odd": 1,
+        "windows_violated": [
+          "010"
+        ],
+        "first_violation_window": "010",
         "categorical_semantic_distances": {
-          "environment_type": 0.0
+          "terrain_type": 0.0
         }
       },
       "compliance_verdict": {
-        "verdict": "IN_ODD",
-        "confidence": 0.9,
-        "rationale": "The Current Operating Domain (COD) is fully contained within the ODD, with an overall region distance of 0.0. All measured axes, including ego motion and environmental parameters, remained within their specified limits across all windows. Notably, in window '011', the 'traversability_score' reached its minimum allowed value of 0.6, indicating that the robot navigated to the very edge of its operational boundary for that axis. While this is a challenging condition, it does not constitute a violation.",
-        "critical_axes": [],
+        "verdict": "BOUNDARY",
+        "confidence": 1.0,
+        "rationale": "The Current Operating Domain (COD) is at the boundary of the ODD. The 'traversability_score' in window 011 dropped to 0.3, which is the absolute minimum defined in the ODD (range 0.3-1.0). This indicates a critical navigation event where the robot's path was completely blocked. While all other axes remained well within limits, operation at an ODD boundary is inherently high-risk and led to a collision event in the same window. The overall region_distance of 0.0 confirms the COD touched but did not exceed the ODD boundary.",
+        "critical_axes": [
+          "traversability_score"
+        ],
         "temporal_stability": "DEGRADING"
       },
       "key_concerns": [
-        "The robot's traversability score degraded from a safe 0.8 to the ODD minimum of 0.6 as it entered a blocked dead-end. While still compliant, this trend indicates navigation into an increasingly challenging and borderline out-of-spec environment.",
-        "The robot became stationary upon encountering the dead-end, which is an appropriate response. However, this scenario highlights the need to verify the robot's capability to safely reverse and navigate away from such boundary conditions."
+        "The robot's path became fully obstructed in window 011, pushing the 'traversability_score' to the ODD minimum limit of 0.3. Operating at the boundary of traversability is a critical state.",
+        "A collision was detected in window 011, which appears to be a direct consequence of the robot failing to navigate away from the zero-traversability situation. This highlights a failure in the planning system's response to a boundary condition."
       ]
     },
     "OddSpecAgent": {
       "odd_specification": {
         "environment": {
           "categorical": {
-            "environment_type": {
-              "type": "enum",
-              "allowed": [
-                "residential",
-                "commercial"
-              ],
-              "description": "The general type of indoor space."
-            },
             "lighting_conditions": {
               "type": "enum",
               "allowed": [
@@ -1448,7 +1402,7 @@
                 "moderate",
                 "dim"
               ],
-              "description": "Ambient light level, pitch-black is excluded."
+              "description": "Acceptable ambient light levels for camera perception"
             },
             "terrain_type": {
               "type": "enum",
@@ -1457,7 +1411,7 @@
                 "hardwood",
                 "low_pile_carpet"
               ],
-              "description": "Type of indoor flooring."
+              "description": "Allowed indoor floor surfaces"
             }
           },
           "numeric": {
@@ -1465,32 +1419,45 @@
               "type": "range",
               "min": 0,
               "max": 0.7,
-              "description": "Spatial obstacle density (0-1), allows for moderate to high density but not extreme clutter."
+              "description": "Permissible obstacle density, from moderate to high, excluding extreme clutter"
             },
             "traversability_score": {
               "type": "range",
-              "min": 0.6,
+              "min": 0.3,
               "max": 1,
-              "description": "Navigation ease (0-1), requires stable, mostly clear floor surfaces."
+              "description": "Required minimum traversability, ensuring clear navigation paths exist"
             }
           },
           "boolean": {
             "stairs_present": {
               "type": "bool",
               "allowed": 0,
-              "description": "Whether stairs are accessible in the operational area."
+              "description": "Operation on staircases is not supported"
             },
             "outdoor_environment": {
               "type": "bool",
               "allowed": 0,
-              "description": "Whether the robot is operating outdoors."
+              "description": "Operation is restricted to indoor environments only"
             }
           }
         },
         "actors": {
           "categorical": {},
-          "numeric": {},
-          "boolean": {}
+          "numeric": {
+            "min_proximity_m": {
+              "type": "range",
+              "min": 0.5,
+              "max": 10,
+              "description": "Minimum safe distance to humans or pets"
+            }
+          },
+          "boolean": {
+            "humans_present": {
+              "type": "bool",
+              "allowed": 1,
+              "description": "Whether humans or pets may be present in the operational area"
+            }
+          }
         },
         "ego": {
           "categorical": {},
@@ -1499,25 +1466,25 @@
               "type": "range",
               "min": 0,
               "max": 1.5,
-              "description": "Maximum linear velocity, suitable for indoor navigation."
+              "description": "Maximum linear velocity of the robot"
             },
             "max_accel_mps2": {
               "type": "range",
               "min": 0,
               "max": 10,
-              "description": "Maximum horizontal acceleration for reactive maneuvers."
+              "description": "Maximum horizontal acceleration for reactive maneuvers"
             },
             "max_pitch_deg": {
               "type": "range",
               "min": 0,
               "max": 15,
-              "description": "Maximum pitch angle, related to ramp/incline limits."
+              "description": "Maximum pitch angle, derived from the 15-degree ramp limit"
             },
             "max_roll_deg": {
               "type": "range",
               "min": 0,
               "max": 15,
-              "description": "Maximum roll angle to maintain stability."
+              "description": "Maximum roll angle, assumed to be similar to pitch for stability"
             }
           },
           "boolean": {}

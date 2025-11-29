@@ -20,7 +20,9 @@ from .common import get_window_file_paths
 # v5.0.0: Added save_output_tool for artifact-based data handoff to Evaluator
 # v6.0.0: Bulletproof prompt - full BEV interpretation, threshold comparison, decision logic
 # v6.1.0: BEV-first collision detection, cropping awareness, sim/real voxel map detection, LiDAR 180° FOV
-COLLISION_TOOL_AGENT_VERSION = "6.1.0"
+# v6.2.0: Add advisory collision risk (proximity/density/motion) alongside binary collisions
+# v7.0.0: FULLY ADVISORY output (no ODD effect), motion-state gating, duplicate clustering guidance
+COLLISION_TOOL_AGENT_VERSION = "7.0.0"
 
 
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -41,20 +43,26 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
 
     async def analyze_collision_tool(
         window_id: str,
-        odd_context: dict
+        odd_context: dict,
+        motion_state: dict = None
     ) -> Dict[str, Any]:
-        """Tool: Multimodal collision detection using IMU + camera + BEV.
+        """Tool: Multimodal collision detection using IMU + camera + BEV, plus advisory risk.
+
+        IMPORTANT: Collision output is ADVISORY ONLY - does NOT affect ODD/COD verdict.
+        Collisions are safety events to report, not operational domain characteristics.
 
         Args:
             window_id: Window identifier
             odd_context: Filtered ODD specification from loop agent (minimal context needed)
+            motion_state: Optional motion agent output {is_stationary: {value, confidence, evidence}}
+                          Used for motion-state gating to avoid false positives when stationary
 
         Analyzes collision evidence from:
         - IMU data (acceleration spikes, angular velocity anomalies)
         - Camera visual evidence (impact blur, sudden scene changes)
         - BEV occupancy (contact with obstacles, excluding robot self-hit)
 
-        Returns: collision detected (yes/no) with detailed evidence.
+        Returns: collision detected (yes/no) with detailed evidence - ADVISORY ONLY.
         """
         try:
             # Get file paths
@@ -110,12 +118,38 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
             peak_jerk = max(jerk_samples) if jerk_samples else 0.0
 
             # Build multimodal prompt
+            # Include motion state if provided for motion-state gating
+            motion_state_str = ""
+            if motion_state and motion_state.get("is_stationary"):
+                is_stat = motion_state["is_stationary"]
+                motion_state_str = f"""
+MOTION STATE CONTEXT (from Motion Agent):
+- Is Stationary: {is_stat.get('value', 'unknown')}
+- Confidence: {is_stat.get('confidence', 0.0):.2f}
+- Evidence: {is_stat.get('evidence', 'Not provided')}
+
+MOTION-STATE GATING RULE:
+If motion state is STATIONARY with high confidence (>0.8):
+- Require STRONG evidence for collision detection (IMU spike >10 m/s² OR visual contact)
+- Downgrade ambiguous evidence to "info" not collision
+- A stationary robot cannot collide unless something hits IT
+"""
+
             prompt_parts = [types.Part(text=f"""You are a collision detection expert analyzing window {window_id}.
+
+═══════════════════════════════════════════════════════════════════════════════
+IMPORTANT: ADVISORY OUTPUT ONLY
+═══════════════════════════════════════════════════════════════════════════════
+
+Your collision analysis is ADVISORY ONLY and does NOT affect ODD/COD compliance.
+- Collisions are safety events to report, not operational domain characteristics
+- A robot can be IN_ODD and still experience a collision (user error, unexpected obstacle)
+- Report honestly but understand this is for awareness, not verdict
 
 ═══════════════════════════════════════════════════════════════════════════════
 SENSOR INPUTS
 ═══════════════════════════════════════════════════════════════════════════════
-
+{motion_state_str}
 PRE-COMPUTED IMU METRICS:
 - Peak horizontal acceleration: {peak_accel:.4f} m/s²
 - Peak angular velocity (yaw): {peak_gyro:.4f} rad/s
@@ -145,6 +179,7 @@ PROXIMITY ESTIMATION FROM BEV:
 - Measure pixels from center to nearest bright obstacle cluster
 - Convert: distance_m = pixels × 0.05
 - Example: 40 bright pixels from center = 2.0m proximity
+- Use proximity + density + motion state to assign collision risk (LOW/MED/HIGH). Stationary runs with clear distance should be LOW unless strong evidence says otherwise.
 
 ═══════════════════════════════════════════════════════════════════════════════
 BEV DATA SOURCE DETECTION (Infer from BEV visual characteristics)
@@ -237,6 +272,9 @@ OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
   "collision_detected": false,
   "confidence": 0.95,
   "proximity_estimate_m": 2.5,
+  "collision_risk_score": 0.1,
+  "collision_risk_band": "LOW",
+  "collision_risk_justification": "Nearest obstacle ~2.5m; density low; robot stationary",
   "explanation": "No collision indicators. IMU values well below thresholds (accel: 0.21 m/s², gyro: 0.02 rad/s). BEV shows clear forward path with nearest obstacle ~2.5m away. Camera shows stable scene.",
   "key_insights": [
     "All IMU metrics below collision thresholds",
@@ -248,12 +286,23 @@ OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
 CRITICAL RULES
 ═══════════════════════════════════════════════════════════════════════════════
 
-1. collision_detected MUST be true or false (boolean)
+1. collision_detected MUST be true or false (boolean) - but is ADVISORY ONLY
 2. IMU thresholds are PRIMARY - if exceeded, collision is likely true
 3. IGNORE bright pixels at BEV center (~15px radius) - that's robot body
 4. proximity_estimate_m: Distance to nearest obstacle from BEV (20px = 1m)
-5. Be BINARY - collision is YES or NO, not "maybe"
+5. Provide advisory collision_risk_score/band from proximity + density + motion
 6. Output JSON only - no markdown code blocks
+
+MOTION-STATE GATING:
+- If motion_state shows stationary with high confidence (>0.8):
+  - Require STRONGER evidence for collision (IMU >10 m/s² OR visible contact)
+  - Ambiguous proximity without IMU spike when stationary → NOT a collision
+  - A stationary robot only collides if something hits IT
+
+COLLISION CLUSTERING (Avoid Duplicate Counts):
+- Multiple proximity events in same window with similar evidence → ONE collision
+- Ramp traversal may cause repeated light bumps → cluster as ONE ramp contact event
+- Count unique collision events, not every spike that could be same impact
 
 DECISION LOGIC:
 IF (BEV shows obstacle in robot zone, beyond 15px center):
@@ -304,18 +353,25 @@ ELSE:
 
             # === DETERMINISTIC ODD-ALIGNED MEASUREMENTS ===
             # collision_detected is bool (0/1 for COD)
-            collision_detected = llm_data.get("collision_detected", False)
+            collision_detected = bool(
+                llm_data.get("collision_detected", False))
+            risk_score = llm_data.get("collision_risk_score", 0.0) or 0.0
+            risk_band = llm_data.get("collision_risk_band") or "LOW"
+            risk_justification = llm_data.get(
+                "collision_risk_justification") or ""
 
             data = {
                 "window_id": window_id,
-                "odd_measurements": {
-                    "collision_detected": 1 if collision_detected else 0,
-                    "min_proximity_m": llm_data.get("proximity_estimate_m", 0.0),
-                },
+                # Keep ODD/COD measurements empty to avoid treating collisions as ODD axes
+                "odd_measurements": {},
                 "explanation": llm_data.get("explanation", "Collision analysis from multimodal data"),
                 "key_insights": llm_data.get("key_insights", []),
                 "collision_detected": collision_detected,
                 "confidence": llm_data.get("confidence", 0.0),
+                "proximity_estimate_m": llm_data.get("proximity_estimate_m", 0.0),
+                "collision_risk_score": risk_score,
+                "collision_risk_band": risk_band,
+                "collision_risk_justification": risk_justification,
             }
 
             return data
@@ -325,7 +381,7 @@ ELSE:
                 "status": "error",
                 "window_id": window_id,
                 "message": str(err),
-                "odd_measurements": {"collision_detected": 0, "min_proximity_m": 0.0},
+                "odd_measurements": {},
                 "explanation": f"Error: {err}",
                 "key_insights": [],
                 "collision_detected": False,

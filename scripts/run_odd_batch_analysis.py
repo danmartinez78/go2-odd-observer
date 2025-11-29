@@ -27,6 +27,7 @@ Output:
 """
 
 from odd_agents import run_odd_workflow
+from odd_agents.odd_definition import DEFAULT_ODD_DESCRIPTION, ODD_DEFINITION_VERSION
 import argparse
 import asyncio
 import json
@@ -82,38 +83,10 @@ COST_PER_1K_OUTPUT = 0.01    # gemini-2.5-pro output
 ESTIMATED_TOKENS_PER_WINDOW = 20000  # Rough estimate
 
 # ============================================================================
-# ODD DESCRIPTION (Default from notebook)
+# ODD DESCRIPTION (Centralized in odd_agents/odd_definition.py)
 # ============================================================================
-DEFAULT_ODD_DESCRIPTION = """
-The Unitree Go2 is a quadruped robot designed for general indoor navigation.
-
-It's meant to operate in typical indoor environments - think homes, offices, hallways, 
-conference rooms, living rooms, and open workspaces. The floors should be smooth (tile, 
-hardwood, or low-pile carpet), and there needs to be adequate lighting so the cameras 
-can see clearly. Bright lighting is ideal, but it can handle dimmer areas too. 
-No pitch-black rooms though.
-
-The robot moves with smooth to moderate acceleration - controlled movements during 
-normal navigation. It can handle quick starts and stops when needed (like avoiding 
-obstacles), but it's not meant for aggressive racing-style maneuvers or abrupt jerky 
-motions. Think responsive and agile, not violent or chaotic. The motion should feel 
-controlled and deliberate, even when reacting to obstacles. It's designed to 
-navigate around typical indoor obstacles like furniture, chairs, desk legs, and the 
-occasional box, but it's not meant for super cluttered spaces where there's barely 
-room to move.
-
-The robot expects relatively flat, stable ground. No stairs, no steep ramps, and 
-definitely not designed for outdoor terrain like gravel or grass. It needs space 
-to maneuver safely without constantly being on the verge of hitting things.
-
-DEFINITELY NOT designed for:
-- Outdoor environments (weather, uneven ground, GPS reliance)
-- Staircases or steep slopes
-- Dark rooms where vision sensors can't work
-- Extremely crowded spaces where collision is almost guaranteed
-- Rough terrain, gravel, sand, or anything unstable
-- Industrial environments with heavy machinery or hazardous materials
-"""
+# Imported from odd_agents.odd_definition - see that file for the full definition
+# Version: {ODD_DEFINITION_VERSION} - includes human/animal proximity, carpet, no collision axis
 
 
 def find_production_scenarios(scenario_filter: Optional[str] = None, skip_list: Optional[List[str]] = None) -> List[Dict[str, Any]]:

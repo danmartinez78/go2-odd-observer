@@ -23,7 +23,8 @@ from .common import list_available_windows, get_window_file_paths
 # v5.1.0: Added data_source detection (sim vs real)
 # v6.0.0: Bulletproof FunctionTool - verbose prompts, no KB dependency
 # v6.1.0: BEV cropping awareness, sim/real voxel map detection, image artifact guidance, LiDAR 180° FOV
-PERCEPTION_TOOL_VERSION = "6.1.0"
+# v7.0.0: BEV+camera terrain fusion, numeric density %, structured stairs output, human/animal proximity
+PERCEPTION_TOOL_VERSION = "7.0.0"
 
 
 def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str, api_key: str = None):
@@ -172,38 +173,64 @@ LIGHTING CONDITIONS (from camera):
 - "dim": Low light, reduced visibility, may affect camera quality
 - "dark": Very low light, camera severely degraded
 
-TERRAIN ASSESSMENT (primarily from BEV height/roughness):
+TERRAIN ASSESSMENT (BEV + CAMERA FUSION):
+Surface type (from camera): hardwood, tile, laminate, low_pile_carpet, high_pile_carpet, concrete, outdoor
+Roughness (from BEV height/roughness): elevation variance, NOT texture
 - terrain_type: "smooth" | "slightly_rough" | "rough" | "very_rough"
-- smooth: Flat floor, minimal elevation change (carpets count as smooth!)
-- slightly_rough: Small bumps, gentle transitions
-- rough: Significant elevation changes, uneven surfaces
+- smooth: Flat floor (hardwood, tile, low_pile_carpet all = smooth)
+- slightly_rough: Small bumps, gentle transitions, rug edges
+- rough: Significant elevation changes, thresholds, uneven surfaces
 - very_rough: Stairs, large obstacles, severe terrain
-- CRITICAL: Texture (carpet pile, tile pattern) is NOT roughness - use elevation!
 
-OBSTACLE METRICS (from BEV occupancy):
-- obstacle_density: 0.0-1.0 (fraction of forward path with obstacles)
-  - 0.0-0.2: Clear path, minimal obstacles
-  - 0.2-0.5: Light clutter, easy navigation
-  - 0.5-0.8: Moderate obstacles, careful navigation needed
-  - 0.8-1.0: Dense obstacles, path may be blocked
-- Count BRIGHT pixels in upper half of BEV occupancy (forward path)
-- IGNORE center ~15px radius (robot body)
+CRITICAL TERRAIN FUSION:
+- Camera shows SURFACE TYPE (carpet, tile, wood) - for ODD surface compatibility
+- BEV height/roughness shows ELEVATION CHANGES - for traversability
+- Carpet with flat BEV = smooth terrain, traversable
+- Tile with bumpy BEV = rough terrain (damaged floor, debris)
+- Report BOTH: surface_type (camera) + terrain_roughness (BEV)
+- Cross-check: If they conflict, note in explanation
+
+OBSTACLE METRICS (from BEV occupancy - QUANTITATIVE):
+- Count bright pixels in UPPER HALF of BEV occupancy (forward path)
+- IGNORE center ~15-20px radius (robot body self-hit)
+- Report as obstacle_density_pct (0-100%)
+  - <20%: Clear path, minimal obstacles
+  - 20-50%: Light obstacles, easy navigation
+  - 50-80%: Moderate obstacles, careful navigation needed
+  - >80%: Dense obstacles, path may be blocked
+- Also report top_obstacle_clusters: count of distinct bright regions
 
 TRAVERSABILITY SCORE (combined assessment):
 - 0.0-0.3: Difficult/blocked (dense obstacles OR rough terrain OR stairs)
 - 0.3-0.6: Challenging but navigable with care
 - 0.6-0.8: Good traversability, minor obstacles
 - 0.8-1.0: Excellent, clear path with smooth terrain
+- traversability_justification: One sentence explaining the score
 
-STAIRS DETECTION:
-- stairs_present: 0 or 1
+STAIRS DETECTION (Structured Output):
+- stairs: {{
+    "present": true/false,
+    "direction": "up" | "down" | "unknown",
+    "proximity_m": <float>,  # Distance from robot
+    "risk": "low" | "medium" | "high",
+    "justification": "why this risk level"
+  }}
+- Low risk: Stairs visible but distant (>3m), not intersecting path
+- Medium risk: Stairs moderately close (1.5-3m), may need avoidance
+- High risk: Stairs close (<1.5m), downward stairs, or intersecting path
 - Look for: regular step patterns in height BEV, handrails in camera
-- Stairs are a HARD constraint for most robots
 
-HUMAN DETECTION (from camera):
-- humans_detected: 0 or 1
-- Look for: people, legs, faces, human silhouettes
-- Important for safety compliance
+HUMAN/ANIMAL DETECTION (from camera - Safety Critical):
+- humans_animals: {{
+    "detected": true/false,
+    "type": "human" | "animal" | "both" | "none",
+    "count": <int>,
+    "proximity_m": <float>,  # Estimated closest distance
+    "in_path": true/false,   # Are they in forward travel path?
+    "justification": "description of detection"
+  }}
+- Look for: people, faces, legs, silhouettes, pets, animals
+- CRITICAL: Close proximity (<1m) to humans/animals = major safety concern
 
 ═══════════════════════════════════════════════════════════════════════════════
 DATA SOURCE DETECTION (Metadata - not ODD)
@@ -232,25 +259,42 @@ OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
 {{
   "window_id": "{window_id}",
   "odd_measurements": {{
-    "environment_type": "indoor_commercial",
+    "environment_type": "indoor_residential",
     "lighting_conditions": "bright",
-    "terrain_type": "smooth",
-    "obstacle_density": 0.15,
-    "traversability_score": 0.85,
-    "stairs_present": 0,
-    "humans_detected": 0
+    "surface_type": "low_pile_carpet",
+    "terrain_roughness": "smooth",
+    "obstacle_density_pct": 25,
+    "top_obstacle_clusters": 3,
+    "traversability_score": 0.75,
+    "traversability_justification": "Moderate furniture density but clear path exists",
+    "stairs": {{
+      "present": false,
+      "direction": null,
+      "proximity_m": null,
+      "risk": "low",
+      "justification": "No stairs visible in camera or BEV"
+    }},
+    "humans_animals": {{
+      "detected": true,
+      "type": "human",
+      "count": 1,
+      "proximity_m": 2.5,
+      "in_path": false,
+      "justification": "Person visible on left side of frame, not in travel path"
+    }}
   }},
   "data_source": {{
-    "type": "simulated",
-    "confidence": 0.90,
-    "indicators": ["uniform textures", "perfect lighting"]
+    "type": "real",
+    "confidence": 0.85,
+    "indicators": ["natural lighting", "carpet texture", "thickened BEV edges"]
   }},
-  "camera_summary": "Indoor commercial space with tiled floor, fluorescent lighting, clear forward path",
-  "bev_summary": "Minimal obstacles in forward path, flat terrain, ~2m clearance ahead",
-  "explanation": "Environment is well-lit indoor commercial with smooth floor and clear navigation path",
+  "camera_summary": "Living room with carpet floor, sofa on left, clear path ahead, person standing to the side",
+  "bev_summary": "25% forward path occupied, furniture clusters at 1-2m, clear corridor down center",
+  "explanation": "Residential environment with moderate obstacle density but navigable central path. One human detected but not obstructing.",
   "key_insights": [
-    "Clear forward path with >3m visibility",
-    "No humans or dynamic obstacles detected"
+    "Carpet surface but terrain is smooth (flat BEV)",
+    "Clear 0.8m corridor through furniture",
+    "Human present at 2.5m, not in path"
   ]
 }}
 
@@ -258,18 +302,23 @@ OUTPUT FORMAT (JSON ONLY - NO MARKDOWN)
 CRITICAL RULES
 ═══════════════════════════════════════════════════════════════════════════════
 
-1. odd_measurements MUST be FLAT (axis: value pairs only)
-   ✓ CORRECT: {{"obstacle_density": 0.35, "lighting_conditions": "bright"}}
+1. odd_measurements MUST be FLAT (axis: value pairs only, except structured stairs/humans_animals)
+   ✓ CORRECT: {{"obstacle_density_pct": 35, "lighting_conditions": "bright"}}
    ✗ WRONG: {{"environment": {{"categorical": {{}}, "numeric": {{}}}}}}
-   ✗ WRONG: {{"numeric": {{"obstacle_density": 0.35}}}}
 
-2. Use BEV OCCUPANCY for obstacles, BEV HEIGHT/ROUGHNESS for terrain
+2. TERRAIN FUSION: Surface type from camera, roughness from BEV height/roughness
+   - Carpet + flat BEV = "smooth" terrain (traversable)
+   - Any surface + bumpy BEV = roughness reflects BEV
 
-3. Ignore small bright cluster at BEV center (robot body self-hit)
+3. QUANTITATIVE DENSITY: Report obstacle_density_pct (0-100), not just categories
 
-4. Terrain roughness = elevation changes, NOT surface texture
+4. Ignore small bright cluster at BEV center (robot body self-hit)
 
-5. Output JSON only - no markdown code blocks, no extra text
+5. STAIRS: Output structured {{present, direction, proximity_m, risk, justification}}
+
+6. HUMANS/ANIMALS: Output structured {{detected, type, count, proximity_m, in_path, justification}}
+
+7. Output JSON only - no markdown code blocks, no extra text
 
 Be CONCISE but COMPLETE. Ground all observations in the images."""
 

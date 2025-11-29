@@ -23,8 +23,7 @@ Use this doc to capture accuracy issues and pipeline tweaks while we walk the se
 ## Cross-cutting issues to check
 - **Report builder sourcing:** Validate it reads artifacts (perception/motion/collision outputs) after we moved away from scenario-context passing. The warnings suggest it’s still looking at empty context.
 - **Tool save calls:** Confirm perception/motion/collision tool calls still save artifacts in batch mode (no gating on manual runs).
-- **Evaluator/report contracts:** Ensure evaluator artifacts are present and report builder uses them to populate `scenario_overview`, `key_observations`, and `measurement_summary`.
-
+- **Evaluator/report contracts:** Ensure evaluator artifacts are present and report builder uses them to populate `scenario_overview`, `key_observations`, and `measurement_summary`.- **Collision as advisory:** Per `IMPROVEMENT_PLAN_ODD_AGENTS.md`, collision (binary + risk) is now fully advisory and should NOT affect ODD/COD verdict. Actions below should be read in that context—collision accuracy still matters for safety reporting, but won't flip verdicts.
 ## Next steps
 - Open HTML reports in `docs/reports/<scenario>_report.html` while cross-referencing `full_result.json`.
 - For each scenario, fill the table above (what looks wrong → suspected cause → action).

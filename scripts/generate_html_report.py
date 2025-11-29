@@ -489,6 +489,14 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     # Discover windows and load images
     windows = discover_windows(scenario_dir, image_scenario_name)
 
+    # Simple timeline badges for context (window IDs in order)
+    if windows:
+        timeline_html = " ".join(
+            [f"<span class='badge bg-secondary me-1 mb-1'>w{wid}</span>" for wid in windows]
+        )
+    else:
+        timeline_html = "<span class='text-muted'>No windows found</span>"
+
     # Sample windows evenly across the scenario (max 6 for display)
     MAX_DISPLAY_WINDOWS = 6
     if len(windows) > MAX_DISPLAY_WINDOWS:
@@ -884,6 +892,9 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 <div class="container mb-5">
     <h2 class="mb-4">🎬 Scenario Overview</h2>
     <p class="text-muted mb-3">Representative windows from the analysis</p>
+    <div class="mb-3">
+        <strong>Timeline:</strong> {timeline_html}
+    </div>
     <div class="row">
         {scenario_overview_html if scenario_overview_html else '<div class="col-12"><p class="text-muted">No window images available</p></div>'}
     </div>

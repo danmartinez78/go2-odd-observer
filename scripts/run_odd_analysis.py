@@ -15,6 +15,7 @@ Output:
 """
 
 from odd_agents import run_odd_workflow
+from odd_agents.odd_definition import DEFAULT_ODD_DESCRIPTION, ODD_DEFINITION_VERSION
 import argparse
 import asyncio
 import json
@@ -58,65 +59,10 @@ MODEL_EVALUATOR = "gemini-2.5-pro"
 MODEL_REPORT = "gemini-2.5-pro"
 
 # ============================================================================
-# ODD DESCRIPTION (Default from notebook)
+# ODD DESCRIPTION (Centralized in odd_agents/odd_definition.py)
 # ============================================================================
-DEFAULT_ODD_DESCRIPTION = """
-The Unitree Go2 is a quadruped robot designed for general indoor navigation in 
-residential and commercial spaces.
-
-ROBOT PHYSICAL SPECIFICATIONS (EGO VEHICLE):
-- Footprint: 0.65m length × 0.31m width (standing posture)
-- Height: 0.40m (standing), 0.25m (crouching)
-- Minimum passable gap: 0.4m width for straight corridors
-- Comfortable clearance: 0.5m+ width for maneuvering around obstacles
-- Turning radius: ~0.3m (can rotate in place)
-
-ENVIRONMENT:
-The robot operates in typical indoor environments including homes, offices, hallways, 
-conference rooms, living rooms, and workspaces. It handles smooth floors (tile, 
-hardwood, low-pile carpet) and requires adequate lighting for camera-based perception. 
-Bright to moderate lighting is ideal; very dim areas are acceptable but pitch-black 
-rooms are outside operational limits.
-
-OBSTACLE HANDLING:
-Designed for furniture-dense residential spaces with moderate to high obstacle density. 
-The robot can navigate around sofas, coffee tables, dining chairs, desk legs, and 
-typical household items. Close proximity to furniture is expected and normal during 
-navigation. The robot is NOT designed for extreme clutter where clear navigation paths 
-are blocked, doorways are obstructed, or the floor is covered with scattered objects.
-
-MOTION CHARACTERISTICS:
-The robot uses dynamic motion control appropriate for agile quadruped navigation:
-- Smooth motion during open navigation in hallways and clear spaces
-- Quick reactive maneuvers when avoiding obstacles (acceleration up to 10 m/s²)
-- Brief "abrupt" motion is normal and expected during:
-  * Obstacle avoidance reactions
-  * Direction changes around furniture
-  * Emergency stops when unexpected obstacles appear
-  
-The robot is NOT designed for:
-- Aggressive high-speed racing or sustained high acceleration
-- Violent or erratic motion when operating in open, obstacle-free spaces
-
-TERRAIN:
-Designed for flat, stable indoor surfaces. Can handle:
-- Gentle transitions between rooms (door thresholds, slight elevation changes)
-- Minor surface variations (rug edges, mat transitions)
-
-NOT designed for:
-- Staircases (multi-step elevation changes)
-- Steep ramps (>15 degree incline)
-- Outdoor terrain (gravel, grass, dirt, uneven ground)
-- Unstable surfaces (sand, loose materials)
-
-DEFINITELY NOT DESIGNED FOR:
-- Outdoor environments (weather exposure, GPS reliance, rough terrain)
-- Dark rooms where camera sensors cannot function
-- Industrial environments with heavy machinery or hazardous materials
-- Extreme clutter where navigation paths are completely blocked
-- Environments requiring climbing (stairs, steep slopes >15°)
-- High-speed applications or aggressive maneuvering
-"""
+# Imported from odd_agents.odd_definition - see that file for the full definition
+# Version: {ODD_DEFINITION_VERSION} - includes human/animal proximity, carpet, no collision axis
 
 
 def find_scenarios():

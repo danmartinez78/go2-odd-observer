@@ -3,16 +3,17 @@ Report generation agent - Narrative synthesizer.
 
 Reads qualitative insights from STATE and synthesizes into human-readable report.
 v9.0.0: Hybrid schema with compliance (not verdict), executive_summary, key_findings
+v10.0.0: Collision advisory section, warnings for missing data, strong rationale
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 from google.adk.tools import FunctionTool
 
 
-REPORT_AGENT_VERSION = "9.2.0"
+REPORT_AGENT_VERSION = "10.0.0"
 
 
 def create_report_tools(scenario_path: Path):
@@ -35,6 +36,9 @@ def create_report_tools(scenario_path: Path):
         scenario_data_source: str,
         issues: List[str],
         recommendations: List[str],
+        collision_advisory: Optional[dict],
+        human_animal_detection: Optional[dict],
+        data_warnings: Optional[List[str]],
         tool_context: ToolContext
     ) -> str:
         """
@@ -47,7 +51,7 @@ def create_report_tools(scenario_path: Path):
             executive_summary: 2-3 sentence high-level narrative for stakeholders
             finding_perception: Key perception findings (lighting, obstacles, terrain)
             finding_motion: Key motion findings (speed, stability, dynamics)
-            finding_safety: Key safety findings (collision risk, proximity)
+            finding_safety: Key safety findings (proximity - NOT collision, that's advisory)
             finding_temporal: How conditions changed over time
             scenario_environment: Type of environment (e.g., "indoor commercial")
             scenario_windows_analyzed: Number of time windows analyzed
@@ -55,6 +59,11 @@ def create_report_tools(scenario_path: Path):
             scenario_data_source: "simulated" or "real" - whether data is from simulation or real-world
             issues: List of identified issues (empty list if none)
             recommendations: List of recommended actions
+            collision_advisory: Optional advisory collision info (NOT part of verdict)
+                {collisions_detected: int, risk_band: str, events: list, note: str}
+            human_animal_detection: Optional human/animal proximity info
+                {detected: bool, proximity_m: float, type: str}
+            data_warnings: Optional list of data quality warnings (missing sensors, etc.)
 
         Returns:
             JSON report structure
@@ -84,8 +93,18 @@ def create_report_tools(scenario_path: Path):
                 "data_quality": scenario_data_quality,
                 "data_source": scenario_data_source
             },
+            "collision_advisory": collision_advisory if collision_advisory else {
+                "note": "Collision signals are advisory only and do not affect compliance verdict",
+                "collisions_detected": 0,
+                "risk_band": "LOW"
+            },
+            "human_animal_detection": human_animal_detection if human_animal_detection else {
+                "detected": False,
+                "note": "No humans or animals detected"
+            },
             "issues": issues if issues else [],
-            "recommendations": recommendations if recommendations else ["Continue normal operation"]
+            "recommendations": recommendations if recommendations else ["Continue normal operation"],
+            "data_warnings": data_warnings if data_warnings else []
         }
 
         # Save report as artifact
@@ -149,15 +168,15 @@ Extract and synthesize the following:
 ### COMPLIANCE (from evaluator)
 1. **compliance_status**: From evaluator's compliance_verdict.verdict (IN_ODD, BOUNDARY, or OUT_ODD)
 2. **compliance_confidence**: Convert evaluator's confidence: >0.8=HIGH, 0.5-0.8=MEDIUM, <0.5=LOW  
-3. **compliance_summary**: One sentence explaining the compliance result
+3. **compliance_summary**: One sentence explaining the compliance result WITH STRONG RATIONALE
 
 ### EXECUTIVE SUMMARY
 4. **executive_summary**: 2-3 sentences for stakeholders. Include: what the robot did, where, and whether it stayed within operational limits. This should be readable by someone unfamiliar with the technical details.
 
 ### KEY FINDINGS (one sentence each)
-5. **finding_perception**: What the environment looked like (lighting, obstacles, terrain type)
-6. **finding_motion**: How the robot moved (speed range, stability, any dynamics concerns)
-7. **finding_safety**: Collision/proximity status (any risks, minimum distances)
+5. **finding_perception**: What the environment looked like (lighting, obstacles, terrain type, density %)
+6. **finding_motion**: How the robot moved (speed range, stability, roll/pitch concerns)
+7. **finding_safety**: Proximity status and terrain traversability (NOT collisions - those go in advisory)
 8. **finding_temporal**: How conditions changed (stable, improving, degrading, transition detected)
 
 ### SCENARIO METADATA
@@ -170,12 +189,38 @@ Extract and synthesize the following:
 13. **issues**: List specific problems found (empty list if none - don't add fake issues!)
 14. **recommendations**: Actionable suggestions for the operator
 
+### COLLISION ADVISORY (REQUIRED - but does NOT affect verdict)
+15. **collision_advisory**: Dict with collision info - CLEARLY LABELED AS ADVISORY
+    {
+      "collisions_detected": <int>,
+      "risk_band": "LOW" | "MED" | "HIGH",
+      "events": [<brief description of each if any>],
+      "note": "Advisory only - does not affect compliance verdict"
+    }
+
+### HUMAN/ANIMAL DETECTION
+16. **human_animal_detection**: Dict with detection info
+    {
+      "detected": true/false,
+      "type": "human" | "animal" | "both" | "none",
+      "proximity_m": <float if detected>,
+      "note": "<description>"
+    }
+
+### DATA WARNINGS
+17. **data_warnings**: List of any data quality issues or missing inputs
+    - If perception/motion/collision artifacts were missing, add warning
+    - If sensor data was incomplete, add warning
+    - Empty list if all data was available
+
 ## RULES
 
-1. **ALWAYS call generate_report_tool()** with ALL parameters
+1. **ALWAYS call generate_report_tool()** with ALL parameters (including new ones)
 2. Use plain English - this is for human operators
-3. Include specific numbers when relevant (e.g., "speeds up to 0.5 m/s")
+3. Include specific numbers when relevant (e.g., "obstacle density 35%", "max pitch 8.5°")
 4. If IN_ODD with no issues, recommendations can be ["Continue normal operation"]
 5. Keep findings concise - one sentence each
-6. Base everything on actual data - never invent or assume""",
+6. Base everything on actual data - never invent or assume
+7. **COLLISION IS ADVISORY** - clearly label it and do not let it affect compliance status
+8. Provide STRONG RATIONALE for the verdict - explain WHY with specific values""",
     )

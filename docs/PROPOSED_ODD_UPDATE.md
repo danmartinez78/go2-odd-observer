@@ -93,6 +93,8 @@ The robot is NOT designed for:
 
 TERRAIN:
 Designed for flat, stable indoor surfaces. Can handle:
+- Smooth floors (hardwood, tile, laminate)
+- Low-pile carpet and area rugs (common residential flooring)
 - Gentle transitions between rooms (door thresholds, slight elevation changes)
 - Minor surface variations (rug edges, mat transitions)
 
@@ -101,12 +103,13 @@ NOT designed for:
 - Steep ramps (>15 degree incline)
 - Outdoor terrain (gravel, grass, dirt, uneven ground)
 - Unstable surfaces (sand, loose materials)
+- High-pile carpet or shag rugs
 
-COLLISION EXPECTATIONS:
-In furniture-dense environments (living rooms, dining areas), proximity to obstacles 
-is unavoidable and normal. Collision risk scores up to 0.75 are acceptable when 
-navigating through furnished spaces. The robot should maintain awareness and avoid 
-actual contact, but close proximity (<0.5m to obstacles) is expected.
+HUMAN/ANIMAL PROXIMITY:
+The robot is NOT designed to operate in close proximity to humans or animals.
+- Persons or pets within ~0.5-1m while the robot is navigating = OUT OF ODD
+- Robot should maintain safe distance from people and animals at all times
+- Brief passing at >1m distance is acceptable; sustained close proximity is not
 
 DEFINITELY NOT DESIGNED FOR:
 - Outdoor environments (weather exposure, GPS reliance, rough terrain)
@@ -127,18 +130,25 @@ DEFINITELY NOT DESIGNED FOR:
 - **Motion Smoothness:** Allow "abrupt" during obstacle avoidance ✅
 - **Rationale:** Real quadruped needs dynamic reactions; 8.81 m/s² observed in benign scenario
 
-### Collision Risk Tolerance  
-- **Threshold:** 0.5 → **0.75** ✅
-- **Rationale:** 0.652 average in normal living room; furniture proximity is unavoidable
+### Collision Handling
+- **Change:** Collision (binary + risk) removed from ODD axes entirely ✅
+- **Rationale:** Collisions are safety events to report, not operational domain characteristics. A robot can be IN_ODD and still have a collision.
+- Collision signals are now **advisory only** (reported alongside verdict, don't affect it)
+
+### Human/Animal Proximity (NEW)
+- **Constraint:** Close approach by humans/animals (~0.5-1m while navigating) = OUT_ODD ✅
+- **Rationale:** Safety constraint—robot should not operate in close proximity to people/pets
 
 ### Obstacle Density Expectations
 - **Before:** "not meant for super cluttered spaces"
 - **After:** "designed for furniture-dense residential spaces" ✅
 - **Rationale:** Standard living rooms should be IN_ODD, not OUT_ODD
 
-### Terrain Additions
+### Terrain (Softened)
 - **New:** Explicitly allow gentle ramps (<15°), door thresholds ✅
-- **Rationale:** Prepare for ramp test scenarios
+- **New:** Allow low-pile carpet (common in real residential data) ✅
+- **Rationale:** Real-world residential floors include carpet; ramp test scenarios need gentle slope allowance
+- **Assessment:** BEV + camera fusion—roughness from BEV, surface type from camera, cross-check for consistency
 
 ---
 
