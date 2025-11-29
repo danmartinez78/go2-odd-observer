@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODD Analysis Report: real_2win</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --status-color: #28a745;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #1a1d23;
+            --bg-secondary: #25292f;
+            --text-primary: #e9ecef;
+            --text-secondary: #adb5bd;
+            --border-color: #495057;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--status-color) 0%, color-mix(in srgb, var(--status-color) 70%, black) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .metric-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--status-color);
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            min-height: 350px;
+        }
+        
+        .chart-container > div {
+            height: 320px;
+            width: 100%;
+        }
+        
+        .compliance-table {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .compliance-table table {
+            margin-bottom: 0;
+        }
+        
+        .dark-mode-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+        
+        .agent-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 2rem 0;
+            }
+            
+            .status-badge {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Dark Mode Toggle -->
+<div class="dark-mode-toggle">
+    <button class="btn btn-outline-secondary rounded-circle" onclick="toggleDarkMode()" title="Toggle dark mode">
+        <span id="theme-icon">🌙</span>
+    </button>
+</div>
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a href="../index.html" class="btn btn-outline-light">← Back to Home</a>
+            <a href="real_2win_full_result.json" class="btn btn-outline-light btn-sm" download>📥 Download JSON</a>
+        </div>
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-4">🤖 ODD Analysis Report</h1>
+                <h2 class="h3">Scenario: real_2win</h2>
+                <p class="lead mb-0">Generated November 29, 2025 at 21:36:29</p>
+                <p class="mb-0">
+                    <small>Pipeline v2.0.0 | 
+                    46,051 tokens | 
+                    $0.0591 USD</small>
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="status-badge">
+                    ✅ IN ODD
+                </div>
+                <div class="mt-2">
+                    <small>Confidence: 100%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card text-center">
+                <div class="metric-value">2</div>
+                <div class="metric-label">Windows Analyzed</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card text-center">
+                <div class="metric-value">0</div>
+                <div class="metric-label">Windows Violated</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card text-center">
+                <div class="metric-value">STABLE</div>
+                <div class="metric-label">Temporal Stability</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="metric-card text-center">
+                <div class="metric-value">6</div>
+                <div class="metric-label">Agents Executed</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Executive Summary -->
+<div class="container mb-5">
+    <h2 class="mb-4">📋 Executive Summary</h2>
+    <div class="metric-card">
+        <p class="lead mb-3">The robot was evaluated while stationary in a cluttered indoor residential setting. Analysis confirmed that all environmental and motion parameters, such as obstacle density and platform stability, were well within the defined operational limits, resulting in full compliance with its ODD.</p>
+        <div class="mt-3">
+            <strong>Critical Axes:</strong> <span class='text-muted'>None</span>
+        </div>
+        <div class="mt-2">
+            <strong>Rationale:</strong> The robot's Current Operating Domain (COD) is comfortably within the specified ODD. All measured axes, including motion and environment, are well within their defined limits. The robot was stationary (0.0 m/s speed vs 1.5 m/s limit) on a stable, flat surface (max roll 3.16° vs 15° limit) in a cluttered but navigable indoor environment (40% obstacle density vs 70% limit). No prohibited conditions, such as stairs or human proximity, were detected. The region distance of 0.0 confirms full compliance.
+        </div>
+    </div>
+</div>
+
+<!-- Scenario Overview -->
+<div class="container mb-5">
+    <h2 class="mb-4">🎬 Scenario Overview</h2>
+    <p class="text-muted mb-3">Representative windows from the analysis</p>
+    <div class="mb-3">
+        <strong>Timeline:</strong> <span class='text-muted'>No windows found</span>
+    </div>
+    <div class="row">
+        <div class="col-12"><p class="text-muted">No window images available</p></div>
+    </div>
+</div>
+
+<!-- Key Findings -->
+<div class="container mb-5">
+    <h2 class="mb-4">🔍 Key Findings</h2>
+    <div class="row">
+        
+                <div class="col-md-6 mb-3">
+                    <div class="metric-card h-100">
+                        <h6 class="text-primary text-uppercase">perception</h6>
+                        <p class="mb-0">The robot was in an indoor residential environment with moderate-to-bright lighting, 40% obstacle density, and a traversable path on a low-pile carpet.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="metric-card h-100">
+                        <h6 class="text-primary text-uppercase">motion</h6>
+                        <p class="mb-0">The robot remained completely stationary with zero speed and acceleration, maintaining excellent stability with a maximum roll of 3.16° and pitch of 1.3°.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="metric-card h-100">
+                        <h6 class="text-primary text-uppercase">safety</h6>
+                        <p class="mb-0">The environment was safely navigable with a traversability score of 0.5, and no humans or animals were detected in the vicinity.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="metric-card h-100">
+                        <h6 class="text-primary text-uppercase">temporal_trends</h6>
+                        <p class="mb-0">Conditions remained stable throughout the analysis, with the robot staying stationary in a consistently cluttered but navigable environment.</p>
+                    </div>
+                </div>
+    </div>
+</div>
+
+<!-- COD Region Compliance -->
+<div class="container mb-5">
+    <h2 class="mb-4">📏 COD Region Analysis</h2>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="chart-container">
+                <svg viewBox="0 0 500 460" class="svg-chart" style="width:100%;max-width:500px;height:auto;">
+        <text x="250.0" y="28" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">ODD Compliance by Axis</text>
+        <polygon points="250.0,175.0 285.18241671106136,191.942958916357 293.8717560481821,230.01344202803415 269.5247682602901,260.54359905560887 230.4752317397099,260.54359905560887 206.12824395181792,230.01344202803415 214.81758328893866,191.942958916357" fill="rgba(40, 167, 69, 0.15)" stroke="#28a745" stroke-width="2"/><polygon points="250.0,137.05 314.85292147072306,168.28152093581807 330.8702703154823,238.4581114716763 285.99065615980146,294.73536759250567 214.00934384019857,294.73536759250567 169.1297296845177,238.4581114716763 185.1470785292769,168.28152093581807" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/><polygon points="250.0,99.1 344.5234262303848,144.62008295527912 367.8687845827825,246.9027809153184 302.45654405931276,328.92713612940247 197.54345594068724,328.92713612940247 132.1312154172175,246.90278091531843 155.4765737696152,144.62008295527914" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/><polygon points="250.0,60.0 375.0930371948848,120.24163170260265 405.9884659490918,255.6033494330103 319.4213982588093,364.1550188643871 180.5786017411907,364.1550188643871 94.01153405090821,255.60334943301032 124.90696280511521,120.24163170260266" fill="none" stroke="#dc3545" stroke-width="1.5" opacity="0.6"/><line x1="250.0" y1="220" x2="250.0" y2="60.0" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="375.0930371948848" y2="120.24163170260265" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="405.9884659490918" y2="255.6033494330103" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="319.4213982588093" y2="364.1550188643871" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="180.5786017411907" y2="364.1550188643871" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="94.01153405090821" y2="255.60334943301032" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="124.90696280511521" y2="120.24163170260266" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/>
+        <polygon points="250.0,175.0 285.18241671106136,191.942958916357 293.8717560481821,230.01344202803415 269.5247682602901,260.54359905560887 230.4752317397099,260.54359905560887 206.12824395181792,230.01344202803415 214.81758328893866,191.942958916357" fill="rgba(40, 167, 69, 0.3)" stroke="#28a745" stroke-width="2.5"/>
+        <circle cx="250.0" cy="175.0" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="285.18241671106136" cy="191.942958916357" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="293.8717560481821" cy="230.01344202803415" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="269.5247682602901" cy="260.54359905560887" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="230.4752317397099" cy="260.54359905560887" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="206.12824395181792" cy="230.01344202803415" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="214.81758328893866" cy="191.942958916357" r="5" fill="#28a745" stroke="white" stroke-width="2"/>
+        <text x="250.0" y="35.0" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Environment Type</text><text x="395.72966684424534" y="107.77183566542797" text-anchor="start" font-size="10" fill="var(--text-secondary)">Lighting Condi..</text><text x="430.48702419272826" y="260.0537681121366" text-anchor="start" font-size="10" fill="var(--text-secondary)">Traversability..</text><text x="328.09907304116047" y="394.17439622243546" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Max Speed Mps</text><text x="171.90092695883953" y="394.17439622243546" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Max Accel</text><text x="69.51297580727174" y="260.0537681121366" text-anchor="end" font-size="10" fill="var(--text-secondary)">Max Roll °</text><text x="104.27033315575463" y="107.771835665428" text-anchor="end" font-size="10" fill="var(--text-secondary)">Max Pitch °</text>
+        
+        <g transform="translate(70, 440)">
+            <circle cx="8" cy="0" r="5" fill="#28a745" stroke="white" stroke-width="1.5"/>
+            <text x="20" y="4" font-size="10" fill="var(--text-secondary)">Compliant (0%)</text>
+            <circle cx="160" cy="0" r="5" fill="#dc3545" stroke="white" stroke-width="1.5"/>
+            <text x="172" y="4" font-size="10" fill="var(--text-secondary)">Violation (outward)</text>
+        </g>
+    
+    </svg>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="compliance-table">
+                <table class="table table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ODD Axis</th>
+                            <th>Measured Value</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>environment_type</td>
+                            <td>{'indoor_residential': 1.0, 'type': 'enum'}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>lighting_conditions</td>
+                            <td>{'moderate': 0.5, 'bright': 0.5, 'type': 'enum'}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>max_accel_mps2</td>
+                            <td>{'type': 'range', 'min': 0.0, 'max': 0.0}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>max_pitch_deg</td>
+                            <td>{'type': 'range', 'min': 1.27, 'max': 1.3}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>max_roll_deg</td>
+                            <td>{'type': 'range', 'min': 0.49, 'max': 3.16}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>max_speed_mps</td>
+                            <td>{'type': 'range', 'min': 0.0, 'max': 0.0}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>traversability_score</td>
+                            <td>{'type': 'range', 'min': 0.5, 'max': 0.5}</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Issues & Recommendations -->
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-md-6">
+            <h2 class="mb-4">⚠️ Issues Identified</h2>
+            <div class="metric-card">
+                <ol class="mb-0">
+                    <li class='mb-2'>Severe camera compression artifacts were present across all windows, forcing a critical reliance on LiDAR and reducing sensor redundancy.</li>
+                </ol>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h2 class="mb-4">💡 Recommendations</h2>
+            <div class="metric-card">
+                <ol class="mb-0">
+                    <li class='mb-2'>Investigate and resolve the source of severe camera compression artifacts to restore perception system redundancy.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Costs -->
+<div class="container mb-5">
+    <h2 class="mb-4">💰 Analysis Costs</h2>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="chart-container">
+                <svg viewBox="0 0 400 300" class="svg-chart" style="width:100%;max-width:400px;height:auto;">
+        <text x="200.0" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">Cost Breakdown by Agent</text>
+        <path d="M 200.0 60.0 A 80 80 0 0 1 269.19327456629094 99.84665948150925 L 238.92121694353867 117.41374595834895 A 45 45 0 0 0 200.0 95.0 Z" fill="#667eea" stroke="white" stroke-width="2"/><path d="M 269.19327456629094 99.84665948150925 A 80 80 0 0 1 279.43741964931303 130.5291838018609 L 244.68354855273859 134.67266588854676 A 45 45 0 0 0 238.92121694353867 117.41374595834895 Z" fill="#764ba2" stroke="white" stroke-width="2"/><path d="M 279.43741964931303 130.5291838018609 A 80 80 0 0 1 265.4958972579935 185.93786501754693 L 236.84144220762133 165.84004907237014 A 45 45 0 0 0 244.68354855273859 134.67266588854676 Z" fill="#28a745" stroke="white" stroke-width="2"/><path d="M 265.4958972579935 185.93786501754693 A 80 80 0 0 1 198.4650430856677 219.9852730649283 L 199.13658673568807 184.99171609902217 A 45 45 0 0 0 236.84144220762133 165.84004907237014 Z" fill="#ffc107" stroke="white" stroke-width="2"/><path d="M 198.4650430856677 219.9852730649283 A 80 80 0 0 1 125.35618915226488 168.78022762466517 L 158.01285639814898 156.18887803887415 A 45 45 0 0 0 199.13658673568807 184.99171609902217 Z" fill="#dc3545" stroke="white" stroke-width="2"/><path d="M 125.35618915226488 168.78022762466517 A 80 80 0 0 1 199.99999999999997 60.0 L 200.0 95.0 A 45 45 0 0 0 158.01285639814898 156.18887803887415 Z" fill="#17a2b8" stroke="white" stroke-width="2"/>
+        <text x="200.0" y="135" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Total</text><text x="200.0" y="152" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">$0.059</text>
+        <rect x="30" y="250" width="12" height="12" fill="#667eea" rx="2"/><text x="46" y="260" font-size="10" fill="var(--text-secondary)">OddSpec (17%)</text><rect x="160" y="250" width="12" height="12" fill="#764ba2" rx="2"/><text x="176" y="260" font-size="10" fill="var(--text-secondary)">Perception (6%)</text><rect x="290" y="250" width="12" height="12" fill="#28a745" rx="2"/><text x="306" y="260" font-size="10" fill="var(--text-secondary)">Motion (12%)</text><rect x="30" y="268" width="12" height="12" fill="#ffc107" rx="2"/><text x="46" y="278" font-size="10" fill="var(--text-secondary)">Collision (16%)</text><rect x="160" y="268" width="12" height="12" fill="#dc3545" rx="2"/><text x="176" y="278" font-size="10" fill="var(--text-secondary)">Evaluator (19%)</text><rect x="290" y="268" width="12" height="12" fill="#17a2b8" rx="2"/><text x="306" y="278" font-size="10" fill="var(--text-secondary)">Report (31%)</text>
+    </svg>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="metric-card">
+                <h5>Cost Breakdown</h5>
+                <table class="table table-sm">
+                    <tr>
+                        <td>Total Tokens</td>
+                        <td class="text-end"><strong>46,051</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Input Tokens</td>
+                        <td class="text-end">39,035</td>
+                    </tr>
+                    <tr>
+                        <td>Output Tokens</td>
+                        <td class="text-end">1,031</td>
+                    </tr>
+                    <tr class="table-primary">
+                        <td><strong>Estimated Cost</strong></td>
+                        <td class="text-end"><strong>$0.0591 USD</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Duration</td>
+                        <td class="text-end">255.3s</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Executions -->
+<div class="container mb-5">
+    <h2 class="mb-4">🤖 Agent Executions</h2>
+    <div class="compliance-table">
+        <table class="table table-striped mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Agent</th>
+                    <th>Version</th>
+                    <th>Model</th>
+                    <th>Prompt Hash</th>
+                    <th>Tokens</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                                            <tr>
+                                                <td><code>CollisionAgent</code></td>
+                                                <td>7.4.0</td>
+                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><code>72f2f428</code></td>
+                                                <td>7,940</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>EvaluatorAgent</code></td>
+                                                <td>6.0.0</td>
+                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><code>d1c0cb6c</code></td>
+                                                <td>9,802</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>MotionAgent</code></td>
+                                                <td>7.4.0</td>
+                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><code>8322eaf7</code></td>
+                                                <td>6,079</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>OddSpecAgent</code></td>
+                                                <td>6.2.0</td>
+                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><code>2be77b23</code></td>
+                                                <td>5,725</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>PerceptionAgent</code></td>
+                                                <td>7.5.0</td>
+                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><code>4e3ff80c</code></td>
+                                                <td>3,480</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>ReportAgent</code></td>
+                                                <td>10.0.0</td>
+                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><code>ba91d286</code></td>
+                                                <td>13,025</td>
+                                            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="container-fluid bg-light text-muted py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <p class="mb-0">Generated by ODD Observer Analysis Pipeline</p>
+                <p class="mb-0"><small>November 29, 2025 at 21:36:29</small></p>
+            </div>
+            <div class="col-md-4 text-center">
+                <p class="mb-0">Pipeline v2.0.0</p>
+                <p class="mb-0"><small>2025-11-29T21:29:15</small></p>
+            </div>
+            <div class="col-md-4 text-end">
+                <p class="mb-0">Data Source: Real Robot (92% confidence)</p>
+                <p class="mb-0"><small>Scenario: real_2win</small></p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom Scripts -->
+<script>
+    // Dark mode toggle
+    function toggleDarkMode() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', newTheme);
+        document.getElementById('theme-icon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        localStorage.setItem('theme', newTheme);
+        
+    }
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+</script>
+
+</body>
+</html>
