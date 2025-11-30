@@ -2,13 +2,16 @@
 Report builder - Post-pipeline report assembly.
 
 This module handles report generation AFTER the ADK pipeline completes.
-It extracts all agent outputs from events and assembles comprehensive reports.
 
-Architecture:
-- ReportAgent (in pipeline): Generates executive summary using statistics tools
-- report_builder (post-pipeline): Assembles full technical report from all data
+Architecture (Phase 1.6):
+- ARTIFACTS: Full per-window data from tools (odd_spec.json, perception_analysis.json, etc.)
+- SESSION STATE: Agent summaries with temporal analysis (temp:perception_summary, etc.)
+- REPORT BUILDER: Assembles comprehensive reports from both sources
 
-This keeps ReportAgent's token context minimal while capturing all pipeline data.
+Data flow:
+    Tools → Artifacts (full detail)
+    Agents → Session (summaries)
+    Report Builder → Executive Summary + Full Technical Report
 """
 
 import json
@@ -20,263 +23,149 @@ from .utils import extract_json_block
 
 
 # =============================================================================
-# DATA EXTRACTION FROM PIPELINE EVENTS
+# ARTIFACT-BASED REPORT GENERATION (Phase 1.6)
 # =============================================================================
 
-def extract_all_agent_outputs(events: list) -> Dict[str, Any]:
+def generate_reports_from_artifacts(
+    artifacts: Dict[str, Any],
+    session_state: Dict[str, Any],
+    pipeline_metadata: Dict[str, Any],
+    output_dir: Optional[Path] = None
+) -> Dict[str, Any]:
     """
-    Extract outputs from ALL agents in the pipeline.
+    Generate reports from artifacts and session state (Phase 1.6 architecture).
 
-    Returns dict keyed by agent name with their parsed JSON outputs.
+    This is the primary entry point for post-pipeline report generation.
+
+    Args:
+        artifacts: Dict of artifact filename -> parsed JSON data
+                   Expected keys: odd_spec.json, perception_analysis.json,
+                   motion_analysis.json, collision_analysis.json, cod_construction.json
+        session_state: Dict of session state keys -> values
+                      Expected keys: temp:odd_spec, temp:perception_summary,
+                      temp:motion_summary, temp:collision_summary, 
+                      temp:evaluator_output, temp:report_output
+        pipeline_metadata: Metadata from pipeline run (versions, timing, tokens)
+        output_dir: Optional directory to save reports
+
+    Returns:
+        Dict with 'executive_summary' and 'full_report' keys
     """
-    outputs = {}
-
-    agent_names = [
-        "OddSpecAgent",
-        "PerceptionAgent",
-        "MotionAgent",
-        "CollisionAgent",
-        "EvaluatorAgent",
-        "ReportAgent"
-    ]
-
-    for event in events:
-        if event.author in agent_names and event.content and event.content.parts:
-            for part in event.content.parts:
-                if part.text:
-                    try:
-                        parsed = extract_json_block(part.text)
-                        outputs[event.author] = parsed
-                        break
-                    except Exception:
-                        continue
-
-    return outputs
-
-
-def extract_tool_calls(events: list) -> List[Dict[str, Any]]:
-    """
-    Extract all tool calls made during pipeline execution.
-
-    Useful for debugging and understanding agent behavior.
-    """
-    tool_calls = []
-
-    for event in events:
-        # Check for function call events in ADK format
-        if hasattr(event, 'content') and event.content and event.content.parts:
-            for part in event.content.parts:
-                if hasattr(part, 'function_call') and part.function_call:
-                    tool_calls.append({
-                        "agent": event.author,
-                        "tool_name": part.function_call.name,
-                        "args": dict(part.function_call.args) if part.function_call.args else {},
-                    })
-
-    return tool_calls
-
-
-# =============================================================================
-# STATISTICS COMPUTATION (same logic as report tool, for post-processing)
-# =============================================================================
-
-def compute_statistics(agent_outputs: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Compute comprehensive statistics from agent outputs.
-
-    This mirrors the compute_report_statistics_tool but works on extracted outputs.
-    """
-    odd_spec = agent_outputs.get("OddSpecAgent", {})
-    perception = agent_outputs.get("PerceptionAgent", {})
-    motion = agent_outputs.get("MotionAgent", {})
-    collision = agent_outputs.get("CollisionAgent", {})
-    evaluator = agent_outputs.get("EvaluatorAgent", {})
-
-    # Window stats
-    perception_windows = perception.get(
-        "per_window", perception.get("per_window_measurements", []))
-    motion_windows = motion.get(
-        "per_window", motion.get("per_window_measurements", []))
-    collision_windows = collision.get(
-        "per_window", collision.get("per_window_measurements", []))
-
-    window_stats = {
-        "total_windows": len(perception_windows),
-        "perception_windows": len(perception_windows),
-        "motion_windows": len(motion_windows),
-        "collision_windows": len(collision_windows),
-        "window_ids": [w.get("window_id", "") for w in perception_windows],
-    }
-
-    # Agent health
-    agent_health = {}
-
-    perception_empty = [w["window_id"]
-                        for w in perception_windows if not w.get("measurements")]
-    agent_health["perception"] = {
-        "windows_processed": len(perception_windows),
-        "empty_windows": perception_empty,
-        "status": "OK" if not perception_empty else f"WARNING: {len(perception_empty)} empty",
-    }
-
-    motion_empty = [w["window_id"]
-                    for w in motion_windows if not w.get("measurements")]
-    zero_accel = [w["window_id"] for w in motion_windows
-                  if w.get("measurements", {}).get("max_accel_mps2", 0) == 0]
-    agent_health["motion"] = {
-        "windows_processed": len(motion_windows),
-        "empty_windows": motion_empty,
-        "zero_acceleration_windows": zero_accel,
-        "status": "OK" if not motion_empty and not zero_accel else "WARNING",
-    }
-
-    collision_detected = [w["window_id"] for w in collision_windows
-                          if w.get("measurements", {}).get("collision_detected", 0) == 1]
-    agent_health["collision"] = {
-        "windows_processed": len(collision_windows),
-        "collision_detected_windows": collision_detected,
-        "collision_count": len(collision_detected),
-        "status": "OK",
-    }
-
-    # Measurement stats
-    measurement_stats = {}
-    all_measurements = {}
-    for windows in [perception_windows, motion_windows, collision_windows]:
-        for w in windows:
-            for key, value in w.get("measurements", {}).items():
-                if isinstance(value, (int, float)):
-                    if key not in all_measurements:
-                        all_measurements[key] = []
-                    all_measurements[key].append(value)
-
-    for key, values in all_measurements.items():
-        if values:
-            measurement_stats[key] = {
-                "min": round(min(values), 4),
-                "max": round(max(values), 4),
-                "mean": round(sum(values) / len(values), 4),
-                "samples": len(values),
-            }
-
-    # Compliance stats
-    compliance_verdict = evaluator.get("compliance_verdict", {})
-    compliance_stats = {
-        "verdict": compliance_verdict.get("verdict", "UNKNOWN"),
-        "confidence": compliance_verdict.get("confidence", 0),
-        "temporal_stability": compliance_verdict.get("temporal_stability", "UNKNOWN"),
-        "critical_axes": compliance_verdict.get("critical_axes", []),
-    }
-
-    # Data quality (computed, not from LLM)
-    warnings = []
-    anomalies = []
-
-    # Check for missing/empty data
-    if not perception_windows:
-        warnings.append("No perception data available")
-    if not motion_windows:
-        warnings.append("No motion data available")
-    if not collision_windows:
-        warnings.append("No collision data available")
-    if perception_empty:
-        warnings.append(f"Perception: {len(perception_empty)} empty windows")
-    if motion_empty:
-        warnings.append(f"Motion: {len(motion_empty)} empty windows")
-    if zero_accel and len(zero_accel) == len(motion_windows):
-        warnings.append(
-            "All windows show zero acceleration - possible sensor issue")
-
-    # Check for anomalies
-    if collision_detected:
-        anomalies.append(
-            f"Collisions detected in {len(collision_detected)} windows: {collision_detected}")
-
-    all_healthy = (
-        agent_health["perception"]["status"] == "OK" and
-        agent_health["motion"]["status"] == "OK" and
-        agent_health["collision"]["status"] == "OK"
+    # Build executive summary from session state (agent summaries)
+    executive_summary = _build_executive_summary_from_state(
+        session_state,
+        pipeline_metadata
     )
 
-    data_quality = {
-        "all_agents_healthy": all_healthy,
-        "warnings": warnings if warnings else [],
-        "anomalies": anomalies if anomalies else [],
-    }
+    # Build full technical report from artifacts (full detail)
+    full_report = _build_full_report_from_artifacts(
+        artifacts,
+        session_state,
+        pipeline_metadata
+    )
+
+    # Save if output_dir provided
+    if output_dir:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(output_dir / "executive_summary.json", "w") as f:
+            json.dump(executive_summary, f, indent=2)
+
+        with open(output_dir / "full_report.json", "w") as f:
+            json.dump(full_report, f, indent=2)
 
     return {
-        "window_stats": window_stats,
-        "agent_health": agent_health,
-        "measurement_stats": measurement_stats,
-        "compliance_stats": compliance_stats,
-        "data_quality": data_quality,
+        "executive_summary": executive_summary,
+        "full_report": full_report,
     }
 
 
-# =============================================================================
-# REPORT ASSEMBLY
-# =============================================================================
-
-def build_executive_summary_report(
-    agent_outputs: Dict[str, Any],
+def _build_executive_summary_from_state(
+    session_state: Dict[str, Any],
     pipeline_metadata: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
-    Build a concise executive summary report.
+    Build executive summary from session state (agent summaries).
 
-    Combines LLM synthesis (narrative) with Python-computed data (statistics).
-    This is what stakeholders see - high-level compliance status and key findings.
+    Session state contains temporal analysis and key insights from agents,
+    not the full per-window data.
     """
-    report_output = agent_outputs.get("ReportAgent", {})
-    stats = compute_statistics(agent_outputs)
+    # Parse session state values (they may be JSON strings)
+    odd_spec = _parse_state_value(session_state.get("temp:odd_spec", {}))
+    perception = _parse_state_value(
+        session_state.get("temp:perception_summary", {}))
+    motion = _parse_state_value(session_state.get("temp:motion_summary", {}))
+    collision = _parse_state_value(
+        session_state.get("temp:collision_summary", {}))
+    evaluator = _parse_state_value(
+        session_state.get("temp:evaluator_output", {}))
+    report = _parse_state_value(session_state.get("temp:report_output", {}))
 
-    # Map confidence value to category if LLM didn't provide it
-    confidence_val = stats["compliance_stats"]["confidence"]
-    confidence_category = report_output.get("confidence")
-    if not confidence_category:
-        if confidence_val >= 0.8:
-            confidence_category = "HIGH"
-        elif confidence_val >= 0.5:
-            confidence_category = "MEDIUM"
-        else:
-            confidence_category = "LOW"
+    # Extract compliance info from evaluator or report
+    compliance_verdict = evaluator.get("compliance_verdict", {})
+    if not compliance_verdict:
+        compliance_verdict = report.get("compliance", {})
+
+    # Build data quality from agent summaries
+    warnings = []
+    anomalies = []
+
+    # Check perception summary for issues
+    if perception.get("data_quality_issues"):
+        warnings.extend(perception["data_quality_issues"])
+    if perception.get("anomalies"):
+        anomalies.extend(perception["anomalies"])
+
+    # Check motion summary for issues
+    if motion.get("data_quality_issues"):
+        warnings.extend(motion["data_quality_issues"])
+    if motion.get("anomalies"):
+        anomalies.extend(motion["anomalies"])
+
+    # Check collision summary
+    if collision.get("collision_events"):
+        anomalies.append(
+            f"Collisions detected: {len(collision['collision_events'])} events")
 
     return {
         "report_type": "executive_summary",
         "generated_at": datetime.utcnow().isoformat() + "Z",
 
-        # =====================================================================
-        # LLM-SYNTHESIZED SECTIONS (narrative, interpretation)
-        # =====================================================================
-        "scenario_overview": report_output.get("scenario_overview", ""),
-        "key_observations": report_output.get("key_observations", []),
-        "recommendations": report_output.get("recommendations", []),
-        "pipeline_quality_assessment": report_output.get("pipeline_quality_assessment", ""),
+        # From Report Agent
+        "scenario_overview": report.get("scenario_overview", report.get("executive_summary", "")),
+        "key_observations": report.get("key_observations", report.get("key_findings", [])),
+        "recommendations": report.get("recommendations", []),
 
-        # =====================================================================
-        # PYTHON-COMPUTED SECTIONS (deterministic data)
-        # =====================================================================
-        "compliance": {
-            "verdict": stats["compliance_stats"]["verdict"],
-            "confidence": confidence_category,
-            "confidence_value": stats["compliance_stats"]["confidence"],
-            "stability": stats["compliance_stats"]["temporal_stability"],
-            "critical_axes": stats["compliance_stats"]["critical_axes"],
+        # From Sensor Agent Summaries
+        "temporal_insights": {
+            "perception": perception.get("temporal_analysis", perception.get("cross_window_observations", {})),
+            "motion": motion.get("temporal_analysis", motion.get("cross_window_observations", {})),
+            "collision": collision.get("temporal_analysis", {}),
         },
 
-        "data_quality": stats.get("data_quality", {
-            "all_agents_healthy": True,
-            "warnings": [],
-            "anomalies": [],
-        }),
+        # From Evaluator
+        "compliance": {
+            "verdict": compliance_verdict.get("verdict", "UNKNOWN"),
+            "confidence": compliance_verdict.get("confidence", 0),
+            "stability": compliance_verdict.get("temporal_stability", "UNKNOWN"),
+            "critical_axes": compliance_verdict.get("critical_axes", []),
+            "rationale": compliance_verdict.get("rationale", ""),
+        },
 
-        "measurement_summary": stats.get("measurement_stats", {}),
+        "data_quality": {
+            "warnings": warnings,
+            "anomalies": anomalies,
+        },
 
+        # From ODD Spec
+        "odd_summary": odd_spec.get("summary", {}),
+
+        # Metadata
         "scenario": {
             "name": pipeline_metadata.get("scenario_info", {}).get("scenario_name", ""),
-            "windows_analyzed": stats["window_stats"]["total_windows"],
+            "windows_analyzed": perception.get("windows_analyzed", 0),
         },
-
         "analysis": {
             "duration_seconds": round(pipeline_metadata.get("pipeline_duration_seconds", 0), 2),
             "total_tokens": sum(
@@ -288,24 +177,50 @@ def build_executive_summary_report(
     }
 
 
-def build_full_technical_report(
-    agent_outputs: Dict[str, Any],
+def _build_full_report_from_artifacts(
+    artifacts: Dict[str, Any],
+    session_state: Dict[str, Any],
     pipeline_metadata: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
-    Build comprehensive technical report with ALL pipeline data.
+    Build full technical report from artifacts (complete per-window data).
 
-    This captures everything for debugging, auditing, and detailed analysis.
-    No LLM involved - pure data assembly.
+    Artifacts contain all the detail; session state has summaries.
     """
-    odd_spec = agent_outputs.get("OddSpecAgent", {})
-    perception = agent_outputs.get("PerceptionAgent", {})
-    motion = agent_outputs.get("MotionAgent", {})
-    collision = agent_outputs.get("CollisionAgent", {})
-    evaluator = agent_outputs.get("EvaluatorAgent", {})
-    report = agent_outputs.get("ReportAgent", {})
+    # Extract artifacts
+    odd_spec_artifact = artifacts.get("odd_spec.json", {})
+    perception_artifact = artifacts.get("perception_analysis.json", {})
+    motion_artifact = artifacts.get("motion_analysis.json", {})
+    collision_artifact = artifacts.get("collision_analysis.json", {})
+    cod_artifact = artifacts.get("cod_construction.json", {})
 
-    stats = compute_statistics(agent_outputs)
+    # Parse session state for summaries
+    odd_spec_state = _parse_state_value(session_state.get("temp:odd_spec", {}))
+    perception_state = _parse_state_value(
+        session_state.get("temp:perception_summary", {}))
+    motion_state = _parse_state_value(
+        session_state.get("temp:motion_summary", {}))
+    collision_state = _parse_state_value(
+        session_state.get("temp:collision_summary", {}))
+    evaluator_state = _parse_state_value(
+        session_state.get("temp:evaluator_output", {}))
+    report_state = _parse_state_value(
+        session_state.get("temp:report_output", {}))
+
+    # Merge per-window data from artifacts
+    per_window_data = _merge_per_window_from_artifacts(
+        perception_artifact,
+        motion_artifact,
+        collision_artifact
+    )
+
+    # Compute statistics from artifacts
+    stats = _compute_statistics_from_artifacts(
+        perception_artifact,
+        motion_artifact,
+        collision_artifact,
+        cod_artifact
+    )
 
     return {
         "report_type": "full_technical",
@@ -313,72 +228,52 @@ def build_full_technical_report(
         "pipeline_version": pipeline_metadata.get("pipeline_version", "2.0.0"),
 
         # =====================================================================
-        # SECTION 1: EXECUTIVE SUMMARY (LLM synthesis + Python data)
+        # SECTION 1: EXECUTIVE SUMMARY (from session state)
         # =====================================================================
         "executive_summary": {
-            # LLM-synthesized narrative
-            "scenario_overview": report.get("scenario_overview", ""),
-            "key_observations": report.get("key_observations", []),
-            "recommendations": report.get("recommendations", []),
-            "pipeline_quality_assessment": report.get("pipeline_quality_assessment", ""),
-            # Python-computed data
-            "data_quality": stats.get("data_quality", {
-                "all_agents_healthy": True,
-                "warnings": [],
-                "anomalies": [],
-            }),
-            "measurement_summary": stats.get("measurement_stats", {}),
+            "scenario_overview": report_state.get("scenario_overview", ""),
+            "key_observations": report_state.get("key_observations", []),
+            "recommendations": report_state.get("recommendations", []),
         },
 
         # =====================================================================
-        # SECTION 2: COMPLIANCE VERDICT
+        # SECTION 2: COMPLIANCE (from cod_construction artifact + evaluator state)
         # =====================================================================
         "compliance": {
-            "verdict": evaluator.get("compliance_verdict", {}),
-            "cod_region": evaluator.get("cod_region", {}),
-            "region_metrics": evaluator.get("region_metrics", {}),
-            "key_concerns": evaluator.get("key_concerns", []),
+            "verdict": evaluator_state.get("compliance_verdict", cod_artifact.get("compliance_verdict", {})),
+            "cod_region": cod_artifact.get("cod_region", {}),
+            "region_metrics": cod_artifact.get("region_metrics", {}),
         },
 
         # =====================================================================
-        # SECTION 3: COMPUTED STATISTICS
+        # SECTION 3: ODD SPECIFICATION (from artifact)
+        # =====================================================================
+        "odd_specification": odd_spec_artifact.get("odd_specification", odd_spec_state.get("odd_specification", {})),
+
+        # =====================================================================
+        # SECTION 4: PER-WINDOW DATA (from artifacts - FULL DETAIL)
+        # =====================================================================
+        "per_window_data": per_window_data,
+
+        # =====================================================================
+        # SECTION 5: TEMPORAL ANALYSIS (from session state - SUMMARIES)
+        # =====================================================================
+        "temporal_analysis": {
+            "perception": perception_state.get("temporal_analysis", {}),
+            "motion": motion_state.get("temporal_analysis", {}),
+            "collision": collision_state.get("temporal_analysis", {}),
+        },
+
+        # =====================================================================
+        # SECTION 6: COMPUTED STATISTICS
         # =====================================================================
         "statistics": stats,
 
         # =====================================================================
-        # SECTION 4: ODD SPECIFICATION
-        # =====================================================================
-        "odd_specification": odd_spec.get("odd_specification", {}),
-
-        # =====================================================================
-        # SECTION 5: PER-WINDOW DATA (from sensor agents)
-        # =====================================================================
-        "per_window_data": _merge_per_window_data(perception, motion, collision),
-
-        # =====================================================================
-        # SECTION 6: TEMPORAL ANALYSIS (from sensor agents)
-        # =====================================================================
-        "temporal_analysis": {
-            "perception": perception.get("temporal_analysis", {}),
-            "motion": motion.get("temporal_analysis", {}),
-            "collision": collision.get("temporal_analysis", {}),
-        },
-
-        # =====================================================================
-        # SECTION 7: SUMMARY INSIGHTS (from sensor agents)
-        # =====================================================================
-        "summary_insights": {
-            "perception": perception.get("summary_insights", []),
-            "motion": motion.get("summary_insights", []),
-            "collision": collision.get("summary_insights", []),
-        },
-
-        # =====================================================================
-        # SECTION 8: PIPELINE METADATA
+        # SECTION 7: PIPELINE METADATA
         # =====================================================================
         "pipeline_metadata": {
             "scenario": pipeline_metadata.get("scenario_info", {}),
-            "odd_spec_hash": pipeline_metadata.get("odd_specification", {}).get("hash", ""),
             "timing": {
                 "start_time": pipeline_metadata.get("pipeline_start_time", ""),
                 "duration_seconds": pipeline_metadata.get("pipeline_duration_seconds", 0),
@@ -388,56 +283,45 @@ def build_full_technical_report(
         },
 
         # =====================================================================
-        # SECTION 9: RAW AGENT OUTPUTS (for debugging)
+        # SECTION 8: RAW ARTIFACTS (for debugging)
         # =====================================================================
-        "raw_agent_outputs": {
-            "odd_spec": odd_spec,
-            "perception": perception,
-            "motion": motion,
-            "collision": collision,
-            "evaluator": evaluator,
-            "report": report,
+        "raw_artifacts": {
+            "odd_spec": odd_spec_artifact,
+            "perception": perception_artifact,
+            "motion": motion_artifact,
+            "collision": collision_artifact,
+            "cod_construction": cod_artifact,
         },
     }
 
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
+def _parse_state_value(value: Any) -> Dict[str, Any]:
+    """Parse session state value - may be JSON string or dict."""
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            try:
+                return extract_json_block(value)
+            except:
+                return {}
+    elif isinstance(value, dict):
+        return value
+    return {}
 
-def _count_windows(agent_outputs: Dict[str, Any]) -> int:
-    """Count total windows analyzed from perception output."""
-    perception = agent_outputs.get("PerceptionAgent", {})
-    per_window = perception.get(
-        "per_window", perception.get("per_window_measurements", []))
-    return len(per_window)
 
-
-def _merge_per_window_data(
+def _merge_per_window_from_artifacts(
     perception: Dict[str, Any],
     motion: Dict[str, Any],
     collision: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     """
-    Merge per-window data from all sensor agents into unified structure.
-
-    Output: [
-        {
-            "window_id": "010",
-            "perception": {...},
-            "motion": {...},
-            "collision": {...}
-        },
-        ...
-    ]
+    Merge per-window data from artifacts into unified structure.
     """
-    # Extract per-window data from each agent
-    perception_windows = perception.get(
-        "per_window", perception.get("per_window_measurements", []))
-    motion_windows = motion.get(
-        "per_window", motion.get("per_window_measurements", []))
-    collision_windows = collision.get(
-        "per_window", collision.get("per_window_measurements", []))
+    # Extract per-window arrays from artifacts
+    perception_windows = perception.get("per_window", [])
+    motion_windows = motion.get("per_window", [])
+    collision_windows = collision.get("per_window", [])
 
     # Index by window_id
     merged = {}
@@ -446,22 +330,89 @@ def _merge_per_window_data(
         wid = pw.get("window_id", "")
         if wid not in merged:
             merged[wid] = {"window_id": wid}
-        merged[wid]["perception"] = pw.get("measurements", {})
+        merged[wid]["perception"] = pw
 
     for mw in motion_windows:
         wid = mw.get("window_id", "")
         if wid not in merged:
             merged[wid] = {"window_id": wid}
-        merged[wid]["motion"] = mw.get("measurements", {})
+        merged[wid]["motion"] = mw
 
     for cw in collision_windows:
         wid = cw.get("window_id", "")
         if wid not in merged:
             merged[wid] = {"window_id": wid}
-        merged[wid]["collision"] = cw.get("measurements", {})
+        merged[wid]["collision"] = cw
 
-    # Sort by window_id and return as list
     return sorted(merged.values(), key=lambda x: x.get("window_id", ""))
+
+
+def _compute_statistics_from_artifacts(
+    perception: Dict[str, Any],
+    motion: Dict[str, Any],
+    collision: Dict[str, Any],
+    cod: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Compute statistics from artifact data."""
+    perception_windows = perception.get("per_window", [])
+    motion_windows = motion.get("per_window", [])
+    collision_windows = collision.get("per_window", [])
+
+    # Window counts
+    window_stats = {
+        "total_windows": max(len(perception_windows), len(motion_windows), len(collision_windows)),
+        "perception_windows": len(perception_windows),
+        "motion_windows": len(motion_windows),
+        "collision_windows": len(collision_windows),
+    }
+
+    # Measurement ranges
+    measurement_stats = {}
+
+    # Gather all numeric measurements
+    all_measurements = {}
+    for windows in [perception_windows, motion_windows, collision_windows]:
+        for w in windows:
+            measurements = w.get("measurements", w.get("observations", {}))
+            if isinstance(measurements, dict):
+                for key, value in measurements.items():
+                    if isinstance(value, (int, float)):
+                        if key not in all_measurements:
+                            all_measurements[key] = []
+                        all_measurements[key].append(value)
+
+    for key, values in all_measurements.items():
+        if values:
+            measurement_stats[key] = {
+                "min": round(min(values), 4),
+                "max": round(max(values), 4),
+                "mean": round(sum(values) / len(values), 4),
+                "samples": len(values),
+            }
+
+    # Compliance from COD artifact
+    compliance_stats = {}
+    if cod:
+        verdict = cod.get("compliance_verdict", {})
+        compliance_stats = {
+            "verdict": verdict.get("verdict", "UNKNOWN"),
+            "confidence": verdict.get("confidence", 0),
+            "critical_axes": verdict.get("critical_axes", []),
+        }
+
+        # Region metrics
+        region_metrics = cod.get("region_metrics", {})
+        if region_metrics:
+            compliance_stats["fraction_outside_odd"] = region_metrics.get(
+                "fraction_outside_odd", 0)
+            compliance_stats["windows_violated"] = region_metrics.get(
+                "windows_violated", [])
+
+    return {
+        "window_stats": window_stats,
+        "measurement_stats": measurement_stats,
+        "compliance_stats": compliance_stats,
+    }
 
 
 def _build_agent_summary(agent_executions: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -507,76 +458,86 @@ def _build_token_summary(agent_executions: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # =============================================================================
-# REPORT GENERATION ENTRY POINT
+# LEGACY ENTRY POINT (for backwards compatibility)
 # =============================================================================
+
+def extract_all_agent_outputs(events: list) -> Dict[str, Any]:
+    """
+    Extract outputs from ALL agents in the pipeline (legacy method).
+
+    DEPRECATED: Use artifacts + session state instead.
+    This exists for backwards compatibility with event-based extraction.
+    """
+    outputs = {}
+
+    agent_names = [
+        "OddSpecAgent",
+        "PerceptionAgent",
+        "MotionAgent",
+        "CollisionAgent",
+        "EvaluatorAgent",
+        "ReportAgent"
+    ]
+
+    for event in events:
+        if event.author in agent_names and event.content and event.content.parts:
+            for part in event.content.parts:
+                # Check for direct text output (most agents)
+                if part.text:
+                    try:
+                        parsed = extract_json_block(part.text)
+                        outputs[event.author] = parsed
+                        break
+                    except Exception:
+                        continue
+
+                # Check for function response (tool returns)
+                if hasattr(part, 'function_response') and part.function_response:
+                    try:
+                        response = part.function_response.response
+                        if isinstance(response, str):
+                            parsed = extract_json_block(response)
+                            outputs[event.author] = parsed
+                            break
+                        elif isinstance(response, dict):
+                            outputs[event.author] = response
+                            break
+                    except Exception:
+                        continue
+
+    return outputs
+
 
 def generate_reports(
     events: list,
     pipeline_metadata: Dict[str, Any],
-    output_dir: Optional[Path] = None,
-    artifact_dir: Optional[Path] = None,
+    output_dir: Optional[Path] = None
 ) -> Dict[str, Any]:
     """
-    Generate all reports from pipeline events.
+    Generate all reports from pipeline events (legacy method).
 
-    Args:
-        events: List of ADK events from pipeline execution
-        pipeline_metadata: Metadata from pipeline run
-        output_dir: Optional directory to save reports
-
-    Returns:
-        Dict with 'executive_summary' and 'full_report' keys
+    DEPRECATED: Use generate_reports_from_artifacts() instead.
+    This exists for backwards compatibility.
     """
-    # Extract all agent outputs
+    # Extract agent outputs from events (legacy approach)
     agent_outputs = extract_all_agent_outputs(events)
 
-    # If per-window data is missing, try to merge from saved artifacts
-    def _load_json(path: Path) -> Optional[Dict[str, Any]]:
-        try:
-            with open(path, "r") as f:
-                return json.load(f)
-        except Exception:
-            return None
-
-    if artifact_dir:
-        mapping = {
-            "PerceptionAgent": "perception_output.json",
-            "MotionAgent": "motion_output.json",
-            "CollisionAgent": "collision_output.json",
-            "OddSpecAgent": "odd_spec.json",
-        }
-        artifact_dir = Path(artifact_dir)
-        for agent, fname in mapping.items():
-            artifact_path = artifact_dir / fname
-            if not artifact_path.exists():
-                continue
-            artifact_data = _load_json(artifact_path)
-            if not artifact_data:
-                continue
-            existing = agent_outputs.get(agent, {})
-            if isinstance(existing, dict):
-                merged = {**existing, **artifact_data}
-            else:
-                merged = artifact_data
-            agent_outputs[agent] = merged
-
-    # Build reports
-    executive_summary = build_executive_summary_report(
-        agent_outputs, pipeline_metadata)
-    full_report = build_full_technical_report(agent_outputs, pipeline_metadata)
-
-    # Save if output_dir provided
-    if output_dir:
-        output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        with open(output_dir / "executive_summary.json", "w") as f:
-            json.dump(executive_summary, f, indent=2)
-
-        with open(output_dir / "full_report.json", "w") as f:
-            json.dump(full_report, f, indent=2)
-
-    return {
-        "executive_summary": executive_summary,
-        "full_report": full_report,
+    # Convert to session state format for new architecture
+    session_state = {
+        "temp:odd_spec": agent_outputs.get("OddSpecAgent", {}),
+        "temp:perception_summary": agent_outputs.get("PerceptionAgent", {}),
+        "temp:motion_summary": agent_outputs.get("MotionAgent", {}),
+        "temp:collision_summary": agent_outputs.get("CollisionAgent", {}),
+        "temp:evaluator_output": agent_outputs.get("EvaluatorAgent", {}),
+        "temp:report_output": agent_outputs.get("ReportAgent", {}),
     }
+
+    # Empty artifacts (legacy mode - no artifacts available)
+    artifacts = {}
+
+    return generate_reports_from_artifacts(
+        artifacts=artifacts,
+        session_state=session_state,
+        pipeline_metadata=pipeline_metadata,
+        output_dir=output_dir
+    )

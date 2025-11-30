@@ -83,13 +83,26 @@ def create_odd_workflow(
 
 def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
     """Extract final report from ReportAgent output or tool response."""
+
+    def _unwrap_report(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Unwrap double-wrapped report if needed ({"result": "escaped json"})."""
+        if isinstance(data, dict) and "result" in data and len(data) == 1:
+            result = data["result"]
+            if isinstance(result, str):
+                try:
+                    return json.loads(result)
+                except json.JSONDecodeError:
+                    pass
+        return data
+
     for event in events:
         if event.author == "ReportAgent" and event.content and event.content.parts:
             for part in event.content.parts:
                 # Check for direct text output
                 if part.text:
                     try:
-                        return extract_json_block(part.text)
+                        parsed = extract_json_block(part.text)
+                        return _unwrap_report(parsed)
                     except Exception:
                         continue
                 # Check for function response (tool return value)
@@ -97,9 +110,10 @@ def extract_final_report(events: list) -> Optional[Dict[str, Any]]:
                     try:
                         response = part.function_response.response
                         if isinstance(response, str):
-                            return extract_json_block(response)
+                            parsed = extract_json_block(response)
+                            return _unwrap_report(parsed)
                         elif isinstance(response, dict):
-                            return response
+                            return _unwrap_report(response)
                     except Exception:
                         continue
     return None
@@ -254,10 +268,16 @@ async def run_odd_workflow(
 
     # Create session and run
     user_id = "odd_analysis"
+
+    # Seed session state with knowledge references if provided
+    initial_state = knowledge_seed or {}
+    if initial_state:
+        print(f"\n📚 Knowledge seed loaded: {list(initial_state.keys())}")
+
     session = await session_service.create_session(
         app_name="OddWorkflowApp",
         user_id=user_id,
-        state=knowledge_seed or {},
+        state=initial_state,
     )
 
     events = []
@@ -283,10 +303,8 @@ async def run_odd_workflow(
     for call in tool_calls:
         print(f"   • {call}")
 
-    # Check artifacts saved and persist them to disk for downstream reporting
-    artifact_base = scenario_path_obj / "artifacts"
-    artifact_base.mkdir(parents=True, exist_ok=True)
-    artifacts = []
+    # Check artifacts saved and load them for post-processing
+    artifacts_data = {}
     try:
         artifacts = await artifact_service.list_artifact_keys(
             app_name="OddWorkflowApp",
@@ -295,28 +313,44 @@ async def run_odd_workflow(
         )
         print(f"\n📦 Artifacts saved: {artifacts}")
 
-        for filename in artifacts:
-            part = await artifact_service.load_artifact(
-                app_name="OddWorkflowApp",
-                user_id=user_id,
-                session_id=session.id,
-                filename=filename,
-            )
-            if not part:
-                continue
-            # Handle inline bytes or text
-            data_bytes = None
-            if part.inline_data and part.inline_data.data:
-                data_bytes = part.inline_data.data
-            elif part.text:
-                data_bytes = part.text.encode("utf-8")
-            if data_bytes is not None:
-                out_path = artifact_base / filename
-                out_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(out_path, "wb") as f:
-                    f.write(data_bytes)
+        # Load each artifact for post-processing
+        for artifact_key in artifacts:
+            try:
+                artifact_part = await artifact_service.load_artifact(
+                    app_name="OddWorkflowApp",
+                    user_id=user_id,
+                    session_id=session.id,
+                    filename=artifact_key
+                )
+                if artifact_part and artifact_part.inline_data:
+                    artifact_bytes = artifact_part.inline_data.data
+                    artifacts_data[artifact_key] = json.loads(
+                        artifact_bytes.decode('utf-8'))
+                    print(f"   ✅ Loaded: {artifact_key}")
+            except Exception as e:
+                print(f"   ⚠️ Could not load {artifact_key}: {e}")
     except Exception as e:
-        print(f"\n⚠️ Could not list/persist artifacts: {e}")
+        print(f"\n⚠️ Could not list artifacts: {e}")
+
+    # Dump session state to file (captures cross-window insights from agents)
+    state_outputs = {}
+    try:
+        final_session = await session_service.get_session(
+            app_name="OddWorkflowApp",
+            user_id=user_id,
+            session_id=session.id
+        )
+        state_outputs = {
+            k: v for k, v in final_session.state.items()
+            if k.startswith('temp:')
+        }
+        if state_outputs:
+            state_file = scenario_path_obj / "state_outputs.json"
+            with open(state_file, 'w') as f:
+                json.dump(state_outputs, f, indent=2)
+            print(f"\n📋 State outputs saved: {list(state_outputs.keys())}")
+    except Exception as e:
+        print(f"\n⚠️ Could not dump state: {e}")
 
     pipeline_duration = time.time() - pipeline_start
 
@@ -343,41 +377,6 @@ async def run_odd_workflow(
             scenario_path=scenario_path,
         )
 
-        # Capture knowledge manifest references (if seeded into session memory)
-        knowledge_refs = {}
-        try:
-            session_snapshot = await session_service.get_session(
-                app_name="OddWorkflowApp",
-                user_id=user_id,
-                session_id=session.id,
-            )
-            state = session_snapshot.state if session_snapshot else {}
-
-            def _get_state_value(key: str):
-                if key in state:
-                    return state[key]
-                for prefix in ("user:", "app:", "temp:"):
-                    prefixed = f"{prefix}{key}"
-                    if prefixed in state:
-                        return state[prefixed]
-                return None
-
-            manifest = _get_state_value("ref:knowledge_manifest")
-            fundamentals = _get_state_value("ref:odd_cod_fundamentals")
-            sensors = _get_state_value("ref:sensor_interpretation")
-
-            if manifest:
-                knowledge_refs["manifest"] = manifest
-            if fundamentals:
-                knowledge_refs["fundamentals"] = fundamentals
-            if sensors:
-                knowledge_refs["sensors"] = sensors
-        except Exception as e:
-            print(f"\n⚠️ Could not read knowledge manifest from session: {e}")
-
-        if knowledge_refs:
-            pipeline_metadata["knowledge_refs"] = knowledge_refs
-
         # Compute lightweight analysis metadata for reports
         total_tokens = sum(
             exec_data.get('token_usage', {}).get('total_tokens', 0)
@@ -399,70 +398,43 @@ async def run_odd_workflow(
             'cost_breakdown': cost_data['breakdown'],
             'cost_per_agent': cost_data['per_agent'],
         }
-        if knowledge_refs:
-            analysis_metadata['knowledge_refs'] = knowledge_refs
 
         # Extract evaluator output for full_analysis
         evaluator_output = extract_agent_output(events, "EvaluatorAgent")
 
         # =====================================================================
-        # POST-PIPELINE REPORT GENERATION
+        # POST-PIPELINE REPORT GENERATION (Phase 1.6 - Artifact-based)
         # =====================================================================
-        # Use report_builder to generate comprehensive reports from all outputs
-        from .report_builder import extract_all_agent_outputs, generate_reports
-
-        # Extract all agent outputs for full report
-        all_agent_outputs = extract_all_agent_outputs(events)
-
-        # Merge in saved artifacts to restore per-window data (if present)
-        def _load_artifact(filename: str) -> Any:
-            path = artifact_base / filename
-            if path.exists():
-                with open(path, "r") as f:
-                    return json.load(f)
-            return None
-
-        def _merge_agent_output(agent_outputs: dict, agent: str, artifact_data: dict):
-            if not artifact_data:
-                return
-            existing = agent_outputs.get(agent, {})
-            if isinstance(existing, dict):
-                merged = {**existing, **artifact_data}
-            else:
-                merged = artifact_data
-            agent_outputs[agent] = merged
-
-        _merge_agent_output(all_agent_outputs, "PerceptionAgent",
-                            _load_artifact("perception_output.json"))
-        _merge_agent_output(all_agent_outputs, "MotionAgent",
-                            _load_artifact("motion_output.json"))
-        _merge_agent_output(all_agent_outputs, "CollisionAgent",
-                            _load_artifact("collision_output.json"))
-        _merge_agent_output(all_agent_outputs, "OddSpecAgent",
-                            _load_artifact("odd_spec.json"))
+        # Use report_builder to generate comprehensive reports from:
+        # 1. Artifacts (full per-window data from tools)
+        # 2. Session state (agent summaries with temporal analysis)
+        # 3. Pipeline metadata (versions, costs, timing)
+        from .report_builder import generate_reports_from_artifacts
 
         # Generate both executive summary and full technical report
-        reports = generate_reports(
-            events=events,
+        reports = generate_reports_from_artifacts(
+            artifacts=artifacts_data,
+            session_state=state_outputs,
             pipeline_metadata=pipeline_metadata,
             output_dir=scenario_path_obj,  # Save to scenario directory
-            artifact_dir=artifact_base,  # Allow report builder to read artifacts
         )
 
         # Return report + metadata
-        # Phase 1.4.4: Report is flat, evaluator output goes in full_analysis
+        # Phase 1.6: Artifacts have full data, session has summaries
         return {
             'report': report,  # From ReportAgent (executive summary)
-            'full_analysis': evaluator_output or {},  # COD + compliance
+            'full_analysis': artifacts_data.get('cod_construction.json', evaluator_output or {}),
             'analysis_metadata': analysis_metadata,
             'pipeline_metadata': pipeline_metadata,
-            # New: comprehensive reports from post-processing
+            # Comprehensive reports from post-processing
             'reports': {
                 'executive_summary': reports['executive_summary'],
                 'full_technical': reports['full_report'],
             },
-            # New: all raw agent outputs for debugging
-            'agent_outputs': all_agent_outputs,
+            # Artifacts contain full per-window data
+            'artifacts': artifacts_data,
+            # Session state contains agent summaries
+            'session_state': state_outputs,
         }
     else:
         print("\n❌ No valid report generated")

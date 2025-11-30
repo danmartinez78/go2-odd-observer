@@ -10,7 +10,7 @@
     
     <style>
         :root {
-            --status-color: #28a745;
+            --status-color: #6c757d;
             --bg-primary: #ffffff;
             --bg-secondary: #f8f9fa;
             --text-primary: #212529;
@@ -187,19 +187,19 @@
             <div class="col-md-8">
                 <h1 class="display-4">🤖 ODD Analysis Report</h1>
                 <h2 class="h3">Scenario: sim_2win</h2>
-                <p class="lead mb-0">Generated November 29, 2025 at 23:23:19</p>
+                <p class="lead mb-0">Generated November 30, 2025 at 02:20:53</p>
                 <p class="mb-0">
                     <small>Pipeline v2.0.0 | 
-                    48,290 tokens | 
-                    $0.0632 USD</small>
+                    36,193 tokens | 
+                    $0.0167 USD</small>
                 </p>
             </div>
             <div class="col-md-4 text-end">
                 <div class="status-badge">
-                    ✅ IN ODD
+                    ❓ UNKNOWN
                 </div>
                 <div class="mt-2">
-                    <small>Confidence: 95%</small>
+                    <small>Confidence: 0%</small>
                 </div>
             </div>
         </div>
@@ -217,13 +217,13 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card text-center">
-                <div class="metric-value">2</div>
+                <div class="metric-value">0</div>
                 <div class="metric-label">Windows Violated</div>
             </div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card text-center">
-                <div class="metric-value">STABLE</div>
+                <div class="metric-value">N/A</div>
                 <div class="metric-label">Temporal Stability</div>
             </div>
         </div>
@@ -240,12 +240,12 @@
 <div class="container mb-5">
     <h2 class="mb-4">📋 Executive Summary</h2>
     <div class="metric-card">
-        <p class="lead mb-3">The verdict is IN_ODD based on a region_distance of 0.0, indicating the COD is comfortably within the ODD. All measured axes, including max pitch (6.95° vs 15° limit), max roll (4.99° vs 10° limit), and acceleration (0.15 m/s² vs 10 m/s² limit), were well within their specified boundaries. No critical hazards like stairs or human proximity were detected. Note: The tool's `windows_violated` flags appear anomalous as they contradict the zero distance metric and raw data, and are thus disregarded.</p>
+        <p class="lead mb-3">The robot successfully operated within a simulated indoor residential environment, demonstrating full compliance with its operational design domain. All motion, environmental, and safety parameters remained well within specified limits, with no detected collisions or close proximity to humans or animals. The system performed stably and as expected.</p>
         <div class="mt-3">
             <strong>Critical Axes:</strong> <span class='text-muted'>None</span>
         </div>
         <div class="mt-2">
-            <strong>Rationale:</strong> The verdict is IN_ODD based on a region_distance of 0.0, indicating the COD is comfortably within the ODD. All measured axes, including max pitch (6.95° vs 15° limit), max roll (4.99° vs 10° limit), and acceleration (0.15 m/s² vs 10 m/s² limit), were well within their specified boundaries. No critical hazards like stairs or human proximity were detected. Note: The tool's `windows_violated` flags appear anomalous as they contradict the zero distance metric and raw data, and are thus disregarded.
+            <strong>Rationale:</strong> No rationale available.
         </div>
     </div>
 </div>
@@ -273,7 +273,7 @@
                         <div class="metric-label">Surface Type</div>
                     </div>
                     <div class="col-md-3 text-center">
-                        <div class="h5 mb-1">Simulation (95% confidence)</div>
+                        <div class="h5 mb-1">Simulation</div>
                         <div class="metric-label">Data Source</div>
                     </div>
                 </div>
@@ -338,25 +338,25 @@
                 <div class="col-md-6 mb-3">
                     <div class="metric-card h-100">
                         <h6 class="text-primary text-uppercase">perception</h6>
-                        <p class="mb-0">The environment was a simulated indoor space with a smooth floor, low obstacle density (max 3.2%), and lighting that degraded from moderate to dim.</p>
+                        <p class="mb-0">The environment consisted of moderate lighting, smooth carpet/hardwood terrain with an obstacle density ranging from 1.0% to 3.2%, a high traversability score of 0.95-1.0, and no detected stairs, humans, or animals.</p>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="metric-card h-100">
                         <h6 class="text-primary text-uppercase">motion</h6>
-                        <p class="mb-0">The robot transitioned from a slow turning motion to a stationary state, with stable dynamics and a maximum pitch of 6.95° on a mild incline, well within the 15° ODD limit.</p>
+                        <p class="mb-0">The robot exhibited primarily rotational motion with a maximum acceleration of 0.146 m/s², zero linear speed, a maximum roll of 4.99°, and a maximum pitch of 6.95°, all well within defined limits.</p>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="metric-card h-100">
                         <h6 class="text-primary text-uppercase">safety</h6>
-                        <p class="mb-0">The robot maintained a safe distance from all obstacles, with the nearest being 2.1 meters away, and no humans or animals were detected.</p>
+                        <p class="mb-0">No collisions were detected, with minimum obstacle proximity consistently above 2.1m, indicating a low collision risk and highly traversable environment.</p>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="metric-card h-100">
                         <h6 class="text-primary text-uppercase">temporal_trends</h6>
-                        <p class="mb-0">Conditions remained stable, with a slight, managed degradation in lighting and a minor increase in obstacle density as the robot approached furniture.</p>
+                        <p class="mb-0">All observed metrics remained stable and well within ODD specifications across both analyzed windows, indicating consistent and compliant operation.</p>
                     </div>
                 </div>
     </div>
@@ -368,21 +368,7 @@
     <div class="row">
         <div class="col-lg-6">
             <div class="chart-container">
-                <svg viewBox="0 0 500 460" class="svg-chart" style="width:100%;max-width:500px;height:auto;">
-        <text x="250.0" y="28" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">ODD Compliance by Axis</text>
-        <polygon points="250.0,175.0 288.97114317029974,197.5 288.97114317029974,242.5 250.0,265.0 211.02885682970026,242.5 211.02885682970026,197.50000000000003" fill="rgba(40, 167, 69, 0.15)" stroke="#28a745" stroke-width="2"/><polygon points="250.0,137.05 321.83680724391917,178.525 321.8368072439192,261.47499999999997 250.0,302.95 178.16319275608083,261.475 178.16319275608078,178.52500000000003" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/><polygon points="250.0,99.1 354.70247131753865,159.55 354.70247131753865,280.45 250.0,340.9 145.29752868246138,280.45000000000005 145.29752868246132,159.55000000000007" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/><polygon points="250.0,60.0 388.56406460551017,140.0 388.5640646055102,300.0 250.0,380.0 111.43593539448983,300.00000000000006 111.43593539448975,140.0000000000001" fill="none" stroke="#dc3545" stroke-width="1.5" opacity="0.6"/><line x1="250.0" y1="220" x2="250.0" y2="60.0" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="388.56406460551017" y2="140.0" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="388.5640646055102" y2="300.0" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="250.0" y2="380.0" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="111.43593539448983" y2="300.00000000000006" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="111.43593539448975" y2="140.0000000000001" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/>
-        <polygon points="250.0,175.0 288.97114317029974,197.5 288.97114317029974,242.5 250.0,265.0 211.02885682970026,242.5 211.02885682970026,197.50000000000003" fill="rgba(40, 167, 69, 0.3)" stroke="#28a745" stroke-width="2.5"/>
-        <circle cx="250.0" cy="175.0" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="288.97114317029974" cy="197.5" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="288.97114317029974" cy="242.5" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="250.0" cy="265.0" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="211.02885682970026" cy="242.5" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="211.02885682970026" cy="197.50000000000003" r="5" fill="#28a745" stroke="white" stroke-width="2"/>
-        <text x="250.0" y="35.0" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Environment Type</text><text x="410.88457268119896" y="130.0" text-anchor="start" font-size="10" fill="var(--text-secondary)">Lighting Condi..</text><text x="410.88457268119896" y="310.0" text-anchor="start" font-size="10" fill="var(--text-secondary)">Max Speed Mps</text><text x="250.0" y="412.0" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Max Accel</text><text x="89.11542731880107" y="310.00000000000006" text-anchor="end" font-size="10" fill="var(--text-secondary)">Max Pitch °</text><text x="89.11542731880098" y="130.0000000000001" text-anchor="end" font-size="10" fill="var(--text-secondary)">Max Roll °</text>
-        
-        <g transform="translate(70, 440)">
-            <circle cx="8" cy="0" r="5" fill="#28a745" stroke="white" stroke-width="1.5"/>
-            <text x="20" y="4" font-size="10" fill="var(--text-secondary)">Compliant (0%)</text>
-            <circle cx="160" cy="0" r="5" fill="#dc3545" stroke="white" stroke-width="1.5"/>
-            <text x="172" y="4" font-size="10" fill="var(--text-secondary)">Violation (outward)</text>
-        </g>
-    
-    </svg>
+                <div class="text-muted text-center p-4">No compliance data available</div>
             </div>
         </div>
         <div class="col-lg-6">
@@ -396,37 +382,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        
-                        <tr>
-                            <td>Environment Type</td>
-                            <td>Indoor Residential</td>
-                            <td class="text-success">✅ 0%</td>
-                        </tr>
-                        <tr>
-                            <td>Lighting Conditions</td>
-                            <td>Moderate, Dim</td>
-                            <td class="text-success">✅ 0%</td>
-                        </tr>
-                        <tr>
-                            <td>Max Accel Mps2</td>
-                            <td>0.10 - 0.15</td>
-                            <td class="text-success">✅ 0%</td>
-                        </tr>
-                        <tr>
-                            <td>Max Pitch Deg</td>
-                            <td>5.45 - 6.95</td>
-                            <td class="text-success">✅ 0%</td>
-                        </tr>
-                        <tr>
-                            <td>Max Roll Deg</td>
-                            <td>2.49 - 4.99</td>
-                            <td class="text-success">✅ 0%</td>
-                        </tr>
-                        <tr>
-                            <td>Max Speed Mps</td>
-                            <td>0.00</td>
-                            <td class="text-success">✅ 0%</td>
-                        </tr>
+                        <tr><td colspan="3" class="text-center text-muted">No COD data available</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -441,7 +397,7 @@
             <h2 class="mb-4">⚠️ Issues Identified</h2>
             <div class="metric-card">
                 <ol class="mb-0">
-                    <li class='mb-2'>The 'construct_cod_tool' produced contradictory outputs: 'region_distance' was 0.0 (IN_ODD) while 'windows_violated' flagged all windows. The final verdict correctly relies on the distance metric and raw data.</li>
+                    <li class="text-muted">No issues identified</li>
                 </ol>
             </div>
         </div>
@@ -449,7 +405,7 @@
             <h2 class="mb-4">💡 Recommendations</h2>
             <div class="metric-card">
                 <ol class="mb-0">
-                    <li class='mb-2'>Continue normal operation.</li><li class='mb-2'>Investigate the contradictory flagging behavior in the 'construct_cod_tool' to ensure reporting accuracy.</li>
+                    <li class='mb-2'>Continue normal operation</li>
                 </ol>
             </div>
         </div>
@@ -464,9 +420,9 @@
             <div class="chart-container">
                 <svg viewBox="0 0 400 300" class="svg-chart" style="width:100%;max-width:400px;height:auto;">
         <text x="200.0" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">Cost Breakdown by Agent</text>
-        <path d="M 200.0 60.0 A 80 80 0 0 1 270.9322962562621 103.00527946025446 L 239.8994166441474 119.19046969639314 A 45 45 0 0 0 200.0 95.0 Z" fill="#667eea" stroke="white" stroke-width="2"/><path d="M 270.9322962562621 103.00527946025446 A 80 80 0 0 1 279.47551944134545 130.85441037831225 L 244.70497968575683 134.85560583780065 A 45 45 0 0 0 239.8994166441474 119.19046969639314 Z" fill="#764ba2" stroke="white" stroke-width="2"/><path d="M 279.47551944134545 130.85441037831225 A 80 80 0 0 1 266.04125955271627 185.15032709395092 L 237.1482084984029 165.3970589903474 A 45 45 0 0 0 244.70497968575683 134.85560583780065 Z" fill="#28a745" stroke="white" stroke-width="2"/><path d="M 266.04125955271627 185.15032709395092 A 80 80 0 0 1 196.28897449059852 219.91388045683036 L 197.91254815096167 184.95155775696708 A 45 45 0 0 0 237.1482084984029 165.3970589903474 Z" fill="#ffc107" stroke="white" stroke-width="2"/><path d="M 196.28897449059852 219.91388045683036 A 80 80 0 0 1 124.84666761436934 167.42219231452725 L 157.72625053308275 155.4249831769216 A 45 45 0 0 0 197.91254815096167 184.95155775696708 Z" fill="#dc3545" stroke="white" stroke-width="2"/><path d="M 124.84666761436934 167.42219231452725 A 80 80 0 0 1 199.99999999999997 60.0 L 200.0 95.0 A 45 45 0 0 0 157.72625053308275 155.4249831769216 Z" fill="#17a2b8" stroke="white" stroke-width="2"/>
-        <text x="200.0" y="135" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Total</text><text x="200.0" y="152" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">$0.063</text>
-        <rect x="30" y="250" width="12" height="12" fill="#667eea" rx="2"/><text x="46" y="260" font-size="10" fill="var(--text-secondary)">OddSpec (17%)</text><rect x="160" y="250" width="12" height="12" fill="#764ba2" rx="2"/><text x="176" y="260" font-size="10" fill="var(--text-secondary)">Perception (6%)</text><rect x="290" y="250" width="12" height="12" fill="#28a745" rx="2"/><text x="306" y="260" font-size="10" fill="var(--text-secondary)">Motion (11%)</text><rect x="30" y="268" width="12" height="12" fill="#ffc107" rx="2"/><text x="46" y="278" font-size="10" fill="var(--text-secondary)">Collision (16%)</text><rect x="160" y="268" width="12" height="12" fill="#dc3545" rx="2"/><text x="176" y="278" font-size="10" fill="var(--text-secondary)">Evaluator (19%)</text><rect x="290" y="268" width="12" height="12" fill="#17a2b8" rx="2"/><text x="306" y="278" font-size="10" fill="var(--text-secondary)">Report (31%)</text>
+        <path d="M 200.0 60.0 A 80 80 0 0 1 224.05646396034183 63.70264394014184 L 213.5317609776923 97.08273721632979 A 45 45 0 0 0 200.0 95.0 Z" fill="#667eea" stroke="white" stroke-width="2"/><path d="M 224.05646396034183 63.70264394014184 A 80 80 0 0 1 269.7731982086624 179.13694944339312 L 239.2474239923726 162.01453406190862 A 45 45 0 0 0 213.5317609776923 97.08273721632979 Z" fill="#764ba2" stroke="white" stroke-width="2"/><path d="M 269.7731982086624 179.13694944339312 A 80 80 0 0 1 244.4956470335017 206.48411385489038 L 225.02880145634472 177.39731404337584 A 45 45 0 0 0 239.2474239923726 162.01453406190862 Z" fill="#28a745" stroke="white" stroke-width="2"/><path d="M 244.4956470335017 206.48411385489038 A 80 80 0 0 1 137.93071342081936 190.47181058325077 L 165.08602629921089 168.39039345307856 A 45 45 0 0 0 225.02880145634472 177.39731404337584 Z" fill="#ffc107" stroke="white" stroke-width="2"/><path d="M 137.93071342081936 190.47181058325077 A 80 80 0 0 1 121.81895843756917 123.0375491094753 L 156.02316412113265 130.45862137407985 A 45 45 0 0 0 165.08602629921089 168.39039345307856 Z" fill="#dc3545" stroke="white" stroke-width="2"/><path d="M 121.81895843756917 123.0375491094753 A 80 80 0 0 1 199.99999999999997 60.0 L 200.0 95.0 A 45 45 0 0 0 156.02316412113265 130.45862137407985 Z" fill="#17a2b8" stroke="white" stroke-width="2"/>
+        <text x="200.0" y="135" text-anchor="middle" font-size="12" fill="var(--text-secondary)">Total</text><text x="200.0" y="152" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">$0.017</text>
+        <rect x="30" y="250" width="12" height="12" fill="#667eea" rx="2"/><text x="46" y="260" font-size="10" fill="var(--text-secondary)">OddSpec (5%)</text><rect x="160" y="250" width="12" height="12" fill="#764ba2" rx="2"/><text x="176" y="260" font-size="10" fill="var(--text-secondary)">Perception (28%)</text><rect x="290" y="250" width="12" height="12" fill="#28a745" rx="2"/><text x="306" y="260" font-size="10" fill="var(--text-secondary)">Motion (7%)</text><rect x="30" y="268" width="12" height="12" fill="#ffc107" rx="2"/><text x="46" y="278" font-size="10" fill="var(--text-secondary)">Collision (24%)</text><rect x="160" y="268" width="12" height="12" fill="#dc3545" rx="2"/><text x="176" y="278" font-size="10" fill="var(--text-secondary)">Evaluator (14%)</text><rect x="290" y="268" width="12" height="12" fill="#17a2b8" rx="2"/><text x="306" y="278" font-size="10" fill="var(--text-secondary)">Report (22%)</text>
     </svg>
             </div>
         </div>
@@ -476,23 +432,23 @@
                 <table class="table table-sm">
                     <tr>
                         <td>Total Tokens</td>
-                        <td class="text-end"><strong>48,290</strong></td>
+                        <td class="text-end"><strong>36,193</strong></td>
                     </tr>
                     <tr>
                         <td>Input Tokens</td>
-                        <td class="text-end">41,009</td>
+                        <td class="text-end">28,750</td>
                     </tr>
                     <tr>
                         <td>Output Tokens</td>
-                        <td class="text-end">1,197</td>
+                        <td class="text-end">3,047</td>
                     </tr>
                     <tr class="table-primary">
                         <td><strong>Estimated Cost</strong></td>
-                        <td class="text-end"><strong>$0.0632 USD</strong></td>
+                        <td class="text-end"><strong>$0.0167 USD</strong></td>
                     </tr>
                     <tr>
                         <td>Duration</td>
-                        <td class="text-end">256.8s</td>
+                        <td class="text-end">93.8s</td>
                     </tr>
                 </table>
             </div>
@@ -518,45 +474,45 @@
                 
                                             <tr>
                                                 <td><code>CollisionAgent</code></td>
-                                                <td>7.4.0</td>
-                                                <td><small>gemini-2.5-pro</small></td>
-                                                <td><code>72f2f428</code></td>
-                                                <td>8,775</td>
+                                                <td>9.0.0</td>
+                                                <td><small>gemini-2.5-flash</small></td>
+                                                <td><code>26a0d399</code></td>
+                                                <td>7,584</td>
                                             </tr>
                                             <tr>
                                                 <td><code>EvaluatorAgent</code></td>
-                                                <td>6.0.0</td>
-                                                <td><small>gemini-2.5-pro</small></td>
-                                                <td><code>d1c0cb6c</code></td>
-                                                <td>10,745</td>
+                                                <td>6.1.0</td>
+                                                <td><small>gemini-2.5-flash</small></td>
+                                                <td><code>de5d731c</code></td>
+                                                <td>7,943</td>
                                             </tr>
                                             <tr>
                                                 <td><code>MotionAgent</code></td>
-                                                <td>7.4.0</td>
-                                                <td><small>gemini-2.5-pro</small></td>
-                                                <td><code>8322eaf7</code></td>
-                                                <td>6,360</td>
+                                                <td>9.0.0</td>
+                                                <td><small>gemini-2.5-flash</small></td>
+                                                <td><code>3d199471</code></td>
+                                                <td>3,664</td>
                                             </tr>
                                             <tr>
                                                 <td><code>OddSpecAgent</code></td>
                                                 <td>6.2.0</td>
-                                                <td><small>gemini-2.5-pro</small></td>
+                                                <td><small>gemini-2.5-flash-lite</small></td>
                                                 <td><code>2be77b23</code></td>
-                                                <td>6,090</td>
+                                                <td>4,688</td>
                                             </tr>
                                             <tr>
                                                 <td><code>PerceptionAgent</code></td>
-                                                <td>7.5.0</td>
+                                                <td>9.0.0</td>
                                                 <td><small>gemini-2.5-pro</small></td>
-                                                <td><code>4e3ff80c</code></td>
-                                                <td>3,606</td>
+                                                <td><code>89c22bd5</code></td>
+                                                <td>3,170</td>
                                             </tr>
                                             <tr>
                                                 <td><code>ReportAgent</code></td>
-                                                <td>10.0.0</td>
-                                                <td><small>gemini-2.5-pro</small></td>
-                                                <td><code>ba91d286</code></td>
-                                                <td>12,714</td>
+                                                <td>11.0.0</td>
+                                                <td><small>gemini-2.5-flash</small></td>
+                                                <td><code>477d8a63</code></td>
+                                                <td>9,144</td>
                                             </tr>
             </tbody>
         </table>
@@ -569,14 +525,14 @@
         <div class="row">
             <div class="col-md-4">
                 <p class="mb-0">Generated by ODD Observer Analysis Pipeline</p>
-                <p class="mb-0"><small>November 29, 2025 at 23:23:19</small></p>
+                <p class="mb-0"><small>November 30, 2025 at 02:20:53</small></p>
             </div>
             <div class="col-md-4 text-center">
                 <p class="mb-0">Pipeline v2.0.0</p>
-                <p class="mb-0"><small>2025-11-29T23:12:55</small></p>
+                <p class="mb-0"><small>2025-11-30T02:18:30</small></p>
             </div>
             <div class="col-md-4 text-end">
-                <p class="mb-0">Data Source: Simulation (95% confidence)</p>
+                <p class="mb-0">Data Source: Simulation</p>
                 <p class="mb-0"><small>Scenario: sim_2win</small></p>
             </div>
         </div>

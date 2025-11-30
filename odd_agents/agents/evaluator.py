@@ -8,6 +8,7 @@ Data flow:
 """
 
 from pathlib import Path
+from typing import List
 from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 from google.adk.tools import FunctionTool
@@ -22,7 +23,9 @@ from google.genai import Client
 # v5.0.0: Load ODD spec from artifact (consistent artifact pattern)
 # v5.1.0: Knowledge grounding hook via manifest (fundamentals/overlays), artifacts remain authority
 # v6.0.0: Verbose output, cross-agent consistency check, collision as advisory only, human/animal proximity
-EVALUATOR_AGENT_VERSION = "6.0.0"
+# v6.1.0: Added state refs for cross-window insights (temporal_analysis, summary_insights from sensor agents)
+# v6.2.0: Updated state refs to _summary keys, construct_cod_tool saves artifact
+EVALUATOR_AGENT_VERSION = "6.2.0"
 
 
 def _load_artifact_json(artifact) -> dict:
@@ -166,6 +169,18 @@ def create_evaluator_tools(scenario_path: Path):
                 }
             }
 
+            # Save COD construction artifact for post-processing
+            try:
+                import google.genai.types as gtypes
+                json_bytes = json.dumps(result, indent=2).encode('utf-8')
+                artifact = gtypes.Part.from_bytes(
+                    data=json_bytes, mime_type="application/json")
+                version = await tool_context.save_artifact(
+                    filename="cod_construction.json", artifact=artifact)
+                print(f"🟣 [CONSTRUCT_COD_TOOL] Saved COD artifact v{version}")
+            except Exception as e:
+                print(f"🟣 [CONSTRUCT_COD_TOOL] Artifact save failed: {e}")
+
             print(f"🟣 [CONSTRUCT_COD_TOOL] COD region: {len(cod_region)} axes")
             print(
                 f"🟣 [CONSTRUCT_COD_TOOL] Region distance: {region_metrics.get('region_distance', 'N/A')}")
@@ -215,9 +230,60 @@ def create_evaluator_tools(scenario_path: Path):
             "sensor_measurements": outputs
         }, indent=2)
 
+    async def save_evaluator_output_tool(
+        cod_region: dict,
+        region_metrics: dict,
+        compliance_verdict: dict,
+        per_axis_analysis: dict,
+        key_concerns: List[str],
+        tool_context
+    ) -> dict:
+        """Save evaluator output as artifact for archival and Report agent.
+
+        Args:
+            cod_region: COD envelope from construct_cod_tool
+            region_metrics: Distance metrics from construct_cod_tool
+            compliance_verdict: {verdict, confidence, rationale, critical_axes}
+            per_axis_analysis: Per-axis analysis dict
+            key_concerns: List of key concerns
+            tool_context: ADK tool context
+
+        Call this AFTER your analysis to persist results.
+        """
+        import google.genai.types as gtypes
+
+        print(f"\n🟣 [SAVE_EVALUATOR_OUTPUT] Saving evaluator artifact...")
+
+        try:
+            output_data = {
+                "cod_region": cod_region,
+                "region_metrics": region_metrics,
+                "compliance_verdict": compliance_verdict,
+                "per_axis_analysis": per_axis_analysis,
+                "key_concerns": key_concerns
+            }
+
+            json_bytes = json.dumps(output_data, indent=2).encode('utf-8')
+            artifact = gtypes.Part.from_bytes(
+                data=json_bytes, mime_type="application/json")
+
+            version = await tool_context.save_artifact(
+                filename="evaluator_output.json",
+                artifact=artifact
+            )
+
+            print(f"🟣 [SAVE_EVALUATOR_OUTPUT] Saved artifact v{version}")
+
+            # Return full data so it gets captured in agent output
+            return output_data
+        except Exception as e:
+            print(f"🟣 [SAVE_EVALUATOR_OUTPUT] Error: {e}")
+            return {"status": "error", "message": str(e)}
+
     return [
         FunctionTool(func=construct_cod_tool),
-        FunctionTool(func=get_window_details_tool)
+        FunctionTool(func=get_window_details_tool),
+        FunctionTool(func=save_evaluator_output_tool)
     ]
 
 
@@ -236,6 +302,17 @@ def create_evaluator_agent(
 
 KNOWLEDGE (if available): Use ref:knowledge_manifest to consult fundamentals (ODD/COD definitions, verdict rules) and any robot/app overlays for terminology alignment. Artifacts (ODD spec + sensor outputs) remain the source of truth for constraints and measurements.
 
+## CROSS-WINDOW INSIGHTS FROM SENSOR AGENTS
+
+Use these summaries to inform your qualitative reasoning and rationale:
+
+**Perception summary:** {temp:perception_summary}
+**Motion summary:** {temp:motion_summary}
+**Collision summary:** {temp:collision_summary}
+
+These contain temporal_analysis (trends, anomalies, transitions) and summary data from each sensor agent.
+Incorporate relevant insights into your per-axis justifications and verdict rationale.
+
 **TERMINOLOGY:**
 - ODD = Operational Design Domain (the safe operating envelope)
 - COD = Current Operating Domain (what was actually observed)
@@ -253,7 +330,8 @@ The tool will return:
 
 ## STEP 2: INTERPRET RESULTS (VERBOSE ANALYSIS REQUIRED)
 
-After receiving tool output, provide DETAILED analysis for each critical axis:
+After receiving tool output, provide DETAILED analysis for each critical axis.
+**Use sensor agent insights** to add context (e.g., "Perception noted degrading lighting trend").
 
 **Per-Axis Analysis (Required for each axis with concerns):**
 - Axis name
@@ -261,7 +339,7 @@ After receiving tool output, provide DETAILED analysis for each critical axis:
 - ODD limit
 - Distance/margin from limit
 - Windows where violations occurred
-- Brief justification
+- Brief justification (cite sensor insights if relevant)
 
 **Special Analysis Areas:**
 
@@ -350,6 +428,17 @@ After tool call completes, output this EXACT JSON structure:
 
 Human/animal proximity (<0.5-1m while navigating) → OUT_ODD regardless of other axes
 
+## STEP 6: SAVE OUTPUT (RECOMMENDED)
+
+After your analysis, call save_evaluator_output_tool() to persist results:
+save_evaluator_output_tool(
+    cod_region=<from tool>,
+    region_metrics=<from tool>,
+    compliance_verdict=<your verdict dict>,
+    per_axis_analysis=<your analysis dict>,
+    key_concerns=<your concerns list>
+)
+
 ## RULES
 
 1. **ALWAYS call construct_cod_tool() first** - no parameters needed
@@ -358,5 +447,6 @@ Human/animal proximity (<0.5-1m while navigating) → OUT_ODD regardless of othe
 4. Collision is ADVISORY ONLY - report but don't use for verdict
 5. Check cross-agent consistency (motion vs collision)
 6. Include a "why_section" explaining the verdict ordered by impact
-7. Output pure JSON only - no markdown code blocks""",
+7. Call save_evaluator_output_tool() to persist for Report agent
+8. Output pure JSON only - no markdown code blocks""",
     )

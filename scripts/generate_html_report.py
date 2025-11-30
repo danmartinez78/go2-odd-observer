@@ -85,8 +85,23 @@ def get_report_data(result: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract compliance verdict from new schema."""
-    # Try new schema first
+    """Extract compliance verdict from various schema formats."""
+    # Try Phase 1.6 schema: artifacts.cod_construction.json
+    artifacts = result.get('artifacts', {})
+    cod_artifact = artifacts.get('cod_construction.json', {})
+    if 'compliance_verdict' in cod_artifact:
+        return cod_artifact['compliance_verdict']
+
+    # Try Phase 1.4.5 schema: compliance.verdict (nested verdict object)
+    compliance = result.get('compliance', {})
+    if 'verdict' in compliance:
+        verdict_obj = compliance['verdict']
+        if isinstance(verdict_obj, dict) and 'verdict' in verdict_obj:
+            # Nested structure: compliance.verdict.verdict
+            return verdict_obj
+        return {'verdict': verdict_obj}  # Simple structure
+
+    # Try full_analysis schema
     fa = result.get('full_analysis', {})
     if 'compliance_verdict' in fa:
         return fa['compliance_verdict']
@@ -97,12 +112,35 @@ def get_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
     if 'compliance_verdict' in eval_output:
         return eval_output['compliance_verdict']
 
+    # Try session_state
+    session_state = result.get('session_state', {})
+    eval_state = session_state.get('temp:evaluator_output', {})
+    if isinstance(eval_state, str):
+        try:
+            eval_state = json.loads(eval_state)
+        except:
+            eval_state = {}
+    if 'compliance_verdict' in eval_state:
+        return eval_state['compliance_verdict']
+
     # Old schema fallback
     return fa.get('odd_compliance', {})
 
 
 def get_cod_region(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract COD region from new schema."""
+    """Extract COD region from various schema formats."""
+    # Try Phase 1.6 schema: artifacts.cod_construction.json
+    artifacts = result.get('artifacts', {})
+    cod_artifact = artifacts.get('cod_construction.json', {})
+    if 'cod_region' in cod_artifact:
+        return cod_artifact['cod_region']
+
+    # Try Phase 1.4.5 schema: compliance.cod_region
+    compliance = result.get('compliance', {})
+    if 'cod_region' in compliance:
+        return compliance['cod_region']
+
+    # Try full_analysis schema
     fa = result.get('full_analysis', {})
     if 'cod_region' in fa:
         return fa['cod_region']
@@ -113,7 +151,19 @@ def get_cod_region(result: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_region_metrics(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract region metrics from new schema."""
+    """Extract region metrics from various schema formats."""
+    # Try Phase 1.6 schema: artifacts.cod_construction.json
+    artifacts = result.get('artifacts', {})
+    cod_artifact = artifacts.get('cod_construction.json', {})
+    if 'region_metrics' in cod_artifact:
+        return cod_artifact['region_metrics']
+
+    # Try Phase 1.4.5 schema: compliance.region_metrics
+    compliance = result.get('compliance', {})
+    if 'region_metrics' in compliance:
+        return compliance['region_metrics']
+
+    # Try full_analysis schema
     fa = result.get('full_analysis', {})
     if 'region_metrics' in fa:
         return fa['region_metrics']
@@ -153,7 +203,23 @@ def get_agent_outputs(result: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_key_findings(result: Dict[str, Any]) -> Dict[str, str]:
-    """Extract key findings."""
+    """Extract key findings from various schema formats."""
+    # Try Phase 1.4.5 schema: summary_insights.key_observations
+    summary_insights = result.get('summary_insights', {})
+    if 'key_observations' in summary_insights:
+        obs = summary_insights['key_observations']
+        if isinstance(obs, list):
+            return {'observations': obs}
+        return obs
+
+    # Try executive_summary.key_observations
+    exec_summary = result.get('executive_summary', {})
+    if 'key_observations' in exec_summary:
+        obs = exec_summary['key_observations']
+        if isinstance(obs, list):
+            return {'observations': obs}
+        return obs
+
     report_data = get_report_data(result)
     findings = report_data.get('key_findings', {})
 
@@ -165,10 +231,27 @@ def get_key_findings(result: Dict[str, Any]) -> Dict[str, str]:
 
 
 def get_issues_and_recommendations(result: Dict[str, Any]) -> tuple:
-    """Extract issues and recommendations."""
-    report_data = get_report_data(result)
-    issues = report_data.get('issues', [])
-    recommendations = report_data.get('recommendations', [])
+    """Extract issues and recommendations from various schema formats."""
+    # Try Phase 1.4.5 schema
+    compliance = result.get('compliance', {})
+    exec_summary = result.get('executive_summary', {})
+
+    # Issues from key_concerns or data_quality warnings
+    issues = compliance.get('key_concerns', [])
+    if not issues:
+        data_quality = exec_summary.get('data_quality', {})
+        issues = data_quality.get('warnings', []) + \
+            data_quality.get('anomalies', [])
+
+    # Recommendations from executive_summary
+    recommendations = exec_summary.get('recommendations', [])
+
+    # Fallback to old schema
+    if not issues and not recommendations:
+        report_data = get_report_data(result)
+        issues = report_data.get('issues', [])
+        recommendations = report_data.get('recommendations', [])
+
     return issues, recommendations
 
 
@@ -574,9 +657,32 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             status_class = 'text-danger' if fraction_outside > 0 else 'text-success'
             status_icon = '❌' if fraction_outside > 0 else '✅'
 
-            # Format value based on type
+            # Format value based on type - handle Phase 1.4.5 COD format
             if isinstance(value, dict):
-                val_display = value.get('measured', str(value))
+                val_type = value.get('type', '')
+                if val_type == 'range':
+                    # Range type: show min-max or single value
+                    min_val = value.get('min', 0)
+                    max_val = value.get('max', 0)
+                    if min_val == max_val:
+                        val_display = f"{min_val:.2f}" if isinstance(
+                            min_val, float) else str(min_val)
+                    else:
+                        val_display = f"{min_val:.2f} - {max_val:.2f}"
+                elif val_type == 'enum':
+                    # Enum type: show the detected values
+                    enum_vals = {k: v for k, v in value.items() if k != 'type'}
+                    if len(enum_vals) == 1:
+                        val_display = list(enum_vals.keys())[
+                            0].replace('_', ' ').title()
+                    else:
+                        # Multiple values: show as comma-separated
+                        val_display = ', '.join(
+                            k.replace('_', ' ').title() for k in enum_vals.keys())
+                elif 'measured' in value:
+                    val_display = value.get('measured', str(value))
+                else:
+                    val_display = str(value)
             elif isinstance(value, float):
                 val_display = f"{value:.2f}"
             else:
@@ -584,17 +690,25 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
             cod_table_rows += f"""
                         <tr>
-                            <td>{axis}</td>
+                            <td>{axis.replace('_', ' ').title()}</td>
                             <td>{val_display}</td>
                             <td class="{status_class}">{status_icon} {fraction_outside:.0%}</td>
                         </tr>"""
 
-    # Extract executive summary and key findings
-    exec_summary = report_data.get('executive_summary', '')
+    # Extract executive summary - try Phase 1.4.5 schema first
+    exec_summary = result.get('executive_summary', {}
+                              ).get('scenario_overview', '')
     if not exec_summary:
-        reports = result.get('reports', {})
-        exec_summary = reports.get('executive_summary', {}).get(
-            'scenario_overview', 'No summary available.')
+        # Try compliance rationale as fallback
+        exec_summary = compliance.get('rationale', '')
+    if not exec_summary:
+        report_data_summary = report_data.get('executive_summary', '')
+        if not report_data_summary:
+            reports = result.get('reports', {})
+            exec_summary = reports.get('executive_summary', {}).get(
+                'scenario_overview', 'No summary available.')
+        else:
+            exec_summary = report_data_summary
 
     # Build key findings HTML
     findings_html = ""
@@ -629,23 +743,38 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     # Build scenario overview (representative windows)
     total_windows = len(windows)
     display_windows = windows_with_images[:4]  # Show first 4 windows
-    
-    # Extract environment info from per-window data or agent outputs
+
+    # Extract environment info from per-window data or artifacts
     per_window_data = result.get('per_window_data', [])
+
+    # Try Phase 1.6 artifacts for per-window data
+    if not per_window_data:
+        artifacts = result.get('artifacts', {})
+        perception_artifact = artifacts.get('perception_analysis.json', {})
+        if perception_artifact.get('per_window'):
+            per_window_data = perception_artifact['per_window']
+
     environment_type = "Unknown"
     surface_type = "Unknown"
     if per_window_data:
-        first_window = per_window_data[0] if isinstance(per_window_data, list) else {}
-        perception = first_window.get('perception', {})
+        first_window = per_window_data[0] if isinstance(
+            per_window_data, list) else {}
+        perception = first_window.get(
+            'perception', first_window.get('observations', {}))
         environment_type = perception.get('environment_type', 'Unknown')
         surface_type = perception.get('surface_type', 'Unknown')
-    
+
     # Data source info - check multiple locations in schema
-    # New schema: agent_outputs.PerceptionAgent.data_source
-    # Old schema: scenario_metadata.data_source
-    agent_outputs_ds = result.get('agent_outputs', {})
-    perception_output_ds = agent_outputs_ds.get('PerceptionAgent', {})
-    perception_data_source = perception_output_ds.get('data_source', {})
+    # Phase 1.6 schema: artifacts.perception_analysis.json
+    # Old schema: agent_outputs.PerceptionAgent.data_source
+    artifacts = result.get('artifacts', {})
+    perception_artifact = artifacts.get('perception_analysis.json', {})
+    perception_data_source = perception_artifact.get('data_source', {})
+
+    if not perception_data_source:
+        agent_outputs_ds = result.get('agent_outputs', {})
+        perception_output_ds = agent_outputs_ds.get('PerceptionAgent', {})
+        perception_data_source = perception_output_ds.get('data_source', {})
 
     if isinstance(perception_data_source, dict) and perception_data_source.get('type'):
         # New schema format
@@ -674,7 +803,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         dot_class = "timeline-dot-active" if is_displayed else "timeline-dot"
         tooltip = f"Window {wid}" + (" (shown below)" if is_displayed else "")
         timeline_dots_html += f'<div class="{dot_class}" title="{tooltip}"></div>'
-    
+
     # Scenario context card
     scenario_context_html = f"""
     <div class="row mb-4">
@@ -702,7 +831,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         </div>
     </div>
     """
-    
+
     # Timeline visualization
     timeline_html = ""
     if total_windows > 1:
@@ -725,14 +854,15 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         </div>
     </div>
     """
-    
+
     # Build window cards
     scenario_overview_html = scenario_context_html + timeline_html
-    
+
     for window in display_windows:
         camera_img = window['images'].get('camera', '')
         bev_img = window['images'].get('bev_occupancy', '')
-        window_idx = windows.index(window['id']) + 1 if window['id'] in windows else '?'
+        window_idx = windows.index(
+            window['id']) + 1 if window['id'] in windows else '?'
         scenario_overview_html += f"""
         <div class="col-md-6 col-lg-3 mb-4">
             <div class="metric-card h-100">

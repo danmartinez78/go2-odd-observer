@@ -10,7 +10,7 @@
     
     <style>
         :root {
-            --status-color: #6c757d;
+            --status-color: #28a745;
             --bg-primary: #ffffff;
             --bg-secondary: #f8f9fa;
             --text-primary: #212529;
@@ -187,7 +187,7 @@
             <div class="col-md-8">
                 <h1 class="display-4">🤖 ODD Analysis Report</h1>
                 <h2 class="h3">Scenario: Unknown</h2>
-                <p class="lead mb-0">Generated November 29, 2025 at 21:57:18</p>
+                <p class="lead mb-0">Generated November 29, 2025 at 22:08:38</p>
                 <p class="mb-0">
                     <small>Pipeline vN/A | 
                     0 tokens | 
@@ -196,10 +196,10 @@
             </div>
             <div class="col-md-4 text-end">
                 <div class="status-badge">
-                    ❓ UNKNOWN
+                    ✅ IN ODD
                 </div>
                 <div class="mt-2">
-                    <small>Confidence: 0%</small>
+                    <small>Confidence: 100%</small>
                 </div>
             </div>
         </div>
@@ -223,7 +223,7 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card text-center">
-                <div class="metric-value">N/A</div>
+                <div class="metric-value">STABLE</div>
                 <div class="metric-label">Temporal Stability</div>
             </div>
         </div>
@@ -240,12 +240,12 @@
 <div class="container mb-5">
     <h2 class="mb-4">📋 Executive Summary</h2>
     <div class="metric-card">
-        <p class="lead mb-3">No summary available.</p>
+        <p class="lead mb-3">The robot's Current Operating Domain (COD) is comfortably within the specified ODD. All measured axes, including motion and environment, are well within their defined limits. The robot was stationary (0.0 m/s speed vs 1.5 m/s limit) on a stable, flat surface (max roll 3.16° vs 15° limit) in a cluttered but navigable indoor environment (40% obstacle density vs 70% limit). No prohibited conditions, such as stairs or human proximity, were detected. The region distance of 0.0 confirms full compliance.</p>
         <div class="mt-3">
             <strong>Critical Axes:</strong> <span class='text-muted'>None</span>
         </div>
         <div class="mt-2">
-            <strong>Rationale:</strong> No rationale available.
+            <strong>Rationale:</strong> The robot's Current Operating Domain (COD) is comfortably within the specified ODD. All measured axes, including motion and environment, are well within their defined limits. The robot was stationary (0.0 m/s speed vs 1.5 m/s limit) on a stable, flat surface (max roll 3.16° vs 15° limit) in a cluttered but navigable indoor environment (40% obstacle density vs 70% limit). No prohibited conditions, such as stairs or human proximity, were detected. The region distance of 0.0 confirms full compliance.
         </div>
     </div>
 </div>
@@ -334,7 +334,13 @@
 <div class="container mb-5">
     <h2 class="mb-4">🔍 Key Findings</h2>
     <div class="row">
-        <div class="col-12"><p class="text-muted">No findings available</p></div>
+        
+                <div class="col-md-6 mb-3">
+                    <div class="metric-card h-100">
+                        <h6 class="text-primary text-uppercase">observations</h6>
+                        <p class="mb-0">[]</p>
+                    </div>
+                </div>
     </div>
 </div>
 
@@ -344,7 +350,21 @@
     <div class="row">
         <div class="col-lg-6">
             <div class="chart-container">
-                <div class="text-muted text-center p-4">No compliance data available</div>
+                <svg viewBox="0 0 500 460" class="svg-chart" style="width:100%;max-width:500px;height:auto;">
+        <text x="250.0" y="28" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">ODD Compliance by Axis</text>
+        <polygon points="250.0,175.0 285.18241671106136,191.942958916357 293.8717560481821,230.01344202803415 269.5247682602901,260.54359905560887 230.4752317397099,260.54359905560887 206.12824395181792,230.01344202803415 214.81758328893866,191.942958916357" fill="rgba(40, 167, 69, 0.15)" stroke="#28a745" stroke-width="2"/><polygon points="250.0,137.05 314.85292147072306,168.28152093581807 330.8702703154823,238.4581114716763 285.99065615980146,294.73536759250567 214.00934384019857,294.73536759250567 169.1297296845177,238.4581114716763 185.1470785292769,168.28152093581807" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/><polygon points="250.0,99.1 344.5234262303848,144.62008295527912 367.8687845827825,246.9027809153184 302.45654405931276,328.92713612940247 197.54345594068724,328.92713612940247 132.1312154172175,246.90278091531843 155.4765737696152,144.62008295527914" fill="none" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/><polygon points="250.0,60.0 375.0930371948848,120.24163170260265 405.9884659490918,255.6033494330103 319.4213982588093,364.1550188643871 180.5786017411907,364.1550188643871 94.01153405090821,255.60334943301032 124.90696280511521,120.24163170260266" fill="none" stroke="#dc3545" stroke-width="1.5" opacity="0.6"/><line x1="250.0" y1="220" x2="250.0" y2="60.0" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="375.0930371948848" y2="120.24163170260265" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="405.9884659490918" y2="255.6033494330103" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="319.4213982588093" y2="364.1550188643871" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="180.5786017411907" y2="364.1550188643871" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="94.01153405090821" y2="255.60334943301032" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/><line x1="250.0" y1="220" x2="124.90696280511521" y2="120.24163170260266" stroke="var(--border-color)" stroke-width="1" opacity="0.5"/>
+        <polygon points="250.0,175.0 285.18241671106136,191.942958916357 293.8717560481821,230.01344202803415 269.5247682602901,260.54359905560887 230.4752317397099,260.54359905560887 206.12824395181792,230.01344202803415 214.81758328893866,191.942958916357" fill="rgba(40, 167, 69, 0.3)" stroke="#28a745" stroke-width="2.5"/>
+        <circle cx="250.0" cy="175.0" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="285.18241671106136" cy="191.942958916357" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="293.8717560481821" cy="230.01344202803415" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="269.5247682602901" cy="260.54359905560887" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="230.4752317397099" cy="260.54359905560887" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="206.12824395181792" cy="230.01344202803415" r="5" fill="#28a745" stroke="white" stroke-width="2"/><circle cx="214.81758328893866" cy="191.942958916357" r="5" fill="#28a745" stroke="white" stroke-width="2"/>
+        <text x="250.0" y="35.0" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Environment Type</text><text x="395.72966684424534" y="107.77183566542797" text-anchor="start" font-size="10" fill="var(--text-secondary)">Lighting Condi..</text><text x="430.48702419272826" y="260.0537681121366" text-anchor="start" font-size="10" fill="var(--text-secondary)">Traversability..</text><text x="328.09907304116047" y="394.17439622243546" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Max Speed Mps</text><text x="171.90092695883953" y="394.17439622243546" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Max Accel</text><text x="69.51297580727174" y="260.0537681121366" text-anchor="end" font-size="10" fill="var(--text-secondary)">Max Roll °</text><text x="104.27033315575463" y="107.771835665428" text-anchor="end" font-size="10" fill="var(--text-secondary)">Max Pitch °</text>
+        
+        <g transform="translate(70, 440)">
+            <circle cx="8" cy="0" r="5" fill="#28a745" stroke="white" stroke-width="1.5"/>
+            <text x="20" y="4" font-size="10" fill="var(--text-secondary)">Compliant (0%)</text>
+            <circle cx="160" cy="0" r="5" fill="#dc3545" stroke="white" stroke-width="1.5"/>
+            <text x="172" y="4" font-size="10" fill="var(--text-secondary)">Violation (outward)</text>
+        </g>
+    
+    </svg>
             </div>
         </div>
         <div class="col-lg-6">
@@ -358,7 +378,42 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="3" class="text-center text-muted">No COD data available</td></tr>
+                        
+                        <tr>
+                            <td>Environment Type</td>
+                            <td>Indoor Residential</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>Lighting Conditions</td>
+                            <td>Moderate, Bright</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>Max Accel Mps2</td>
+                            <td>0.00</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>Max Pitch Deg</td>
+                            <td>1.27 - 1.30</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>Max Roll Deg</td>
+                            <td>0.49 - 3.16</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>Max Speed Mps</td>
+                            <td>0.00</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
+                        <tr>
+                            <td>Traversability Score</td>
+                            <td>0.50</td>
+                            <td class="text-success">✅ 0%</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -373,7 +428,7 @@
             <h2 class="mb-4">⚠️ Issues Identified</h2>
             <div class="metric-card">
                 <ol class="mb-0">
-                    <li class="text-muted">No issues identified</li>
+                    <li class='mb-2'>Perception agent noted severe and consistent camera compression artifacts across all windows, making the system entirely dependent on LiDAR for safe navigation. While this did not cause an ODD violation, it represents a significant operational risk due to the lack of sensor redundancy.</li>
                 </ol>
             </div>
         </div>
@@ -459,7 +514,7 @@
         <div class="row">
             <div class="col-md-4">
                 <p class="mb-0">Generated by ODD Observer Analysis Pipeline</p>
-                <p class="mb-0"><small>November 29, 2025 at 21:57:18</small></p>
+                <p class="mb-0"><small>November 29, 2025 at 22:08:38</small></p>
             </div>
             <div class="col-md-4 text-center">
                 <p class="mb-0">Pipeline vN/A</p>

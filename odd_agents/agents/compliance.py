@@ -22,8 +22,8 @@ def create_odd_compliance_agent(api_key: str, model: str) -> Agent:
 TASK: Compare Current Operating Domain (COD) against Operational Design Domain (ODD).
 
 INPUT DATA:
-ODD Specification: {temp:odd_spec?}
-COD Classification: {temp:cod_classification?}
+ODD Specification: {temp:odd_spec}
+COD Classification: {temp:cod_classification}
 
 ANALYSIS:
 For each axis in COD, compare against ODD constraints and classify as:

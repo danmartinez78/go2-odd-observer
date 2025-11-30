@@ -65,9 +65,8 @@ from .workflow import (
 
 from .report_builder import (
     generate_reports,
+    generate_reports_from_artifacts,
     extract_all_agent_outputs,
-    build_executive_summary_report,
-    build_full_technical_report,
 )
 
 from .pricing import (
@@ -102,9 +101,8 @@ __all__ = [
 
     # Report builder exports
     "generate_reports",
+    "generate_reports_from_artifacts",
     "extract_all_agent_outputs",
-    "build_executive_summary_report",
-    "build_full_technical_report",
 
     # Pricing exports
     "pricing",

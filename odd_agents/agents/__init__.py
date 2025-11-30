@@ -1,6 +1,6 @@
 """
 Agent definitions for ODD analysis pipeline.
-Phase 1.4.5 - Artifact-based data handoff for reliable sensor → evaluator communication.
+Phase 1.6 - Temporal analysis pattern: tools do per-window, agents do higher-order.
 """
 
 from .perception import create_perception_agent, PERCEPTION_AGENT_VERSION
@@ -27,7 +27,7 @@ AGENT_VERSIONS = {
 }
 
 __all__ = [
-    # Sensor agents (v7.0.0 - artifact-based output for evaluator)
+    # Sensor agents (v10.0.0 - temporal analysis pattern)
     "create_perception_agent",
     "create_motion_agent",
     "create_collision_agent",

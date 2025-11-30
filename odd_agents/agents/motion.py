@@ -1,6 +1,6 @@
 """
-Motion analysis agent (consolidated loop + summary).
-Single agent that orchestrates tools AND produces final ODD-aligned output.
+Motion analysis agent (v9.0.0 - single batch tool).
+Calls one tool that processes all windows, auto-saves artifact, and returns full data.
 """
 
 from google.adk.agents import Agent
@@ -11,85 +11,69 @@ from ..tools.motion import create_motion_tools
 
 
 # Agent version
-# v6.0.0: Standardized output with per_window, temporal_analysis, summary_insights
-# v7.0.0: Added save_motion_output_tool for artifact-based data handoff
-# v7.1.0: Strengthened prompt to ensure save tool is called
-# v7.2.0: Output summary to state, full data to artifact
-# v7.3.0: Strict tool parameters for save tool - per_window, temporal_analysis, summary_insights
-# v7.4.0: Knowledge-grounded sensor interpretation via manifest (shared doc, no prompt duplication)
-MOTION_AGENT_VERSION = "7.4.0"
+# v8.0.0: Full data output to state (per_window included), save tool now optional
+# v9.0.0: Single batch tool - one call processes all windows, auto-saves artifact
+# v10.0.0: Temporal analysis - agent does higher-order analysis, outputs summary not raw data
+MOTION_AGENT_VERSION = "10.0.0"
+
+
+MOTION_AGENT_PROMPT = """You are a motion analysis agent performing TEMPORAL ANALYSIS across windows.
+
+INPUT: ODD Specification: {temp:odd_spec}
+
+## WORKFLOW
+
+### Step 1: Call the Tool
+Extract relevant ODD dimensions (ego motion: speed, accel, stability) and call:
+analyze_all_motion_tool(odd_context)
+
+The tool processes ALL windows and returns per-window IMU analysis. Artifact auto-saved.
+
+### Step 2: TEMPORAL ANALYSIS (Your Job)
+After receiving tool results, analyze ACROSS windows:
+- MOTION TRANSITIONS: stationary → moving → rotating sequences
+- STABILITY TRENDS: Is roll/pitch envelope stable or degrading?
+- ANOMALIES: Sudden acceleration spikes, unexpected jerk?
+- STATIONARY DETECTION: Which windows show robot at rest?
+
+### Step 3: Output SUMMARY JSON (Not Raw Data)
+
+Output this summary format - do NOT echo raw per_window data:
+
+{
+  "windows_analyzed": <count>,
+  "temporal_analysis": {
+    "motion_transitions": ["stationary→moving at w002", "rotating in w003"],
+    "stability_trend": "stable|degrading|improving",
+    "anomalies": ["acceleration spike in w002"]
+  },
+  "summary": {
+    "dominant_motion_state": "stationary|moving|rotating|complex",
+    "max_accel_mps2": <peak across all windows>,
+    "max_roll_deg": <peak>,
+    "max_pitch_deg": <peak>,
+    "max_angular_velocity_radps": <peak>,
+    "peak_jerk_mps3": <peak>,
+    "stationary_windows": ["w001", "w003"]
+  },
+  "issues": ["Peak pitch 12.1° in w003 approaches limit"],
+  "alerts": ["High jerk detected in w002"]
+}
+
+CRITICAL: The artifact has full per-window data. Your output is the SUMMARY for downstream agents.
+"""
 
 
 def create_motion_agent(
     scenario_path: str, genai_client: Client, model: str, api_key: str
 ) -> Agent:
-    """Create consolidated motion agent (loop + summary merged)."""
-    from ..tools.perception import create_perception_tools
-
-    list_windows_tool, _, _ = create_perception_tools(
-        scenario_path, genai_client, model)
-    analyze_motion_tool, save_motion_output = create_motion_tools(
-        scenario_path, genai_client, model)
+    """Create motion agent with single batch tool."""
+    (analyze_all,) = create_motion_tools(scenario_path, genai_client, model)
 
     return Agent(
         name="MotionAgent",
         model=Gemini(model=model, api_key=api_key),
-        tools=[list_windows_tool, analyze_motion_tool, save_motion_output],
-        output_key="temp:motion_output",
-        instruction="""You are a motion analysis agent. You MUST call tools to analyze windows and save results.
-
-KNOWLEDGE (if available): Use ref:knowledge_manifest → sensors (and overlay if present) for IMU/motion interpretation patterns. Do NOT invent limits; ODD spec artifact remains authoritative for axes.
-
-REQUIRED TOOLS (you MUST call all of these):
-1. list_windows_tool() - get available windows
-2. analyze_motion_tool(window_id, odd_context) - analyze each window
-3. save_motion_output_tool(per_window, temporal_analysis, summary_insights) - save for COD
-
-INPUT:
-- ODD Specification: {temp:odd_spec?} - extract ego motion dimensions
-
-MANDATORY WORKFLOW:
-1. Extract relevant ODD dimensions for motion (ego: speed, accel, stability, etc.)
-2. IMMEDIATELY call list_windows_tool() to get available windows
-3. For EACH window: Call analyze_motion_tool(window_id, odd_context)
-4. Build your data from tool results
-5. Call save_motion_output_tool with EXPLICIT PARAMETERS (see below)
-6. **FINAL STEP**: Output your SUMMARY JSON
-
-CALLING save_motion_output_tool (STRICT PARAMETERS - pass each separately):
-save_motion_output_tool(
-    per_window=[
-        {"window_id": "000", "measurements": {/* from tool's odd_measurements */}},
-        {"window_id": "001", "measurements": {/* from tool's odd_measurements */}}
-    ],
-    temporal_analysis={
-        "odd_trends": "How motion measurements change across windows",
-        "anomalies": ["Window IDs with unusual motion patterns"],
-        "concerns": ["Safety or stability issues detected"]
-    },
-    summary_insights=[
-        "Key motion pattern from tool outputs",
-        "Cross-window motion trend"
-    ]
-)
-
-FINAL OUTPUT (summary for downstream agents - JSON only, no markdown):
-{
-  "windows_analyzed": 2,
-  "temporal_analysis": {
-    "odd_trends": "How motion measurements change across windows",
-    "anomalies": ["Window IDs with unusual motion patterns"],
-    "concerns": ["Safety or stability issues detected"]
-  },
-  "summary_insights": [
-    "Key motion pattern from tool outputs",
-    "Cross-window motion trend"
-  ]
-}
-
-RULES:
-1. Call save tool FIRST with EXPLICIT parameters (not a single dict!)
-2. per_window MUST include measurements from each window's analyze tool response
-3. Then output summary JSON
-4. Summary goes to state for Evaluator's qualitative reasoning""",
+        tools=[analyze_all],
+        output_key="temp:motion_summary",
+        instruction=MOTION_AGENT_PROMPT,
     )

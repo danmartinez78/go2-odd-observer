@@ -36,10 +36,10 @@ ROLE: Extract and structure the multidimensional operational envelope the robot 
 You measure conditions - you do NOT check compliance (Evaluator agent handles that).
 
 INPUT DATA:
-- ODD Specification: {temp:odd_spec?}
-- Perception: {temp:perception_output?}
-- Motion: {temp:motion_output?}
-- Collision: {temp:collision_output?}
+- ODD Specification: {temp:odd_spec}
+- Perception: {temp:perception_output}
+- Motion: {temp:motion_output}
+- Collision: {temp:collision_output}
 
 YOUR TASK: Build COD region matching ODD spec structure dynamically.
 

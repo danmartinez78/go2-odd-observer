@@ -130,6 +130,178 @@ def extract_json_block(text: str) -> Dict[str, Any]:
     return json.loads(json_text)
 
 
+def compute_bev_metrics(
+    bev_occupancy: np.ndarray,
+    resolution_m_per_px: float = 0.05,
+    self_hit_radius_px: int = 15,
+    forward_cone_deg: float = 60.0
+) -> Dict[str, Any]:
+    """
+    Compute deterministic metrics from BEV occupancy image.
+
+    These metrics ground VLM analysis with quantitative facts that
+    the VLM should NOT re-estimate - just use as-is.
+
+    Args:
+        bev_occupancy: Grayscale BEV occupancy image (bright = obstacles)
+        resolution_m_per_px: BEV scale (default 0.05 = 5cm per pixel)
+        self_hit_radius_px: Radius to exclude robot body at center (default 15)
+        forward_cone_deg: Forward cone half-angle for forward metrics (default 60°)
+
+    Returns:
+        Dict with computed metrics:
+        - obstacle_density_pct: % of pixels that are obstacles (excluding self-hit zone)
+        - min_obstacle_distance_m: Closest obstacle distance from robot center
+        - mean_obstacle_distance_m: Average obstacle distance
+        - forward_obstacle_density_pct: Obstacle density in forward cone
+        - min_forward_obstacle_m: Closest forward obstacle
+        - forward_path_blocked: True if significant obstacles in forward path
+        - obstacle_cluster_count: Number of distinct obstacle regions
+    """
+    try:
+        from scipy import ndimage
+    except ImportError:
+        # Fallback without scipy - skip cluster counting
+        ndimage = None
+
+    if bev_occupancy is None or bev_occupancy.size == 0:
+        return {"computed": False, "error": "Empty or invalid BEV image"}
+
+    # Convert to grayscale if needed
+    if len(bev_occupancy.shape) == 3:
+        gray = cv2.cvtColor(bev_occupancy, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = bev_occupancy.copy()
+
+    h, w = gray.shape
+    center_y, center_x = h // 2, w // 2
+
+    # Create coordinate grids
+    y_coords, x_coords = np.ogrid[:h, :w]
+
+    # Distance from center for each pixel
+    dist_from_center = np.sqrt(
+        (y_coords - center_y)**2 + (x_coords - center_x)**2)
+
+    # Mask for self-hit exclusion zone
+    self_hit_mask = dist_from_center <= self_hit_radius_px
+
+    # Threshold to find obstacles (bright pixels)
+    obstacle_threshold = 30  # Anything brighter than this is an obstacle
+    obstacles = gray > obstacle_threshold
+
+    # Exclude self-hit zone from obstacle mask
+    valid_obstacles = obstacles & ~self_hit_mask
+
+    # Total obstacle pixels (excluding self-hit)
+    total_valid_pixels = np.sum(~self_hit_mask)
+    obstacle_pixels = np.sum(valid_obstacles)
+
+    # Obstacle density
+    obstacle_density_pct = float(
+        obstacle_pixels / total_valid_pixels * 100) if total_valid_pixels > 0 else 0.0
+
+    # Get coordinates of obstacle pixels
+    obstacle_coords = np.argwhere(valid_obstacles)
+
+    if len(obstacle_coords) == 0:
+        # No obstacles detected
+        return {
+            "computed": True,
+            "bev_resolution_m_per_px": resolution_m_per_px,
+            "image_size_px": [int(h), int(w)],
+            "image_size_m": [round(h * resolution_m_per_px, 2), round(w * resolution_m_per_px, 2)],
+            "obstacle_density_pct": 0.0,
+            "obstacle_pixel_count": 0,
+            "forward_obstacle_density_pct": 0.0,
+            "min_obstacle_distance_m": None,
+            "mean_obstacle_distance_m": None,
+            "max_obstacle_distance_m": None,
+            "min_forward_obstacle_m": None,
+            "mean_forward_obstacle_m": None,
+            "obstacle_cluster_count": 0,
+            "forward_path_blocked": False,
+            "close_forward_obstacle_pixels": 0
+        }
+
+    # Calculate distances for all obstacle pixels
+    obstacle_distances_px = np.sqrt(
+        (obstacle_coords[:, 0] - center_y)**2 +
+        (obstacle_coords[:, 1] - center_x)**2
+    )
+    obstacle_distances_m = obstacle_distances_px * resolution_m_per_px
+
+    min_dist_m = float(np.min(obstacle_distances_m))
+    mean_dist_m = float(np.mean(obstacle_distances_m))
+    max_dist_m = float(np.max(obstacle_distances_m))
+
+    # Forward cone analysis (robot faces up = -Y direction)
+    # Forward cone: pixels where Y < center_y (upper half) and within angle
+    forward_cone_rad = np.deg2rad(forward_cone_deg)
+
+    # Angle from center for each pixel (0 = up/forward, positive = right)
+    # Note: Y inverted for "up" = forward
+    angles = np.arctan2(x_coords - center_x, center_y - y_coords)
+
+    # Forward cone mask: upper half and within angle from forward direction
+    forward_mask = (np.abs(angles) <= forward_cone_rad) & (y_coords < center_y)
+
+    # Forward obstacles (excluding self-hit)
+    forward_obstacles = valid_obstacles & forward_mask
+    forward_obstacle_pixels = np.sum(forward_obstacles)
+    forward_valid_pixels = np.sum(forward_mask & ~self_hit_mask)
+
+    forward_density_pct = float(
+        forward_obstacle_pixels / forward_valid_pixels * 100) if forward_valid_pixels > 0 else 0.0
+
+    # Forward obstacle distances
+    forward_obstacle_coords = np.argwhere(forward_obstacles)
+    if len(forward_obstacle_coords) > 0:
+        forward_distances_px = np.sqrt(
+            (forward_obstacle_coords[:, 0] - center_y)**2 +
+            (forward_obstacle_coords[:, 1] - center_x)**2
+        )
+        forward_distances_m = forward_distances_px * resolution_m_per_px
+        min_forward_m = float(np.min(forward_distances_m))
+        mean_forward_m = float(np.mean(forward_distances_m))
+    else:
+        min_forward_m = None
+        mean_forward_m = None
+
+    # Forward path blocked: significant obstacles within 2m in forward cone
+    close_forward_threshold_px = int(
+        2.0 / resolution_m_per_px)  # 2m = 40px at 0.05m/px
+    close_forward_mask = forward_mask & (
+        dist_from_center <= close_forward_threshold_px) & ~self_hit_mask
+    close_forward_obstacles = np.sum(valid_obstacles & close_forward_mask)
+    # More than 10 obstacle pixels = blocked
+    forward_path_blocked = bool(close_forward_obstacles > 10)
+
+    # Cluster counting (if scipy available)
+    cluster_count = 0
+    if ndimage is not None:
+        labeled_array, cluster_count = ndimage.label(valid_obstacles)
+        cluster_count = int(cluster_count)
+
+    return {
+        "computed": True,
+        "bev_resolution_m_per_px": resolution_m_per_px,
+        "image_size_px": [int(h), int(w)],
+        "image_size_m": [round(h * resolution_m_per_px, 2), round(w * resolution_m_per_px, 2)],
+        "obstacle_density_pct": round(obstacle_density_pct, 1),
+        "obstacle_pixel_count": int(obstacle_pixels),
+        "forward_obstacle_density_pct": round(forward_density_pct, 1),
+        "min_obstacle_distance_m": round(min_dist_m, 2) if min_dist_m else None,
+        "mean_obstacle_distance_m": round(mean_dist_m, 2) if mean_dist_m else None,
+        "max_obstacle_distance_m": round(max_dist_m, 2) if max_dist_m else None,
+        "min_forward_obstacle_m": round(min_forward_m, 2) if min_forward_m else None,
+        "mean_forward_obstacle_m": round(mean_forward_m, 2) if mean_forward_m else None,
+        "obstacle_cluster_count": cluster_count,
+        "forward_path_blocked": forward_path_blocked,
+        "close_forward_obstacle_pixels": int(close_forward_obstacles)
+    }
+
+
 def auto_crop_bev(bev_image: np.ndarray, margin_percent: float = 0.1) -> np.ndarray:
     """
     Crop BEV image to occupied region plus margin.

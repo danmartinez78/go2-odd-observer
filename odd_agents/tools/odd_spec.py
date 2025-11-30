@@ -165,10 +165,12 @@ def create_odd_spec_tools():
             ego_axes = [a["name"]
                         for a in ego_categorical + ego_numeric + ego_boolean]
 
+            # Return full spec plus metadata (agent will create summary)
             return {
                 "status": "saved",
                 "artifact": "odd_spec.json",
                 "version": version,
+                "odd_specification": odd_specification,  # Full spec for agent
                 "total_axes": total_axes,
                 "domains": {
                     "environment": {"count": env_count, "axes": env_axes},

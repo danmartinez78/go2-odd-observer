@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """MANUAL TESTING: Collision Agent interactive test.
 
-This script is for MANUAL TESTING and inspection of the CollisionLoopAgent.
+This script is for MANUAL TESTING and inspection of the CollisionAgent.
 Run it directly to see the agent's output and verify behavior.
 
 For AUTOMATED EVALUATION (when available), see:
@@ -10,18 +10,13 @@ For AUTOMATED EVALUATION (when available), see:
 
 Usage:
     python tests/test_collision_agent.py
-    python tests/test_collision_agent.py --scenario data/production/sim_1_0
+    python tests/test_collision_agent.py --scenario data/test/sim_2win
     python tests/test_collision_agent.py --model gemini-2.0-flash-lite
     
 Expected: JSON output with binary collision detection (detected vs not-detected).
 """
 
-from odd_agents.agents import (
-    create_collision_loop_agent,
-    create_collision_summary_agent,
-    create_motion_loop_agent,
-    create_motion_summary_agent,
-)
+from odd_agents.agents import create_collision_agent
 from odd_agents import extract_json_block
 import argparse
 import asyncio
@@ -31,7 +26,6 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import Client
 from dotenv import load_dotenv
@@ -46,8 +40,8 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 load_dotenv()
 
 
-def _extract_result(events: List[Any], agent_name: str = "CollisionSummaryAgent") -> Optional[Dict[str, Any]]:
-    """Extract final result from collision summary agent."""
+def _extract_result(events: List[Any], agent_name: str = "CollisionAgent") -> Optional[Dict[str, Any]]:
+    """Extract final result from collision agent."""
     for event in events:
         if event.author == agent_name and event.content:
             for part in event.content.parts:
@@ -60,7 +54,7 @@ def _extract_result(events: List[Any], agent_name: str = "CollisionSummaryAgent"
 
 
 async def test_collision_agent(
-    scenario_path: str = "data/test/sim_test_w010_w011",
+    scenario_path: str = "data/test/sim_2win",
     model: str = "gemini-2.5-flash",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
@@ -74,33 +68,21 @@ async def test_collision_agent(
             raise SystemExit(1)
 
     print("\n" + "=" * 80)
-    print("COLLISION WORKFLOW TEST (Binary Detection)")
+    print("COLLISION AGENT TEST (Binary Detection)")
     print("=" * 80)
     print(f"Scenario: {Path(scenario_path).name}")
     print(f"Model: {model}")
     print("=" * 80)
 
-    # Create client and workflow with both motion and collision agents
-    # (collision agent requires motion output)
+    # Create client and agent
     genai_client = Client(api_key=api_key)
     scenario_path_abs = str(Path(scenario_path).absolute())
 
-    collision_workflow = SequentialAgent(
-        name="CollisionWorkflow",
-        sub_agents=[
-            # Motion agents run first to provide motion data
-            create_motion_loop_agent(
-                scenario_path_abs, genai_client, model, api_key),
-            create_motion_summary_agent(api_key, model),
-            # Collision agents use motion output
-            create_collision_loop_agent(
-                scenario_path_abs, genai_client, model, api_key),
-            create_collision_summary_agent(api_key, model)
-        ],
-    )
+    collision_agent = create_collision_agent(
+        scenario_path_abs, genai_client, model, api_key)
 
-    runner = InMemoryRunner(agent=collision_workflow,
-                            app_name="CollisionWorkflowApp")
+    runner = InMemoryRunner(agent=collision_agent,
+                            app_name="CollisionAgentApp")
     events = await runner.run_debug("Detect collisions for all available windows")
 
     result = _extract_result(events)
@@ -121,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--scenario",
         type=str,
-        default="data/test/sim_test_w010_w011",
+        default="data/test/sim_2win",
         help="Path to scenario directory"
     )
     parser.add_argument(

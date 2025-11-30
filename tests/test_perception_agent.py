@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """MANUAL TESTING: Perception Agent interactive test.
 
-This script is for MANUAL TESTING and inspection of the PerceptionLoopAgent.
+This script is for MANUAL TESTING and inspection of the PerceptionAgent.
 Run it directly to see the agent's output and verify behavior.
 
 For AUTOMATED EVALUATION, see:
@@ -10,13 +10,13 @@ For AUTOMATED EVALUATION, see:
 
 Usage:
     python tests/test_perception_agent.py
-    python tests/test_perception_agent.py --scenario data/processed/production/sim_run_new
+    python tests/test_perception_agent.py --scenario data/test/sim_2win
     python tests/test_perception_agent.py --model gemini-2.0-flash-exp
     
 Expected: JSON output with per-window perception analysis.
 """
 
-from odd_agents.agents.perception import create_perception_loop_agent, create_perception_summary_agent
+from odd_agents.agents.perception import create_perception_agent
 from odd_agents import extract_json_block
 import argparse
 import asyncio
@@ -26,7 +26,6 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
 from google.genai import Client
 from dotenv import load_dotenv
@@ -41,8 +40,8 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 load_dotenv()
 
 
-def _extract_result(events: List[Any], agent_name: str = "PerceptionSummaryAgent") -> Optional[Dict[str, Any]]:
-    """Extract final result from perception summary agent."""
+def _extract_result(events: List[Any], agent_name: str = "PerceptionAgent") -> Optional[Dict[str, Any]]:
+    """Extract final result from perception agent."""
     for event in events:
         if event.author == agent_name and event.content:
             for part in event.content.parts:
@@ -55,7 +54,7 @@ def _extract_result(events: List[Any], agent_name: str = "PerceptionSummaryAgent
 
 
 async def test_perception_agent(
-    scenario_path: str = "data/test/sim_test_w010_w011",
+    scenario_path: str = "data/test/sim_2win",
     model: str = "gemini-2.0-flash-exp",
     api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
@@ -69,27 +68,21 @@ async def test_perception_agent(
             raise SystemExit(1)
 
     print("\n" + "=" * 80)
-    print("PERCEPTION WORKFLOW TEST (Camera + LiDAR BEV)")
+    print("PERCEPTION AGENT TEST (Camera + LiDAR BEV)")
     print("=" * 80)
     print(f"Scenario: {Path(scenario_path).name}")
     print(f"Model: {model}")
     print("=" * 80)
 
-    # Create client and workflow
+    # Create client and agent
     genai_client = Client(api_key=api_key)
-    scenario_path_abs = str(Path(scenario_path).absolute())
+    scenario_path_obj = Path(scenario_path).absolute()
 
-    perception_workflow = SequentialAgent(
-        name="PerceptionWorkflow",
-        sub_agents=[
-            create_perception_loop_agent(
-                scenario_path_abs, genai_client, model, api_key),
-            create_perception_summary_agent(api_key, model),
-        ],
-    )
+    perception_agent = create_perception_agent(
+        scenario_path_obj, genai_client, model, api_key)
 
-    runner = InMemoryRunner(agent=perception_workflow,
-                            app_name="PerceptionWorkflowApp")
+    runner = InMemoryRunner(agent=perception_agent,
+                            app_name="PerceptionAgentApp")
     events = await runner.run_debug("Analyze perception for all available windows")
 
     result = _extract_result(events)
@@ -110,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--scenario",
         type=str,
-        default="data/processed/test_data/sim/sim_run_test",
+        default="data/test/sim_2win",
         help="Path to scenario directory"
     )
     parser.add_argument(

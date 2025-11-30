@@ -21,7 +21,32 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 | HIGH | Batch Production Run | ⏳ NEXT | Process all 167 windows overnight |
 | MEDIUM | Sporadic Window Failures RCA | 📋 TODO | Check results of batch run for failures |
 | MEDIUM | Token Accounting Bug Fix | 📋 TODO | Cost reporting accuracy (workaround: 3x estimate) |
+| MEDIUM | HTML Report Time-Based Display | 📋 TODO | Show timeline with time labels instead of window IDs |
 | LOW | Memory Layer (Phase 2.2) | 📋 DEFERRED | Cross-run context (nice-to-have) |
+
+### HTML Report Time-Based Display 📋 TODO
+
+**Goal:** Display scenario timeline with time labels for human readability
+
+**Approach:** Display-layer only (agents continue reasoning in windows)
+- Load index CSV from scenario directory (has `start_time`, `end_time` per window)
+- Build window→time mapping: `{window_id: {start_offset_s, end_offset_s}}`
+- Timeline shows time labels instead of/alongside window IDs
+- Window cards show both: "t=0-2s (W010)"
+- Graceful fallback: If no index CSV, estimate from window count × 2s
+
+**Scope:**
+- Only `scripts/generate_html_report.py` changes
+- No agent/tool/artifact changes
+- Estimated effort: 1-2 hours
+
+**UI Changes:**
+| Current | New |
+|---------|-----|
+| "Windows Analyzed: 10" | "Duration: 20s (10 segments)" |
+| "Window 010" | "t=0-2s" or "0-2s (W010)" |
+| "Windows Violated: [010, 011]" | "Violations at: 0-2s, 2-4s" |
+| Timeline dots | Timeline with time labels |
 
 **Recent Completions (Nov 28):**
 - ✅ Real data BEV extraction working (odom-frame detection, proper ground filtering)
