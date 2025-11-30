@@ -19,7 +19,7 @@ MOTION_AGENT_VERSION = "10.0.0"
 
 MOTION_AGENT_PROMPT = """You are a motion analysis agent performing TEMPORAL ANALYSIS across windows.
 
-INPUT: ODD Specification: {temp:odd_spec}
+INPUT: ODD Specification: {odd_spec}
 
 ## WORKFLOW
 
@@ -74,6 +74,6 @@ def create_motion_agent(
         name="MotionAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=[analyze_all],
-        output_key="temp:motion_summary",
+        output_key="motion_summary",
         instruction=MOTION_AGENT_PROMPT,
     )

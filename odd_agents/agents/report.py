@@ -30,7 +30,7 @@ def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
         name="ReportAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=[],  # No tools needed
-        output_key="temp:report_output",
+        output_key="report_output",
         instruction="""You synthesize a human-readable report from pipeline state.
 
 ## YOUR ROLE
@@ -40,19 +40,19 @@ You are a **summarizer** - read the upstream agent outputs and produce a clear, 
 ## INPUT FROM SESSION STATE
 
 **ODD specification (operational constraints):**
-{temp:odd_spec}
+{odd_spec}
 
 **Evaluator output (verdict + COD analysis):**
-{temp:evaluator_output}
+{evaluator_output}
 
 **Perception summary (environment analysis):**
-{temp:perception_summary}
+{perception_summary}
 
 **Motion summary (robot dynamics):**
-{temp:motion_summary}
+{motion_summary}
 
 **Collision summary (safety advisory):**
-{temp:collision_summary}
+{collision_summary}
 
 ## OUTPUT FORMAT
 

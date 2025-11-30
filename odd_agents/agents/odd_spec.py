@@ -93,6 +93,6 @@ def create_odd_spec_agent(api_key: str, model: str) -> Agent:
         name="OddSpecAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=[save_tool],
-        output_key="temp:odd_spec",
+        output_key="odd_spec",
         instruction=PROMPT_TEMPLATE,
     )

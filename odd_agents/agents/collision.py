@@ -22,8 +22,8 @@ COLLISION_AGENT_PROMPT = """You are a collision detection agent performing TEMPO
 ⚠️ COLLISION OUTPUT IS ADVISORY ONLY - does NOT affect ODD/COD verdict.
 
 INPUT: 
-- ODD Specification: {temp:odd_spec}
-- Motion summary: {temp:motion_summary} (for motion-state gating)
+- ODD Specification: {odd_spec}
+- Motion summary: {motion_summary} (for motion-state gating)
 
 ## WORKFLOW
 
@@ -77,6 +77,6 @@ def create_collision_agent(
         name="CollisionAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=[analyze_all],
-        output_key="temp:collision_summary",
+        output_key="collision_summary",
         instruction=COLLISION_AGENT_PROMPT,
     )

@@ -29,17 +29,17 @@ def create_cod_classifier_agent(api_key: str, model: str) -> Agent:
     return Agent(
         name="CodMeasurementAgent",
         model=Gemini(model=model, api_key=api_key),
-        output_key="temp:cod_classification",
+        output_key="cod_classification",
         instruction="""You are a Current Operating Domain (COD) measurement agent.
 
 ROLE: Extract and structure the multidimensional operational envelope the robot experienced.
 You measure conditions - you do NOT check compliance (Evaluator agent handles that).
 
 INPUT DATA:
-- ODD Specification: {temp:odd_spec}
-- Perception: {temp:perception_output}
-- Motion: {temp:motion_output}
-- Collision: {temp:collision_output}
+- ODD Specification: {odd_spec}
+- Perception: {perception_output}
+- Motion: {motion_output}
+- Collision: {collision_output}
 
 YOUR TASK: Build COD region matching ODD spec structure dynamically.
 

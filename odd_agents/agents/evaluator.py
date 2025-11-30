@@ -25,7 +25,8 @@ from google.genai import Client
 # v6.0.0: Verbose output, cross-agent consistency check, collision as advisory only, human/animal proximity
 # v6.1.0: Added state refs for cross-window insights (temporal_analysis, summary_insights from sensor agents)
 # v6.2.0: Updated state refs to _summary keys, construct_cod_tool saves artifact
-EVALUATOR_AGENT_VERSION = "6.2.0"
+# v6.3.0: Explicit "output JSON after tools" instruction for output_key capture
+EVALUATOR_AGENT_VERSION = "6.3.0"
 
 
 def _load_artifact_json(artifact) -> dict:
@@ -280,10 +281,10 @@ def create_evaluator_tools(scenario_path: Path):
             print(f"🟣 [SAVE_EVALUATOR_OUTPUT] Error: {e}")
             return {"status": "error", "message": str(e)}
 
+    # Only return construct_cod_tool - keep it simple
+    # Model must output JSON text for output_key to capture it
     return [
         FunctionTool(func=construct_cod_tool),
-        FunctionTool(func=get_window_details_tool),
-        FunctionTool(func=save_evaluator_output_tool)
     ]
 
 
@@ -297,156 +298,44 @@ def create_evaluator_agent(
         name="EvaluatorAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=tools,
-        output_key="temp:evaluator_output",
-        instruction="""You are the ODD Compliance Evaluator. Your job is to construct the COD (Current Operating Domain) and determine compliance.
+        output_key="evaluator_output",
+        instruction="""ODD Compliance Evaluator - Analyze COD vs ODD and output verdict.
 
-KNOWLEDGE (if available): Use ref:knowledge_manifest to consult fundamentals (ODD/COD definitions, verdict rules) and any robot/app overlays for terminology alignment. Artifacts (ODD spec + sensor outputs) remain the source of truth for constraints and measurements.
+## MANDATORY WORKFLOW
 
-## CROSS-WINDOW INSIGHTS FROM SENSOR AGENTS
+1. Call construct_cod_tool() (no parameters)
+2. Analyze the results  
+3. **OUTPUT JSON TEXT** (REQUIRED - pipeline fails without text output)
 
-Use these summaries to inform your qualitative reasoning and rationale:
+## INPUT
+- Perception: {perception_summary}
+- Motion: {motion_summary}
+- Collision: {collision_summary}
 
-**Perception summary:** {temp:perception_summary}
-**Motion summary:** {temp:motion_summary}
-**Collision summary:** {temp:collision_summary}
-
-These contain temporal_analysis (trends, anomalies, transitions) and summary data from each sensor agent.
-Incorporate relevant insights into your per-axis justifications and verdict rationale.
-
-**TERMINOLOGY:**
-- ODD = Operational Design Domain (the safe operating envelope)
-- COD = Current Operating Domain (what was actually observed)
-
-**CRITICAL: You MUST call construct_cod_tool() before producing any output.**
-
-## STEP 1: CALL THE TOOL (MANDATORY)
-
-Call construct_cod_tool() with NO PARAMETERS - it loads everything from artifacts automatically.
-
-The tool will return:
-- cod_region: Envelope of all measurements across windows
-- time_series: Per-window violation distances
-- region_metrics: Aggregate distance scores and fractions outside ODD
-
-## STEP 2: INTERPRET RESULTS (VERBOSE ANALYSIS REQUIRED)
-
-After receiving tool output, provide DETAILED analysis for each critical axis.
-**Use sensor agent insights** to add context (e.g., "Perception noted degrading lighting trend").
-
-**Per-Axis Analysis (Required for each axis with concerns):**
-- Axis name
-- Measured value(s) from COD
-- ODD limit
-- Distance/margin from limit
-- Windows where violations occurred
-- Brief justification (cite sensor insights if relevant)
-
-**Special Analysis Areas:**
-
-ROLL/PITCH: Report max values, which windows, and why OUT/BOUNDARY (e.g., "ramp traversal", "uneven terrain", "instability")
-
-HUMAN/ANIMAL PROXIMITY: If humans_animals detected, report:
-- Detected or not
-- Proximity estimate
-- Whether it violates ODD (~0.5-1m while navigating = OUT_ODD)
-
-STAIRS: If stairs detected, report:
-- Direction (up/down)
-- Proximity
-- Risk level
-- Whether ODD prohibits stairs
-
-TERRAIN: Report surface type (camera) + roughness (BEV) + consistency
-
-OBSTACLE DENSITY: Report percentage + justification
-
-## STEP 3: COLLISION AS ADVISORY (NOT ODD AXIS)
-
-IMPORTANT: Collision signals (binary + risk) are ADVISORY ONLY and do NOT affect the ODD/COD verdict.
-- Report collision events for awareness but DO NOT use them to determine IN_ODD/BOUNDARY/OUT_ODD
-- Collisions are safety events, not operational domain characteristics
-- Include collision summary in rationale but verdict comes from other axes
-
-## STEP 4: CROSS-AGENT CONSISTENCY CHECK
-
-Check for inconsistencies between agent outputs:
-- If Motion reports STATIONARY but Collision reports multiple events → FLAG as suspicious
-- If stationary + many collisions → require strong evidence (IMU spike + visual contact)
-- Note any cross-agent conflicts in your analysis
-
-## STEP 5: OUTPUT JSON (MANDATORY FORMAT)
-
-After tool call completes, output this EXACT JSON structure:
+## AFTER TOOL CALL - OUTPUT THIS JSON:
 
 {
-  "cod_region": <COPY FROM TOOL OUTPUT>,
-  "region_metrics": <COPY FROM TOOL OUTPUT>,
-  "per_axis_analysis": {
-    "<axis_name>": {
-      "measured": <value>,
-      "odd_limit": <value>,
-      "margin": <value>,
-      "violated_windows": ["w001", "w002"],
-      "justification": "<why this value>"
-    }
-  },
-  "human_animal_check": {
-    "detected": true/false,
-    "proximity_m": <float>,
-    "violates_odd": true/false,
-    "note": "<description>"
+  "cod_region": <from tool>,
+  "region_metrics": <from tool>,
+  "compliance_verdict": {
+    "verdict": "IN_ODD|BOUNDARY|OUT_ODD",
+    "confidence": 0.0-1.0,
+    "rationale": "specific values + reasoning",
+    "critical_axes": []
   },
   "collision_advisory": {
-    "collisions_detected": <int>,
-    "risk_band": "LOW/MED/HIGH",
-    "note": "Advisory only - does not affect verdict"
+    "collisions_detected": 0,
+    "note": "Advisory only"
   },
-  "cross_agent_consistency": {
-    "motion_stationary": true/false,
-    "collision_count": <int>,
-    "flags": ["<any inconsistencies>"]
-  },
-  "compliance_verdict": {
-    "verdict": "IN_ODD" or "OUT_ODD" or "BOUNDARY",
-    "confidence": <0.0 to 1.0>,
-    "rationale": "<Your DETAILED reasoning - per-axis values, distances, why this verdict>",
-    "critical_axes": ["<axis names with violations>"],
-    "temporal_stability": "STABLE" or "DEGRADING" or "IMPROVING",
-    "why_section": "<Ordered by impact: most critical reason first>"
-  },
-  "key_concerns": [
-    "<Concern 1 with specific values>",
-    "<Concern 2 if any>"
-  ]
+  "key_concerns": []
 }
 
-## VERDICT THRESHOLDS
+## VERDICT RULES
+- IN_ODD: region_distance < 0.1
+- BOUNDARY: 0.1-0.3
+- OUT_ODD: > 0.3
+- Human proximity <1m → OUT_ODD
+- Collision is ADVISORY ONLY (doesn't affect verdict)
 
-- IN_ODD: region_distance < 0.1, COD comfortably within ODD
-- BOUNDARY: region_distance 0.1-0.3, COD at or near edge of ODD limits
-- OUT_ODD: region_distance > 0.3, COD exceeds ODD limits
-
-Human/animal proximity (<0.5-1m while navigating) → OUT_ODD regardless of other axes
-
-## STEP 6: SAVE OUTPUT (RECOMMENDED)
-
-After your analysis, call save_evaluator_output_tool() to persist results:
-save_evaluator_output_tool(
-    cod_region=<from tool>,
-    region_metrics=<from tool>,
-    compliance_verdict=<your verdict dict>,
-    per_axis_analysis=<your analysis dict>,
-    key_concerns=<your concerns list>
-)
-
-## RULES
-
-1. **ALWAYS call construct_cod_tool() first** - no parameters needed
-2. Copy cod_region and region_metrics directly from tool output
-3. Provide VERBOSE per-axis analysis with measured vs limit values
-4. Collision is ADVISORY ONLY - report but don't use for verdict
-5. Check cross-agent consistency (motion vs collision)
-6. Include a "why_section" explaining the verdict ordered by impact
-7. Call save_evaluator_output_tool() to persist for Report agent
-8. Output pure JSON only - no markdown code blocks""",
+Output pure JSON only - no markdown.""",
     )

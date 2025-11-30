@@ -19,7 +19,7 @@ PERCEPTION_AGENT_VERSION = "10.0.0"
 
 PERCEPTION_AGENT_PROMPT = """You are a perception analysis agent performing TEMPORAL ANALYSIS across windows.
 
-INPUT: ODD Specification: {temp:odd_spec}
+INPUT: ODD Specification: {odd_spec}
 
 ## WORKFLOW
 
@@ -74,6 +74,6 @@ def create_perception_agent(scenario_path: Path, genai_client: genai.Client, mod
         name="PerceptionAgent",
         model=Gemini(model=model, api_key=api_key),
         tools=[analyze_all],
-        output_key="temp:perception_summary",
+        output_key="perception_summary",
         instruction=PERCEPTION_AGENT_PROMPT,
     )
