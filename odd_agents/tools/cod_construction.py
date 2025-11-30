@@ -384,11 +384,6 @@ def _normalize_perception_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
         stairs_present = raw["stairs"].get("present", False)
         normalized["stairs_present"] = 1 if stairs_present else 0
 
-    # Proximity: min_obstacle_distance_m -> min_proximity_m
-    if "min_obstacle_distance_m" in raw:
-        normalized["min_proximity_m"] = raw["min_obstacle_distance_m"]
-
-    # Also check humans_animals for proximity
     if "humans_animals" in raw and isinstance(raw["humans_animals"], dict):
         ha = raw["humans_animals"]
         if ha.get("detected", False) and ha.get("proximity_m", -1) > 0:
