@@ -2,75 +2,90 @@
 
 ## Problem Statement
 
-The pipeline is producing **false OUT_ODD verdicts** due to confusion between:
-1. **Obstacle proximity** (furniture, walls - measured from BEV) 
-2. **Actor proximity** (humans, animals - should be assessed from camera only)
+The pipeline is producing **false OUT_ODD verdicts** due to multiple issues:
 
 ### Evidence from `real_2win` run (2024-11-30)
 
-```
-"min_proximity_m": 0.76m
-```
+**Issues flagged:**
+1. Observed hazardous terrain 'unclassified_clutter' is not defined in the ODD
+2. Observed terrain 'carpet' was flagged as outside ODD specifications
+3. The minimum proximity to obstacles (0.76m) violated the specified safe distance for actors (1.0m)
+4. Critically low traversability (0.1) in w010
+5. Persistently low traversability scores (<0.3)
 
-The pipeline flagged this as OUT_ODD because:
-- ODD spec says humans/animals must be >1.0m away
-- BEV measured 0.76m to nearest obstacle
-- Pipeline incorrectly treated obstacle distance as actor distance
-- **No humans or animals were detected** (`humans_detected: false`)
-
-This is a **critical false positive** - the robot was compliant but flagged as non-compliant.
+**Analysis:**
+- Issue 1: Perception outputting "unclassified_clutter" - not a valid terrain type
+- Issue 2: Perception outputting "carpet" but ODD allows "low_pile_carpet" - categorical matcher should handle this but may be failing
+- Issue 3: **Critical bug** - BEV obstacle distance (0.76m) being treated as actor proximity
+- Issues 4-5: Traversability being reported but it's unclear if this is even an ODD axis
 
 ---
 
 ## Root Cause Analysis
 
-### Issue 1: ODD Spec Agent Ignoring Proximity Band Instructions
+### Issue 1: Perception Outputting Invalid Terrain Types
 
-The prompt says:
-```
-- actors_categorical should include:
-  - human_proximity_band: allowed ["medium", "far", "none"]
-  - animal_proximity_band: allowed ["medium", "far", "none"]
-- Do NOT use actors_numeric for proximity (no min_proximity_m)
-```
+**Problem:** Perception tool outputs "unclassified_clutter" which isn't a recognized terrain type.
 
-But the agent created:
-```json
-"actors": {
-  "numeric": {
-    "min_proximity_m": {"min": 1, "max": 10, "type": "range"}
-  }
-}
+**Root cause:** The VLA sees clutter on the floor and doesn't know what to call it. The prompt doesn't give guidance on what to do when terrain is unrecognizable.
+
+**Fix:** Add to perception prompt:
+```
+For terrain_type:
+- Output one of the ALLOWED values from ODD spec
+- If unsure, output the CLOSEST match (e.g., if cluttered floor, output the base floor type visible)
+- NEVER output "unclassified", "unknown", or made-up categories
+- If truly unrecognizable terrain, output "other" and note in odd_concerns
 ```
 
-**Root cause:** The prompt guidance is too easily ignored. The agent sees "1m safe distance" in the NL ODD and defaults to numeric.
+### Issue 2: "carpet" vs "low_pile_carpet" Mismatch
 
-### Issue 2: Perception Tool Conflating Obstacle & Actor Distance
+**Problem:** Perception outputs "carpet" but ODD allows "low_pile_carpet", causing categorical mismatch.
 
-The perception tool outputs BEV-derived `min_obstacle_distance_m` and this gets mapped to `min_proximity_m` somewhere in the pipeline.
+**Root cause 1:** Perception prompt doesn't emphasize using EXACT ODD values.
+**Root cause 2:** Categorical mismatch agent should score "carpet" → "low_pile_carpet" as 0.0 (superset) but may be failing.
 
-The tool prompt clearly says:
+**Fix 1:** Perception prompt:
 ```
-⚠️ OBSTACLES are assessed from BEV occupancy:
-- "min_obstacle_distance_m" from BEV metrics is to ANY obstacle (furniture, walls, etc.)
-- This is NOT actor proximity - do not confuse them
-```
-
-But this isn't working reliably.
-
-### Issue 3: COD Construction Has Lingering Legacy Mapping
-
-In `cod_construction.py`, `_normalize_collision_measurements()`:
-```python
-if "proximity_estimate_m" in window_data:
-    normalized["min_proximity_m"] = window_data["proximity_estimate_m"]
+For categorical axes, output EXACTLY one of the allowed values from the ODD spec.
+Do NOT paraphrase or simplify (e.g., output "low_pile_carpet" not "carpet").
 ```
 
-This maps collision proximity (obstacle) to `min_proximity_m` (actors).
+**Fix 2:** Verify categorical mismatch agent handles this case. May need to add example:
+```
+- 'carpet' is a superset of 'low_pile_carpet', 'area_rug' → score 0.0
+```
+
+### Issue 3: Obstacle Distance → Actor Proximity Confusion
+
+**Problem:** BEV measures 0.76m to nearest obstacle (furniture/wall). This gets mapped to `min_proximity_m` (actor distance). No humans detected, but flagged as proximity violation.
+
+**Root causes:**
+1. ODD Spec agent creates `min_proximity_m` as numeric instead of categorical bands
+2. Collision tool outputs `proximity_estimate_m` which gets mapped to `min_proximity_m`
+3. COD construction has legacy mapping code
+
+**Fixes:** (detailed in original plan)
+- ODD Spec: Force categorical proximity bands for actors
+- Perception: Don't output obstacle distance as ODD measurement
+- COD Construction: Remove collision proximity → min_proximity_m mapping
+
+### Issue 4-5: Traversability Not In ODD Spec
+
+**Problem:** Perception reports traversability_score but this axis may not be in the ODD spec, or is being added incorrectly.
+
+**Root cause:** Perception tool is outputting traversability even if the ODD spec doesn't define it as an axis.
+
+**Fix:** Perception prompt:
+```
+Only output measurements for axes that EXIST in the ODD spec.
+Do NOT invent new axes (like traversability_score) unless they are in the spec.
+If the ODD spec has traversability_score, output it. Otherwise, don't.
+```
 
 ---
 
-## Proposed Changes (Minimal, No Major Refactors)
+## Proposed Changes (Updated)
 
 ### Change 1: ODD Spec Agent - Hardcode Actor Proximity as Categorical
 
@@ -101,37 +116,116 @@ If the NL ODD says "1m safe distance", this maps to:
 ⚠️ NEVER create actors_numeric for proximity. The system cannot reliably measure distance.
 ```
 
-### Change 2: Perception Tool - Remove BEV Distance from ODD Measurements
+### Change 2: Perception Tool - Strict ODD Axis Output
 
 **File:** `odd_agents/tools/perception.py`
 
-**Current:** The tool outputs `min_obstacle_distance_m` from BEV.
+**Proposed additions to prompt:**
 
-**Proposed:** 
-1. Keep BEV metrics for internal use (obstacle density, path blocked)
-2. Do NOT output `min_obstacle_distance_m` as an ODD measurement
-3. For actor detection, output ONLY categorical bands
-
-Add to prompt:
 ```
-## WHAT TO OUTPUT IN odd_measurements
+## CRITICAL OUTPUT RULES
 
-For ACTORS (human_proximity_band, animal_proximity_band):
-- Output the categorical band: "none", "far", "medium", "close", or "immediate"
-- Base this on CAMERA visual analysis ONLY
-- If no humans/animals detected, output "none"
+1. ONLY output measurements for axes that EXIST in the ODD spec
+   - Check the ODD spec for the exact axis names
+   - Do NOT invent new axes (no "traversability_score" unless in spec)
 
-DO NOT output any of these as ODD measurements:
-- min_obstacle_distance_m (this is internal BEV data, not an ODD axis)
-- min_proximity_m (this axis should not exist)
-- Any numeric distance to actors (camera cannot measure this)
+2. For CATEGORICAL axes, output EXACTLY one of the allowed values
+   - Do NOT paraphrase (output "low_pile_carpet" not "carpet")
+   - Do NOT invent new values (no "unclassified_clutter")
+   - If uncertain, pick the CLOSEST allowed value
+
+3. For TERRAIN TYPE specifically:
+   - Look at the ODD spec's terrain_type.allowed list
+   - Output one value from that list
+   - If you see carpet, check if "low_pile_carpet" or "area_rug" is allowed - use that
+   - NEVER output "unclassified", "unknown", or "other"
+
+4. For ACTOR PROXIMITY:
+   - Output categorical bands only (none/far/medium/close/immediate)
+   - Assess from CAMERA only, not BEV
+   - Do NOT output any numeric distance
+
+5. BEV metrics are for INTERNAL use only:
+   - obstacle_density: OK to output as ODD measurement IF in spec
+   - min_obstacle_distance_m: NEVER output (not an ODD axis)
 ```
 
-### Change 3: COD Construction - Remove Proximity Mapping
+### Change 3: COD Construction - Remove Collision Proximity Mapping
 
 **File:** `odd_agents/tools/cod_construction.py`
 
-**Current:** `_normalize_collision_measurements()` maps `proximity_estimate_m` → `min_proximity_m`
+**Current:**
+```python
+def _normalize_collision_measurements(raw, window_data):
+    if "proximity_estimate_m" in window_data:
+        normalized["min_proximity_m"] = window_data["proximity_estimate_m"]
+```
+
+**Proposed:**
+```python
+def _normalize_collision_measurements(raw, window_data):
+    # Collision is ADVISORY ONLY - no measurements affect ODD compliance
+    return {}
+```
+
+### Change 4: Categorical Mismatch Agent - Add Carpet Example
+
+**File:** `odd_agents/tools/cod_construction.py`
+
+Add to the categorical mismatch prompt:
+
+```
+ADDITIONAL RULES:
+
+- 'carpet' is a superset of 'low_pile_carpet', 'area_rug', 'high_pile_carpet' → score 0.0
+- 'wood' is a superset of 'hardwood', 'laminate' → score 0.0
+- 'tile' includes 'ceramic_tile', 'porcelain_tile' → score 0.0
+
+When the measured value is a GENERAL term and the ODD allowed values are SPECIFIC variants,
+this is COMPATIBLE (score 0.0) because the robot IS on that type of surface.
+```
+
+### Change 5: Evaluator Agent - Actor Proximity Clarity
+
+**File:** `odd_agents/agents/evaluator.py`
+
+Add to prompt:
+```
+## ACTOR PROXIMITY RULES
+
+- human_proximity_band and animal_proximity_band are CATEGORICAL axes
+- If band is "none" → N/A (no actor detected, skip this axis in violation calc)
+- If band is "far" or "medium" → IN ODD (compliant)
+- If band is "close" or "immediate" → OUT OF ODD (violation)
+
+- min_proximity_m should NOT exist as an axis
+- If you see it, flag as spec error in key_concerns
+
+- BEV obstacle distance is NOT actor proximity
+- A chair at 0.5m is NOT a human proximity violation
+```
+
+### Change 6: Perception Agent Summary - Reinforce Band Output
+
+**File:** `odd_agents/agents/perception.py`
+
+Update the output schema in prompt:
+```
+"actor_detection": {
+  "humans_detected": true|false,
+  "human_proximity_band": "none|far|medium|close|immediate",  // REQUIRED
+  "human_band_reasoning": "Full body visible, appears 3-4m away",
+  "animals_detected": true|false,
+  "animal_proximity_band": "none|far|medium|close|immediate",  // REQUIRED
+  "animal_type": "dog|cat|other|none"
+}
+
+RULES:
+- If humans_detected=false, human_proximity_band MUST be "none"
+- If animals_detected=false, animal_proximity_band MUST be "none"
+- Bands are assessed from CAMERA only
+- Do NOT report numeric distances
+```
 
 **Proposed:** Remove this mapping entirely. Collision proximity is advisory only.
 
