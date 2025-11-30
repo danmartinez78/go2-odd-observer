@@ -70,18 +70,25 @@ Do NOT paraphrase or simplify (e.g., output "low_pile_carpet" not "carpet").
 - Perception: Don't output obstacle distance as ODD measurement
 - COD Construction: Remove collision proximity → min_proximity_m mapping
 
-### Issue 4-5: Traversability Not In ODD Spec
+### Issue 4-5: Traversability Reported But NOT In ODD Spec
 
-**Problem:** Perception reports traversability_score but this axis may not be in the ODD spec, or is being added incorrectly.
+**Problem:** Perception reports `traversability_score: 0.1` causing "critically low traversability" concerns, but **traversability_score is NOT defined in the generated ODD spec**.
 
-**Root cause:** Perception tool is outputting traversability even if the ODD spec doesn't define it as an axis.
+**Evidence from real_2win:** The ODD spec has these axes:
+- environment: lighting_conditions, terrain_type, obstacle_density, stairs_present
+- actors: min_proximity_m  
+- ego: max_speed_mps, max_accel_mps2, max_roll_deg, max_pitch_deg
 
-**Fix:** Perception prompt:
-```
-Only output measurements for axes that EXIST in the ODD spec.
-Do NOT invent new axes (like traversability_score) unless they are in the spec.
-If the ODD spec has traversability_score, output it. Otherwise, don't.
-```
+**NO traversability_score axis exists**, yet it's being reported and flagged.
+
+**Root causes:**
+1. `odd_agents/tools/odd_spec.py` line 63 has traversability_score in the EXAMPLE
+2. `odd_agents/tools/perception.py` line 84 outputs traversability_score unconditionally
+3. Pipeline reports it as a concern even though it's not an ODD axis
+
+**Fix:** 
+1. Remove traversability from hardcoded examples in odd_spec.py
+2. Perception should ONLY output measurements for axes that exist in ODD spec
 
 ---
 
@@ -227,6 +234,36 @@ RULES:
 - Do NOT report numeric distances
 ```
 
+### Change 7: Remove Traversability from Hardcoded Examples
+
+**Files:** 
+- `odd_agents/tools/odd_spec.py` (line 63)
+- `odd_agents/tools/perception.py` (line 84)
+
+**Problem:** traversability_score is hardcoded in examples, causing agents to output it even when it's NOT in the ODD spec.
+
+**Fix odd_spec.py:** Remove from example or add NOTE:
+```
+NOTE: traversability_score is OPTIONAL. Only include if the NL ODD mentions path quality/navigation ease.
+Most indoor ODDs do NOT need this - obstacle_density covers clutter.
+```
+
+**Fix perception.py:** Remove hardcoded traversability output:
+```
+# REMOVE THIS:
+"traversability_score": 0.0-1.0,
+
+# The perception tool should ONLY output axes that exist in the ODD spec.
+# Do NOT output traversability_score unless it appears in odd_spec.environment.numeric
+```
+
+**Fix cod_construction.py:** Remove traversability normalization (lines 379-380):
+```python
+# REMOVE:
+if "traversability_score" in raw:
+    normalized["traversability_score"] = raw["traversability_score"]
+```
+
 ---
 
 ## Alternative: Binary Actor Presence
@@ -258,9 +295,11 @@ After implementing changes, verify:
 2. [ ] ODD spec agent ALWAYS creates `human_proximity_band` and `animal_proximity_band` as categorical
 3. [ ] Perception tool outputs categorical bands, NOT numeric distances
 4. [ ] Perception tool outputs EXACT allowed values for terrain_type
-5. [ ] COD construction does NOT map obstacle distance to actor proximity
-6. [ ] Real scenario with no humans → "none" band → no proximity violation
-7. [ ] Terrain "carpet" matches "low_pile_carpet" with distance 0.0
+5. [ ] Perception tool does NOT output traversability_score unless in ODD spec
+6. [ ] COD construction does NOT map obstacle distance to actor proximity
+7. [ ] COD construction does NOT normalize traversability unless in ODD spec
+8. [ ] Real scenario with no humans → "none" band → no proximity violation
+9. [ ] Terrain "carpet" matches "low_pile_carpet" with distance 0.0
 
 ---
 
@@ -268,9 +307,9 @@ After implementing changes, verify:
 
 | File | Change | Risk |
 |------|--------|------|
-| `odd_agents/agents/odd_spec.py` | Harden proximity band instructions | Low |
-| `odd_agents/tools/perception.py` | Strict ODD axis output rules | Low |
-| `odd_agents/tools/cod_construction.py` | Remove collision→proximity mapping + superset examples | Low |
+| `odd_agents/agents/odd_spec.py` | Harden proximity band + remove traversability example | Low |
+| `odd_agents/tools/perception.py` | Strict ODD axis output + remove traversability | Low |
+| `odd_agents/tools/cod_construction.py` | Remove collision→proximity + traversability mapping | Low |
 | `odd_agents/agents/evaluator.py` | Add actor proximity clarity | Low |
 | `odd_agents/agents/perception.py` | Reinforce categorical band output | Low |
 
