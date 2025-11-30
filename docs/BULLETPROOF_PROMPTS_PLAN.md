@@ -227,89 +227,26 @@ RULES:
 - Do NOT report numeric distances
 ```
 
-**Proposed:** Remove this mapping entirely. Collision proximity is advisory only.
-
-```python
-def _normalize_collision_measurements(raw: Dict[str, Any], window_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Normalize collision measurements.
-    Collision is ADVISORY ONLY - no measurements affect ODD compliance.
-    """
-    # Return empty - collision doesn't contribute ODD measurements
-    return {}
-```
-
-### Change 4: Evaluator Agent - Add Actor Proximity Clarity
-
-**File:** `odd_agents/agents/evaluator.py`
-
-Add to the prompt:
-```
-## ACTOR PROXIMITY RULES
-
-- human_proximity_band and animal_proximity_band are CATEGORICAL axes
-- If band is "none" → N/A (no actor detected, skip this axis)
-- If band is "far" or "medium" → IN ODD (compliant)
-- If band is "close" or "immediate" → OUT OF ODD (violation)
-
-- min_proximity_m should NOT exist as an axis
-- If you see it, this is a specification error - flag it in key_concerns
-
-- BEV obstacle distance (min_obstacle_distance_m) is NOT actor proximity
-- A chair at 0.5m is NOT a human proximity violation
-```
-
-### Change 5: Perception Agent - Simplify Actor Detection Schema
-
-**File:** `odd_agents/agents/perception.py`
-
-Current output schema has:
-```json
-"actor_detection": {
-    "humans_detected": true|false,
-    "human_closest_band": "...",
-    ...
-}
-```
-
-This is good but add reinforcement:
-```
-## ACTOR DETECTION OUTPUT
-
-Output EXACTLY this structure for each window:
-{
-  "human_proximity_band": "none|far|medium|close|immediate",
-  "animal_proximity_band": "none|far|medium|close|immediate"
-}
-
-Rules:
-- "none" if no human/animal detected
-- Assess from CAMERA only (not BEV)
-- Do NOT invent numeric distances
-- If unsure between bands, choose the MORE conservative (farther) band
-```
-
 ---
 
 ## Alternative: Binary Actor Presence
 
 If categorical bands prove unreliable, simplify to binary:
 
-### ODD Spec Change
+**ODD Spec:**
 ```
 actors_boolean:
 - human_present: allowed=0 (humans present = OUT OF ODD)
 - animal_present: allowed=0 (animals present = OUT OF ODD)
 ```
 
-### Perception Change
+**Perception:**
 ```
-For human_present and animal_present:
 - Output 1 if ANY human/animal visible in camera
 - Output 0 if no human/animal visible
 ```
 
-This is simpler but loses granularity. The NL ODD says "persons within ~0.5-1m" is OUT OF ODD, implying presence at distance is OK. So categorical bands are preferred.
+Simpler but loses granularity. Categorical bands preferred since NL ODD implies presence at distance is OK.
 
 ---
 
@@ -320,10 +257,10 @@ After implementing changes, verify:
 1. [ ] ODD spec agent NEVER creates `min_proximity_m` numeric axis
 2. [ ] ODD spec agent ALWAYS creates `human_proximity_band` and `animal_proximity_band` as categorical
 3. [ ] Perception tool outputs categorical bands, NOT numeric distances
-4. [ ] COD construction does NOT map obstacle distance to actor proximity
-5. [ ] Real scenario with no humans → "none" band → no proximity violation
-6. [ ] Real scenario with humans at >1m → "medium" or "far" band → no violation
-7. [ ] Real scenario with humans at <1m → "close" or "immediate" → OUT OF ODD
+4. [ ] Perception tool outputs EXACT allowed values for terrain_type
+5. [ ] COD construction does NOT map obstacle distance to actor proximity
+6. [ ] Real scenario with no humans → "none" band → no proximity violation
+7. [ ] Terrain "carpet" matches "low_pile_carpet" with distance 0.0
 
 ---
 
@@ -332,26 +269,17 @@ After implementing changes, verify:
 | File | Change | Risk |
 |------|--------|------|
 | `odd_agents/agents/odd_spec.py` | Harden proximity band instructions | Low |
-| `odd_agents/tools/perception.py` | Remove min_obstacle_distance_m from ODD measurements | Low |
-| `odd_agents/tools/cod_construction.py` | Remove collision→proximity mapping | Low |
+| `odd_agents/tools/perception.py` | Strict ODD axis output rules | Low |
+| `odd_agents/tools/cod_construction.py` | Remove collision→proximity mapping + superset examples | Low |
 | `odd_agents/agents/evaluator.py` | Add actor proximity clarity | Low |
 | `odd_agents/agents/perception.py` | Reinforce categorical band output | Low |
 
 ---
 
-## Estimated Impact
-
-- **False positive reduction:** High (eliminates obstacle→actor confusion)
-- **Breaking changes:** None (just prompt/logic fixes)
-- **Token usage:** Neutral (slightly longer prompts, simpler outputs)
-- **Test coverage:** Existing tests should pass, add specific actor proximity tests
-
----
-
 ## Next Steps
 
-1. Review this plan
+1. ✅ Review this plan
 2. Implement changes one file at a time
 3. Run `sim_2win` test to verify pipeline works
-4. Run `real_2win` test to verify false positive is fixed
+4. Run `real_2win` test to verify false positives fixed
 5. Commit with detailed message
