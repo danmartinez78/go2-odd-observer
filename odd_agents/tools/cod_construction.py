@@ -318,19 +318,32 @@ def construct_cod_from_sensor_outputs(
     # Build overall COD region
     cod_region = _build_cod_region(per_window_data, odd_spec)
 
+    # Collect categorical mismatches FIRST for semantic assessment
+    # This is used for BOTH time series AND region metrics
+    mismatches, exact_matches = _collect_categorical_mismatches(
+        cod_region, odd_spec)
+
+    # Assess mismatches with LLM (single batched call)
+    categorical_distances = {}
+    if mismatches:
+        categorical_distances = _assess_categorical_mismatches_sync(mismatches)
+
     # Compute time series metrics (violation distance & margin per window)
+    # NOW includes semantic distances for categorical axes
     time_series = _compute_time_series_metrics(
         per_window_data,
         odd_spec,
-        weights
+        weights,
+        categorical_distances  # Pass semantic distances
     )
 
-    # Compute region-level metrics
+    # Compute region-level metrics (also uses semantic distances)
     region_metrics = _compute_region_metrics(
         cod_region,
         odd_spec,
         time_series,
-        weights
+        weights,
+        categorical_distances  # Pass semantic distances
     )
 
     return {
@@ -558,13 +571,23 @@ def _build_cod_region(
 def _compute_time_series_metrics(
     per_window_data: List[Dict[str, Any]],
     odd_spec: Dict[str, Any],
-    weights: Dict[str, float]
+    weights: Dict[str, float],
+    categorical_distances: Optional[Dict[str, float]] = None
 ) -> Dict[str, Any]:
     """
     Compute per-window point violation distance and margin to boundary.
 
+    Args:
+        per_window_data: Combined measurements per window
+        odd_spec: ODD specification
+        weights: Per-axis weights
+        categorical_distances: LLM-assessed semantic distances for enum axes
+
     Returns time series arrays.
     """
+    if categorical_distances is None:
+        categorical_distances = {}
+
     window_ids = []
     violation_distances = []
     margins_to_boundary = []
@@ -574,8 +597,9 @@ def _compute_time_series_metrics(
         wid = window["window_id"]
         measurements = window["measurements"]
 
-        # Compute point violation distance
-        d_viol = _violation_distance_point(measurements, odd_spec, weights)
+        # Compute point violation distance WITH semantic distances
+        d_viol = _violation_distance_point(
+            measurements, odd_spec, weights, categorical_distances)
 
         # Compute margin to boundary (range axes only)
         margin = _margin_to_boundary_point(measurements, odd_spec)
@@ -597,21 +621,21 @@ def _compute_region_metrics(
     cod_region: Dict[str, Any],
     odd_spec: Dict[str, Any],
     time_series: Dict[str, Any],
-    weights: Dict[str, float]
+    weights: Dict[str, float],
+    categorical_distances: Optional[Dict[str, float]] = None
 ) -> Dict[str, Any]:
     """
     Compute region-level aggregate metrics.
 
-    Uses LLM micro-agent for semantic assessment of categorical mismatches.
+    Args:
+        cod_region: COD region data
+        odd_spec: ODD specification
+        time_series: Per-window time series data
+        weights: Per-axis weights
+        categorical_distances: Pre-computed LLM semantic distances for enum axes
     """
-    # Collect categorical mismatches for LLM assessment
-    mismatches, exact_matches = _collect_categorical_mismatches(
-        cod_region, odd_spec)
-
-    # Assess mismatches with LLM (single batched call)
-    categorical_distances = {}
-    if mismatches:
-        categorical_distances = _assess_categorical_mismatches_sync(mismatches)
+    if categorical_distances is None:
+        categorical_distances = {}
 
     # Region distance
     d_region = _region_distance(
@@ -664,12 +688,20 @@ def _compute_region_metrics(
 def _violation_distance_point(
     cod_point: Dict[str, Any],
     odd_spec: Dict[str, Any],
-    weights: Dict[str, float]
+    weights: Dict[str, float],
+    categorical_distances: Optional[Dict[str, float]] = None
 ) -> float:
     """
     Compute point violation distance D_violation_point.
 
     Returns 0 if point is inside ODD, positive value if outside.
+
+    Args:
+        cod_point: Current operating conditions
+        odd_spec: ODD specification with allowed values
+        weights: Feature weights for distance calculation
+        categorical_distances: Pre-computed semantic distances for categorical features
+                             (from semantic micro-agent assessment)
     """
     v_sq_sum = 0.0
 
@@ -696,7 +728,16 @@ def _violation_distance_point(
 
         elif t == "enum":
             allowed_set = set(spec["allowed"])
-            v = 0.0 if x in allowed_set else 1.0
+            if x in allowed_set:
+                # Exact match - no violation
+                v = 0.0
+            elif categorical_distances and feat in categorical_distances:
+                # Use semantic distance from micro-agent assessment
+                # (e.g., "hardwood" vs "smooth_hardwood" -> 0.0 semantically compatible)
+                v = categorical_distances[feat]
+            else:
+                # No semantic assessment available - treat as full violation
+                v = 1.0
 
         else:
             continue

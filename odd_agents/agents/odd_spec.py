@@ -22,7 +22,8 @@ from ..tools.odd_spec import create_odd_spec_tools
 # v7.0.0: Simplified prompt - clearer two-step workflow like other agents
 # v8.0.0: Tool-free agent - outputs JSON directly to avoid function_call issues with output_key
 # v9.0.0: Re-enabled save_odd_spec_tool + mandatory JSON output after tool call for output_key capture
-AGENT_VERSION = "9.0.0"
+# v9.1.0: Improved categorical extraction - enumerate specific examples, not abstract categories
+AGENT_VERSION = "9.1.0"
 
 PROMPT_TEMPLATE = """You are an ODD specification expert. Convert natural language ODD descriptions into formal JSON specifications.
 
@@ -65,6 +66,22 @@ After the tool call completes, you MUST output this JSON structure:
 - Environment: lighting_conditions, terrain_type, obstacle_density, traversability_score, stairs_present
 - Actors: min_proximity_m, humans_present
 - Ego: max_speed_mps, max_accel_mps2, max_roll_deg, max_pitch_deg
+
+## CATEGORICAL EXTRACTION RULES (CRITICAL)
+
+When extracting categorical values, enumerate ALL SPECIFIC EXAMPLES mentioned:
+
+Example: "smooth floors (hardwood, tile, laminate)" 
+→ terrain_type.allowed: ["hardwood", "tile", "laminate"] 
+NOT: ["smooth"] (too abstract)
+
+Example: "low-pile carpet and area rugs"
+→ ADD to terrain_type.allowed: ["low_pile_carpet", "area_rug"]
+
+Example: "bright to moderate lighting; dim areas acceptable"
+→ lighting_conditions.allowed: ["bright", "moderate", "dim"]
+
+Extract the CONCRETE surface/material/condition names, not abstract summaries.
 
 ## NUMERIC BOUNDS SEMANTICS
 

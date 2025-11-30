@@ -148,7 +148,7 @@ def _build_executive_summary_from_state(
         "compliance": {
             "verdict": compliance_verdict.get("verdict", "UNKNOWN"),
             "confidence": compliance_verdict.get("confidence", 0),
-            "stability": compliance_verdict.get("temporal_stability", "UNKNOWN"),
+            "region_distance": evaluator.get("region_metrics", {}).get("region_distance", 0.0),
             "critical_axes": compliance_verdict.get("critical_axes", []),
             "rationale": compliance_verdict.get("rationale", ""),
         },

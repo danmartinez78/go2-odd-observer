@@ -86,35 +86,74 @@ def get_report_data(result: Dict[str, Any]) -> Dict[str, Any]:
 
 def get_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
     """Extract compliance verdict from various schema formats."""
-    # Try current schema: report.compliance (from ReportAgent)
+    compliance_data = {}
+
+    # Start with report.compliance (from ReportAgent) as base
     report = result.get('report', {})
     if 'compliance' in report:
-        compliance_data = report['compliance']
+        compliance_data = dict(report['compliance'])
         # Normalize 'status' to 'verdict' for consistency
         if 'status' in compliance_data and 'verdict' not in compliance_data:
-            compliance_data = dict(compliance_data)
             compliance_data['verdict'] = compliance_data['status']
-        return compliance_data
 
-    # Try Phase 1.6 schema: artifacts.cod_construction.json
+    # Try to get rationale from evaluator's compliance_verdict (more detailed)
+    # Check artifacts first
     artifacts = result.get('artifacts', {})
     cod_artifact = artifacts.get('cod_construction.json', {})
     if 'compliance_verdict' in cod_artifact:
-        return cod_artifact['compliance_verdict']
+        eval_verdict = cod_artifact['compliance_verdict']
+        if 'rationale' in eval_verdict and not compliance_data.get('rationale'):
+            compliance_data['rationale'] = eval_verdict['rationale']
+        if 'confidence' in eval_verdict and not compliance_data.get('confidence'):
+            compliance_data['confidence'] = eval_verdict['confidence']
+        if 'critical_axes' in eval_verdict and not compliance_data.get('critical_axes'):
+            compliance_data['critical_axes'] = eval_verdict['critical_axes']
 
-    # Try Phase 1.4.5 schema: compliance.verdict (nested verdict object)
+    # Check full_analysis for compliance_verdict
+    fa = result.get('full_analysis', {})
+    if 'compliance_verdict' in fa:
+        eval_verdict = fa['compliance_verdict']
+        if 'rationale' in eval_verdict and not compliance_data.get('rationale'):
+            compliance_data['rationale'] = eval_verdict['rationale']
+        if 'confidence' in eval_verdict and not compliance_data.get('confidence'):
+            compliance_data['confidence'] = eval_verdict['confidence']
+
+    # Check session_state for evaluator_output (may have markdown-wrapped JSON)
+    session_state = result.get('session_state', {})
+    eval_state = session_state.get(
+        'evaluator_output', session_state.get('temp:evaluator_output', {}))
+    if isinstance(eval_state, str):
+        # Strip markdown code blocks if present
+        eval_str = eval_state.strip()
+        if eval_str.startswith('```'):
+            # Remove ```json and trailing ```
+            lines = eval_str.split('\n')
+            if lines[0].startswith('```'):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == '```':
+                lines = lines[:-1]
+            eval_str = '\n'.join(lines)
+        try:
+            eval_state = json.loads(eval_str)
+        except:
+            eval_state = {}
+    if isinstance(eval_state, dict) and 'compliance_verdict' in eval_state:
+        eval_verdict = eval_state['compliance_verdict']
+        if 'rationale' in eval_verdict and not compliance_data.get('rationale'):
+            compliance_data['rationale'] = eval_verdict['rationale']
+        if 'confidence' in eval_verdict and not compliance_data.get('confidence'):
+            compliance_data['confidence'] = eval_verdict['confidence']
+
+    if compliance_data:
+        return compliance_data
+
+    # Fallback to Phase 1.4.5 schema: compliance.verdict (nested verdict object)
     compliance = result.get('compliance', {})
     if 'verdict' in compliance:
         verdict_obj = compliance['verdict']
         if isinstance(verdict_obj, dict) and 'verdict' in verdict_obj:
-            # Nested structure: compliance.verdict.verdict
             return verdict_obj
-        return {'verdict': verdict_obj}  # Simple structure
-
-    # Try full_analysis schema
-    fa = result.get('full_analysis', {})
-    if 'compliance_verdict' in fa:
-        return fa['compliance_verdict']
+        return {'verdict': verdict_obj}
 
     # Try agent outputs
     agent_outputs = result.get('agent_outputs', {})
@@ -122,18 +161,8 @@ def get_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
     if 'compliance_verdict' in eval_output:
         return eval_output['compliance_verdict']
 
-    # Try session_state
-    session_state = result.get('session_state', {})
-    eval_state = session_state.get('temp:evaluator_output', {})
-    if isinstance(eval_state, str):
-        try:
-            eval_state = json.loads(eval_state)
-        except:
-            eval_state = {}
-    if 'compliance_verdict' in eval_state:
-        return eval_state['compliance_verdict']
-
     # Old schema fallback
+    return fa.get('odd_compliance', {})
     return fa.get('odd_compliance', {})
 
 
@@ -1143,8 +1172,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="metric-card text-center">
-                <div class="metric-value">{compliance.get('temporal_stability', 'N/A')}</div>
-                <div class="metric-label">Temporal Stability</div>
+                <div class="metric-value">{region_metrics.get('region_distance', 0.0):.2f}</div>
+                <div class="metric-label">Region Distance</div>
             </div>
         </div>
         <div class="col-md-3 col-sm-6">

@@ -337,5 +337,5 @@ def create_evaluator_agent(
 - Human proximity <1m → OUT_ODD
 - Collision is ADVISORY ONLY (doesn't affect verdict)
 
-Output pure JSON only - no markdown.""",
+CRITICAL: Output RAW JSON only. Do NOT wrap in ```json``` markdown blocks.""",
     )
