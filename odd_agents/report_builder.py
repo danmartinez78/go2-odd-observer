@@ -5,7 +5,7 @@ This module handles report generation AFTER the ADK pipeline completes.
 
 Architecture (Phase 1.6):
 - ARTIFACTS: Full per-window data from tools (odd_spec.json, perception_analysis.json, etc.)
-- SESSION STATE: Agent summaries with temporal analysis (temp:perception_summary, etc.)
+- SESSION STATE: Agent summaries with temporal analysis (perception_summary, etc.)
 - REPORT BUILDER: Assembles comprehensive reports from both sources
 
 Data flow:
@@ -42,9 +42,9 @@ def generate_reports_from_artifacts(
                    Expected keys: odd_spec.json, perception_analysis.json,
                    motion_analysis.json, collision_analysis.json, cod_construction.json
         session_state: Dict of session state keys -> values
-                      Expected keys: temp:odd_spec, temp:perception_summary,
-                      temp:motion_summary, temp:collision_summary, 
-                      temp:evaluator_output, temp:report_output
+                      Expected keys: odd_spec, perception_summary,
+                      motion_summary, collision_summary, 
+                      evaluator_output, report_output
         pipeline_metadata: Metadata from pipeline run (versions, timing, tokens)
         output_dir: Optional directory to save reports
 
@@ -92,15 +92,15 @@ def _build_executive_summary_from_state(
     not the full per-window data.
     """
     # Parse session state values (they may be JSON strings)
-    odd_spec = _parse_state_value(session_state.get("temp:odd_spec", {}))
+    odd_spec = _parse_state_value(session_state.get("odd_spec", {}))
     perception = _parse_state_value(
-        session_state.get("temp:perception_summary", {}))
-    motion = _parse_state_value(session_state.get("temp:motion_summary", {}))
+        session_state.get("perception_summary", {}))
+    motion = _parse_state_value(session_state.get("motion_summary", {}))
     collision = _parse_state_value(
-        session_state.get("temp:collision_summary", {}))
+        session_state.get("collision_summary", {}))
     evaluator = _parse_state_value(
-        session_state.get("temp:evaluator_output", {}))
-    report = _parse_state_value(session_state.get("temp:report_output", {}))
+        session_state.get("evaluator_output", {}))
+    report = _parse_state_value(session_state.get("report_output", {}))
 
     # Extract compliance info from evaluator or report
     compliance_verdict = evaluator.get("compliance_verdict", {})
@@ -195,17 +195,17 @@ def _build_full_report_from_artifacts(
     cod_artifact = artifacts.get("cod_construction.json", {})
 
     # Parse session state for summaries
-    odd_spec_state = _parse_state_value(session_state.get("temp:odd_spec", {}))
+    odd_spec_state = _parse_state_value(session_state.get("odd_spec", {}))
     perception_state = _parse_state_value(
-        session_state.get("temp:perception_summary", {}))
+        session_state.get("perception_summary", {}))
     motion_state = _parse_state_value(
-        session_state.get("temp:motion_summary", {}))
+        session_state.get("motion_summary", {}))
     collision_state = _parse_state_value(
-        session_state.get("temp:collision_summary", {}))
+        session_state.get("collision_summary", {}))
     evaluator_state = _parse_state_value(
-        session_state.get("temp:evaluator_output", {}))
+        session_state.get("evaluator_output", {}))
     report_state = _parse_state_value(
-        session_state.get("temp:report_output", {}))
+        session_state.get("report_output", {}))
 
     # Merge per-window data from artifacts
     per_window_data = _merge_per_window_from_artifacts(
@@ -524,12 +524,12 @@ def generate_reports(
 
     # Convert to session state format for new architecture
     session_state = {
-        "temp:odd_spec": agent_outputs.get("OddSpecAgent", {}),
-        "temp:perception_summary": agent_outputs.get("PerceptionAgent", {}),
-        "temp:motion_summary": agent_outputs.get("MotionAgent", {}),
-        "temp:collision_summary": agent_outputs.get("CollisionAgent", {}),
-        "temp:evaluator_output": agent_outputs.get("EvaluatorAgent", {}),
-        "temp:report_output": agent_outputs.get("ReportAgent", {}),
+        "odd_spec": agent_outputs.get("OddSpecAgent", {}),
+        "perception_summary": agent_outputs.get("PerceptionAgent", {}),
+        "motion_summary": agent_outputs.get("MotionAgent", {}),
+        "collision_summary": agent_outputs.get("CollisionAgent", {}),
+        "evaluator_output": agent_outputs.get("EvaluatorAgent", {}),
+        "report_output": agent_outputs.get("ReportAgent", {}),
     }
 
     # Empty artifacts (legacy mode - no artifacts available)

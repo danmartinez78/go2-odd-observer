@@ -20,7 +20,8 @@ import math
 
 # Version tracking for COD construction tools
 # 1.1.0: Added categorical micro-agent with gemini-2.5-flash
-COD_TOOL_VERSION = "1.1.0"
+# 1.2.0: Updated to handle odd_measurements schema and normalize field names
+COD_TOOL_VERSION = "1.2.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
 
 
@@ -339,6 +340,82 @@ def construct_cod_from_sensor_outputs(
     }
 
 
+def _normalize_perception_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize perception measurements to match ODD spec axis names.
+
+    Handles:
+    - Field renaming (surface_type -> terrain_type)
+    - Unit conversion (obstacle_density_pct -> obstacle_density)
+    - Nested extraction (stairs.present -> stairs_present)
+    """
+    normalized = {}
+
+    # Direct mappings
+    if "lighting_conditions" in raw:
+        normalized["lighting_conditions"] = raw["lighting_conditions"]
+
+    # Rename: surface_type -> terrain_type
+    if "surface_type" in raw:
+        normalized["terrain_type"] = raw["surface_type"]
+
+    # Convert: obstacle_density_pct (0-100) -> obstacle_density (0-1)
+    if "obstacle_density_pct" in raw:
+        normalized["obstacle_density"] = raw["obstacle_density_pct"] / 100.0
+
+    if "traversability_score" in raw:
+        normalized["traversability_score"] = raw["traversability_score"]
+
+    # Extract nested: stairs.present -> stairs_present (bool -> int)
+    if "stairs" in raw and isinstance(raw["stairs"], dict):
+        stairs_present = raw["stairs"].get("present", False)
+        normalized["stairs_present"] = 1 if stairs_present else 0
+
+    # Proximity: min_obstacle_distance_m -> min_proximity_m
+    if "min_obstacle_distance_m" in raw:
+        normalized["min_proximity_m"] = raw["min_obstacle_distance_m"]
+
+    # Also check humans_animals for proximity
+    if "humans_animals" in raw and isinstance(raw["humans_animals"], dict):
+        ha = raw["humans_animals"]
+        if ha.get("detected", False) and ha.get("proximity_m", -1) > 0:
+            # Use human/animal proximity if closer
+            current = normalized.get("min_proximity_m", float('inf'))
+            normalized["min_proximity_m"] = min(current, ha["proximity_m"])
+
+    return normalized
+
+
+def _normalize_motion_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize motion measurements to match ODD spec axis names.
+    Motion measurements already match ODD spec names.
+    """
+    normalized = {}
+
+    # Direct mappings (already correct)
+    for key in ["max_accel_mps2", "max_speed_mps", "max_roll_deg", "max_pitch_deg"]:
+        if key in raw:
+            normalized[key] = raw[key]
+
+    return normalized
+
+
+def _normalize_collision_measurements(raw: Dict[str, Any], window_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize collision measurements.
+    Collision agent may have empty odd_measurements but has proximity_estimate_m.
+    """
+    normalized = {}
+
+    # Collision agent puts proximity in the window_data, not odd_measurements
+    if "proximity_estimate_m" in window_data:
+        # This could update min_proximity_m if collision agent detected closer obstacles
+        normalized["min_proximity_m"] = window_data["proximity_estimate_m"]
+
+    return normalized
+
+
 def _combine_sensor_outputs(
     perception_output: Dict[str, Any],
     motion_output: Dict[str, Any],
@@ -347,15 +424,20 @@ def _combine_sensor_outputs(
     """
     Combine per-window measurements from all sensor agents.
 
+    Handles current schema where agents output:
+    - "per_window": [{"window_id": "000", "odd_measurements": {...}}, ...]
+
+    Normalizes field names to match ODD spec axes.
+
     Returns list of dicts, one per window:
     [
         {
             "window_id": "000",
             "measurements": {
-                "lighting": 0.5,
-                "clutter": 0.3,
-                "speed": 0.4,
-                "stairs": 0,
+                "lighting_conditions": "moderate",
+                "terrain_type": "smooth_floors",
+                "obstacle_density": 0.01,
+                "max_accel_mps2": 0.15,
                 ...
             }
         },
@@ -363,15 +445,7 @@ def _combine_sensor_outputs(
     ]
     """
     # Extract per-window data from each agent
-    # Sensor agents output format:
-    # {
-    #   "per_window": [
-    #     {"window_id": "000", "measurements": {...}},
-    #     ...
-    #   ]
-    # }
-    # Fallback to "per_window_measurements" for backward compatibility
-
+    # Current schema uses "per_window" with "odd_measurements"
     perception_windows = perception_output.get(
         "per_window", perception_output.get("per_window_measurements", []))
     motion_windows = motion_output.get(
@@ -386,22 +460,34 @@ def _combine_sensor_outputs(
         wid = window_data["window_id"]
         if wid not in combined:
             combined[wid] = {"window_id": wid, "measurements": {}}
-        combined[wid]["measurements"].update(
-            window_data.get("measurements", {}))
+        # Current schema uses odd_measurements, fallback to measurements
+        raw = window_data.get("odd_measurements",
+                              window_data.get("measurements", {}))
+        normalized = _normalize_perception_measurements(raw)
+        combined[wid]["measurements"].update(normalized)
 
     for window_data in motion_windows:
         wid = window_data["window_id"]
         if wid not in combined:
             combined[wid] = {"window_id": wid, "measurements": {}}
-        combined[wid]["measurements"].update(
-            window_data.get("measurements", {}))
+        raw = window_data.get("odd_measurements",
+                              window_data.get("measurements", {}))
+        normalized = _normalize_motion_measurements(raw)
+        combined[wid]["measurements"].update(normalized)
 
     for window_data in collision_windows:
         wid = window_data["window_id"]
         if wid not in combined:
             combined[wid] = {"window_id": wid, "measurements": {}}
-        combined[wid]["measurements"].update(
-            window_data.get("measurements", {}))
+        raw = window_data.get("odd_measurements",
+                              window_data.get("measurements", {}))
+        normalized = _normalize_collision_measurements(raw, window_data)
+        # Only update proximity if collision agent found something closer
+        if "min_proximity_m" in normalized:
+            current = combined[wid]["measurements"].get(
+                "min_proximity_m", float('inf'))
+            combined[wid]["measurements"]["min_proximity_m"] = min(
+                current, normalized["min_proximity_m"])
 
     # Sort by window_id
     return sorted(combined.values(), key=lambda x: x["window_id"])

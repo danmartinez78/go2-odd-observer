@@ -86,6 +86,16 @@ def get_report_data(result: Dict[str, Any]) -> Dict[str, Any]:
 
 def get_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
     """Extract compliance verdict from various schema formats."""
+    # Try current schema: report.compliance (from ReportAgent)
+    report = result.get('report', {})
+    if 'compliance' in report:
+        compliance_data = report['compliance']
+        # Normalize 'status' to 'verdict' for consistency
+        if 'status' in compliance_data and 'verdict' not in compliance_data:
+            compliance_data = dict(compliance_data)
+            compliance_data['verdict'] = compliance_data['status']
+        return compliance_data
+
     # Try Phase 1.6 schema: artifacts.cod_construction.json
     artifacts = result.get('artifacts', {})
     cod_artifact = artifacts.get('cod_construction.json', {})
@@ -747,10 +757,10 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     # Extract environment info from per-window data or artifacts
     per_window_data = result.get('per_window_data', [])
 
-    # Try Phase 1.6 artifacts for per-window data
+    # Try artifacts for per-window data (current schema: perception_output.json)
     if not per_window_data:
         artifacts = result.get('artifacts', {})
-        perception_artifact = artifacts.get('perception_analysis.json', {})
+        perception_artifact = artifacts.get('perception_output.json', {})
         if perception_artifact.get('per_window'):
             per_window_data = perception_artifact['per_window']
 
@@ -759,17 +769,24 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     if per_window_data:
         first_window = per_window_data[0] if isinstance(
             per_window_data, list) else {}
-        perception = first_window.get(
-            'perception', first_window.get('observations', {}))
-        environment_type = perception.get('environment_type', 'Unknown')
-        surface_type = perception.get('surface_type', 'Unknown')
+        # Current schema uses odd_measurements
+        measurements = first_window.get(
+            'odd_measurements', first_window.get('measurements', first_window.get('observations', {})))
+        environment_type = measurements.get('environment_type', 'Unknown')
+        surface_type = measurements.get('surface_type', 'Unknown')
 
     # Data source info - check multiple locations in schema
-    # Phase 1.6 schema: artifacts.perception_analysis.json
-    # Old schema: agent_outputs.PerceptionAgent.data_source
+    # Current schema: artifacts.perception_output.json.per_window[0].data_source
+    # Fallback: agent_outputs.PerceptionAgent.data_source
     artifacts = result.get('artifacts', {})
-    perception_artifact = artifacts.get('perception_analysis.json', {})
-    perception_data_source = perception_artifact.get('data_source', {})
+    perception_artifact = artifacts.get('perception_output.json', {})
+    # Try per_window data_source first
+    perception_data_source = {}
+    per_window_list = perception_artifact.get('per_window', [])
+    if per_window_list and len(per_window_list) > 0:
+        perception_data_source = per_window_list[0].get('data_source', {})
+    if not perception_data_source:
+        perception_data_source = perception_artifact.get('data_source', {})
 
     if not perception_data_source:
         agent_outputs_ds = result.get('agent_outputs', {})

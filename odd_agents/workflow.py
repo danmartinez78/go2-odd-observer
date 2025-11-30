@@ -167,6 +167,7 @@ async def run_odd_workflow(
     model_evaluator: str = "gemini-2.0-flash-exp",
     model_report: str = "gemini-2.0-flash-exp",
     knowledge_seed: Optional[Dict[str, Any]] = None,
+    debug: bool = False,
 ) -> Optional[Dict[str, Any]]:
     """Run the complete ODD analysis workflow with Phase 1.4.4 architecture.
 
@@ -181,6 +182,8 @@ async def run_odd_workflow(
         api_key: Google API key
         nl_odd_description: Natural language ODD description. If None, uses default.
         model_*: Model names for each agent (defaults to gemini-2.0-flash-exp)
+        knowledge_seed: Optional dict to seed session state with knowledge references
+        debug: If True, use run_debug(verbose=True) for detailed tool call output
 
     Returns:
         Dictionary containing:
@@ -282,21 +285,42 @@ async def run_odd_workflow(
 
     events = []
     tool_calls = []
-    async for event in runner.run_async(
-        user_id=user_id,
-        session_id=session.id,
-        new_message=types.Content(
-            role="user",
-            parts=[types.Part(text=user_query)]
+
+    # Debug mode: use run_debug with verbose output
+    if debug:
+        print("\n🔍 DEBUG MODE: Using run_debug(verbose=True)")
+        print("=" * 80)
+        events = await runner.run_debug(
+            user_messages=user_query,
+            user_id=user_id,
+            session_id=session.id,
+            verbose=True,
+            quiet=False,
         )
-    ):
-        events.append(event)
-        # Track tool calls for debugging
-        if event.content and event.content.parts:
-            for part in event.content.parts:
-                if hasattr(part, 'function_call') and part.function_call:
-                    tool_calls.append(
-                        f"{event.author}: {part.function_call.name}")
+        # Extract tool calls from debug events
+        for event in events:
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if hasattr(part, 'function_call') and part.function_call:
+                        tool_calls.append(
+                            f"{event.author}: {part.function_call.name}")
+    else:
+        # Normal mode: async iteration
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session.id,
+            new_message=types.Content(
+                role="user",
+                parts=[types.Part(text=user_query)]
+            )
+        ):
+            events.append(event)
+            # Track tool calls for debugging
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if hasattr(part, 'function_call') and part.function_call:
+                        tool_calls.append(
+                            f"{event.author}: {part.function_call.name}")
 
     # Log tool calls summary
     print(f"\n📊 Tool calls ({len(tool_calls)} total):")
@@ -340,9 +364,15 @@ async def run_odd_workflow(
             user_id=user_id,
             session_id=session.id
         )
+        # Capture known output_key values from agents
+        known_output_keys = {
+            'odd_spec', 'perception_summary', 'motion_summary',
+            'collision_summary', 'evaluator_output', 'report_output',
+            'cod_classification', 'odd_compliance'
+        }
         state_outputs = {
             k: v for k, v in final_session.state.items()
-            if k.startswith('temp:')
+            if k in known_output_keys
         }
         if state_outputs:
             state_file = scenario_path_obj / "state_outputs.json"
