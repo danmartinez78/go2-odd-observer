@@ -26,7 +26,8 @@ from .common import list_available_windows, get_window_file_paths
 # v10.3.0: Camera artifact guidance - ignore JPEG compression, blur, distortion as debris
 # v11.0.0: Sensor fusion reasoning, image quality pre-check, terrain type clarification, confidence calibration
 # v11.1.0: Robot size in BEV pixels, BEV-based traversability assessment, quadruped capabilities
-PERCEPTION_TOOL_VERSION = "11.1.0"
+# v12.0.0: Rename traversability_score → clearance_index for semantic clarity
+PERCEPTION_TOOL_VERSION = "12.0.0"
 
 # Hardcoded robot and sensor knowledge - this is constant across all analyses
 ROBOT_SENSOR_KNOWLEDGE = """
@@ -87,7 +88,7 @@ Before analyzing content, assess camera image (Image A) quality:
 ### BEV Roughness (Image D)
 - Terrain height variance per pixel
 - Brighter = rougher/more uneven surface
-- Use for: traversability assessment, validating camera observations
+- Use for: clearance_index validation, cross-referencing camera observations
 
 ## SENSOR FUSION: CROSS-REFERENCE ALL DATA
 
@@ -136,14 +137,14 @@ You MUST output one of the allowed values from the ODD specification.
 - Always output one of the allowed values from the ODD spec
 - If uncertain, cross-reference with BEV roughness and pick best material match
 
-## TRAVERSABILITY ASSESSMENT (USE BEV OCCUPANCY!)
+## CLEARANCE INDEX ASSESSMENT (USE BEV OCCUPANCY!)
 
-traversability_score measures PATH NAVIGABILITY for this quadruped robot.
+clearance_index measures PATH NAVIGABILITY for this quadruped robot.
 **Use BEV Occupancy (Image B) as your PRIMARY source** - it shows actual obstacle geometry.
 
 ### FOCUS ON THE FORWARD REGION (TOP HALF OF BEV)
 - Robot is at CENTER, facing UP (top = forward direction of travel)
-- **Assess traversability in the FORWARD CONE** - the top half/upper portion of the BEV
+- **Assess clearance in the FORWARD CONE** - the top half/upper portion of the BEV
 - Behind the robot (bottom of BEV) is where it came from - less relevant
 - Sides matter for maneuvering room, but forward path is PRIMARY
 
@@ -153,7 +154,7 @@ traversability_score measures PATH NAVIGABILITY for this quadruped robot.
 3. **FOCUS ON TOP HALF**: Is there a navigable path AHEAD of the robot?
 4. Look for BLACK (free) space in the forward direction
 
-### Traversability Scale (based on BEV gap analysis):
+### Clearance Index Scale (based on BEV gap analysis):
 - 0.9-1.0: Wide open space, >70% of BEV is free (black), clear paths in all directions
 - 0.7-0.9: Mostly open, obstacles clustered at edges, clear forward path (>20px wide gaps)
 - 0.5-0.7: Multiple navigable paths exist, gaps >10px (~0.5m) available, typical furnished room

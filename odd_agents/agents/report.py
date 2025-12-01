@@ -68,7 +68,7 @@ Output this exact JSON structure (no markdown, just raw JSON):
   "key_findings": {
     "perception": "One sentence: lighting, obstacles, terrain, density %",
     "motion": "One sentence: speed, stability, roll/pitch values",
-    "safety": "One sentence: proximity, traversability (NOT collisions)",
+    "safety": "One sentence: proximity, clearance_index (NOT collisions)",
     "temporal_trends": "One sentence: stable/improving/degrading"
   },
   "scenario_metadata": {

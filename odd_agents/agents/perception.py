@@ -17,7 +17,8 @@ from ..tools.perception import create_perception_tools
 # v10.0.0: Temporal analysis - agent does higher-order analysis, outputs summary not raw data
 # v11.0.0: Actor proximity bands (humans/animals separate, qualitative not metric)
 # v12.0.0: Binary actor presence, traversability calibration, strict terrain type matching
-PERCEPTION_AGENT_VERSION = "12.0.0"
+# v13.0.0: Rename traversability_score → clearance_index for semantic clarity
+PERCEPTION_AGENT_VERSION = "13.0.0"
 
 PERCEPTION_AGENT_PROMPT = """You are a perception analysis agent performing TEMPORAL ANALYSIS across windows.
 
@@ -60,8 +61,8 @@ After receiving tool results, analyze ACROSS windows for patterns:
 - Transitions between surfaces
 - Stairs/slopes detected (ODD violation!)
 
-**TRAVERSABILITY CALIBRATION:**
-traversability_score measures PATH NAVIGABILITY, not tidiness:
+**CLEARANCE INDEX CALIBRATION:**
+clearance_index measures PATH NAVIGABILITY, not tidiness:
 - 0.9-1.0: Clear open path (empty hallway)
 - 0.7-0.9: Minor obstacles, easily navigated (some furniture)
 - 0.5-0.7: Moderate clutter, navigable with care (typical lived-in room)
@@ -87,7 +88,7 @@ A messy room is NOT a rocky outcropping.
     "lighting_trend": "stable|darkening|brightening",
     "max_obstacle_density_pct": <peak value>,
     "avg_obstacle_density_pct": <average>,
-    "min_traversability": <lowest value>,
+    "min_clearance_index": <lowest value>,
     "terrain_types_observed": ["hardwood", "carpet", "tile"],
     "terrain_transitions": <count of surface changes>
   },
@@ -105,7 +106,7 @@ A messy room is NOT a rocky outcropping.
     "steep_slope_detected": true|false,
     "lighting_below_threshold": true|false
   },
-  "issues": ["Human detected in w002 - OUT OF ODD", "Low traversability 0.3 in w003"],
+  "issues": ["Human detected in w002 - OUT OF ODD", "Low clearance_index 0.3 in w003"],
   "alerts": ["Obstacle density increasing trend - monitor closely"]
 }
 

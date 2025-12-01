@@ -25,7 +25,8 @@ from ..tools.odd_spec import create_odd_spec_tools
 # v9.1.0: Improved categorical extraction - enumerate specific examples, not abstract categories
 # v10.0.0: Rich descriptions with measurement guidance for downstream tool grounding
 # v11.0.0: Binary actor presence (human_present/animal_present), traversability threshold guidance
-AGENT_VERSION = "11.0.0"
+# v12.0.0: Rename traversability_score → clearance_index for semantic clarity (BEV-based path availability)
+AGENT_VERSION = "12.0.0"
 
 PROMPT_TEMPLATE = """You are an ODD specification expert. Convert natural language ODD descriptions into formal JSON specifications.
 
@@ -65,7 +66,7 @@ After the tool call completes, you MUST output this JSON structure:
 
 ## STANDARD AXIS NAMES
 
-- Environment: lighting_conditions, terrain_type, obstacle_density, traversability_score, stairs_present
+- Environment: lighting_conditions, terrain_type, obstacle_density, clearance_index, stairs_present
 - Actors: human_proximity_band, animal_proximity_band (categorical: immediate/close/medium/far/none)
 - Ego: max_speed_mps, max_accel_mps2, max_roll_deg, max_pitch_deg
 
@@ -103,13 +104,13 @@ Actor detection uses BINARY presence, not proximity bands or distances:
 - IMPORTANT: This is for HUMANS and ANIMALS only, NOT furniture/walls/obstacles
 - If NL ODD mentions "safe distance", interpret as: any visible human/animal = stop
 
-## TRAVERSABILITY THRESHOLD GUIDANCE
+## CLEARANCE INDEX THRESHOLD GUIDANCE
 
-For traversability_score (if included):
+For clearance_index (if included):
 - Indoor ODDs: set min=0.3 (only truly blocked paths are violations)
 - Outdoor ODDs: set min=0.2 (rougher terrain is expected)
 - Do NOT set min=0.7+ unless robot requires perfectly clear paths
-- traversability measures PATH NAVIGABILITY, not tidiness
+- clearance_index measures PATH NAVIGABILITY from BEV, not tidiness
 
 ## CATEGORICAL EXTRACTION RULES
 
@@ -122,7 +123,7 @@ NOT: ["smooth"] (too abstract)
 ## NUMERIC BOUNDS SEMANTICS
 
 - Hazards (obstacle_density): min=0.0, max=<threshold> (lower is safer)
-- Quality (traversability): min=<threshold>, max=1.0 (higher is better)
+- Quality (clearance_index): min=<threshold>, max=1.0 (higher is better)
 - Envelope (speed, angles): min=0.0, max=<limit> (absolute bounds)
 
 ## CRITICAL RULES
