@@ -1,0 +1,1312 @@
+{
+  "report": {
+    "compliance": {
+      "status": "BOUNDARY",
+      "confidence": "HIGH",
+      "summary": "The robot operated at the boundary of its ODD, with multiple axes showing less than a 15% margin to their limits, specifically max acceleration (0.10-0.15 m/s\u00b2 vs <=10 m/s\u00b2), max speed (0.0 m/s vs <=2.0 m/s), obstacle density (0.01-0.03 vs <=0.7), and clearance index (0.80-0.95 vs >=0.3). Additionally, lighting conditions degraded to 'dim' in one window, severely impacting camera perception, even though 'dim' is technically within ODD limits."
+    },
+    "executive_summary": "The robot operated within an indoor residential environment, but its performance was flagged as BOUNDARY due to operating close to several ODD limits. Critical concerns arose from severely degraded camera perception in dim lighting conditions during one window, which posed a high operational risk despite being technically within ODD lighting parameters. Operators should investigate the lighting situation and robot's proximity control.",
+    "key_findings": {
+      "perception": "Lighting conditions varied from moderate to dim, degrading camera performance, with obstacle density remaining low between 2.1% and 3.2% across hardwood terrain.",
+      "motion": "The robot primarily exhibited rotational motion, with maximum acceleration at 0.15 m/s\u00b2, maximum roll at 4.99 degrees, and maximum pitch at 6.95 degrees, all well within ODD.",
+      "safety": "The robot maintained a safe minimum proximity of 2.1 meters to obstacles, with a clearance index ranging from 0.80 to 0.95, which triggered a warning due to a low margin (7.14%) to its ODD limit of >=0.3.",
+      "temporal_trends": "The perception environment showed a degrading trend primarily due to darkening lighting conditions, while motion stability showed an improving trend."
+    },
+    "scenario_metadata": {
+      "windows_analyzed": 2,
+      "environment": "indoor_residential",
+      "data_quality": "degraded",
+      "data_source": "simulated"
+    },
+    "collision_advisory": {
+      "collisions_detected": 0,
+      "risk_band": "LOW",
+      "events": [],
+      "note": "Advisory only - does not affect compliance verdict"
+    },
+    "human_animal_detection": {
+      "detected": false,
+      "type": "none",
+      "proximity_m": null,
+      "note": "No humans or animals detected"
+    },
+    "issues": [
+      "Severely degraded camera quality in window w011 due to 'dim' lighting, posing a high risk to perception reliability and reducing confidence in actor detection and terrain assessment.",
+      "Multiple operational axes (clearance_index, max_accel_mps2, max_speed_mps, obstacle_density) operated with low margins (as low as 0% for speed, 1.01% for acceleration, 1.43% for obstacle density, and 7.14% for clearance index) to their ODD limits."
+    ],
+    "recommendations": [
+      "Investigate the cause of the sudden drop in lighting conditions in window w011 and implement strategies to ensure adequate illumination or robust operation in low-light scenarios.",
+      "Review system behavior when operating close to ODD limits, particularly for clearance_index, max_accel_mps2, max_speed_mps, and obstacle_density, to prevent unexpected boundary crossings.",
+      "Enhance perception capabilities for low-light conditions to improve confidence in actor and terrain detection."
+    ],
+    "data_warnings": []
+  },
+  "full_analysis": {
+    "cod_region": {
+      "lighting_conditions": {
+        "moderate": 0.5,
+        "dim": 0.5,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "hardwood": 1.0,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.01,
+        "max": 0.032
+      },
+      "clearance_index": {
+        "type": "range",
+        "min": 0.8,
+        "max": 0.95
+      },
+      "stairs_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "human_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "animal_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "max_speed_mps": {
+        "type": "range",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.1009,
+        "max": 0.1455
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 2.49,
+        "max": 4.99
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 5.45,
+        "max": 6.95
+      }
+    },
+    "time_series": {
+      "window_ids": [
+        "010",
+        "011"
+      ],
+      "violation_distances": [
+        0.0,
+        0.0
+      ],
+      "margins_to_boundary": [
+        0.0,
+        0.0
+      ],
+      "violation_flags": [
+        false,
+        false
+      ]
+    },
+    "region_metrics": {
+      "region_distance": 0.0,
+      "fraction_outside_per_axis": {
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0,
+        "obstacle_density": 0.0,
+        "clearance_index": 0.0,
+        "stairs_present": 0.0,
+        "human_present": 0.0,
+        "animal_present": 0.0,
+        "max_speed_mps": 0.0,
+        "max_accel_mps2": 0.0,
+        "max_roll_deg": 0.0,
+        "max_pitch_deg": 0.0
+      },
+      "total_windows": 2,
+      "windows_in_odd": 2,
+      "windows_violated": [],
+      "first_violation_window": null,
+      "margin_to_limit_per_axis": {
+        "lighting_conditions": 1.0,
+        "terrain_type": 1.0,
+        "obstacle_density": 0.0143,
+        "clearance_index": 0.0714,
+        "stairs_present": 1.0,
+        "human_present": 1.0,
+        "animal_present": 1.0,
+        "max_speed_mps": 0.0,
+        "max_accel_mps2": 0.0101,
+        "max_roll_deg": 0.166,
+        "max_pitch_deg": 0.3633
+      },
+      "axes_at_boundary": [
+        "obstacle_density",
+        "clearance_index",
+        "max_speed_mps",
+        "max_accel_mps2"
+      ],
+      "axes_violated": [],
+      "boundary_threshold": 0.15
+    },
+    "artifacts_loaded": {
+      "odd_spec": true,
+      "perception": true,
+      "motion": true,
+      "collision": true
+    }
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-12-01T02:19:56.311301+00:00",
+    "analysis_duration_seconds": 207.0,
+    "total_agents_executed": 6,
+    "total_tokens_used": 72662,
+    "estimated_cost_usd": 0.064522,
+    "cost_breakdown": {
+      "total_input_tokens": 59819,
+      "total_output_tokens": 4820,
+      "input_cost_usd": 0.038792,
+      "output_cost_usd": 0.02573
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.011844,
+      "PerceptionAgent": 0.01812,
+      "MotionAgent": 0.005116,
+      "CollisionAgent": 0.006114,
+      "EvaluatorAgent": 0.015705,
+      "ReportAgent": 0.007622
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-12-01T02:19:56.311301+00:00",
+    "pipeline_duration_seconds": 207.0,
+    "odd_specification": {
+      "hash": "e1f29e91afa94987",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/test/sim_2win",
+      "scenario_name": "sim_2win"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "12.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "aefd258b6891958c",
+        "timestamp": "2025-12-01T02:19:56.324839+00:00",
+        "invocation_id": "e-771a7acd-3100-44c6-8f4b-836a46c288ba",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 2947,
+          "completion_tokens": 816,
+          "total_tokens": 5881
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "13.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "8808ee4be5c33445",
+        "timestamp": "2025-12-01T02:20:28.558108+00:00",
+        "invocation_id": "e-771a7acd-3100-44c6-8f4b-836a46c288ba",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 6528,
+          "completion_tokens": 996,
+          "total_tokens": 8295
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "10.0.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "526825741685aa14",
+        "timestamp": "2025-12-01T02:21:51.759687+00:00",
+        "invocation_id": "e-771a7acd-3100-44c6-8f4b-836a46c288ba",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 8755,
+          "completion_tokens": 996,
+          "total_tokens": 11186
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "10.0.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "55d00ef5336cdb32",
+        "timestamp": "2025-12-01T02:22:26.304039+00:00",
+        "invocation_id": "e-771a7acd-3100-44c6-8f4b-836a46c288ba",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 10872,
+          "completion_tokens": 1141,
+          "total_tokens": 12446
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "8.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "febf1ea4b3cd34cd",
+        "timestamp": "2025-12-01T02:22:44.630587+00:00",
+        "invocation_id": "e-771a7acd-3100-44c6-8f4b-836a46c288ba",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 12468,
+          "completion_tokens": 12,
+          "total_tokens": 13570
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "12.1.0",
+        "declared_model": "gemini-2.5-flash",
+        "prompt_hash": "3400b66b6d305794",
+        "timestamp": "2025-12-01T02:23:10.349514+00:00",
+        "invocation_id": "e-771a7acd-3100-44c6-8f4b-836a46c288ba",
+        "actual_model": "gemini-2.5-flash",
+        "token_usage": {
+          "prompt_tokens": 18249,
+          "completion_tokens": 859,
+          "total_tokens": 21284
+        }
+      }
+    },
+    "total_agents_executed": 6
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-12-01T02:23:23.316410Z",
+      "scenario_overview": "The robot operated within an indoor residential environment, but its performance was flagged as BOUNDARY due to operating close to several ODD limits. Critical concerns arose from severely degraded camera perception in dim lighting conditions during one window, which posed a high operational risk despite being technically within ODD lighting parameters. Operators should investigate the lighting situation and robot's proximity control.",
+      "key_observations": {
+        "perception": "Lighting conditions varied from moderate to dim, degrading camera performance, with obstacle density remaining low between 2.1% and 3.2% across hardwood terrain.",
+        "motion": "The robot primarily exhibited rotational motion, with maximum acceleration at 0.15 m/s\u00b2, maximum roll at 4.99 degrees, and maximum pitch at 6.95 degrees, all well within ODD.",
+        "safety": "The robot maintained a safe minimum proximity of 2.1 meters to obstacles, with a clearance index ranging from 0.80 to 0.95, which triggered a warning due to a low margin (7.14%) to its ODD limit of >=0.3.",
+        "temporal_trends": "The perception environment showed a degrading trend primarily due to darkening lighting conditions, while motion stability showed an improving trend."
+      },
+      "recommendations": [
+        "Investigate the cause of the sudden drop in lighting conditions in window w011 and implement strategies to ensure adequate illumination or robust operation in low-light scenarios.",
+        "Review system behavior when operating close to ODD limits, particularly for clearance_index, max_accel_mps2, max_speed_mps, and obstacle_density, to prevent unexpected boundary crossings.",
+        "Enhance perception capabilities for low-light conditions to improve confidence in actor and terrain detection."
+      ],
+      "temporal_insights": {
+        "perception": {
+          "trend": "degrading",
+          "transitions": [
+            "w010\u2192w011: lighting conditions changed from moderate to dim"
+          ],
+          "anomalies": [
+            "sudden, severe drop in ambient lighting in w011, causing degraded camera performance"
+          ]
+        },
+        "motion": {
+          "motion_transitions": [],
+          "stability_trend": "improving",
+          "anomalies": []
+        },
+        "collision": {
+          "collision_pattern": "none",
+          "risk_progression": "stable",
+          "suspicious_events": []
+        }
+      },
+      "compliance": {
+        "verdict": "BOUNDARY",
+        "confidence": 0.95,
+        "region_distance": 0.0,
+        "critical_axes": [],
+        "rationale": "Verdict is BOUNDARY because multiple axes operated with less than a 15% margin to their ODD limits, specifically clearance_index (min 0.8 vs 0.3-1.0 limit) and max_accel_mps2 (max 0.1455 vs 0-10 limit). No axes exceeded their hard limits (region_distance of 0.0). Qualitatively, the perception agent issued a critical alert for window w011, where lighting was 'dim' and severely degraded camera performance, creating a high risk for perception tasks even though 'dim' is technically within the ODD."
+      },
+      "data_quality": {
+        "warnings": [],
+        "anomalies": []
+      },
+      "odd_summary": {
+        "actors_axes": [
+          "human_present",
+          "animal_present"
+        ],
+        "ego_axes": [
+          "max_speed_mps",
+          "max_accel_mps2",
+          "max_roll_deg",
+          "max_pitch_deg"
+        ],
+        "environment_axes": [
+          "lighting_conditions",
+          "terrain_type",
+          "obstacle_density",
+          "clearance_index",
+          "stairs_present"
+        ],
+        "key_limits": {
+          "max_roll_deg": 15.0,
+          "max_speed_mps": 2.0,
+          "obstacle_density_max": 0.7
+        },
+        "total_axes": 11
+      },
+      "scenario": {
+        "name": "sim_2win",
+        "windows_analyzed": 2
+      },
+      "analysis": {
+        "duration_seconds": 207.0,
+        "total_tokens": 72662,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-12-01T02:23:23.317234Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [
+          "Investigate the cause of the sudden drop in lighting conditions in window w011 and implement strategies to ensure adequate illumination or robust operation in low-light scenarios.",
+          "Review system behavior when operating close to ODD limits, particularly for clearance_index, max_accel_mps2, max_speed_mps, and obstacle_density, to prevent unexpected boundary crossings.",
+          "Enhance perception capabilities for low-light conditions to improve confidence in actor and terrain detection."
+        ]
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "BOUNDARY",
+          "confidence": 0.95,
+          "rationale": "Verdict is BOUNDARY because multiple axes operated with less than a 15% margin to their ODD limits, specifically clearance_index (min 0.8 vs 0.3-1.0 limit) and max_accel_mps2 (max 0.1455 vs 0-10 limit). No axes exceeded their hard limits (region_distance of 0.0). Qualitatively, the perception agent issued a critical alert for window w011, where lighting was 'dim' and severely degraded camera performance, creating a high risk for perception tasks even though 'dim' is technically within the ODD.",
+          "critical_axes": []
+        },
+        "cod_region": {
+          "lighting_conditions": {
+            "moderate": 0.5,
+            "dim": 0.5,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "hardwood": 1.0,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.01,
+            "max": 0.032
+          },
+          "clearance_index": {
+            "type": "range",
+            "min": 0.8,
+            "max": 0.95
+          },
+          "stairs_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "human_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "animal_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "max_speed_mps": {
+            "type": "range",
+            "min": 0.0,
+            "max": 0.0
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.1009,
+            "max": 0.1455
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 2.49,
+            "max": 4.99
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 5.45,
+            "max": 6.95
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.0,
+          "fraction_outside_per_axis": {
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0,
+            "obstacle_density": 0.0,
+            "clearance_index": 0.0,
+            "stairs_present": 0.0,
+            "human_present": 0.0,
+            "animal_present": 0.0,
+            "max_speed_mps": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_pitch_deg": 0.0
+          },
+          "total_windows": 2,
+          "windows_in_odd": 2,
+          "windows_violated": [],
+          "first_violation_window": null,
+          "margin_to_limit_per_axis": {
+            "lighting_conditions": 1.0,
+            "terrain_type": 1.0,
+            "obstacle_density": 0.0143,
+            "clearance_index": 0.0714,
+            "stairs_present": 1.0,
+            "human_present": 1.0,
+            "animal_present": 1.0,
+            "max_speed_mps": 0.0,
+            "max_accel_mps2": 0.0101,
+            "max_roll_deg": 0.166,
+            "max_pitch_deg": 0.3633
+          },
+          "axes_at_boundary": [
+            "obstacle_density",
+            "clearance_index",
+            "max_speed_mps",
+            "max_accel_mps2"
+          ],
+          "axes_violated": [],
+          "boundary_threshold": 0.15
+        }
+      },
+      "odd_specification": {
+        "environment": {
+          "categorical": {
+            "lighting_conditions": {
+              "type": "enum",
+              "allowed": [
+                "bright",
+                "moderate",
+                "dim"
+              ],
+              "description": "Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)"
+            },
+            "terrain_type": {
+              "type": "enum",
+              "allowed": [
+                "tile",
+                "hardwood",
+                "low-pile carpet",
+                "laminate",
+                "area rugs"
+              ],
+              "description": "Ground surface type. Assess from camera view of floor. List specific materials visible. Not designed for high-pile carpet, shag rugs, or any outdoor terrain."
+            }
+          },
+          "numeric": {
+            "obstacle_density": {
+              "type": "range",
+              "min": 0,
+              "max": 0.7,
+              "description": "Fraction of BEV area occupied by obstacles (0-1). Computed from BEV occupancy map, not camera. 0.0=empty, 0.7=high density, >0.7=extreme clutter (OUT OF ODD)."
+            },
+            "clearance_index": {
+              "type": "range",
+              "min": 0.3,
+              "max": 1,
+              "description": "Navigability index computed from BEV map (0-1). 1.0=clear path, 0.3=narrow but passable. <0.3=path blocked (OUT OF ODD). Measures path navigability, not tidiness."
+            }
+          },
+          "boolean": {
+            "stairs_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary check for accessible stairs. 1=stairs are present and accessible to the robot (OUT OF ODD). 0=no stairs or stairs are blocked off (IN ODD). Assess from BEV map by looking for sharp, sustained elevation changes."
+            }
+          }
+        },
+        "actors": {
+          "categorical": {},
+          "numeric": {},
+          "boolean": {
+            "human_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation."
+            },
+            "animal_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation."
+            }
+          }
+        },
+        "ego": {
+          "categorical": {},
+          "numeric": {
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0,
+              "max": 2,
+              "description": "Maximum linear velocity of the robot's center of mass. Normal indoor navigation speed. Exceeding this limit is considered high-speed operation and is OUT OF ODD."
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0,
+              "max": 10,
+              "description": "Maximum linear acceleration of the robot's center of mass. Brief, reactive accelerations up to 10 m/s\u00b2 are expected during obstacle avoidance. Sustained high acceleration is not."
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Maximum absolute roll angle of the robot chassis. This represents the limit for stable operation on flat or gently sloped indoor surfaces. Exceeding 15 degrees indicates an unstable situation, potentially due to an obstacle or terrain anomaly."
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Maximum absolute pitch angle of the robot chassis. Corresponds to navigating ramps up to 15 degrees. Exceeding this indicates a slope that is too steep and OUT OF ODD."
+            }
+          },
+          "boolean": {}
+        }
+      },
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "trend": "degrading",
+          "transitions": [
+            "w010\u2192w011: lighting conditions changed from moderate to dim"
+          ],
+          "anomalies": [
+            "sudden, severe drop in ambient lighting in w011, causing degraded camera performance"
+          ]
+        },
+        "motion": {
+          "motion_transitions": [],
+          "stability_trend": "improving",
+          "anomalies": []
+        },
+        "collision": {
+          "collision_pattern": "none",
+          "risk_progression": "stable",
+          "suspicious_events": []
+        }
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "UNKNOWN",
+          "confidence": 0,
+          "critical_axes": [],
+          "fraction_outside_odd": 0,
+          "windows_violated": []
+        }
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/test/sim_2win",
+          "scenario_name": "sim_2win"
+        },
+        "timing": {
+          "start_time": "2025-12-01T02:19:56.311301+00:00",
+          "duration_seconds": 207.0
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "12.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 5881
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "13.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 8295
+          },
+          {
+            "name": "MotionAgent",
+            "version": "10.0.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 11186
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "10.0.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 12446
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "8.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 13570
+          },
+          {
+            "name": "ReportAgent",
+            "version": "12.1.0",
+            "model": "gemini-2.5-flash",
+            "tokens": 21284
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 59819,
+          "completion_tokens": 4820,
+          "total_tokens": 72662,
+          "estimated_cost_usd": 0.064522,
+          "cost_breakdown": {
+            "total_input_tokens": 59819,
+            "total_output_tokens": 4820,
+            "input_cost_usd": 0.038792,
+            "output_cost_usd": 0.02573
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.011844,
+            "PerceptionAgent": 0.01812,
+            "MotionAgent": 0.005116,
+            "CollisionAgent": 0.006114,
+            "EvaluatorAgent": 0.015705,
+            "ReportAgent": 0.007622
+          }
+        }
+      },
+      "raw_artifacts": {
+        "odd_spec": {
+          "odd_specification": {
+            "environment": {
+              "categorical": {
+                "lighting_conditions": {
+                  "type": "enum",
+                  "allowed": [
+                    "bright",
+                    "moderate",
+                    "dim"
+                  ],
+                  "description": "Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)"
+                },
+                "terrain_type": {
+                  "type": "enum",
+                  "allowed": [
+                    "tile",
+                    "hardwood",
+                    "low-pile carpet",
+                    "laminate",
+                    "area rugs"
+                  ],
+                  "description": "Ground surface type. Assess from camera view of floor. List specific materials visible. Not designed for high-pile carpet, shag rugs, or any outdoor terrain."
+                }
+              },
+              "numeric": {
+                "obstacle_density": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 0.7,
+                  "description": "Fraction of BEV area occupied by obstacles (0-1). Computed from BEV occupancy map, not camera. 0.0=empty, 0.7=high density, >0.7=extreme clutter (OUT OF ODD)."
+                },
+                "clearance_index": {
+                  "type": "range",
+                  "min": 0.3,
+                  "max": 1,
+                  "description": "Navigability index computed from BEV map (0-1). 1.0=clear path, 0.3=narrow but passable. <0.3=path blocked (OUT OF ODD). Measures path navigability, not tidiness."
+                }
+              },
+              "boolean": {
+                "stairs_present": {
+                  "type": "bool",
+                  "allowed": 0,
+                  "description": "Binary check for accessible stairs. 1=stairs are present and accessible to the robot (OUT OF ODD). 0=no stairs or stairs are blocked off (IN ODD). Assess from BEV map by looking for sharp, sustained elevation changes."
+                }
+              }
+            },
+            "actors": {
+              "categorical": {},
+              "numeric": {},
+              "boolean": {
+                "human_present": {
+                  "type": "bool",
+                  "allowed": 0,
+                  "description": "Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation."
+                },
+                "animal_present": {
+                  "type": "bool",
+                  "allowed": 0,
+                  "description": "Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation."
+                }
+              }
+            },
+            "ego": {
+              "categorical": {},
+              "numeric": {
+                "max_speed_mps": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 2,
+                  "description": "Maximum linear velocity of the robot's center of mass. Normal indoor navigation speed. Exceeding this limit is considered high-speed operation and is OUT OF ODD."
+                },
+                "max_accel_mps2": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 10,
+                  "description": "Maximum linear acceleration of the robot's center of mass. Brief, reactive accelerations up to 10 m/s\u00b2 are expected during obstacle avoidance. Sustained high acceleration is not."
+                },
+                "max_roll_deg": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 15,
+                  "description": "Maximum absolute roll angle of the robot chassis. This represents the limit for stable operation on flat or gently sloped indoor surfaces. Exceeding 15 degrees indicates an unstable situation, potentially due to an obstacle or terrain anomaly."
+                },
+                "max_pitch_deg": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 15,
+                  "description": "Maximum absolute pitch angle of the robot chassis. Corresponds to navigating ramps up to 15 degrees. Exceeding this indicates a slope that is too steep and OUT OF ODD."
+                }
+              },
+              "boolean": {}
+            }
+          }
+        },
+        "perception": {},
+        "motion": {},
+        "collision": {},
+        "cod_construction": {
+          "cod_region": {
+            "lighting_conditions": {
+              "moderate": 0.5,
+              "dim": 0.5,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "hardwood": 1.0,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.01,
+              "max": 0.032
+            },
+            "clearance_index": {
+              "type": "range",
+              "min": 0.8,
+              "max": 0.95
+            },
+            "stairs_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "human_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "animal_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0.0,
+              "max": 0.0
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.1009,
+              "max": 0.1455
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 2.49,
+              "max": 4.99
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 5.45,
+              "max": 6.95
+            }
+          },
+          "time_series": {
+            "window_ids": [
+              "010",
+              "011"
+            ],
+            "violation_distances": [
+              0.0,
+              0.0
+            ],
+            "margins_to_boundary": [
+              0.0,
+              0.0
+            ],
+            "violation_flags": [
+              false,
+              false
+            ]
+          },
+          "region_metrics": {
+            "region_distance": 0.0,
+            "fraction_outside_per_axis": {
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0,
+              "obstacle_density": 0.0,
+              "clearance_index": 0.0,
+              "stairs_present": 0.0,
+              "human_present": 0.0,
+              "animal_present": 0.0,
+              "max_speed_mps": 0.0,
+              "max_accel_mps2": 0.0,
+              "max_roll_deg": 0.0,
+              "max_pitch_deg": 0.0
+            },
+            "total_windows": 2,
+            "windows_in_odd": 2,
+            "windows_violated": [],
+            "first_violation_window": null,
+            "margin_to_limit_per_axis": {
+              "lighting_conditions": 1.0,
+              "terrain_type": 1.0,
+              "obstacle_density": 0.0143,
+              "clearance_index": 0.0714,
+              "stairs_present": 1.0,
+              "human_present": 1.0,
+              "animal_present": 1.0,
+              "max_speed_mps": 0.0,
+              "max_accel_mps2": 0.0101,
+              "max_roll_deg": 0.166,
+              "max_pitch_deg": 0.3633
+            },
+            "axes_at_boundary": [
+              "obstacle_density",
+              "clearance_index",
+              "max_speed_mps",
+              "max_accel_mps2"
+            ],
+            "axes_violated": [],
+            "boundary_threshold": 0.15
+          },
+          "artifacts_loaded": {
+            "odd_spec": true,
+            "perception": true,
+            "motion": true,
+            "collision": true
+          }
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "cod_construction.json": {
+      "cod_region": {
+        "lighting_conditions": {
+          "moderate": 0.5,
+          "dim": 0.5,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "hardwood": 1.0,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.01,
+          "max": 0.032
+        },
+        "clearance_index": {
+          "type": "range",
+          "min": 0.8,
+          "max": 0.95
+        },
+        "stairs_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "human_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "animal_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "max_speed_mps": {
+          "type": "range",
+          "min": 0.0,
+          "max": 0.0
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.1009,
+          "max": 0.1455
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 2.49,
+          "max": 4.99
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 5.45,
+          "max": 6.95
+        }
+      },
+      "time_series": {
+        "window_ids": [
+          "010",
+          "011"
+        ],
+        "violation_distances": [
+          0.0,
+          0.0
+        ],
+        "margins_to_boundary": [
+          0.0,
+          0.0
+        ],
+        "violation_flags": [
+          false,
+          false
+        ]
+      },
+      "region_metrics": {
+        "region_distance": 0.0,
+        "fraction_outside_per_axis": {
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0,
+          "obstacle_density": 0.0,
+          "clearance_index": 0.0,
+          "stairs_present": 0.0,
+          "human_present": 0.0,
+          "animal_present": 0.0,
+          "max_speed_mps": 0.0,
+          "max_accel_mps2": 0.0,
+          "max_roll_deg": 0.0,
+          "max_pitch_deg": 0.0
+        },
+        "total_windows": 2,
+        "windows_in_odd": 2,
+        "windows_violated": [],
+        "first_violation_window": null,
+        "margin_to_limit_per_axis": {
+          "lighting_conditions": 1.0,
+          "terrain_type": 1.0,
+          "obstacle_density": 0.0143,
+          "clearance_index": 0.0714,
+          "stairs_present": 1.0,
+          "human_present": 1.0,
+          "animal_present": 1.0,
+          "max_speed_mps": 0.0,
+          "max_accel_mps2": 0.0101,
+          "max_roll_deg": 0.166,
+          "max_pitch_deg": 0.3633
+        },
+        "axes_at_boundary": [
+          "obstacle_density",
+          "clearance_index",
+          "max_speed_mps",
+          "max_accel_mps2"
+        ],
+        "axes_violated": [],
+        "boundary_threshold": 0.15
+      },
+      "artifacts_loaded": {
+        "odd_spec": true,
+        "perception": true,
+        "motion": true,
+        "collision": true
+      }
+    },
+    "collision_output.json": {
+      "per_window": [
+        {
+          "window_id": "010",
+          "odd_measurements": {},
+          "collision_detected": false,
+          "confidence": 1.0,
+          "proximity_estimate_m": 2.1,
+          "collision_risk_band": "LOW",
+          "explanation": "IMU acceleration (0.145 m/s\u00b2) and gyroscope (1.136 rad/s) are well below their respective collision thresholds (>10 and >5). Minimum distance (2.1m) is significantly above the proximity collision threshold (<0.3m).",
+          "key_insights": []
+        },
+        {
+          "window_id": "011",
+          "odd_measurements": {},
+          "collision_detected": false,
+          "confidence": 1.0,
+          "proximity_estimate_m": 2.2,
+          "collision_risk_band": "LOW",
+          "explanation": "IMU acceleration (0.101 m/s\u00b2) is below 10 m/s\u00b2, gyroscope (0.908 rad/s) is below 5 rad/s, and the minimum detected distance (2.2m) is well above the 0.3m proximity threshold.",
+          "key_insights": []
+        }
+      ],
+      "windows_analyzed": 2,
+      "collision_stats": {
+        "total_windows": 2,
+        "collisions_detected": 0
+      }
+    },
+    "motion_output.json": {
+      "per_window": [
+        {
+          "window_id": "010",
+          "odd_measurements": {
+            "max_accel_mps2": 0.1455,
+            "max_speed_mps": 0.0,
+            "max_angular_velocity_radps": 1.1364,
+            "max_roll_deg": 4.99,
+            "max_pitch_deg": 6.95,
+            "peak_jerk_mps3": 0.2224
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 1.0,
+            "evidence": "Peak gyroscope reading (1.1364 rad/s) is significantly above the stationary threshold (0.1 rad/s)."
+          },
+          "motion_state": "rotating",
+          "explanation": "The primary characteristic of this window is significant rotation around the Z-axis, as indicated by the high peak gyroscope value (1.1364 rad/s or ~65 deg/s). Although linear acceleration (avg=0.1242 m/s\u00b2, peak=0.1455 m/s\u00b2) and jerk (0.2224 m/s\u00b3) are low, the dominant rotational motion prevents it from being classified as stationary or purely linearly moving.",
+          "key_insights": [
+            "Strong rotational motion detected around the Z-axis.",
+            "Negligible linear acceleration and jerk, implying little to no linear translation.",
+            "Clearly not stationary due to high angular velocity."
+          ]
+        },
+        {
+          "window_id": "011",
+          "odd_measurements": {
+            "max_accel_mps2": 0.1009,
+            "max_speed_mps": 0.0,
+            "max_angular_velocity_radps": 0.9079,
+            "max_roll_deg": 2.49,
+            "max_pitch_deg": 5.45,
+            "peak_jerk_mps3": 0.1495
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 0.95,
+            "evidence": "Peak gyro_z (0.9079 rad/s) significantly exceeds the stationary threshold (0.1 rad/s), indicating considerable rotational motion, despite low linear acceleration and jerk."
+          },
+          "motion_state": "rotating",
+          "explanation": "The object is primarily undergoing rotation, as indicated by a high peak angular velocity around the Z-axis. Linear acceleration and jerk values are very low, suggesting minimal or no translational movement within this window.",
+          "key_insights": [
+            "The device exhibits significant rotational motion, primarily around the Z-axis, evidenced by a peak gyro_z of 0.9079 rad/s.",
+            "Linear acceleration (Avg=0.0721 m/s\u00b2, Peak=0.1009 m/s\u00b2) and jerk (0.1495 m/s\u00b3) are very low, suggesting the absence of significant translational movement or sudden changes in motion.",
+            "The dominant characteristic of motion in this window is rotation, not linear translation or being stationary."
+          ]
+        }
+      ],
+      "windows_analyzed": 2
+    },
+    "odd_spec.json": {
+      "odd_specification": {
+        "environment": {
+          "categorical": {
+            "lighting_conditions": {
+              "type": "enum",
+              "allowed": [
+                "bright",
+                "moderate",
+                "dim"
+              ],
+              "description": "Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)"
+            },
+            "terrain_type": {
+              "type": "enum",
+              "allowed": [
+                "tile",
+                "hardwood",
+                "low-pile carpet",
+                "laminate",
+                "area rugs"
+              ],
+              "description": "Ground surface type. Assess from camera view of floor. List specific materials visible. Not designed for high-pile carpet, shag rugs, or any outdoor terrain."
+            }
+          },
+          "numeric": {
+            "obstacle_density": {
+              "type": "range",
+              "min": 0,
+              "max": 0.7,
+              "description": "Fraction of BEV area occupied by obstacles (0-1). Computed from BEV occupancy map, not camera. 0.0=empty, 0.7=high density, >0.7=extreme clutter (OUT OF ODD)."
+            },
+            "clearance_index": {
+              "type": "range",
+              "min": 0.3,
+              "max": 1,
+              "description": "Navigability index computed from BEV map (0-1). 1.0=clear path, 0.3=narrow but passable. <0.3=path blocked (OUT OF ODD). Measures path navigability, not tidiness."
+            }
+          },
+          "boolean": {
+            "stairs_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary check for accessible stairs. 1=stairs are present and accessible to the robot (OUT OF ODD). 0=no stairs or stairs are blocked off (IN ODD). Assess from BEV map by looking for sharp, sustained elevation changes."
+            }
+          }
+        },
+        "actors": {
+          "categorical": {},
+          "numeric": {},
+          "boolean": {
+            "human_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation."
+            },
+            "animal_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation."
+            }
+          }
+        },
+        "ego": {
+          "categorical": {},
+          "numeric": {
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0,
+              "max": 2,
+              "description": "Maximum linear velocity of the robot's center of mass. Normal indoor navigation speed. Exceeding this limit is considered high-speed operation and is OUT OF ODD."
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0,
+              "max": 10,
+              "description": "Maximum linear acceleration of the robot's center of mass. Brief, reactive accelerations up to 10 m/s\u00b2 are expected during obstacle avoidance. Sustained high acceleration is not."
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Maximum absolute roll angle of the robot chassis. This represents the limit for stable operation on flat or gently sloped indoor surfaces. Exceeding 15 degrees indicates an unstable situation, potentially due to an obstacle or terrain anomaly."
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Maximum absolute pitch angle of the robot chassis. Corresponds to navigating ramps up to 15 degrees. Exceeding this indicates a slope that is too steep and OUT OF ODD."
+            }
+          },
+          "boolean": {}
+        }
+      }
+    },
+    "perception_output.json": {
+      "per_window": [
+        {
+          "window_id": "010",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "Image is very clean, sharp, and well-exposed. It appears to be a synthetic rendering, so it lacks typical real-world camera artifacts."
+          },
+          "observations": {
+            "scene_description": "The robot is positioned in a very open indoor space, facing furniture. On the right is a black leather sofa, and on the left is a white cabinet with a large wooden shelving unit behind it.",
+            "lighting": "The scene is well-lit with soft shadows, consistent with moderate indoor lighting.",
+            "terrain": "The floor is not visible in the camera view. BEV data indicates a very flat, smooth surface.",
+            "obstacles": "A sofa and other furniture are visible ahead and to the right of the robot. The surrounding area is clear.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "lighting_conditions": "moderate",
+            "terrain_type": "hardwood",
+            "obstacle_density": 0.01,
+            "clearance_index": 0.95,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans are visible in the camera image.",
+            "animal_present": "No animals are visible in the camera image.",
+            "lighting_conditions": "The scene is clearly illuminated with no over or under-exposure, fitting the 'moderate' category for typical indoor environments.",
+            "terrain_type": "The floor is not visible in the camera. However, the BEV roughness map is almost entirely black, indicating a very smooth surface. 'hardwood' is selected from the allowed list as a plausible smooth indoor flooring material.",
+            "obstacle_density": "The pre-computed value of 1.0% (0.01 on a 0-1 scale) is consistent with the BEV occupancy map, which shows a vast amount of free space.",
+            "clearance_index": "The pre-computed obstacle density is extremely low (1.0%). The BEV occupancy map confirms this, showing a wide-open area with obstacles clustered far away. There is a completely unobstructed path forward and to the sides. A score of 0.95 reflects a highly navigable environment, well above the ODD minimum of 0.3.",
+            "stairs_present": "The BEV height map shows a flat, uniform ground plane. There is no pattern of stepped elevation changes that would indicate stairs."
+          },
+          "sensor_fusion_notes": [
+            "The BEV roughness map was essential for inferring the terrain type, as the floor was not visible in the camera. The low roughness strongly suggests a smooth surface like hardwood, tile, or laminate.",
+            "The obstacles (white areas) in the BEV occupancy map align perfectly with the location and general shape of the furniture seen in the camera image."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.95
+        },
+        {
+          "window_id": "011",
+          "image_quality": {
+            "camera_quality": "degraded",
+            "artifacts_observed": [
+              "Exposure issues"
+            ],
+            "quality_notes": "Image is severely underexposed with crushed shadows in the lower half. The floor and any potential low-lying objects are completely obscured. This significantly impacts semantic understanding."
+          },
+          "observations": {
+            "scene_description": "The robot is in a very dark room facing a large, black leather-like couch. The camera's low angle and the extreme darkness make it impossible to see the floor.",
+            "lighting": "Extremely dim, resulting in a severely underexposed image with large areas of pure black.",
+            "terrain": "The floor is not visible in the camera image. BEV roughness data indicates a flat, smooth surface.",
+            "obstacles": "A large couch is visible directly in front of the robot. The BEV occupancy map shows this and other obstacles, likely walls or other furniture, forming a room-like structure.",
+            "actors": "None visible. However, the extreme darkness and crushed shadows make reliable detection of actors (especially feet or small animals) impossible."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "lighting_conditions": "dim",
+            "terrain_type": "hardwood",
+            "obstacle_density": 0.032,
+            "clearance_index": 0.8,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans are visible in the camera image. Confidence is low due to the severe underexposure.",
+            "animal_present": "No animals are visible in the camera image. Confidence is low due to the severe underexposure.",
+            "lighting_conditions": "The camera image is extremely dark with crushed shadows, fitting the 'dim' category. It borders on 'dark' (out of ODD), as camera function is severely impaired.",
+            "terrain_type": "The floor is completely obscured in the camera view. The BEV roughness map (Image D) is very dark (smooth). 'hardwood' is a plausible assumption for a smooth indoor floor, but this cannot be visually confirmed.",
+            "obstacle_density": "Based on the pre-computed value of 3.2% from the BEV occupancy map, which indicates a very open space overall.",
+            "clearance_index": "The BEV occupancy map (Image B) shows a very low obstacle density (3.2%). Although an obstacle is in the forward direction, the surrounding area is wide open, providing ample space to turn and navigate. The robot is not constrained. A score of 0.8 reflects this freedom of movement.",
+            "stairs_present": "The BEV height map (Image C) shows a single, flat ground plane with no evidence of the repeating, consistent elevation changes that would indicate stairs."
+          },
+          "sensor_fusion_notes": [
+            "Camera image quality is degraded, making BEV data the primary source for geometric assessment (clearance, stairs, obstacle layout).",
+            "BEV occupancy confirms the presence of the large couch seen in the camera image.",
+            "The terrain_type assessment is based entirely on the low values in the BEV roughness map, as the camera provides no information about the floor surface."
+          ],
+          "odd_concerns": [
+            "The lighting conditions are at the extreme low end of the 'dim' category and may be considered too dark for reliable perception, potentially violating the ODD.",
+            "There is high uncertainty in the 'terrain_type' and actor detection axes due to the degraded image quality."
+          ],
+          "confidence": 0.5
+        }
+      ],
+      "windows_analyzed": 2,
+      "tool_version": "12.1.0"
+    }
+  },
+  "session_state": {
+    "odd_spec": "{\n  \"odd_specification\": {\n    \"odd_specification\": {\n      \"actors\": {\n        \"boolean\": {\n          \"animal_present\": {\n            \"allowed\": 0,\n            \"description\": \"Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation.\",\n            \"type\": \"bool\"\n          },\n          \"human_present\": {\n            \"allowed\": 0,\n            \"description\": \"Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation.\",\n            \"type\": \"bool\"\n          }\n        },\n        \"categorical\": {},\n        \"numeric\": {}\n      },\n      \"ego\": {\n        \"boolean\": {},\n        \"categorical\": {},\n        \"numeric\": {\n          \"max_accel_mps2\": {\n            \"description\": \"Maximum linear acceleration of the robot's center of mass. Brief, reactive accelerations up to 10 m/s\u00b2 are expected during obstacle avoidance. Sustained high acceleration is not.\",\n            \"max\": 10.0,\n            \"min\": 0.0,\n            \"type\": \"range\"\n          },\n          \"max_pitch_deg\": {\n            \"description\": \"Maximum absolute pitch angle of the robot chassis. Corresponds to navigating ramps up to 15 degrees. Exceeding this indicates a slope that is too steep and OUT OF ODD.\",\n            \"max\": 15.0,\n            \"min\": 0.0,\n            \"type\": \"range\"\n          },\n          \"max_roll_deg\": {\n            \"description\": \"Maximum absolute roll angle of the robot chassis. This represents the limit for stable operation on flat or gently sloped indoor surfaces. Exceeding 15 degrees indicates an unstable situation, potentially due to an obstacle or terrain anomaly.\",\n            \"max\": 15.0,\n            \"min\": 0.0,\n            \"type\": \"range\"\n          },\n          \"max_speed_mps\": {\n            \"description\": \"Maximum linear velocity of the robot's center of mass. Normal indoor navigation speed. Exceeding this limit is considered high-speed operation and is OUT OF ODD.\",\n            \"max\": 2.0,\n            \"min\": 0.0,\n            \"type\": \"range\"\n          }\n        }\n      },\n      \"environment\": {\n        \"boolean\": {\n          \"stairs_present\": {\n            \"allowed\": 0,\n            \"description\": \"Binary check for accessible stairs. 1=stairs are present and accessible to the robot (OUT OF ODD). 0=no stairs or stairs are blocked off (IN ODD). Assess from BEV map by looking for sharp, sustained elevation changes.\",\n            \"type\": \"bool\"\n          }\n        },\n        \"categorical\": {\n          \"lighting_conditions\": {\n            \"allowed\": [\n              \"bright\",\n              \"moderate\",\n              \"dim\"\n            ],\n            \"description\": \"Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)\",\n            \"type\": \"enum\"\n          },\n          \"terrain_type\": {\n            \"allowed\": [\n              \"tile\",\n              \"hardwood\",\n              \"low-pile carpet\",\n              \"laminate\",\n              \"area rugs\"\n            ],\n            \"description\": \"Ground surface type. Assess from camera view of floor. List specific materials visible. Not designed for high-pile carpet, shag rugs, or any outdoor terrain.\",\n            \"type\": \"enum\"\n          }\n        },\n        \"numeric\": {\n          \"clearance_index\": {\n            \"description\": \"Navigability index computed from BEV map (0-1). 1.0=clear path, 0.3=narrow but passable. <0.3=path blocked (OUT OF ODD). Measures path navigability, not tidiness.\",\n            \"max\": 1.0,\n            \"min\": 0.3,\n            \"type\": \"range\"\n          },\n          \"obstacle_density\": {\n            \"description\": \"Fraction of BEV area occupied by obstacles (0-1). Computed from BEV occupancy map, not camera. 0.0=empty, 0.7=high density, >0.7=extreme clutter (OUT OF ODD).\",\n            \"max\": 0.7,\n            \"min\": 0.0,\n            \"type\": \"range\"\n          }\n        }\n      }\n    }\n  },\n  \"summary\": {\n    \"actors_axes\": [\n      \"human_present\",\n      \"animal_present\"\n    ],\n    \"ego_axes\": [\n      \"max_speed_mps\",\n      \"max_accel_mps2\",\n      \"max_roll_deg\",\n      \"max_pitch_deg\"\n    ],\n    \"environment_axes\": [\n      \"lighting_conditions\",\n      \"terrain_type\",\n      \"obstacle_density\",\n      \"clearance_index\",\n      \"stairs_present\"\n    ],\n    \"key_limits\": {\n      \"max_roll_deg\": 15.0,\n      \"max_speed_mps\": 2.0,\n      \"obstacle_density_max\": 0.7\n    },\n    \"total_axes\": 11\n  }\n}",
+    "perception_summary": "```json\n{\n  \"windows_analyzed\": 2,\n  \"temporal_analysis\": {\n    \"trend\": \"degrading\",\n    \"transitions\": [\n      \"w010\u2192w011: lighting conditions changed from moderate to dim\"\n    ],\n    \"anomalies\": [\n      \"sudden, severe drop in ambient lighting in w011, causing degraded camera performance\"\n    ]\n  },\n  \"summary\": {\n    \"dominant_environment\": \"indoor_residential\",\n    \"lighting_range\": \"mixed\",\n    \"lighting_trend\": \"darkening\",\n    \"max_obstacle_density_pct\": 3.2,\n    \"avg_obstacle_density_pct\": 2.1,\n    \"min_clearance_index\": 0.8,\n    \"terrain_types_observed\": [\n      \"hardwood\"\n    ],\n    \"terrain_transitions\": 0\n  },\n  \"actor_detection\": {\n    \"human_present\": 0,\n    \"human_windows\": [],\n    \"human_note\": \"No humans detected\",\n    \"animal_present\": 0,\n    \"animal_windows\": [],\n    \"animal_note\": \"No animals detected\"\n  },\n  \"odd_critical\": {\n    \"stairs_detected\": false,\n    \"stairs_windows\": [],\n    \"steep_slope_detected\": false,\n    \"lighting_below_threshold\": false\n  },\n  \"issues\": [\n    \"Severely degraded camera quality in w011 due to 'dim' lighting, which significantly reduces confidence in perception tasks like actor detection.\"\n  ],\n  \"alerts\": [\n    \"Lighting in w011 is borderline OUT OF ODD ('dark'). Continued operation in such conditions poses a high risk to perception reliability.\"\n  ]\n}\n```",
+    "motion_summary": "```json\n{\n  \"windows_analyzed\": 2,\n  \"temporal_analysis\": {\n    \"motion_transitions\": [],\n    \"stability_trend\": \"improving\",\n    \"anomalies\": []\n  },\n  \"summary\": {\n    \"dominant_motion_state\": \"rotating\",\n    \"max_accel_mps2\": 0.1455,\n    \"max_roll_deg\": 4.99,\n    \"max_pitch_deg\": 6.95,\n    \"max_angular_velocity_radps\": 1.1364,\n    \"peak_jerk_mps3\": 0.2224,\n    \"stationary_windows\": []\n  },\n  \"issues\": [],\n  \"alerts\": []\n}\n```",
+    "collision_summary": "```json\n{\n  \"windows_analyzed\": 2,\n  \"temporal_analysis\": {\n    \"collision_pattern\": \"none\",\n    \"risk_progression\": \"stable\",\n    \"suspicious_events\": []\n  },\n  \"summary\": {\n    \"total_collisions_detected\": 0,\n    \"collision_windows\": [],\n    \"max_risk_band\": \"LOW\",\n    \"min_proximity_m\": 2.1,\n    \"avg_proximity_m\": 2.15\n  },\n  \"issues\": [],\n  \"alerts\": [],\n  \"advisory_note\": \"Collision is advisory only - does not affect ODD verdict\"\n}\n```",
+    "evaluator_output": "\n```json\n{\n  \"cod_region\": {\n    \"lighting_conditions\": {\n      \"moderate\": 0.5,\n      \"dim\": 0.5,\n      \"type\": \"enum\"\n    },\n    \"terrain_type\": {\n      \"hardwood\": 1.0,\n      \"type\": \"enum\"\n    },\n    \"obstacle_density\": {\n      \"type\": \"range\",\n      \"min\": 0.01,\n      \"max\": 0.032\n    },\n    \"clearance_index\": {\n      \"type\": \"range\",\n      \"min\": 0.8,\n      \"max\": 0.95\n    },\n    \"stairs_present\": {\n      \"type\": \"bool\",\n      \"p_0\": 1.0,\n      \"p_1\": 0.0\n    },\n    \"human_present\": {\n      \"type\": \"bool\",\n      \"p_0\": 1.0,\n      \"p_1\": 0.0\n    },\n    \"animal_present\": {\n      \"type\": \"bool\",\n      \"p_0\": 1.0,\n      \"p_1\": 0.0\n    },\n    \"max_speed_mps\": {\n      \"type\": \"range\",\n      \"min\": 0.0,\n      \"max\": 0.0\n    },\n    \"max_accel_mps2\": {\n      \"type\": \"range\",\n      \"min\": 0.1009,\n      \"max\": 0.1455\n    },\n    \"max_roll_deg\": {\n      \"type\": \"range\",\n      \"min\": 2.49,\n      \"max\": 4.99\n    },\n    \"max_pitch_deg\": {\n      \"type\": \"range\",\n      \"min\": 5.45,\n      \"max\": 6.95\n    }\n  },\n  \"region_metrics\": {\n    \"region_distance\": 0.0,\n    \"fraction_outside_per_axis\": {\n      \"lighting_conditions\": 0.0,\n      \"terrain_type\": 0.0,\n      \"obstacle_density\": 0.0,\n      \"clearance_index\": 0.0,\n      \"stairs_present\": 0.0,\n      \"human_present\": 0.0,\n      \"animal_present\": 0.0,\n      \"max_speed_mps\": 0.0,\n      \"max_accel_mps2\": 0.0,\n      \"max_roll_deg\": 0.0,\n      \"max_pitch_deg\": 0.0\n    },\n    \"total_windows\": 2,\n    \"windows_in_odd\": 2,\n    \"windows_violated\": [],\n    \"first_violation_window\": null,\n    \"margin_to_limit_per_axis\": {\n      \"lighting_conditions\": 1.0,\n      \"terrain_type\": 1.0,\n      \"obstacle_density\": 0.0143,\n      \"clearance_index\": 0.0714,\n      \"stairs_present\": 1.0,\n      \"human_present\": 1.0,\n      \"animal_present\": 1.0,\n      \"max_speed_mps\": 0.0,\n      \"max_accel_mps2\": 0.0101,\n      \"max_roll_deg\": 0.166,\n      \"max_pitch_deg\": 0.3633\n    },\n    \"axes_at_boundary\": [\n      \"obstacle_density\",\n      \"clearance_index\",\n      \"max_speed_mps\",\n      \"max_accel_mps2\"\n    ],\n    \"axes_violated\": [],\n    \"boundary_threshold\": 0.15\n  },\n  \"compliance_verdict\": {\n    \"verdict\": \"BOUNDARY\",\n    \"confidence\": 0.95,\n    \"rationale\": \"Verdict is BOUNDARY because multiple axes operated with less than a 15% margin to their ODD limits, specifically clearance_index (min 0.8 vs 0.3-1.0 limit) and max_accel_mps2 (max 0.1455 vs 0-10 limit). No axes exceeded their hard limits (region_distance of 0.0). Qualitatively, the perception agent issued a critical alert for window w011, where lighting was 'dim' and severely degraded camera performance, creating a high risk for perception tasks even though 'dim' is technically within the ODD.\",\n    \"critical_axes\": []\n  },\n  \"per_axis_summary\": {\n    \"lighting_conditions\": {\n      \"observed_range\": \"moderate, dim\",\n      \"odd_limit\": \"[bright, moderate, dim]\",\n      \"margin\": \"100.0%\",\n      \"status\": \"OK\"\n    },\n    \"max_accel_mps2\": {\n      \"observed_range\": \"0.10 - 0.15\",\n      \"odd_limit\": \"<= 10.0\",\n      \"margin\": \"1.01%\",\n      \"status\": \"WARNING\"\n    },\n    \"max_pitch_deg\": {\n      \"observed_range\": \"5.45 - 6.95\",\n      \"odd_limit\": \"<= 15.0\",\n      \"margin\": \"36.33%\",\n      \"status\": \"OK\"\n    },\n    \"max_roll_deg\": {\n      \"observed_range\": \"2.49 - 4.99\",\n      \"odd_limit\": \"<= 15.0\",\n      \"margin\": \"16.6%\",\n      \"status\": \"OK\"\n    },\n    \"max_speed_mps\": {\n      \"observed_range\": \"0.00 - 0.00\",\n      \"odd_limit\": \"<= 2.0\",\n      \"margin\": \"0.0%\",\n      \"status\": \"WARNING\"\n    },\n    \"clearance_index\": {\n      \"observed_range\": \"0.80 - 0.95\",\n      \"odd_limit\": \">= 0.3\",\n      \"margin\": \"7.14%\",\n      \"status\": \"WARNING\"\n    },\n    \"obstacle_density\": {\n      \"observed_range\": \"0.01 - 0.03\",\n      \"odd_limit\": \"<= 0.7\",\n      \"margin\": \"1.43%\",\n      \"status\": \"WARNING\"\n    },\n    \"human_present\": {\n      \"observed_range\": \"0\",\n      \"odd_limit\": \"0\",\n      \"margin\": \"100.0%\",\n      \"status\": \"OK\"\n    },\n    \"animal_present\": {\n      \"observed_range\": \"0\",\n      \"odd_limit\": \"0\",\n      \"margin\": \"100.0%\",\n      \"status\": \"OK\"\n    },\n    \"stairs_present\": {\n      \"observed_range\": \"0\",\n      \"odd_limit\": \"0\",\n      \"margin\": \"100.0%\",\n      \"status\": \"OK\"\n    }\n  },\n  \"collision_advisory\": {\n    \"collisions_detected\": 0,\n    \"note\": \"Advisory only - does not affect verdict\"\n  },\n  \"key_concerns\": [\n    \"Lighting in w011 is borderline OUT OF ODD ('dark'). The perception agent noted severely degraded camera quality, which significantly reduces confidence in perception tasks like actor detection and terrain assessment, creating a high operational risk.\",\n    \"Multiple axes (clearance_index, max_accel_mps2, max_speed_mps, obstacle_density) operated with low margins to their ODD limits, triggering a BOUNDARY verdict.\"\n  ]\n}\n```",
+    "report_output": "```json\n{\n  \"compliance\": {\n    \"status\": \"BOUNDARY\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The robot operated at the boundary of its ODD, with multiple axes showing less than a 15% margin to their limits, specifically max acceleration (0.10-0.15 m/s\u00b2 vs <=10 m/s\u00b2), max speed (0.0 m/s vs <=2.0 m/s), obstacle density (0.01-0.03 vs <=0.7), and clearance index (0.80-0.95 vs >=0.3). Additionally, lighting conditions degraded to 'dim' in one window, severely impacting camera perception, even though 'dim' is technically within ODD limits.\"\n  },\n  \"executive_summary\": \"The robot operated within an indoor residential environment, but its performance was flagged as BOUNDARY due to operating close to several ODD limits. Critical concerns arose from severely degraded camera perception in dim lighting conditions during one window, which posed a high operational risk despite being technically within ODD lighting parameters. Operators should investigate the lighting situation and robot's proximity control.\",\n  \"key_findings\": {\n    \"perception\": \"Lighting conditions varied from moderate to dim, degrading camera performance, with obstacle density remaining low between 2.1% and 3.2% across hardwood terrain.\",\n    \"motion\": \"The robot primarily exhibited rotational motion, with maximum acceleration at 0.15 m/s\u00b2, maximum roll at 4.99 degrees, and maximum pitch at 6.95 degrees, all well within ODD.\",\n    \"safety\": \"The robot maintained a safe minimum proximity of 2.1 meters to obstacles, with a clearance index ranging from 0.80 to 0.95, which triggered a warning due to a low margin (7.14%) to its ODD limit of >=0.3.\",\n    \"temporal_trends\": \"The perception environment showed a degrading trend primarily due to darkening lighting conditions, while motion stability showed an improving trend.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 2,\n    \"environment\": \"indoor_residential\",\n    \"data_quality\": \"degraded\",\n    \"data_source\": \"simulated\"\n  },\n  \"collision_advisory\": {\n    \"collisions_detected\": 0,\n    \"risk_band\": \"LOW\",\n    \"events\": [],\n    \"note\": \"Advisory only - does not affect compliance verdict\"\n  },\n  \"human_animal_detection\": {\n    \"detected\": false,\n    \"type\": \"none\",\n    \"proximity_m\": null,\n    \"note\": \"No humans or animals detected\"\n  },\n  \"issues\": [\n    \"Severely degraded camera quality in window w011 due to 'dim' lighting, posing a high risk to perception reliability and reducing confidence in actor detection and terrain assessment.\",\n    \"Multiple operational axes (clearance_index, max_accel_mps2, max_speed_mps, obstacle_density) operated with low margins (as low as 0% for speed, 1.01% for acceleration, 1.43% for obstacle density, and 7.14% for clearance index) to their ODD limits.\"\n  ],\n  \"recommendations\": [\n    \"Investigate the cause of the sudden drop in lighting conditions in window w011 and implement strategies to ensure adequate illumination or robust operation in low-light scenarios.\",\n    \"Review system behavior when operating close to ODD limits, particularly for clearance_index, max_accel_mps2, max_speed_mps, and obstacle_density, to prevent unexpected boundary crossings.\",\n    \"Enhance perception capabilities for low-light conditions to improve confidence in actor and terrain detection.\"\n  ],\n  \"data_warnings\": []\n}\n```"
+  }
+}

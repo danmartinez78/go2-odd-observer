@@ -793,16 +793,44 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         if perception_artifact.get('per_window'):
             per_window_data = perception_artifact['per_window']
 
-    environment_type = "Unknown"
-    surface_type = "Unknown"
-    if per_window_data:
-        first_window = per_window_data[0] if isinstance(
-            per_window_data, list) else {}
-        # Current schema uses odd_measurements
-        measurements = first_window.get(
-            'odd_measurements', first_window.get('measurements', first_window.get('observations', {})))
-        environment_type = measurements.get('environment_type', 'Unknown')
-        surface_type = measurements.get('surface_type', 'Unknown')
+    # Extract categorical values across ALL windows to detect transitions
+    def get_categorical_display(per_window_data, field_name, fallback="Unknown"):
+        """Get display string for categorical field, showing transitions if values vary."""
+        if not per_window_data:
+            return fallback
+        
+        values = []
+        for window in per_window_data:
+            measurements = window.get(
+                'odd_measurements', window.get('measurements', window.get('observations', {})))
+            val = measurements.get(field_name)
+            if val:
+                values.append(val)
+        
+        if not values:
+            return fallback
+        
+        unique_values = list(dict.fromkeys(values))  # Preserve order, remove duplicates
+        
+        if len(unique_values) == 1:
+            return unique_values[0]
+        elif len(unique_values) == 2:
+            return f"{unique_values[0]} → {unique_values[1]}"
+        else:
+            return ", ".join(unique_values[:3]) + ("..." if len(unique_values) > 3 else "")
+
+    # Get terrain_type (surface) and environment from per-window data
+    surface_type = get_categorical_display(per_window_data, 'terrain_type', 'Unknown')
+    
+    # For environment, try report.scenario_metadata first (agent-synthesized), 
+    # then fall back to per-window detection
+    report_data = result.get('report', {})
+    scenario_meta_env = report_data.get('scenario_metadata', {}).get('environment')
+    if scenario_meta_env and scenario_meta_env != 'Unknown':
+        environment_type = scenario_meta_env
+    else:
+        # No environment_type in per-window data currently, use scenario_metadata
+        environment_type = scenario_meta.get('environment', 'Unknown')
 
     # Data source info - check multiple locations in schema
     # Current schema: artifacts.perception_output.json.per_window[0].data_source
@@ -862,11 +890,11 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                     </div>
                     <div class="col-md-3 text-center border-end">
                         <div class="h5 mb-1">{environment_type.replace('_', ' ').title()}</div>
-                        <div class="metric-label">Environment</div>
+                        <div class="metric-label">Detected Environment</div>
                     </div>
                     <div class="col-md-3 text-center border-end">
                         <div class="h5 mb-1">{surface_type.replace('_', ' ').title()}</div>
-                        <div class="metric-label">Surface Type</div>
+                        <div class="metric-label">Detected Surface</div>
                     </div>
                     <div class="col-md-3 text-center">
                         <div class="h5 mb-1">{data_source_display}</div>

@@ -1,14 +1,15 @@
 """
-Report generation agent - Narrative synthesizer.
+Report generation agent - Executive narrative synthesizer.
 
 Reads from STATE only and outputs a structured human-readable report.
-No tools needed - just synthesizes insights into final JSON output.
+No tools needed - synthesizes insights into final JSON output.
 
-v9.0.0: Hybrid schema with compliance (not verdict), executive_summary, key_findings
-v10.0.0: Collision advisory section, warnings for missing data, strong rationale
-v11.0.0: Simplified - no tools, reads state only, outputs structured JSON directly
-v12.0.0: Updated to read from _summary state keys (temporal analysis pattern)
-v12.1.0: Added temp:odd_spec to state references per architecture doc
+v9.0.0: Hybrid schema with compliance, executive_summary, key_findings
+v10.0.0: Collision advisory section, warnings for missing data
+v11.0.0: Simplified - no tools, reads state only
+v12.0.0: Updated to read from _summary state keys
+v13.0.0: Enhanced narrative quality, specific value citations, actionable insights
+v14.0.0: Separated exec summary (leadership) vs technical rationale (engineers), non-redundant writing
 """
 
 from pathlib import Path
@@ -16,104 +17,116 @@ from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
 
-REPORT_AGENT_VERSION = "12.1.0"
+REPORT_AGENT_VERSION = "14.0.0"
 
 
 def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
-    """Create Report agent - synthesizes narrative from state insights.
+    """Create Report agent - synthesizes executive narrative from analysis.
 
     No tools needed - reads from state and outputs structured JSON.
-    State dump captures the output via output_key.
     """
 
     return Agent(
         name="ReportAgent",
         model=Gemini(model=model, api_key=api_key),
-        tools=[],  # No tools needed
+        tools=[],
         output_key="report_output",
-        instruction="""You synthesize a human-readable report from pipeline state.
+        instruction="""You are writing a safety analysis report for an autonomy/ODD compliance system.
 
-## YOUR ROLE
+## TWO AUDIENCES - TWO WRITING STYLES
 
-You are a **summarizer** - read the upstream agent outputs and produce a clear, structured report for human operators. No tools needed - just output JSON directly.
+**Executive Summary** → Senior leadership (non-technical)
+- 2-4 sentences of clear, fluent prose
+- Focus on overall risk and operational implications
+- Minimal numeric detail - only what's essential to understand the risk
+- Plain language, no jargon
 
-## INPUT FROM SESSION STATE
+**Technical Sections** → Engineers and safety reviewers
+- Structured data with specific values and ranges
+- Explicit axis names, limits, and margins
+- Qualitative agent alerts with context
 
-**ODD specification (operational constraints):**
+## CRITICAL WRITING RULE
+
+**Do NOT copy sentences between sections.** The Executive Summary and Technical Rationale must be:
+- Consistent in meaning
+- Different in wording
+- Paraphrased, not duplicated
+
+## INPUT DATA
+
+**ODD Specification:**
 {odd_spec}
 
-**Evaluator output (verdict + COD analysis):**
+**Evaluator Analysis (verdict + metrics):**
 {evaluator_output}
 
-**Perception summary (environment analysis):**
+**Perception Analysis:**
 {perception_summary}
 
-**Motion summary (robot dynamics):**
+**Motion Analysis:**
 {motion_summary}
 
-**Collision summary (safety advisory):**
+**Collision Analysis (advisory):**
 {collision_summary}
 
-## OUTPUT FORMAT
-
-Output this exact JSON structure (no markdown, just raw JSON):
+## OUTPUT FORMAT (raw JSON, no markdown)
 
 {
   "compliance": {
-    "status": "IN_ODD" | "BOUNDARY" | "OUT_ODD",
-    "confidence": "HIGH" | "MEDIUM" | "LOW",
-    "summary": "One sentence explaining WHY this verdict, with specific values"
+    "status": "IN_ODD|BOUNDARY|OUT_ODD",
+    "confidence": "HIGH|MEDIUM|LOW",
+    "summary": "<TECHNICAL: 2-3 sentences for engineers explaining WHY this verdict, citing specific axes, values, and limits>"
   },
-  "executive_summary": "2-3 sentences for stakeholders: what happened, where, outcome",
+  "executive_summary": "<LEADERSHIP: 2-4 sentences in plain language describing the environment, what happened, and the safety/operational implications. No redundancy with compliance.summary>",
   "key_findings": {
-    "perception": "One sentence: lighting, obstacles, terrain, density %",
-    "motion": "One sentence: speed, stability, roll/pitch values",
-    "safety": "One sentence: proximity, clearance_index (NOT collisions)",
-    "temporal_trends": "One sentence: stable/improving/degrading"
+    "perception": "<Environment conditions, lighting, terrain, obstacle density with key values>",
+    "motion": "<Robot dynamics summary with peak values and % of limits>",
+    "safety": "<Proximity to humans/animals, collision events, closest margin>",
+    "temporal_trends": "<Stable/improving/degrading patterns across windows>"
   },
   "scenario_metadata": {
     "windows_analyzed": <int>,
-    "environment": "indoor/outdoor + type",
-    "data_quality": "complete" | "partial" | "degraded",
-    "data_source": "simulated" | "real"
+    "environment": "<indoor_residential|indoor_commercial|outdoor|mixed>",
+    "data_quality": "<complete|partial|degraded>",
+    "data_source": "<simulated|real>"
   },
   "collision_advisory": {
     "collisions_detected": <int>,
-    "risk_band": "LOW" | "MED" | "HIGH",
-    "events": ["brief description if any"],
+    "risk_band": "LOW|MED|HIGH",
+    "events": ["<window: description>"],
     "note": "Advisory only - does not affect compliance verdict"
   },
   "human_animal_detection": {
-    "detected": true | false,
-    "type": "human" | "animal" | "both" | "none",
+    "detected": true|false,
+    "type": "human|animal|both|none",
     "proximity_m": <float or null>,
-    "note": "description"
+    "note": "<context if detected>"
   },
-  "issues": ["specific issue 1", "issue 2"] or [],
-  "recommendations": ["actionable suggestion 1", "suggestion 2"],
-  "data_warnings": ["warning if data missing"] or []
+  "issues": [
+    "<Specific issues with window references, or empty list if none>"
+  ],
+  "recommendations": [
+    "<Actionable recommendations based on findings>"
+  ],
+  "data_warnings": [
+    "<Missing data, sensor gaps, or quality concerns>"
+  ]
 }
 
-## FIELD EXTRACTION GUIDE
+## STYLE EXAMPLES
 
-1. **compliance.status**: From evaluator's compliance_verdict.verdict
-2. **compliance.confidence**: evaluator confidence >0.8=HIGH, 0.5-0.8=MEDIUM, <0.5=LOW
-3. **compliance.summary**: Include specific axis values and distances from limits
-4. **executive_summary**: Plain English for non-technical stakeholders
-5. **key_findings**: One sentence each, include numbers (e.g., "35% density", "8.5° pitch")
-6. **scenario_metadata**: From perception's data_source and window count
-7. **collision_advisory**: From collision output - ADVISORY ONLY, not part of verdict
-8. **human_animal_detection**: From perception if detected
-9. **issues**: Only real issues - empty list if none found
-10. **recommendations**: Actionable - or ["Continue normal operation"] if IN_ODD
-11. **data_warnings**: Note any missing sensor data
+**BAD Executive Summary (too technical, redundant):**
+"Verdict is BOUNDARY because multiple axes operated with less than 15% margin to their ODD limits, specifically clearance_index (min 0.8 vs 0.3-1.0 limit) and max_accel_mps2 (max 0.1455 vs 0-10 limit)."
 
-## RULES
+**GOOD Executive Summary:**
+"The robot navigated safely through an indoor residential environment, though it operated near the edge of its design envelope. While no hard limits were exceeded, reduced lighting in one segment degraded camera reliability, warranting attention before extended deployment."
 
-1. Output pure JSON only - no markdown code blocks
-2. Use plain English for human readability
-3. Include specific numbers from the data
-4. COLLISION IS ADVISORY - never affects compliance status
-5. Don't invent issues - empty list is fine
-6. Base everything on actual state data - never assume""",
+**BAD Technical Rationale (vague):**
+"Some axes were near their limits and there were perception concerns."
+
+**GOOD Technical Rationale:**
+"Verdict BOUNDARY: No axes exceeded hard limits (region_distance=0.0). clearance_index reached 0.80 (7% margin to 0.3 minimum). Perception agent flagged dim lighting in w011, degrading camera confidence despite being within nominal ODD."
+
+Output raw JSON only - no markdown code blocks.""",
     )
