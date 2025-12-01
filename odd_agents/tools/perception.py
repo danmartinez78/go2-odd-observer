@@ -27,7 +27,8 @@ from .common import list_available_windows, get_window_file_paths
 # v11.0.0: Sensor fusion reasoning, image quality pre-check, terrain type clarification, confidence calibration
 # v11.1.0: Robot size in BEV pixels, BEV-based traversability assessment, quadruped capabilities
 # v12.0.0: Rename traversability_score → clearance_index for semantic clarity
-PERCEPTION_TOOL_VERSION = "12.0.0"
+# v12.1.0: Added rotate-in-place capability, "BLOCKED FORWARD ≠ TRAPPED" guidance
+PERCEPTION_TOOL_VERSION = "12.1.0"
 
 # Hardcoded robot and sensor knowledge - this is constant across all analyses
 ROBOT_SENSOR_KNOWLEDGE = """
@@ -142,6 +143,17 @@ You MUST output one of the allowed values from the ODD specification.
 clearance_index measures PATH NAVIGABILITY for this quadruped robot.
 **Use BEV Occupancy (Image B) as your PRIMARY source** - it shows actual obstacle geometry.
 
+### CRITICAL: USE OBSTACLE_DENSITY AS SANITY CHECK
+Before scoring clearance_index, check the pre-computed obstacle_density:
+- If obstacle_density < 10% → Most of BEV is FREE → clearance_index should be ≥0.5
+- If obstacle_density < 5% → BEV is VERY open → clearance_index should be ≥0.7
+- ONLY give clearance_index < 0.3 if obstacle_density > 50% or ALL paths truly blocked
+
+Example sanity check:
+- obstacle_density = 3.2% means 96.8% of BEV is FREE SPACE
+- Even if ONE direction is blocked, there MUST be navigable paths elsewhere
+- 3.2% density with clearance_index=0.1 is INCONSISTENT → re-evaluate!
+
 ### FOCUS ON THE FORWARD REGION (TOP HALF OF BEV)
 - Robot is at CENTER, facing UP (top = forward direction of travel)
 - **Assess clearance in the FORWARD CONE** - the top half/upper portion of the BEV
@@ -152,21 +164,38 @@ clearance_index measures PATH NAVIGABILITY for this quadruped robot.
 1. Robot is at CENTER (ignore 15px radius self-hit zone)
 2. Robot footprint is ~13×6 pixels - look for gaps WIDER than this
 3. **FOCUS ON TOP HALF**: Is there a navigable path AHEAD of the robot?
-4. Look for BLACK (free) space in the forward direction
+4. **ALSO CHECK SIDES**: If forward blocked, can robot turn and go another way?
+5. Look for BLACK (free) space - ANY viable path counts!
+
+### "BLOCKED FORWARD" ≠ "NO PATH"
+A large obstacle directly ahead does NOT mean clearance_index = 0.1!
+- Can robot turn left? Check LEFT side of BEV for gaps
+- Can robot turn right? Check RIGHT side of BEV for gaps
+- Can robot reverse slightly and re-route? Check surrounding space
+- ONLY score <0.3 if ALL directions are blocked with no viable path
 
 ### Clearance Index Scale (based on BEV gap analysis):
 - 0.9-1.0: Wide open space, >70% of BEV is free (black), clear paths in all directions
 - 0.7-0.9: Mostly open, obstacles clustered at edges, clear forward path (>20px wide gaps)
-- 0.5-0.7: Multiple navigable paths exist, gaps >10px (~0.5m) available, typical furnished room
+- 0.5-0.7: Forward may have obstacles BUT alternative paths exist, typical furnished room
 - 0.3-0.5: Tight but passable, gaps 6-10px (~0.3-0.5m), robot can squeeze through
 - 0.1-0.3: Very constrained, gaps barely wider than robot (6px), requires precise navigation
-- 0.0-0.1: No viable path, obstacles block all directions, gaps smaller than robot width
+- 0.0-0.1: TRUE BLOCKAGE: No viable path in ANY direction, walls on all sides
 
 ### Quadruped Capabilities (be generous!):
 - Can step OVER small obstacles (<15cm) - don't count low clutter as blocking
-- Can navigate around furniture - look for ANY viable path, not just straight ahead
+- Can navigate AROUND furniture - look for ANY viable path, not just straight ahead
+- Can ROTATE IN PLACE (360°) - robot can turn to face any direction without moving
+- Can TURN and re-route - blocked forward doesn't mean stuck
 - Can handle uneven surfaces - BEV roughness ≠ impassable
 - Rugs, toys, cables = easily traversed (0.6-0.8 range)
+
+### COMMON SCORING MISTAKE - AVOID THIS:
+❌ WRONG: "Forward blocked by couch → clearance_index = 0.1"
+✅ RIGHT: "Forward blocked by couch, but sides are clear → clearance_index = 0.5"
+
+The robot can ROTATE IN PLACE and go a different direction. 
+clearance_index < 0.3 means the robot is TRAPPED, not just facing an obstacle.
 
 ### Cross-reference Camera + BEV:
 - Camera tells you WHAT obstacles are (semantic understanding)

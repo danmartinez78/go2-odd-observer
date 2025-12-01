@@ -22,8 +22,12 @@ import math
 # 1.1.0: Added categorical micro-agent with gemini-2.5-flash
 # 1.2.0: Updated to handle odd_measurements schema and normalize field names
 # 1.3.0: Removed collision→proximity mapping (collision is advisory only, not actor proximity)
-COD_TOOL_VERSION = "1.3.0"
+# 1.4.0: Added boundary detection with margin_to_limit, axes_at_boundary, axes_violated
+COD_TOOL_VERSION = "1.4.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
+
+# Boundary detection threshold (15% margin = approaching limit)
+BOUNDARY_MARGIN_THRESHOLD = 0.15
 
 
 def _flatten_odd_spec(odd_spec: Dict[str, Any]) -> Dict[str, Any]:
@@ -668,7 +672,112 @@ def _compute_region_metrics(
     if categorical_distances:
         result["categorical_semantic_distances"] = categorical_distances
 
+    # Compute boundary status (margin-to-limit analysis)
+    boundary_status = _compute_boundary_status(
+        cod_region, odd_spec, fraction_outside, categorical_distances
+    )
+    result.update(boundary_status)
+
     return result
+
+
+def _compute_boundary_status(
+    cod_region: Dict[str, Any],
+    odd_spec: Dict[str, Any],
+    fraction_outside: Dict[str, float],
+    categorical_distances: Optional[Dict[str, float]] = None
+) -> Dict[str, Any]:
+    """
+    Compute boundary detection status for verdict determination.
+
+    For each axis type:
+    - range: compute margin to nearest limit (min or max)
+    - bool: binary (either matches or violated)
+    - enum: use semantic distance (0.0=match, 0.5=boundary, 1.0=violated)
+
+    Args:
+        cod_region: COD region envelope
+        odd_spec: ODD specification
+        fraction_outside: Pre-computed fraction outside per axis
+        categorical_distances: Semantic distances for enum axes
+
+    Returns:
+        {
+            "margin_to_limit_per_axis": {axis: margin},
+            "axes_at_boundary": [axes with margin < threshold],
+            "axes_violated": [axes with fraction_outside > 0],
+            "boundary_threshold": 0.15
+        }
+    """
+    if categorical_distances is None:
+        categorical_distances = {}
+
+    margin_per_axis = {}
+    axes_at_boundary = []
+    axes_violated = []
+
+    for axis_name, axis_spec in odd_spec.items():
+        if axis_name not in cod_region:
+            continue
+
+        cod_data = cod_region[axis_name]
+        axis_type = axis_spec.get("type")
+
+        # Check if already violated
+        if fraction_outside.get(axis_name, 0) > 0:
+            axes_violated.append(axis_name)
+            margin_per_axis[axis_name] = 0.0  # No margin - already outside
+            continue
+
+        if axis_type == "range":
+            odd_min, odd_max = axis_spec["min"], axis_spec["max"]
+            cod_min, cod_max = cod_data.get(
+                "min", odd_min), cod_data.get("max", odd_max)
+            odd_range = odd_max - odd_min
+
+            if odd_range == 0:
+                margin = 1.0  # No range to violate
+            else:
+                # Margin to lower bound (how far is cod_min from odd_min)
+                margin_to_min = (cod_min - odd_min) / odd_range
+                # Margin to upper bound (how far is cod_max from odd_max)
+                margin_to_max = (odd_max - cod_max) / odd_range
+                # Take minimum (closest to any limit)
+                margin = min(margin_to_min, margin_to_max)
+                # Clamp to [0, 1]
+                margin = max(0.0, min(1.0, margin))
+
+            margin_per_axis[axis_name] = round(margin, 4)
+
+            if margin < BOUNDARY_MARGIN_THRESHOLD:
+                axes_at_boundary.append(axis_name)
+
+        elif axis_type == "bool":
+            # Boolean: either fully compliant or violated (no boundary state)
+            # If not violated, margin = 1.0 (fully safe)
+            margin_per_axis[axis_name] = 1.0
+
+        elif axis_type == "enum":
+            # Use semantic distance for boundary detection
+            sem_dist = categorical_distances.get(axis_name, 0.0)
+
+            if sem_dist == 0.0:
+                # Perfect match - full margin
+                margin_per_axis[axis_name] = 1.0
+            elif sem_dist == 0.5:
+                # Related but not exact - boundary
+                margin_per_axis[axis_name] = 0.1  # Low margin
+                axes_at_boundary.append(axis_name)
+            else:
+                # sem_dist == 1.0 would be violation, but that's caught above
+                margin_per_axis[axis_name] = 1.0
+
+    return {
+        "margin_to_limit_per_axis": margin_per_axis,
+        "axes_at_boundary": axes_at_boundary,
+        "axes_violated": axes_violated,
+        "boundary_threshold": BOUNDARY_MARGIN_THRESHOLD,
+    }
 
 
 # =============================================================================

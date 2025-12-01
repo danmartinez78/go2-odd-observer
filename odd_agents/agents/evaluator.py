@@ -28,7 +28,8 @@ from google.genai import Client
 # v6.3.0: Explicit "output JSON after tools" instruction for output_key capture
 # v7.0.0: Restore detailed step-by-step prompt (regression fix from over-simplified v6.3.0)
 # v7.1.0: Binary actor presence (human_present/animal_present), collision advisory clarification
-EVALUATOR_AGENT_VERSION = "7.1.0"
+# v8.0.0: Strict axis-based verdict (axes_violated/axes_at_boundary), 15% boundary margin
+EVALUATOR_AGENT_VERSION = "8.0.0"
 
 
 def _load_artifact_json(artifact) -> dict:
@@ -317,15 +318,20 @@ CRITICAL: You MUST call construct_cod_tool() FIRST before any analysis
 Call construct_cod_tool() with NO PARAMETERS. It returns:
 - cod_region: Envelope of all measurements across windows
 - time_series: Per-window violation distances  
-- region_metrics: Aggregate distance scores and fractions outside ODD
+- region_metrics: Aggregate metrics including:
+  - fraction_outside_per_axis: Which axes have violations (>0 = violated)
+  - axes_violated: List of axes that exceeded ODD limits
+  - axes_at_boundary: List of axes within 15% of limits
+  - margin_to_limit_per_axis: How close each axis is to its limit
 
 ## STEP 2: COMPREHENSIVE ANALYSIS
 
 After receiving tool output, perform multi-dimensional analysis:
 
 ### A. QUANTITATIVE METRICS (from tool)
-- region_distance: Overall COD-to-ODD distance (0.0 = perfect compliance)
-- fraction_outside_per_axis: Which axes have violations and how much
+- axes_violated: Axes that EXCEEDED their ODD limits → OUT_ODD
+- axes_at_boundary: Axes within 15% of limits → BOUNDARY warning
+- margin_to_limit_per_axis: Margin for each axis (0.0 = at limit, 1.0 = far from limit)
 - windows_violated: List of non-compliant windows
 - first_violation_window: Where compliance first broke down
 
@@ -339,22 +345,23 @@ Cross-reference these summaries with quantitative metrics:
 - Are there CONTEXTUAL factors affecting interpretation?
 - What's the TEMPORAL pattern - stable, improving, degrading?
 
-### C. CRITICAL ODD VIOLATIONS (automatic OUT_ODD)
-- human_present=1 (any human visible = safety critical, must halt)
-- animal_present=1 (any animal visible = safety critical, must halt)
-- Stairs detected (outside design domain)
-- Steep slopes > 15° (terrain limit)
-- Complete lighting failure (sensor dependency)
+## STEP 3: VERDICT DETERMINATION (STRICT AXIS-BASED)
 
-NOTE: Actor detection is BINARY (present/absent), not proximity-based.
-Collision proximity_estimate_m is OBSTACLE distance, NOT actor proximity - ignore it for actor compliance.
+**Use the pre-computed axes_violated and axes_at_boundary from the tool:**
 
-## STEP 3: VERDICT DETERMINATION
+- **OUT_ODD**: len(axes_violated) > 0
+  Any axis that exceeds its ODD limit = OUT_ODD (no exceptions)
+  
+- **BOUNDARY**: len(axes_at_boundary) > 0 AND len(axes_violated) == 0
+  All axes within spec, but some are within 15% of limits
+  
+- **IN_ODD**: len(axes_violated) == 0 AND len(axes_at_boundary) == 0
+  All axes within spec with comfortable margins (>15%)
 
-**Thresholds:**
-- IN_ODD: region_distance < 0.1, no critical violations
-- BOUNDARY: region_distance 0.1-0.3, approaching limits
-- OUT_ODD: region_distance > 0.3 OR any critical violation
+**IMPORTANT:** 
+- Do NOT use region_distance for verdict determination
+- Use the explicit axes_violated and axes_at_boundary lists from the tool
+- Collision is ADVISORY ONLY - never affects verdict
 
 **Confidence Calibration:**
 - 0.9-1.0: Clear verdict, strong evidence, consistent data
