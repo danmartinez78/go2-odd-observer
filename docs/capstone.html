@@ -56,51 +56,154 @@
         <a href="index.html" class="badge-tag">← Back to overview</a>
       </div>
 
-      <h1 class="mb-2">AI ODD Observer for Quadruped Robots</h1>
-      <p class="text-secondary mb-4">
-        Capstone project for Kaggle&rsquo;s Agents Intensive: a multi-agent system that reads ROS2 logs from a Unitree
-        Go2, reconstructs its Current Operating Domain (COD), and determines whether it stayed inside its Operational
-        Design Domain (ODD).
+      <h1 class="mb-2">ODD Observer for Quadruped Robots</h1>
+      <p class="lead mb-4">
+        A multi-agent system that reads sensor logs from a Unitree Go2, reconstructs its Current Operating Domain (COD),
+        and determines whether it stayed inside its Operational Design Domain (ODD).
       </p>
       <p class="mb-4" style="font-size: 0.95rem;">
-        📌 Versions of agents, tools, knowledge, and data referenced in this report are listed in <a
-          href="VERSIONING.html">Versioning</a>.
+        📄 <a href="guides/KAGGLE_CAPSTONE_REPORT.md">Full technical report (Markdown)</a> &nbsp;|&nbsp;
+        📌 <a href="VERSIONING.html">Versioning guide</a>
       </p>
 
-      <!-- Problem & Objectives -->
-      <h2 class="section-title">1. Problem &amp; Objectives</h2>
+      <!-- Problem Statement -->
+      <h2 class="section-title">1. Problem Statement</h2>
       <p>
-        The goal is to answer a simple but safety‑critical question:
-        <strong>&ldquo;Did the robot operate within its ODD for this run?&rdquo;</strong>
-        We take raw sensor logs (camera, LiDAR‑derived BEV, IMU) and an ODD definition, then:
+        Legged robots like the Unitree Go2 are starting to operate in real indoor spaces such as offices and labs.
+        Safe use requires more than a robot that usually behaves well—we need to know whether it is being used inside
+        the conditions it was actually designed and validated for.
       </p>
-      <ul>
-        <li>Extract per‑window ODD‑aligned measurements for perception, motion, and collision risk.</li>
-        <li>Aggregate them into a COD region and compare against the ODD spec.</li>
-        <li>Produce an explainable compliance verdict plus a human‑readable report.</li>
-      </ul>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="callout">
+            <h6 class="mb-2">🎯 ODD (Operational Design Domain)</h6>
+            <p class="mb-0" style="font-size: 0.9rem;">
+              The environment and conditions the robot is <strong>designed and validated</strong> to operate safely in:
+              indoor, level floors, limited clutter, specific lighting, speed/tilt limits.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="callout">
+            <h6 class="mb-2">📍 COD (Current Operating Domain)</h6>
+            <p class="mb-0" style="font-size: 0.9rem;">
+              The environment and conditions the robot is <strong>actually operating in</strong> during a specific run.
+              If COD ⊄ ODD, behavior is no longer guaranteed safe.
+            </p>
+          </div>
+        </div>
+      </div>
+      <p>
+        In practice, teams have logs, plots, and ad hoc rules, but they don't have a clear end-to-end answer to:
+      </p>
+      <div class="callout" style="background: rgba(79, 70, 229, 0.12); border-color: rgba(79, 70, 229, 0.3);">
+        <p class="mb-0" style="font-style: italic;">
+          "For this specific run, did the robot stay inside its ODD, and if not—where, when, and by how much
+          did it go out of bounds?"
+        </p>
+      </div>
+      <p>
+        <strong>ODD Observer answers that question.</strong> Given a natural language ODD description and a recorded run
+        with camera images, LiDAR BEV images, and IMU data, the system reconstructs the COD, compares it to the ODD,
+        and labels time windows and axes as <span class="result-pill result-pill-in">IN_ODD</span>,
+        <span class="result-pill result-pill-boundary">BOUNDARY</span>, or
+        <span class="result-pill result-pill-out">OUT_ODD</span>.
+      </p>
 
-      <!-- Architecture summary -->
-      <h2 class="section-title">2. Agent System Overview</h2>
-      <p class="mb-2">We use Google ADK + Gemini 2.5 Pro to orchestrate six agents:</p>
+      <!-- Why Agents -->
+      <h2 class="section-title">2. Why Agents?</h2>
+      <p>The problem naturally breaks into several reasoning tasks:</p>
       <ul>
-        <li><strong>ODD Spec Agent</strong> – parses the natural‑language ODD into axes and limits.</li>
-        <li><strong>Perception Agent</strong> – reads camera + BEV and estimates lighting, terrain, obstacle density,
-          stairs, humans, and data source (sim/real).</li>
-        <li><strong>Motion Agent</strong> – uses IMU + camera to classify motion state and quantify dynamic limits
-          (accel, jerk, angular velocity).</li>
-        <li><strong>Collision Agent</strong> – fuses IMU spikes, BEV obstacles, and camera evidence to detect collisions
-          or near‑misses.</li>
-        <li><strong>Evaluator Agent</strong> – constructs the COD region and checks COD ⊆ ODD.</li>
-        <li><strong>Report Agent</strong> – synthesizes a narrative report and saves it as an artifact.</li>
+        <li>Turn a free-form ODD description into a structured spec with numeric ranges, categories, and rules.</li>
+        <li>Turn raw sensor data (images, BEV, IMU) into semantic descriptions per time window.</li>
+        <li>Aggregate those descriptions into a COD for the run.</li>
+        <li>Compare COD and ODD, generate verdicts, and explain them to a human reviewer.</li>
       </ul>
+      <p>
+        Each step has different inputs and a different style of reasoning. Treating this as one giant prompt makes it
+        harder to debug and trust. A multi-agent setup works better:
+      </p>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <div class="subtle-box text-center py-2">Spec agent → schema-compliant ODD parsing</div>
+        </div>
+        <div class="col-md-4">
+          <div class="subtle-box text-center py-2">Perception agent → images + BEV maps</div>
+        </div>
+        <div class="col-md-4">
+          <div class="subtle-box text-center py-2">Motion agent → IMU + motion reasoning</div>
+        </div>
+        <div class="col-md-4">
+          <div class="subtle-box text-center py-2">Collision agent → proximity + impact detection</div>
+        </div>
+        <div class="col-md-4">
+          <div class="subtle-box text-center py-2">Evaluator agent → COD vs ODD comparison</div>
+        </div>
+        <div class="col-md-4">
+          <div class="subtle-box text-center py-2">Report agent → clear human summary</div>
+        </div>
+      </div>
       <p class="mb-0">
-        All data loading, metric computation, and vision calls are implemented as ADK <code>FunctionTool</code>s with
-        explicit prompts. Agent instructions focus on tool sequencing and aggregating outputs.
+        This improves <strong>traceability</strong>. When a window is marked OUT_ODD, we can inspect the artifacts from
+        each agent instead of guessing what happened inside a single black-box call.
       </p>
 
-      <!-- Sample results from Phase 1.6 production runs -->
-      <h2 class="section-title">2.1 Sample Outcomes (Phase 1.6)</h2>
+      <!-- Architecture -->
+      <h2 class="section-title">3. Architecture</h2>
+      <p class="mb-3">The system is a multi-agent pipeline with a static reporting layer.</p>
+
+      <h5 class="mb-2">Agent Pipeline</h5>
+      <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>ODD Spec Agent</strong></td>
+              <td>Takes natural language ODD → structured spec: numeric ranges (speed, acceleration), categorical limits
+                (environment, clutter, lighting), and flags (stairs allowed?).</td>
+            </tr>
+            <tr>
+              <td><strong>Perception Agent</strong></td>
+              <td>Analyzes camera + BEV images per window to estimate environment type, clutter level, corridor width,
+                terrain roughness, and lighting.</td>
+            </tr>
+            <tr>
+              <td><strong>Motion Agent</strong></td>
+              <td>Looks at IMU windows to classify motion state (stationary/moving) and estimate acceleration, tilt.
+                Reasons about gravity to avoid confusing static tilt with real motion.</td>
+            </tr>
+            <tr>
+              <td><strong>Collision Agent</strong></td>
+              <td>Uses BEV + camera + IMU to estimate distances to obstacles and detect collisions or near-misses.</td>
+            </tr>
+            <tr>
+              <td><strong>Evaluator Agent</strong></td>
+              <td>Aggregates per-window outputs into a COD description. Compares COD against ODD across all axes and
+                labels each window as IN_ODD, BOUNDARY, or OUT_ODD with severity metrics.</td>
+            </tr>
+            <tr>
+              <td><strong>Report Agent</strong></td>
+              <td>Converts evaluator output into a human-facing report with verdict, summary, tables, and
+                recommendations.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h5 class="mb-2">Knowledge Layer</h5>
+      <p class="mb-3">
+        Agents share <strong>ODD/COD fundamentals</strong> (robot-agnostic definitions of what ODD and COD mean) and a
+        <strong>Go2 profile</strong> (typical indoor operating patterns and thresholds for concepts like "moderate
+        clutter" or "narrow corridor"). This keeps reasoning consistent across runs and agents.
+      </p>
+
+      <!-- Sample Outcomes -->
+      <h2 class="section-title">4. Sample Outcomes</h2>
       <div class="row g-3 mb-2">
         <div class="col-md-4">
           <div class="result-card">
@@ -126,7 +229,7 @@
                 (174604)</a></h6>
             <ul class="mb-0" style="font-size: 0.85rem;">
               <li>Human present 83% of scenario (forbidden).</li>
-              <li>Animal also detected – zero-tolerance violations.</li>
+              <li>Animal also detected—zero-tolerance violations.</li>
             </ul>
           </div>
         </div>
@@ -136,7 +239,7 @@
               <span class="pill pill-real">Real</span>
               <span class="result-pill result-pill-boundary">BOUNDARY</span>
             </div>
-            <h6 class="mb-1"><a href="reports/real_174232_report.html">Near‑limit operation (174232)</a></h6>
+            <h6 class="mb-1"><a href="reports/real_174232_report.html">Near-limit operation (174232)</a></h6>
             <ul class="mb-0" style="font-size: 0.85rem;">
               <li>Max speed 2.30 m/s (8% margin to limit).</li>
               <li>No violations, but approached boundaries.</li>
@@ -144,7 +247,7 @@
           </div>
         </div>
       </div>
-      <div class="row g-3 mb-2">
+      <div class="row g-3 mb-3">
         <div class="col-md-4">
           <div class="result-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -163,17 +266,17 @@
           <div class="result-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <span class="pill pill-sim">Sim</span>
-              <span class="result-pill result-pill-boundary">BOUNDARY</span>
+              <span class="result-pill result-pill-in">IN_ODD</span>
             </div>
             <h6 class="mb-1"><a href="reports/sim_1_chunk_000_015_report.html">Simulated indoor (sim_1)</a></h6>
             <ul class="mb-0" style="font-size: 0.85rem;">
               <li>No collisions or forbidden actors.</li>
-              <li>Lighting spanned full ODD range (bright→dim).</li>
+              <li>All motion parameters within limits.</li>
             </ul>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="result-card" style="opacity: 0.6;">
+          <div class="result-card" style="opacity: 0.5;">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <span class="pill pill-real">Real</span>
               <span class="result-pill result-pill-out">OUT_ODD</span>
@@ -186,98 +289,96 @@
           </div>
         </div>
       </div>
-      <p class="text-secondary" style="font-size: 0.85rem;">
-        Full HTML reports and JSON results are in <code>docs/reports/</code>. See the <a
-          href="index.html#reports">Featured Reports</a> section.
-      </p>
 
-      <!-- Data & scenarios stub -->
-      <h2 class="section-title">3. Data &amp; Scenarios (overview)</h2>
-      <div class="mb-3">
-        <span class="pill pill-sim">Sim</span>
-        <span class="pill pill-real">Real</span>
-      </div>
-      <p>
-        We evaluate on both simulated and real Go2 runs, windowed into short time slices:
-      </p>
+      <!-- Build -->
+      <h2 class="section-title">5. Build &amp; Workflow</h2>
+      <p>The project uses:</p>
       <ul>
-        <li>Simulation: curated scenarios (e.g., indoor residential, deliberate collisions) with known expected
-          behavior.</li>
-        <li>Real: bagfile‑derived runs with compression artifacts, lighting changes, and real terrain irregularities.
+        <li><strong>Python</strong> for orchestration, data preparation, and tooling.</li>
+        <li><strong>Gemini 2.5 models</strong> for all agent reasoning, including multimodal perception.</li>
+        <li><strong>Real and simulated Go2 data:</strong> camera images, LiDAR-based BEV images, and IMU streams.</li>
+        <li><strong>Static HTML/JS</strong> for reports and dashboards.</li>
+      </ul>
+      <p class="mb-2">The workflow is:</p>
+      <ol>
+        <li>Convert recorded data (ROS bags) into a scenario directory with windowed images, BEV tiles, and IMU slices.
         </li>
-      </ul>
-      <p class="mb-0">
-        Each window bundles synchronized camera frames, BEV images, and IMU signals, giving all loop agents an aligned
-        view
-        of the robot&rsquo;s state.
-      </p>
+        <li>Run the multi-agent pipeline to produce intermediate artifacts and a final JSON result.</li>
+        <li>Call the reporting script to generate HTML reports.</li>
+      </ol>
+      <div class="code-block mb-3">
+        # Single scenario run
+        python scripts/run_odd_analysis.py
 
-      <!-- Pipeline flow -->
-      <h2 class="section-title">3.1 Pipeline Flow</h2>
-      <p class="mb-2">At a glance, a single analysis run looks like:</p>
-      <div class="flow-row">
-        <div class="flow-box">ODD Spec Agent</div>
-        <div class="flow-box">Perception</div>
-        <div class="flow-box">Motion</div>
-        <div class="flow-box">Collision</div>
-        <div class="flow-box">Evaluator</div>
-        <div class="flow-box">Report</div>
+        # Batch runs
+        python scripts/run_odd_batch_analysis.py
+
+        # Agent evaluation
+        pytest tests/test_adk_evaluation.py -q
       </div>
-      <p class="text-secondary mt-2" style="font-size: 0.85rem;">
-        Loop agents operate per window and write artifacts; downstream agents consume those artifacts instead of raw
-        traces.
-      </p>
 
-      <!-- Implementation & reproducibility stub -->
-      <h2 class="section-title">4. Implementation &amp; Reproducibility</h2>
-      <p class="mb-2">Key commands (run from the repo root):</p>
+      <!-- Versioning -->
+      <h2 class="section-title">6. Versioning</h2>
+      <p>
+        Because this is safety-related analysis, we track which data and which agent configuration produced each result:
+      </p>
       <ul>
-        <li><span class="code-pill">python scripts/run_odd_analysis.py</span> – interactive single‑scenario run.</li>
-        <li><span class="code-pill">python scripts/run_odd_batch_analysis.py</span> – batch runs over multiple
-          scenarios.</li>
-        <li><span class="code-pill">pytest tests/test_adk_evaluation.py -q</span> – rubric‑based agent evaluation.</li>
+        <li><strong>Data level:</strong> Raw logs and processed scenario directories tracked with explicit data versions
+          and a manifest documenting preprocessing steps.</li>
+        <li><strong>Analysis level:</strong> Each run attaches metadata including analysis run ID, ODD description,
+          data version, agent bundle, model names, and Git commit hash.</li>
+        <li><strong>Reporting level:</strong> HTML reports surface this metadata so a verdict can be traced back to
+          exact versions.</li>
       </ul>
       <p class="mb-0">
-        Detailed write‑up and design notes live in
-        <code>docs/guides/KAGGLE_CAPSTONE_REPORT.md</code> and related docs under <code>docs/</code>.
+        See <a href="VERSIONING.html">Versioning</a> for details.
       </p>
 
-      <!-- Link to full report -->
-      <h2 class="section-title">5. Full Capstone Report</h2>
-      <p class="mb-3">
-        The full report covers architecture, tools, evaluation setup, limitations, and future work. It is written to
-        match
-        the Kaggle submission format and can be dropped into a notebook or PDF.
-      </p>
-      <a class="btn btn-outline-light btn-sm" href="guides/KAGGLE_CAPSTONE_REPORT.md">
-        View Markdown report
-      </a>
+      <!-- Future Work -->
+      <h2 class="section-title">7. Future Work</h2>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="subtle-box h-100">
+            <h6 class="mb-2">🧠 Memory &amp; Retrieval Layer</h6>
+            <p class="mb-0" style="font-size: 0.9rem;">
+              Finish run-level and ODD-level memory; let agents reference similar past scenarios and aggregated
+              statistics when judging a new run.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="subtle-box h-100">
+            <h6 class="mb-2">🌍 Broader Environment Coverage</h6>
+            <p class="mb-0" style="font-size: 0.9rem;">
+              More buildings, lighting conditions, clutter patterns, and edge features (stairs, ramps, glass surfaces).
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="subtle-box h-100">
+            <h6 class="mb-2">📊 Operator Dashboard</h6>
+            <p class="mb-0" style="font-size: 0.9rem;">
+              Filter by ODD, robot, date, or severity; drill into single runs; export PDF reports for audits.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="subtle-box h-100">
+            <h6 class="mb-2">⚡ Toward Real-Time</h6>
+            <p class="mb-0" style="font-size: 0.9rem;">
+              Lightweight pipeline variant that warns when COD approaches or leaves ODD during operation.
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <!-- JSON glimpse -->
-      <h2 class="section-title">6. Output Glimpse</h2>
-      <p class="text-secondary mb-2">
-        A typical <code>full_result.json</code> report structure (trimmed):
-      </p>
-      <div class="code-block mb-0">
-        {
-        "report": {
-        "compliance": {
-        "status": "OUT_ODD",
-        "confidence": "HIGH",
-        "summary": "The verdict is OUT_ODD due to motion violations..."
-        },
-        "executive_summary": "The robot operated outside safety limits...",
-        "key_findings": {
-        "perception": "Indoor residential, low obstacle density",
-        "motion": "Peak accel 12.6 m/s² exceeded 10 m/s² limit",
-        "safety": "No humans/animals, 2 collision advisories"
-        },
-        "collision_advisory": {"collisions_detected": 2, "risk_band": "MED"},
-        "human_animal_detection": {"humans_detected": false},
-        "recommendations": ["Review motion control parameters"]
-        },
-        "analysis_metadata": {"scenario": "real_174321", "pipeline_version": "2.1.0"}
-        }
+      <!-- Conclusion -->
+      <div class="callout mt-4" style="background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
+        <p class="mb-0">
+          <strong>In its current form,</strong> ODD Observer shows that a small set of focused agents, grounded in
+          ODD/COD knowledge and fed with real robot data, can reconstruct the COD of a Go2 run and compare it to the
+          design ODD in a structured, understandable way.
+        </p>
       </div>
     </div>
   </div>
