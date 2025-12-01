@@ -584,117 +584,151 @@
                 <div class="section-shell">
                     <div class="alert alert-info mb-4">
                         <strong>Note:</strong> Reports below were generated with the Phase 1.6 pipeline featuring
-                        multi-modal collision detection and HTML report generation.
-                        Each includes COD region analysis, compliance verdict, agent execution details, and cost
-                        breakdown.
+                        multi-modal collision detection and position-derived motion analysis.
+                        Each includes COD region analysis, compliance verdict, per-window breakdowns, and inline visualizations.
                     </div>
 
-                    <!-- Featured: 10-Window Production Run -->
+                    <!-- Featured: Real Robot IN_ODD -->
                     <div class="section-shell" style="border-color: #28a745; border-width: 3px;">
                         <div class="row align-items-center">
                             <div class="col-md-8">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <h3 class="mb-0">🌟 sim_1_0_chunk_000_009</h3>
+                                    <h3 class="mb-0">🌟 real_173442 (15 windows)</h3>
                                     <span class="badge bg-success">Featured</span>
                                 </div>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong>
-                                    10
-                                    (w000-w009)</p>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
+
+                                <div class="mb-3">
+                                    <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
+                                    <span class="badge bg-success badge-status me-2">HIGH Confidence</span>
+                                    <span class="badge bg-info badge-status">STABLE</span>
+                                </div>
+
+                                <p class="mb-2"><strong>Key Findings:</strong></p>
+                                <ul style="font-size: 0.9rem;">
+                                    <li>Stable indoor residential operation on area rugs</li>
+                                    <li>All motion metrics well within ODD limits</li>
+                                    <li>No collisions, humans, or animals detected</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <a href="reports/real_173442_chunk_000_015_report.html"
+                                    class="btn btn-success btn-view-report w-100 mb-2">
+                                    View Report →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOUNDARY Report -->
+                    <div class="section-shell" style="border-color: #ffc107; border-width: 2px;">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="mb-2">real_174232 (14 windows)</h3>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-boundary badge-status me-2">⚠️ BOUNDARY</span>
-                                    <span class="badge bg-success badge-status me-2">95% Confidence</span>
-                                    <span class="badge bg-info badge-status">STABLE</span>
+                                    <span class="badge bg-success badge-status me-2">HIGH Confidence</span>
                                 </div>
 
                                 <p class="mb-2"><strong>Key Findings:</strong></p>
                                 <ul style="font-size: 0.9rem;">
-                                    <li>Well-lit indoor environments with smooth, traversable floors</li>
-                                    <li>Motion from stationary to dynamic patterns including rotations</li>
-                                    <li>No collisions detected, safe distances maintained</li>
+                                    <li>Operating near speed limit (2.37 m/s, 95% of 2.5 limit)</li>
+                                    <li>All other axes compliant with margin</li>
+                                    <li>Demonstrates boundary detection capability</li>
                                 </ul>
-
-                                <p class="mb-0" style="font-size: 0.85rem;">
-                                    <strong>Critical Axis:</strong> <code>environment_type</code> (office detected vs
-                                    expected residential)
-                                </p>
                             </div>
                             <div class="col-md-4 text-center">
-                                <a href="reports/sim_1_0_chunk_000_009_report.html"
-                                    class="btn btn-success btn-view-report w-100 mb-2">
+                                <a href="reports/real_174232_report.html"
+                                    class="btn btn-warning btn-view-report w-100 mb-2" style="color: #000;">
                                     View Report →
                                 </a>
-                                <div class="text-muted" style="font-size: 0.85rem;">
-                                    <div>💰 $0.037 USD / 70K tokens</div>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- chunk_020_029 -->
-                    <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
+                    <!-- OUT_ODD Motion Report -->
+                    <div class="section-shell" style="border-color: #dc3545; border-width: 2px;">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <h3 class="mb-2">sim_1_0_chunk_020_029</h3>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong>
-                                    10
-                                    (w020-w029)</p>
+                                <h3 class="mb-2">real_174321 (14 windows)</h3>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
 
                                 <div class="mb-3">
-                                    <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
-                                    <span class="badge bg-success badge-status me-2">100% Confidence</span>
-                                    <span class="badge bg-info badge-status">STABLE</span>
+                                    <span class="badge badge-violation badge-status me-2">❌ OUT_ODD</span>
+                                    <span class="badge bg-success badge-status me-2">HIGH Confidence</span>
                                 </div>
 
                                 <p class="mb-2"><strong>Key Findings:</strong></p>
                                 <ul style="font-size: 0.9rem;">
-                                    <li>Bright indoor commercial environment, smooth terrain</li>
-                                    <li>Stationary to low-speed operation, zero speed violations</li>
-                                    <li>All ODD axes fully compliant with zero region distance</li>
+                                    <li>Speed exceeded limit: 2.58 m/s (103% of 2.5 limit)</li>
+                                    <li>Acceleration spike: 10.8 m/s² (108% of 10 limit)</li>
+                                    <li>Clear motion-based violation detection</li>
                                 </ul>
                             </div>
                             <div class="col-md-4 text-center">
-                                <a href="reports/sim_1_0_chunk_020_029_report.html"
-                                    class="btn btn-success btn-view-report w-100 mb-2">
+                                <a href="reports/real_174321_chunk_000_014_report.html"
+                                    class="btn btn-danger btn-view-report w-100 mb-2">
                                     View Report →
                                 </a>
-                                <div class="text-muted" style="font-size: 0.85rem;">
-                                    <div>💰 $0.079 USD / 63K tokens</div>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- chunk_040_049 -->
+                    <!-- OUT_ODD Human/Animal Report -->
+                    <div class="section-shell" style="border-color: #dc3545; border-width: 2px;">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="mb-2">real_174604 (11 windows)</h3>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
+
+                                <div class="mb-3">
+                                    <span class="badge badge-violation badge-status me-2">❌ OUT_ODD</span>
+                                    <span class="badge bg-success badge-status me-2">HIGH Confidence</span>
+                                </div>
+
+                                <p class="mb-2"><strong>Key Findings:</strong></p>
+                                <ul style="font-size: 0.9rem;">
+                                    <li>Human detected in 64% of windows (zero-tolerance violation)</li>
+                                    <li>Animal (cat) detected in 27% of windows</li>
+                                    <li>Demonstrates actor detection capability</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <a href="reports/real_174604_chunk_000_011_report.html"
+                                    class="btn btn-danger btn-view-report w-100 mb-2">
+                                    View Report →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Report -->
                     <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <h3 class="mb-2">sim_1_0_chunk_040_049</h3>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong>
-                                    10
-                                    (w040-w049)</p>
+                                <h3 class="mb-2">sim_1 (15 windows)</h3>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Environment:</strong> Outdoor Grass</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
-                                    <span class="badge bg-success badge-status me-2">95% Confidence</span>
+                                    <span class="badge bg-success badge-status me-2">HIGH Confidence</span>
                                     <span class="badge bg-info badge-status">STABLE</span>
                                 </div>
 
                                 <p class="mb-2"><strong>Key Findings:</strong></p>
                                 <ul style="font-size: 0.9rem;">
-                                    <li>Consistent indoor commercial conditions throughout</li>
-                                    <li>Minor semantic note on environment_type (indoor_commercial ≈ commercial)</li>
-                                    <li>All numeric ODD axes well within boundaries</li>
+                                    <li>Stable outdoor simulation on grass terrain</li>
+                                    <li>All motion and perception axes compliant</li>
+                                    <li>Demonstrates sim data processing</li>
                                 </ul>
                             </div>
                             <div class="col-md-4 text-center">
-                                <a href="reports/sim_1_0_chunk_040_049_report.html"
+                                <a href="reports/sim_1_chunk_000_015_report.html"
                                     class="btn btn-success btn-view-report w-100 mb-2">
                                     View Report →
                                 </a>
-                                <div class="text-muted" style="font-size: 0.85rem;">
-                                    <div>💰 $0.090 USD / 71K tokens</div>
-                                </div>
                             </div>
                         </div>
                     </div>
