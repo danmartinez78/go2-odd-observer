@@ -70,9 +70,10 @@ def find_scenarios():
     scenarios = []
     data_dir = project_root / "data"
 
-    # Search production/ and test/ subdirectories
+    # Search production/, production/chunks/, and test/ subdirectories
     search_dirs = [
         ("production", data_dir / "production"),
+        ("chunks", data_dir / "production" / "chunks"),
         ("test", data_dir / "test"),
     ]
 
@@ -605,7 +606,7 @@ async def main():
                 output_dir = output_base / scenario_name
             else:
                 # Use default timestamp-based directory
-                output_base = project_root / "data" / "archive" / \
+                output_base = project_root / "data" / "development" / \
                     "analysis_results" / "manual" / timestamp
                 output_dir = output_base / scenario_name
 
