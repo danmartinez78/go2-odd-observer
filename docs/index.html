@@ -304,7 +304,13 @@
 
 <body>
     <div class="container">
-        <div class="nav-shell" style="justify-content: center;">
+        <div class="nav-shell" style="justify-content: center; position: relative;">
+            <!-- Mobile hamburger -->
+            <button id="mobileMenuToggle" class="d-md-none"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; left: 1rem;">
+                ☰
+            </button>
+            <!-- Desktop nav -->
             <div class="d-none d-md-flex nav-links">
                 <a href="quickstart.html">Quickstart</a>
                 <a href="architecture.html">Architecture</a>
@@ -316,6 +322,24 @@
             </div>
             <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme"
                 style="position: absolute; right: 1.5rem;">🌓 Theme</button>
+        </div>
+        <!-- Mobile dropdown menu -->
+        <div id="mobileMenu" class="d-md-none"
+            style="display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="quickstart.html"
+                    style="color: var(--fg); text-decoration: none; font-weight: 600;">Quickstart</a>
+                <a href="architecture.html"
+                    style="color: var(--fg); text-decoration: none; font-weight: 600;">Architecture</a>
+                <a href="robot.html" style="color: var(--fg); text-decoration: none; font-weight: 600;">Robot & Sim</a>
+                <a href="evaluation.html"
+                    style="color: var(--fg); text-decoration: none; font-weight: 600;">Evaluation</a>
+                <a href="capstone.html" style="color: var(--fg); text-decoration: none; font-weight: 600;">Kaggle
+                    Capstone</a>
+                <a href="adapt.html" style="color: var(--fg); text-decoration: none; font-weight: 600;">Adapt</a>
+                <a href="https://github.com/danmartinez78/go2-odd-observer"
+                    style="color: var(--fg); text-decoration: none; font-weight: 600;">GitHub</a>
+            </div>
         </div>
 
         <!-- Hero Section -->
@@ -832,6 +856,15 @@
                 toggle?.addEventListener('click', () => {
                     document.body.classList.toggle('dark');
                     localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+                });
+
+                // Mobile menu toggle
+                const mobileToggle = document.getElementById('mobileMenuToggle');
+                const mobileMenu = document.getElementById('mobileMenu');
+                mobileToggle?.addEventListener('click', () => {
+                    const isVisible = mobileMenu.style.display === 'block';
+                    mobileMenu.style.display = isVisible ? 'none' : 'block';
+                    mobileToggle.textContent = isVisible ? '☰' : '✕';
                 });
             })();
         </script>
