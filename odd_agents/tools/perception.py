@@ -71,6 +71,7 @@ How to distinguish:
 - DIM ROOM: Everything is dark, including floor and walls visible in frame. Shadows are indistinct.
 - DARK OBJECT IN VIEW: The dark area has distinct edges/boundaries. Floor or other areas AROUND it are properly lit.
 - LARGE DARK FURNITURE: If a couch, cabinet, or furniture piece fills most of the frame but you can see the floor/edges are lit → lighting is FINE, just a dark object in view
+- IF YOU SEE LARGE GRAY AREAS WITH NO DETAIL → THIS IS LIKELY THE SIMULATION AREA OUTSIDE OF THE IMMEDIATELY RENDERED SCENERY 
 
 **Example:**
 - Robot camera looks at a dark brown couch that fills 70% of frame → lighting is FINE (assess from the visible floor/walls)

@@ -320,6 +320,10 @@ class WindowExtractor:
             "odom_wx": [],
             "odom_wy": [],
             "odom_wz": [],
+            # Position data (for deriving velocity/accel when IMU is zeros)
+            "pos_x": [],
+            "pos_y": [],
+            "pos_z": [],
             "roll": [],
             "pitch": [],
             "yaw": [],
@@ -340,6 +344,12 @@ class WindowExtractor:
             motion_data["odom_wx"].append(odom_msg.twist.twist.angular.x)
             motion_data["odom_wy"].append(odom_msg.twist.twist.angular.y)
             motion_data["odom_wz"].append(odom_msg.twist.twist.angular.z)
+
+            # Extract position for deriving velocity/acceleration
+            pos = odom_msg.pose.pose.position
+            motion_data["pos_x"].append(pos.x)
+            motion_data["pos_y"].append(pos.y)
+            motion_data["pos_z"].append(pos.z)
 
             # Convert quaternion to Euler angles
             quat = odom_msg.pose.pose.orientation
@@ -399,11 +409,109 @@ class WindowExtractor:
             while len(motion_data[key]) < target_len:
                 motion_data[key].append(0.0)
 
+        # Compute derived velocity and acceleration from position
+        # This provides backup data when IMU values are zeros (common in real robot data)
+        self._compute_derived_motion(motion_data)
+
         # Save to JSON
         motion_path = self.output_dir / \
             f"motion_{self.run_id}_w{window_id:03d}.json"
         with open(motion_path, 'w') as f:
             json.dump(motion_data, f, indent=2)
+
+    def _compute_derived_motion(self, motion_data: dict):
+        """
+        Compute velocity and acceleration from position differences.
+
+        This provides backup motion data when IMU values are zeros,
+        which is common in real robot rosbag data where IMU may not
+        be publishing on the expected topic.
+
+        Adds to motion_data:
+        - derived_vx, derived_vy: Velocity from position differentiation
+        - derived_speed: Speed magnitude sqrt(vx² + vy²)
+        - derived_accel: Acceleration magnitude from velocity differentiation
+        - derived_yaw_rate: Angular velocity from yaw differentiation
+        """
+        import math
+
+        timestamps = motion_data.get("timestamps", [])
+        pos_x = motion_data.get("pos_x", [])
+        pos_y = motion_data.get("pos_y", [])
+        yaw = motion_data.get("yaw", [])  # In degrees
+
+        if len(timestamps) < 2:
+            # Not enough data to compute derivatives
+            motion_data["derived_vx"] = []
+            motion_data["derived_vy"] = []
+            motion_data["derived_speed"] = []
+            motion_data["derived_accel"] = []
+            motion_data["derived_yaw_rate"] = []
+            return
+
+        # Compute velocity by finite differences (with simple smoothing)
+        derived_vx = []
+        derived_vy = []
+
+        for i in range(len(timestamps) - 1):
+            dt = timestamps[i + 1] - timestamps[i]
+            if dt > 1e-6:
+                vx = (pos_x[i + 1] - pos_x[i]) / dt
+                vy = (pos_y[i + 1] - pos_y[i]) / dt
+            else:
+                vx, vy = 0.0, 0.0
+            derived_vx.append(vx)
+            derived_vy.append(vy)
+
+        # Pad last value to match length
+        derived_vx.append(derived_vx[-1] if derived_vx else 0.0)
+        derived_vy.append(derived_vy[-1] if derived_vy else 0.0)
+
+        # Compute speed magnitude
+        derived_speed = [math.sqrt(vx**2 + vy**2)
+                         for vx, vy in zip(derived_vx, derived_vy)]
+
+        # Compute acceleration by differentiating velocity
+        derived_accel = []
+        for i in range(len(timestamps) - 1):
+            dt = timestamps[i + 1] - timestamps[i]
+            if dt > 1e-6 and i + 1 < len(derived_vx):
+                ax = (derived_vx[i + 1] - derived_vx[i]) / dt
+                ay = (derived_vy[i + 1] - derived_vy[i]) / dt
+                accel_mag = math.sqrt(ax**2 + ay**2)
+            else:
+                accel_mag = 0.0
+            derived_accel.append(accel_mag)
+
+        # Pad last value
+        derived_accel.append(derived_accel[-1] if derived_accel else 0.0)
+
+        # Compute yaw rate from yaw differentiation (convert deg to rad/s)
+        derived_yaw_rate = []
+        for i in range(len(timestamps) - 1):
+            dt = timestamps[i + 1] - timestamps[i]
+            if dt > 1e-6 and i + 1 < len(yaw):
+                # Handle wraparound at ±180°
+                dyaw = yaw[i + 1] - yaw[i]
+                if dyaw > 180:
+                    dyaw -= 360
+                elif dyaw < -180:
+                    dyaw += 360
+                yaw_rate = math.radians(dyaw) / dt  # Convert to rad/s
+            else:
+                yaw_rate = 0.0
+            derived_yaw_rate.append(yaw_rate)
+
+        # Pad last value
+        derived_yaw_rate.append(
+            derived_yaw_rate[-1] if derived_yaw_rate else 0.0)
+
+        # Store in motion_data
+        motion_data["derived_vx"] = derived_vx
+        motion_data["derived_vy"] = derived_vy
+        motion_data["derived_speed"] = derived_speed
+        motion_data["derived_accel"] = derived_accel
+        motion_data["derived_yaw_rate"] = derived_yaw_rate
 
     def _extract_camera_frame(self, window_id: int, center_time: float):
         """Extract camera frame closest to center time."""

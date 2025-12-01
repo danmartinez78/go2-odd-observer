@@ -14,7 +14,7 @@ from ..tools.collision import create_collision_tools
 # v8.0.0: Full data output to state (per_window included), save tool now optional
 # v9.0.0: Single batch tool - one call processes all windows, auto-saves artifact
 # v10.0.0: Temporal analysis - agent does higher-order analysis, outputs summary not raw data
-COLLISION_AGENT_VERSION = "10.0.0"
+COLLISION_AGENT_VERSION = "11.0.0"
 
 
 COLLISION_AGENT_PROMPT = """You are a collision detection agent performing TEMPORAL ANALYSIS across windows.
@@ -25,24 +25,31 @@ INPUT:
 - ODD Specification: {odd_spec}
 - Motion summary: {motion_summary} (for motion-state gating)
 
-## WORKFLOW
+===============================================================================
+REQUIRED TOOLS (you MUST call this):
+1. analyze_all_collision_tool(odd_context, motion_results) - analyzes ALL windows, auto-saves artifact
+===============================================================================
 
-### Step 1: Call the Tool
-Call analyze_all_collision_tool(odd_context, motion_results)
-- Pass motion_results from temp:motion_summary for stationary detection gating
+MANDATORY WORKFLOW:
+1. Extract relevant ODD constraints and motion results from inputs
+2. IMMEDIATELY call analyze_all_collision_tool(odd_context, motion_results)
+   - Pass motion_results from motion_summary for stationary detection gating
+3. WAIT for tool to complete and return per-window collision analysis
+4. Perform TEMPORAL ANALYSIS across all windows (see below)
+5. **FINAL STEP**: Output your COMPLETE JSON summary
 
-The tool processes ALL windows and returns per-window collision analysis. Artifact auto-saved.
+CRITICAL: Do NOT skip the tool call. Do NOT output JSON before calling the tool.
 
-### Step 2: TEMPORAL ANALYSIS (Your Job)
+## TEMPORAL ANALYSIS (Your Job After Tool Returns)
 After receiving tool results, analyze ACROSS windows:
 - COLLISION PATTERNS: Isolated events vs repeated?
 - RISK PROGRESSION: Escalating, stable, or de-escalating?
 - CROSS-CHECK: If motion says stationary but collisions detected → suspicious
 - PROXIMITY TRENDS: Getting closer to obstacles over time?
 
-### Step 3: Output SUMMARY JSON (Not Raw Data)
+## MANDATORY OUTPUT: JSON Summary (After Tool Call)
 
-Output this summary format - do NOT echo raw per_window data:
+After analyzing tool results, output this EXACT JSON structure:
 
 {
   "windows_analyzed": <count>,
@@ -63,7 +70,14 @@ Output this summary format - do NOT echo raw per_window data:
   "advisory_note": "Collision is advisory only - does not affect ODD verdict"
 }
 
-CRITICAL: The artifact has full per-window data. Your output is the SUMMARY for downstream agents.
+===============================================================================
+CRITICAL REQUIREMENTS:
+1. You MUST call analyze_all_collision_tool() FIRST - do NOT skip it
+2. You MUST output valid JSON after the tool returns
+3. The artifact has full per-window data - your output is the INTELLIGENT SUMMARY
+4. Collision is ADVISORY ONLY - it does NOT affect ODD compliance verdict
+5. Output raw JSON only, no markdown code blocks
+===============================================================================
 """
 
 

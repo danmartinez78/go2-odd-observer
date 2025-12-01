@@ -29,7 +29,7 @@ from google.genai import Client
 # v7.0.0: Restore detailed step-by-step prompt (regression fix from over-simplified v6.3.0)
 # v7.1.0: Binary actor presence (human_present/animal_present), collision advisory clarification
 # v8.0.0: Strict axis-based verdict (axes_violated/axes_at_boundary), 15% boundary margin
-EVALUATOR_AGENT_VERSION = "8.0.0"
+EVALUATOR_AGENT_VERSION = "9.0.0"
 
 
 def _load_artifact_json(artifact) -> dict:
@@ -302,7 +302,7 @@ def create_evaluator_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=tools,
         output_key="evaluator_output",
-        instruction="""You are the ODD Compliance Evaluator - the final arbiter of safety compliance.
+        instruction="""You are the ODD Compliance Evaluator. You MUST call the tool and then output JSON.
 
 **TERMINOLOGY:**
 - ODD = Operational Design Domain (the safe operating envelope defined by requirements)
@@ -310,8 +310,18 @@ def create_evaluator_agent(
 - Region Distance = How far COD is from ODD boundary (0 = fully compliant)
 
 ===============================================================================
-CRITICAL: You MUST call construct_cod_tool() FIRST before any analysis
+REQUIRED TOOLS (you MUST call this):
+1. construct_cod_tool() - loads artifacts and computes COD region + metrics
 ===============================================================================
+
+MANDATORY WORKFLOW:
+1. IMMEDIATELY call construct_cod_tool() with NO PARAMETERS
+2. WAIT for tool to complete and return COD region + metrics
+3. Perform COMPREHENSIVE ANALYSIS using tool output + sensor summaries
+4. Determine VERDICT using strict axis-based rules
+5. **FINAL STEP**: Output your COMPLETE JSON analysis
+
+CRITICAL: Do NOT skip the tool call. Do NOT output JSON before calling the tool.
 
 ## STEP 1: CALL THE TOOL (MANDATORY)
 
@@ -405,6 +415,11 @@ Cross-reference these summaries with quantitative metrics:
 6. Use "Current Operating Domain" not "Conditions of Operation"
 
 ===============================================================================
-The pipeline depends on your tool call - DO NOT SKIP IT
+CRITICAL REQUIREMENTS:
+1. You MUST call construct_cod_tool() FIRST - do NOT skip it
+2. You MUST output valid JSON after the tool returns
+3. Cite SPECIFIC VALUES in rationale
+4. Collision is ADVISORY ONLY - never affects verdict
+5. Output raw JSON only, no markdown code blocks
 ===============================================================================""",
     )

@@ -17,7 +17,7 @@ from google.adk.agents import Agent
 from google.adk.models.google_llm import Gemini
 
 
-REPORT_AGENT_VERSION = "14.0.0"
+REPORT_AGENT_VERSION = "15.0.0"
 
 
 def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
@@ -31,7 +31,19 @@ def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
         model=Gemini(model=model, api_key=api_key),
         tools=[],
         output_key="report_output",
-        instruction="""You are writing a safety analysis report for an autonomy/ODD compliance system.
+        instruction="""You are writing a safety analysis report. You MUST output a complete JSON report.
+
+===============================================================================
+REQUIRED TOOLS (you have NONE):
+You have NO tools. Your ONLY job is to read the input data and output a complete JSON report.
+===============================================================================
+
+MANDATORY WORKFLOW:
+1. Read ALL input data (ODD spec, evaluator output, sensor summaries)
+2. Synthesize insights across all sources
+3. **FINAL STEP**: Output your COMPLETE JSON report with ALL required sections
+
+CRITICAL: Do NOT skip any sections. Do NOT output partial results.
 
 ## TWO AUDIENCES - TWO WRITING STYLES
 
@@ -128,5 +140,12 @@ def create_report_agent(scenario_path: Path, api_key: str, model: str) -> Agent:
 **GOOD Technical Rationale:**
 "Verdict BOUNDARY: No axes exceeded hard limits (region_distance=0.0). clearance_index reached 0.80 (7% margin to 0.3 minimum). Perception agent flagged dim lighting in w011, degrading camera confidence despite being within nominal ODD."
 
-Output raw JSON only - no markdown code blocks.""",
+===============================================================================
+CRITICAL REQUIREMENTS:
+1. You MUST output a COMPLETE JSON report with ALL sections
+2. You MUST output valid JSON - no markdown code blocks
+3. Do NOT skip any required fields
+4. Use actual values from the input data - do NOT make up numbers
+5. If input data is missing, note it in data_warnings
+===============================================================================""",
     )

@@ -26,15 +26,27 @@ from ..tools.odd_spec import create_odd_spec_tools
 # v10.0.0: Rich descriptions with measurement guidance for downstream tool grounding
 # v11.0.0: Binary actor presence (human_present/animal_present), traversability threshold guidance
 # v12.0.0: Rename traversability_score → clearance_index for semantic clarity (BEV-based path availability)
-AGENT_VERSION = "12.0.0"
+AGENT_VERSION = "13.0.0"
 
-PROMPT_TEMPLATE = """You are an ODD specification expert. Convert natural language ODD descriptions into formal JSON specifications.
+PROMPT_TEMPLATE = """You are an ODD specification expert. You MUST call the tool and then output JSON.
 
-## WORKFLOW (TWO STEPS - BOTH REQUIRED)
+===============================================================================
+REQUIRED TOOLS (you MUST call this):
+1. save_odd_spec_tool(...) - saves the structured ODD specification as artifact
+===============================================================================
 
-### STEP 1: Call save_odd_spec_tool
+MANDATORY WORKFLOW:
+1. Parse the natural language ODD description to extract constraints
+2. IMMEDIATELY call save_odd_spec_tool with 9 parameter lists (see below)
+3. WAIT for tool to complete
+4. **FINAL STEP**: Output JSON summary (MANDATORY - the tool call alone is NOT enough)
 
-Parse the ODD description and call save_odd_spec_tool with 9 parameter lists:
+CRITICAL: Do NOT skip the tool call. Do NOT output JSON before calling the tool.
+CRITICAL: You MUST do BOTH steps. The tool saves the artifact, but you MUST also output JSON for session state.
+
+## STEP 1: Call save_odd_spec_tool
+
+Call save_odd_spec_tool with 9 parameter lists:
 - environment_categorical, environment_numeric, environment_boolean
 - actors_categorical, actors_numeric, actors_boolean
 - ego_categorical, ego_numeric, ego_boolean
@@ -126,13 +138,15 @@ NOT: ["smooth"] (too abstract)
 - Quality (clearance_index): min=<threshold>, max=1.0 (higher is better)
 - Envelope (speed, angles): min=0.0, max=<limit> (absolute bounds)
 
-## CRITICAL RULES
-
-1. ALWAYS call save_odd_spec_tool first
-2. ALWAYS output JSON after the tool completes (this gets captured to session state)
-3. Include the full odd_specification in your output
-4. Output pure JSON only - no markdown code blocks
-5. Make descriptions RICH with measurement guidance - downstream tools depend on them"""
+===============================================================================
+CRITICAL REQUIREMENTS:
+1. You MUST call save_odd_spec_tool() FIRST - do NOT skip it
+2. You MUST output valid JSON AFTER the tool completes - this gets captured to session state
+3. Include the full odd_specification in your JSON output
+4. Output raw JSON only, no markdown code blocks
+5. Make descriptions RICH with measurement guidance - downstream tools depend on them
+===============================================================================
+"""
 
 
 def create_odd_spec_agent(api_key: str, model: str) -> Agent:
