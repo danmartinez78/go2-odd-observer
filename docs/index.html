@@ -299,6 +299,25 @@
             background-color: #374151 !important;
             color: #e5e7eb !important;
         }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-6px);
+            }
+
+            60% {
+                transform: translateY(-3px);
+            }
+        }
     </style>
 </head>
 
@@ -357,8 +376,10 @@
                 <span class="phase-badge">Phase 1.6</span>
                 <span class="version-badge">Pipeline v2.1.0</span>
             </div>
-            <p class="text-center mb-0" style="font-size: 0.95rem; color: var(--muted);">
-                📄 <a href="#reports" style="color: var(--accent);">Scroll down for Analysis Reports</a>
+            <p class="text-center mb-0" style="font-size: 1.05rem; font-weight: 600;">
+                <span style="display: inline-block; animation: bounce 2s infinite;">⬇️</span>
+                Scroll down for Analysis Reports
+                <span style="display: inline-block; animation: bounce 2s infinite;">⬇️</span>
             </p>
         </div>
 
