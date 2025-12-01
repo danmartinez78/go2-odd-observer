@@ -436,20 +436,25 @@
         A typical <code>full_result.json</code> report structure (trimmed):
       </p>
       <div class="code-block mb-0">
-        {
-        "report": {
-        "compliance": {
-        "status": "OUT_ODD",
-        "confidence": "HIGH",
-        "summary": "The verdict is OUT_ODD due to violations..."
-        },
-        "executive_summary": "The robot operated outside its safety limits...",
-        "collision_advisory": {"collisions_detected": 1},
-        "human_animal_detection": {"humans_detected": false}
-        },
-        "full_analysis": {...},
-        "analysis_metadata": {"scenario": "real_174321", "version": "1.6.0"}
-        }
+{
+  "report": {
+    "compliance": {
+      "status": "OUT_ODD",
+      "confidence": "HIGH",
+      "summary": "The verdict is OUT_ODD due to motion violations..."
+    },
+    "executive_summary": "The robot operated outside safety limits...",
+    "key_findings": {
+      "perception": "Indoor residential, low obstacle density",
+      "motion": "Peak accel 12.6 m/s² exceeded 10 m/s² limit",
+      "safety": "No humans/animals, 2 collision advisories"
+    },
+    "collision_advisory": {"collisions_detected": 2, "risk_band": "MED"},
+    "human_animal_detection": {"humans_detected": false},
+    "recommendations": ["Review motion control parameters"]
+  },
+  "analysis_metadata": {"scenario": "real_174321", "pipeline_version": "2.1.0"}
+}
       </div>
     </div>
   </div>

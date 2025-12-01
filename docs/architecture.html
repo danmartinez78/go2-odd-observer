@@ -198,42 +198,42 @@
           </thead>
           <tbody>
             <tr>
-              <td><strong>ODD Spec Agent</strong></td>
+              <td><strong>ODD Spec Agent</strong> <span class="badge-tag" style="font-size:0.7rem">v13.0.0</span></td>
               <td>Parse natural‑language ODD into structured axes and limits.</td>
               <td>NL ODD description.</td>
               <td>ODD spec JSON (environment, actors, ego axes).</td>
               <td>FunctionTools for text → JSON extraction, schema validation.</td>
             </tr>
             <tr>
-              <td><strong>Perception Agent</strong></td>
+              <td><strong>Perception Agent</strong> <span class="badge-tag" style="font-size:0.7rem">v14.0.0</span></td>
               <td>Estimate environment‑related ODD axes per window.</td>
               <td>Camera + BEV images, ODD spec.</td>
               <td>Per‑window odd_measurements (lighting, terrain, obstacles, stairs, humans) + data_source metadata.</td>
               <td>list_windows_tool, analyze_window_perception_tool, save_perception_output_tool.</td>
             </tr>
             <tr>
-              <td><strong>Motion Agent</strong></td>
+              <td><strong>Motion Agent</strong> <span class="badge-tag" style="font-size:0.7rem">v12.0.0</span></td>
               <td>Quantify ego motion and stability from IMU + camera.</td>
               <td>IMU traces, camera, ODD spec.</td>
               <td>Per‑window motion odd_measurements (accel, jerk, roll/pitch, etc.) + motion_state and insights.</td>
               <td>list_windows_tool, analyze_motion_tool, save_motion_output_tool.</td>
             </tr>
             <tr>
-              <td><strong>Collision Agent</strong></td>
+              <td><strong>Collision Agent</strong> <span class="badge-tag" style="font-size:0.7rem">v13.0.0</span></td>
               <td>Detect collisions / near‑misses using IMU + BEV + camera.</td>
               <td>IMU, BEV channels, camera, ODD spec.</td>
               <td>Per‑window collision_detected (0/1), min_proximity_m, explanation, key_insights.</td>
               <td>list_windows_tool, analyze_collision_tool, save_collision_output_tool.</td>
             </tr>
             <tr>
-              <td><strong>Evaluator Agent</strong></td>
+              <td><strong>Evaluator Agent</strong> <span class="badge-tag" style="font-size:0.7rem">v9.0.0</span></td>
               <td>Construct COD region and perform COD ⊆ ODD check.</td>
               <td>ODD spec + per‑window outputs from loop agents.</td>
               <td>COD region description, compliance verdict, axis‑level reasoning.</td>
               <td>FunctionTools to load saved artifacts, aggregate metrics, and build COD.</td>
             </tr>
             <tr>
-              <td><strong>Report Agent</strong></td>
+              <td><strong>Report Agent</strong> <span class="badge-tag" style="font-size:0.7rem">v15.0.0</span></td>
               <td>Produce the final human‑readable compliance report.</td>
               <td>Evaluator output + summarized loop‑agent insights.</td>
               <td>JSON report with compliance, executive summary, key findings, issues, recommendations.</td>
