@@ -21,7 +21,8 @@ import math
 # Version tracking for COD construction tools
 # 1.1.0: Added categorical micro-agent with gemini-2.5-flash
 # 1.2.0: Updated to handle odd_measurements schema and normalize field names
-COD_TOOL_VERSION = "1.2.0"
+# 1.3.0: Removed collision→proximity mapping (collision is advisory only, not actor proximity)
+COD_TOOL_VERSION = "1.3.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
 
 
@@ -318,6 +319,31 @@ def construct_cod_from_sensor_outputs(
     # Build overall COD region
     cod_region = _build_cod_region(per_window_data, odd_spec)
 
+    # DEBUG: Check for axis/measurement alignment
+    # Extract all axis names from nested ODD spec structure
+    odd_axes = set()
+    spec = odd_spec.get("odd_specification", {})
+    for domain_data in spec.values():
+        if isinstance(domain_data, dict):
+            for constraint_type_data in domain_data.values():
+                if isinstance(constraint_type_data, dict):
+                    odd_axes.update(constraint_type_data.keys())
+
+    measured_axes = set(cod_region.keys())
+
+    missing_measurements = odd_axes - measured_axes
+    extra_measurements = measured_axes - odd_axes
+
+    if missing_measurements:
+        print(
+            f"⚠️  [COD] ODD axes WITHOUT measurements: {sorted(missing_measurements)}")
+    if extra_measurements:
+        print(
+            f"⚠️  [COD] Measurements WITHOUT ODD axes: {sorted(extra_measurements)}")
+    if not missing_measurements and not extra_measurements:
+        print(
+            f"✅ [COD] All {len(odd_axes)} ODD axes have matching measurements")
+
     # Collect categorical mismatches FIRST for semantic assessment
     # This is used for BOTH time series AND region metrics
     mismatches, exact_matches = _collect_categorical_mismatches(
@@ -355,41 +381,18 @@ def construct_cod_from_sensor_outputs(
 
 def _normalize_perception_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Normalize perception measurements to match ODD spec axis names.
+    Normalize perception measurements.
 
-    Handles:
-    - Field renaming (surface_type -> terrain_type)
-    - Unit conversion (obstacle_density_pct -> obstacle_density)
-    - Nested extraction (stairs.present -> stairs_present)
+    Perception tool outputs odd_measurements with EXACT axis names from ODD spec.
+    Just pass through measurement fields.
     """
     normalized = {}
 
-    # Direct mappings
-    if "lighting_conditions" in raw:
-        normalized["lighting_conditions"] = raw["lighting_conditions"]
-
-    # Rename: surface_type -> terrain_type
-    if "surface_type" in raw:
-        normalized["terrain_type"] = raw["surface_type"]
-
-    # Convert: obstacle_density_pct (0-100) -> obstacle_density (0-1)
-    if "obstacle_density_pct" in raw:
-        normalized["obstacle_density"] = raw["obstacle_density_pct"] / 100.0
-
-    if "traversability_score" in raw:
-        normalized["traversability_score"] = raw["traversability_score"]
-
-    # Extract nested: stairs.present -> stairs_present (bool -> int)
-    if "stairs" in raw and isinstance(raw["stairs"], dict):
-        stairs_present = raw["stairs"].get("present", False)
-        normalized["stairs_present"] = 1 if stairs_present else 0
-
-    if "humans_animals" in raw and isinstance(raw["humans_animals"], dict):
-        ha = raw["humans_animals"]
-        if ha.get("detected", False) and ha.get("proximity_m", -1) > 0:
-            # Use human/animal proximity if closer
-            current = normalized.get("min_proximity_m", float('inf'))
-            normalized["min_proximity_m"] = min(current, ha["proximity_m"])
+    for key, value in raw.items():
+        # Skip non-measurement fields
+        if key in ["window_id", "observations", "reasoning", "confidence", "odd_concerns"]:
+            continue
+        normalized[key] = value
 
     return normalized
 
@@ -412,16 +415,14 @@ def _normalize_motion_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
 def _normalize_collision_measurements(raw: Dict[str, Any], window_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize collision measurements.
-    Collision agent may have empty odd_measurements but has proximity_estimate_m.
+
+    NOTE: Collision proximity_estimate_m is OBSTACLE distance (furniture, walls),
+    NOT actor (human/animal) proximity. Do NOT map to min_proximity_m.
+    Collision is ADVISORY ONLY - does not contribute ODD measurements.
     """
-    normalized = {}
-
-    # Collision agent puts proximity in the window_data, not odd_measurements
-    if "proximity_estimate_m" in window_data:
-        # This could update min_proximity_m if collision agent detected closer obstacles
-        normalized["min_proximity_m"] = window_data["proximity_estimate_m"]
-
-    return normalized
+    # Return empty - collision doesn't contribute ODD axis measurements
+    # Actor presence is handled by perception agent (human_present, animal_present)
+    return {}
 
 
 def _combine_sensor_outputs(
@@ -487,15 +488,9 @@ def _combine_sensor_outputs(
         wid = window_data["window_id"]
         if wid not in combined:
             combined[wid] = {"window_id": wid, "measurements": {}}
-        raw = window_data.get("odd_measurements",
-                              window_data.get("measurements", {}))
-        normalized = _normalize_collision_measurements(raw, window_data)
-        # Only update proximity if collision agent found something closer
-        if "min_proximity_m" in normalized:
-            current = combined[wid]["measurements"].get(
-                "min_proximity_m", float('inf'))
-            combined[wid]["measurements"]["min_proximity_m"] = min(
-                current, normalized["min_proximity_m"])
+        # Collision is ADVISORY ONLY - does not contribute ODD measurements
+        # Actor presence (human_present, animal_present) is handled by perception
+        # Collision proximity_estimate_m is obstacle distance, NOT actor proximity
 
     # Sort by window_id
     return sorted(combined.values(), key=lambda x: x["window_id"])
