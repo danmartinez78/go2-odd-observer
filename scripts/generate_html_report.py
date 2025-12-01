@@ -241,6 +241,84 @@ def get_agent_outputs(result: Dict[str, Any]) -> Dict[str, Any]:
     return result.get('agent_outputs', {})
 
 
+def get_motion_data(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract motion analysis data from artifacts."""
+    artifacts = result.get('artifacts', {})
+    motion_artifact = artifacts.get('motion_output.json', {})
+
+    # Also try to get summary from session_state
+    session_state = result.get('session_state', {})
+    motion_summary_str = session_state.get('motion_summary', '')
+    motion_summary = {}
+    if isinstance(motion_summary_str, str) and motion_summary_str.strip():
+        try:
+            motion_summary = json.loads(motion_summary_str)
+        except:
+            pass
+
+    return {
+        'per_window': motion_artifact.get('per_window', []),
+        'windows_analyzed': motion_artifact.get('windows_analyzed', 0),
+        'summary': motion_summary.get('summary', {}),
+        'temporal_analysis': motion_summary.get('temporal_analysis', {}),
+        'data_availability_summary': motion_summary.get('data_availability_summary', {}),
+        'issues': motion_summary.get('issues', []),
+    }
+
+
+def get_collision_data(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract collision analysis data from artifacts."""
+    artifacts = result.get('artifacts', {})
+    collision_artifact = artifacts.get('collision_output.json', {})
+
+    # Also try to get summary from session_state
+    session_state = result.get('session_state', {})
+    collision_summary_str = session_state.get('collision_summary', '')
+    collision_summary = {}
+    if isinstance(collision_summary_str, str) and collision_summary_str.strip():
+        try:
+            collision_summary = json.loads(collision_summary_str)
+        except:
+            pass
+
+    return {
+        'per_window': collision_artifact.get('per_window', []),
+        'windows_analyzed': collision_artifact.get('windows_analyzed', 0),
+        'collision_stats': collision_artifact.get('collision_stats', {}),
+        'summary': collision_summary.get('summary', {}),
+        'temporal_analysis': collision_summary.get('temporal_analysis', {}),
+        'data_availability_summary': collision_summary.get('data_availability_summary', {}),
+        'issues': collision_summary.get('issues', []),
+        'advisory_note': collision_summary.get('advisory_note', ''),
+    }
+
+
+def get_perception_data(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract perception analysis data from artifacts."""
+    artifacts = result.get('artifacts', {})
+    perception_artifact = artifacts.get('perception_output.json', {})
+
+    # Also try to get summary from session_state
+    session_state = result.get('session_state', {})
+    perception_summary_str = session_state.get('perception_summary', '')
+    perception_summary = {}
+    if isinstance(perception_summary_str, str) and perception_summary_str.strip():
+        try:
+            perception_summary = json.loads(perception_summary_str)
+        except:
+            pass
+
+    return {
+        'per_window': perception_artifact.get('per_window', []),
+        'windows_analyzed': perception_artifact.get('windows_analyzed', 0),
+        'tool_version': perception_artifact.get('tool_version', 'unknown'),
+        'summary': perception_summary.get('summary', {}),
+        'temporal_analysis': perception_summary.get('temporal_analysis', {}),
+        'actor_detection': perception_summary.get('actor_detection', {}),
+        'odd_critical': perception_summary.get('odd_critical', {}),
+    }
+
+
 def get_key_findings(result: Dict[str, Any]) -> Dict[str, str]:
     """Extract key findings from various schema formats."""
     # Try Phase 1.4.5 schema: summary_insights.key_observations
@@ -563,6 +641,157 @@ def generate_svg_pie_chart(labels: list, values: list, title: str = "Cost Breakd
     </svg>'''
 
 
+def generate_svg_bar_chart(labels: list, values: list, max_val: float = None,
+                           title: str = "Bar Chart", color: str = "#667eea",
+                           unit: str = "") -> str:
+    """Generate an inline SVG horizontal bar chart."""
+    if not labels or not values:
+        return '<div class="text-muted text-center p-4">No data available</div>'
+
+    import math
+
+    width = 450
+    bar_height = 25
+    bar_gap = 8
+    label_width = 120
+    value_width = 60
+    chart_start = label_width + 10
+    chart_width = width - chart_start - value_width - 10
+
+    n = len(labels)
+    height = n * (bar_height + bar_gap) + 60  # Extra for title
+
+    if max_val is None:
+        max_val = max(values) if values else 1
+    if max_val == 0:
+        max_val = 1
+
+    # Title
+    svg = f'<text x="{width/2}" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>'
+
+    y_offset = 45
+    for i, (label, value) in enumerate(zip(labels, values)):
+        y = y_offset + i * (bar_height + bar_gap)
+        bar_width = (value / max_val) * chart_width
+
+        # Label
+        short_label = label[:15] + '..' if len(label) > 15 else label
+        svg += f'<text x="{label_width}" y="{y + bar_height/2 + 4}" text-anchor="end" font-size="11" fill="var(--text-secondary)">{short_label}</text>'
+
+        # Bar background
+        svg += f'<rect x="{chart_start}" y="{y}" width="{chart_width}" height="{bar_height}" fill="var(--border-color)" opacity="0.3" rx="3"/>'
+
+        # Bar fill
+        if bar_width > 0:
+            svg += f'<rect x="{chart_start}" y="{y}" width="{bar_width}" height="{bar_height}" fill="{color}" rx="3"/>'
+
+        # Value label
+        val_display = f"{value:.2f}{unit}" if isinstance(
+            value, float) else f"{value}{unit}"
+        svg += f'<text x="{chart_start + chart_width + 5}" y="{y + bar_height/2 + 4}" font-size="11" fill="var(--text-primary)">{val_display}</text>'
+
+    return f'''<svg viewBox="0 0 {width} {height}" class="svg-chart" style="width:100%;max-width:{width}px;height:auto;">
+        {svg}
+    </svg>'''
+
+
+def generate_motion_charts(motion_data: Dict[str, Any]) -> Dict[str, str]:
+    """Generate SVG charts for motion analysis section."""
+    charts = {}
+
+    per_window = motion_data.get('per_window', [])
+
+    if not per_window:
+        charts['trajectory_svg'] = '<div class="text-muted text-center p-4">No motion data available</div>'
+        charts['speed_svg'] = '<div class="text-muted text-center p-4">No motion data available</div>'
+        return charts
+
+    # Trajectory metrics chart (displacement vs path length)
+    window_ids = [w.get('window_id', str(i)) for i, w in enumerate(per_window)]
+    displacements = []
+    path_lengths = []
+    efficiencies = []
+
+    for w in per_window:
+        traj = w.get('trajectory_metrics', {})
+        displacements.append(traj.get('displacement_m', 0))
+        path_lengths.append(traj.get('path_length_m', 0))
+        efficiencies.append(traj.get('efficiency', 0))
+
+    # Speed metrics chart
+    peak_speeds = []
+    avg_speeds = []
+
+    for w in per_window:
+        speed = w.get('speed_metrics', {})
+        peak_speeds.append(speed.get('peak_mps', 0))
+        avg_speeds.append(speed.get('avg_mps', 0))
+
+    # Generate trajectory bar chart
+    if any(path_lengths):
+        max_path = max(path_lengths) if path_lengths else 1
+        charts['trajectory_svg'] = generate_svg_bar_chart(
+            [f"W{wid}" for wid in window_ids],
+            path_lengths,
+            max_val=max_path * 1.2,
+            title="Path Length per Window",
+            color="#667eea",
+            unit="m"
+        )
+    else:
+        charts['trajectory_svg'] = '<div class="text-muted text-center p-4">No trajectory data available</div>'
+
+    # Generate speed bar chart
+    if any(peak_speeds):
+        max_speed = max(peak_speeds) if peak_speeds else 1
+        charts['speed_svg'] = generate_svg_bar_chart(
+            [f"W{wid}" for wid in window_ids],
+            peak_speeds,
+            # Min scale to show small values
+            max_val=max(max_speed * 1.2, 0.1),
+            title="Peak Speed per Window",
+            color="#28a745",
+            unit=" m/s"
+        )
+    else:
+        charts['speed_svg'] = '<div class="text-muted text-center p-4">No speed data available</div>'
+
+    return charts
+
+
+def generate_collision_charts(collision_data: Dict[str, Any]) -> Dict[str, str]:
+    """Generate SVG charts for collision analysis section."""
+    charts = {}
+
+    per_window = collision_data.get('per_window', [])
+
+    if not per_window:
+        charts['proximity_svg'] = '<div class="text-muted text-center p-4">No collision data available</div>'
+        return charts
+
+    # Proximity over windows
+    window_ids = [w.get('window_id', str(i)) for i, w in enumerate(per_window)]
+    proximities = [w.get('proximity_estimate_m', 0) for w in per_window]
+
+    # Risk band colors
+    risk_colors = {'LOW': '#28a745', 'MEDIUM': '#ffc107', 'HIGH': '#dc3545'}
+
+    if any(proximities):
+        max_prox = max(proximities) if proximities else 3
+        charts['proximity_svg'] = generate_svg_bar_chart(
+            [f"W{wid}" for wid in window_ids],
+            proximities,
+            max_val=max(max_prox * 1.2, 3),
+            title="Proximity to Obstacles per Window",
+            color="#17a2b8",
+            unit="m"
+        )
+    else:
+        charts['proximity_svg'] = '<div class="text-muted text-center p-4">No proximity data available</div>'
+
+    return charts
+
+
 def generate_charts_data(result: Dict[str, Any]) -> dict:
     """Generate SVG chart HTML strings."""
     charts = {}
@@ -591,6 +820,16 @@ def generate_charts_data(result: Dict[str, Any]) -> dict:
             agent_names, agent_costs, "Cost Breakdown by Agent")
     else:
         charts['cost_svg'] = '<div class="text-muted text-center p-4">No cost data available</div>'
+
+    # Motion analysis charts
+    motion_data = get_motion_data(result)
+    motion_charts = generate_motion_charts(motion_data)
+    charts.update(motion_charts)
+
+    # Collision analysis charts
+    collision_data = get_collision_data(result)
+    collision_charts = generate_collision_charts(collision_data)
+    charts.update(collision_charts)
 
     return charts
 
@@ -652,6 +891,10 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Generate SVG charts (no external dependencies)
     charts = generate_charts_data(result)
+
+    # Extract motion and collision data for new sections
+    motion_data = get_motion_data(result)
+    collision_data = get_collision_data(result)
 
     # Generate timestamp
     timestamp = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
@@ -783,6 +1026,181 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     for rec in recommendations:
         recommendations_html += f"<li class='mb-2'>{rec}</li>"
 
+    # Build motion analysis HTML
+    motion_summary = motion_data.get('summary', {})
+    motion_temporal = motion_data.get('temporal_analysis', {})
+    motion_per_window = motion_data.get('per_window', [])
+    motion_data_avail = motion_data.get('data_availability_summary', {})
+
+    # Motion state badges per window - with collapsible for many windows
+    MAX_VISIBLE_BADGES = 6
+    motion_states_visible = []
+    motion_states_hidden = []
+
+    for i, w in enumerate(motion_per_window):
+        state = w.get('motion_state', 'unknown')
+        state_colors = {
+            'stationary': 'bg-secondary',
+            'moving': 'bg-success',
+            'complex': 'bg-warning',
+            'rotating': 'bg-info',
+            'unknown': 'bg-light text-dark'
+        }
+        badge_class = state_colors.get(state, 'bg-light text-dark')
+        badge_html = f'<span class="badge {badge_class} me-1 mb-1">W{w.get("window_id", "?")}: {state}</span>'
+
+        if i < MAX_VISIBLE_BADGES:
+            motion_states_visible.append(badge_html)
+        else:
+            motion_states_hidden.append(badge_html)
+
+    # Build motion states HTML with optional collapse
+    if motion_states_hidden:
+        motion_states_html = ''.join(motion_states_visible)
+        motion_states_html += f'''
+            <a class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="collapse" href="#motionStatesCollapse" role="button" aria-expanded="false">
+                +{len(motion_states_hidden)} more
+            </a>
+            <div class="collapse mt-1" id="motionStatesCollapse">
+                {''.join(motion_states_hidden)}
+            </div>'''
+    else:
+        motion_states_html = ''.join(
+            motion_states_visible) if motion_states_visible else ''
+
+    # Data availability badges
+    motion_avail_html = ""
+    if motion_data_avail:
+        if motion_data_avail.get('imu_available'):
+            motion_avail_html += '<span class="badge bg-success me-1">IMU ✓</span>'
+        else:
+            motion_avail_html += '<span class="badge bg-warning me-1">IMU (derived)</span>'
+        if motion_data_avail.get('position_available'):
+            motion_avail_html += '<span class="badge bg-success me-1">Position ✓</span>'
+
+    # Motion metrics summary
+    max_speed = motion_summary.get('max_speed_mps', 0)
+    total_displacement = motion_summary.get('total_displacement_m', 0)
+    avg_efficiency = motion_summary.get('avg_trajectory_efficiency', 0)
+    max_pitch = motion_summary.get('max_pitch_deg', 0)
+    max_roll = motion_summary.get('max_roll_deg', 0)
+
+    # Build trajectory details card HTML (collapsible per-window breakdown)
+    trajectory_pattern = motion_temporal.get('trajectory_pattern', 'unknown')
+    MAX_VISIBLE_TRAJECTORY = 5
+
+    trajectory_rows_visible = []
+    trajectory_rows_hidden = []
+
+    # Header row for trajectory details
+    trajectory_header = '''
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom bg-light rounded-top px-2 mb-1">
+            <span class="fw-bold text-muted small" style="min-width: 60px;">Window</span>
+            <span class="fw-bold text-muted small text-center flex-grow-1">Displacement → Path Length</span>
+            <span class="fw-bold text-muted small" style="min-width: 70px; text-align: right;">Efficiency</span>
+        </div>'''
+
+    for i, w in enumerate(motion_per_window):
+        traj = w.get('trajectory_metrics', {})
+        displacement = traj.get('displacement_m', 0)
+        path_length = traj.get('path_length_m', 0)
+        efficiency = traj.get('efficiency', 0)
+        window_id = w.get('window_id', '?')
+
+        # Color code efficiency
+        if efficiency >= 0.9:
+            eff_class = 'text-success'
+        elif efficiency >= 0.7:
+            eff_class = 'text-warning'
+        else:
+            eff_class = 'text-danger'
+
+        row_html = f'''
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-2">
+                <span class="text-muted" style="min-width: 60px;">W{window_id}</span>
+                <span class="text-center flex-grow-1">{displacement:.3f}m → {path_length:.3f}m</span>
+                <span class="{eff_class} fw-bold" style="min-width: 70px; text-align: right;">{efficiency:.0%}</span>
+            </div>'''
+
+        if i < MAX_VISIBLE_TRAJECTORY:
+            trajectory_rows_visible.append(row_html)
+        else:
+            trajectory_rows_hidden.append(row_html)
+
+    # Build trajectory details HTML (with header)
+    if trajectory_rows_visible:
+        trajectory_details_html = trajectory_header + ''.join(trajectory_rows_visible)
+        if trajectory_rows_hidden:
+            trajectory_details_html += f'''
+                <div class="collapse" id="trajectoryCollapse">
+                    {''.join(trajectory_rows_hidden)}
+                </div>
+                <div class="text-center mt-2">
+                    <a class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" href="#trajectoryCollapse" role="button" aria-expanded="false">
+                        <span class="when-collapsed">Show {len(trajectory_rows_hidden)} more windows</span>
+                        <span class="when-expanded">Show less</span>
+                    </a>
+                </div>'''
+    else:
+        trajectory_details_html = '<p class="text-muted">No trajectory data</p>'
+
+    # Build collision analysis HTML
+    collision_summary = collision_data.get('summary', {})
+    collision_temporal = collision_data.get('temporal_analysis', {})
+    collision_per_window = collision_data.get('per_window', [])
+    collision_data_avail = collision_data.get('data_availability_summary', {})
+
+    # Risk band badges per window - with collapsible for many windows
+    risk_bands_visible = []
+    risk_bands_hidden = []
+
+    for i, w in enumerate(collision_per_window):
+        risk = w.get('collision_risk_band', 'UNKNOWN')
+        risk_colors = {
+            'LOW': 'bg-success',
+            'MEDIUM': 'bg-warning',
+            'HIGH': 'bg-danger',
+            'UNKNOWN': 'bg-secondary'
+        }
+        badge_class = risk_colors.get(risk, 'bg-secondary')
+        badge_html = f'<span class="badge {badge_class} me-1 mb-1">W{w.get("window_id", "?")}: {risk}</span>'
+
+        if i < MAX_VISIBLE_BADGES:
+            risk_bands_visible.append(badge_html)
+        else:
+            risk_bands_hidden.append(badge_html)
+
+    # Build risk bands HTML with optional collapse
+    if risk_bands_hidden:
+        risk_bands_html = ''.join(risk_bands_visible)
+        risk_bands_html += f'''
+            <a class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="collapse" href="#riskBandsCollapse" role="button" aria-expanded="false">
+                +{len(risk_bands_hidden)} more
+            </a>
+            <div class="collapse mt-1" id="riskBandsCollapse">
+                {''.join(risk_bands_hidden)}
+            </div>'''
+    else:
+        risk_bands_html = ''.join(
+            risk_bands_visible) if risk_bands_visible else ''
+
+    # Collision signatures summary
+    sudden_stop_count = collision_summary.get('sudden_stop_count', 0)
+    total_collisions = collision_summary.get('total_collisions_detected', 0)
+    min_proximity = collision_summary.get('min_proximity_m', 0)
+    avg_proximity = collision_summary.get('avg_proximity_m', 0)
+    max_speed_drop = collision_summary.get('max_speed_drop_mps', 0)
+
+    # Data availability badges for collision
+    collision_avail_html = ""
+    if collision_data_avail:
+        if collision_data_avail.get('imu_available'):
+            collision_avail_html += '<span class="badge bg-success me-1">IMU ✓</span>'
+        if collision_data_avail.get('position_available'):
+            collision_avail_html += '<span class="badge bg-success me-1">Position ✓</span>'
+        if collision_data_avail.get('bev_available'):
+            collision_avail_html += '<span class="badge bg-success me-1">BEV ✓</span>'
+
     # Build scenario overview (representative windows)
     total_windows = len(windows)
     display_windows = windows_with_images[:4]  # Show first 4 windows
@@ -897,15 +1315,15 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                     </div>
                     <div class="col-md-3 text-center border-end">
                         <div class="metric-label">Detected Environment</div>
-                        <div class="h5 mb-1">{environment_type.replace('_', ' ').title()}</div>
+                        <div class="h5 mb-1 fw-normal">{environment_type.replace('_', ' ').title()}</div>
                     </div>
                     <div class="col-md-3 text-center border-end">
                         <div class="metric-label">Detected Surface</div>
-                        <div class="h5 mb-1">{surface_type.replace('_', ' ').title()}</div>
+                        <div class="h5 mb-1 fw-normal">{surface_type.replace('_', ' ').title()}</div>
                     </div>
                     <div class="col-md-3 text-center">
-                        <div class="h5 mb-1">{data_source_display}</div>
-                        <div class="metric-label">Data Source</div>
+                        <div class="metric-label">Detected Data Source</div>
+                        <div class="h5 mb-1 fw-normal">{data_source_display}</div>
                     </div>
                 </div>
             </div>
@@ -1149,6 +1567,39 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                 font-size: 1.5rem;
             }}
         }}
+        
+        /* Collapsible section styles */
+        .when-collapsed {{
+            display: inline;
+        }}
+        .when-expanded {{
+            display: none;
+        }}
+        [aria-expanded="true"] .when-collapsed {{
+            display: none;
+        }}
+        [aria-expanded="true"] .when-expanded {{
+            display: inline;
+        }}
+        
+        .window-badge {{
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+        }}
+        
+        .trajectory-row {{
+            transition: background-color 0.2s;
+        }}
+        .trajectory-row:hover {{
+            background-color: var(--bg-secondary);
+        }}
+        
+        .risk-band-badge {{
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+            min-width: 60px;
+            text-align: center;
+        }}
     </style>
 </head>
 <body>
@@ -1248,6 +1699,120 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     <h2 class="mb-4">🔍 Key Findings</h2>
     <div class="row">
         {findings_html if findings_html else '<div class="col-12"><p class="text-muted">No findings available</p></div>'}
+    </div>
+</div>
+
+<!-- Motion Analysis Section -->
+<div class="container mb-5">
+    <h2 class="mb-4">🏃 Motion Analysis</h2>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="metric-card">
+                <h5 class="mb-3">Motion Summary</h5>
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-primary mb-0">{max_speed:.3f}</div>
+                            <small class="text-muted">Peak Speed (m/s)</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-info mb-0">{total_displacement:.3f}</div>
+                            <small class="text-muted">Total Displacement (m)</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-success mb-0">{avg_efficiency:.0%}</div>
+                            <small class="text-muted">Avg Trajectory Efficiency</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-warning mb-0">{max_pitch:.1f}°/{max_roll:.1f}°</div>
+                            <small class="text-muted">Max Pitch/Roll</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <strong>Motion States:</strong><br>
+                    {motion_states_html if motion_states_html else '<span class="text-muted">No motion state data</span>'}
+                </div>
+                <div>
+                    <strong>Data Sources:</strong> {motion_avail_html if motion_avail_html else '<span class="text-muted">Unknown</span>'}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-container">
+                {charts.get('speed_svg', '<div class="text-muted text-center p-4">No speed data</div>')}
+            </div>
+        </div>
+    </div>
+    <!-- Trajectory Details Row -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="metric-card">
+                <h5 class="mb-3">📍 Trajectory Details</h5>
+                {trajectory_details_html if trajectory_details_html else '<p class="text-muted">No trajectory data available</p>'}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Collision Analysis Section -->
+<div class="container mb-5">
+    <h2 class="mb-4">💥 Collision Analysis <small class="text-muted fs-6">(Advisory)</small></h2>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="metric-card">
+                <h5 class="mb-3">Collision Summary</h5>
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 {'text-danger' if total_collisions > 0 else 'text-success'} mb-0">{total_collisions}</div>
+                            <small class="text-muted">Collisions Detected</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 {'text-warning' if sudden_stop_count > 0 else 'text-success'} mb-0">{sudden_stop_count}</div>
+                            <small class="text-muted">Sudden Stops</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-info mb-0">{min_proximity:.2f}m</div>
+                            <small class="text-muted">Min Proximity</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h4 text-secondary mb-0">{max_speed_drop:.2f}</div>
+                            <small class="text-muted">Max Speed Drop (m/s)</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <strong>Risk Bands:</strong><br>
+                    {risk_bands_html if risk_bands_html else '<span class="text-muted">No risk data</span>'}
+                </div>
+                <div>
+                    <strong>Data Sources:</strong> {collision_avail_html if collision_avail_html else '<span class="text-muted">Unknown</span>'}
+                </div>
+                <div class="mt-2 small text-muted">
+                    <em>Note: Collision analysis is advisory only and does not affect ODD compliance verdict.</em>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-container">
+                {charts.get('proximity_svg', '<div class="text-muted text-center p-4">No proximity data</div>')}
+            </div>
+        </div>
     </div>
 </div>
 
