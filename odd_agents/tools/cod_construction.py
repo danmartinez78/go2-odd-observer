@@ -21,8 +21,41 @@ import math
 # Version tracking for COD construction tools
 # 1.1.0: Added categorical micro-agent with gemini-2.5-flash
 # 1.2.0: Updated to handle odd_measurements schema and normalize field names
-COD_TOOL_VERSION = "1.2.0"
+# 1.3.0: Removed collision→proximity mapping (collision is advisory only, not actor proximity)
+# 1.4.0: Added boundary detection with margin_to_limit, axes_at_boundary, axes_violated
+# 1.5.0: Semantic boundary detection - only check relevant bound (max vs min semantics)
+# 1.6.0: Ordered enum support - lighting_conditions uses ordinal position for boundary detection
+COD_TOOL_VERSION = "1.6.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
+
+# Boundary detection threshold (15% margin = approaching limit)
+BOUNDARY_MARGIN_THRESHOLD = 0.15
+
+# Axes where we only care about upper bound (hazard accumulation axes)
+# Values near 0 are SAFE, values near max are concerning
+UPPER_BOUND_ONLY_AXES = {
+    "max_accel_mps2",      # Low acceleration = safe
+    "max_speed_mps",       # Low speed = safe
+    "max_roll_deg",        # Low roll = safe
+    "max_pitch_deg",       # Low pitch = safe
+    "obstacle_density",    # Low density = safe
+}
+
+# Axes where we only care about lower bound (quality/clearance axes)
+# Values near 1.0 are SAFE, values near min are concerning
+LOWER_BOUND_ONLY_AXES = {
+    "clearance_index",     # High clearance = safe
+    "min_proximity_m",     # High proximity = safe
+}
+
+# Ordered enum axes with their value ordering (low to high quality/safety)
+# These enums have implicit ordering - position matters for boundary detection
+# Format: {axis_name: [worst_value, ..., best_value]}
+ORDERED_ENUM_AXES = {
+    "lighting_conditions": ["dark", "dim", "moderate", "bright"],
+    # Add others as needed, e.g.:
+    # "weather": ["heavy_rain", "light_rain", "overcast", "clear"],
+}
 
 
 def _flatten_odd_spec(odd_spec: Dict[str, Any]) -> Dict[str, Any]:
@@ -318,6 +351,31 @@ def construct_cod_from_sensor_outputs(
     # Build overall COD region
     cod_region = _build_cod_region(per_window_data, odd_spec)
 
+    # DEBUG: Check for axis/measurement alignment
+    # Extract all axis names from nested ODD spec structure
+    odd_axes = set()
+    spec = odd_spec.get("odd_specification", {})
+    for domain_data in spec.values():
+        if isinstance(domain_data, dict):
+            for constraint_type_data in domain_data.values():
+                if isinstance(constraint_type_data, dict):
+                    odd_axes.update(constraint_type_data.keys())
+
+    measured_axes = set(cod_region.keys())
+
+    missing_measurements = odd_axes - measured_axes
+    extra_measurements = measured_axes - odd_axes
+
+    if missing_measurements:
+        print(
+            f"⚠️  [COD] ODD axes WITHOUT measurements: {sorted(missing_measurements)}")
+    if extra_measurements:
+        print(
+            f"⚠️  [COD] Measurements WITHOUT ODD axes: {sorted(extra_measurements)}")
+    if not missing_measurements and not extra_measurements:
+        print(
+            f"✅ [COD] All {len(odd_axes)} ODD axes have matching measurements")
+
     # Collect categorical mismatches FIRST for semantic assessment
     # This is used for BOTH time series AND region metrics
     mismatches, exact_matches = _collect_categorical_mismatches(
@@ -355,41 +413,18 @@ def construct_cod_from_sensor_outputs(
 
 def _normalize_perception_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Normalize perception measurements to match ODD spec axis names.
+    Normalize perception measurements.
 
-    Handles:
-    - Field renaming (surface_type -> terrain_type)
-    - Unit conversion (obstacle_density_pct -> obstacle_density)
-    - Nested extraction (stairs.present -> stairs_present)
+    Perception tool outputs odd_measurements with EXACT axis names from ODD spec.
+    Just pass through measurement fields.
     """
     normalized = {}
 
-    # Direct mappings
-    if "lighting_conditions" in raw:
-        normalized["lighting_conditions"] = raw["lighting_conditions"]
-
-    # Rename: surface_type -> terrain_type
-    if "surface_type" in raw:
-        normalized["terrain_type"] = raw["surface_type"]
-
-    # Convert: obstacle_density_pct (0-100) -> obstacle_density (0-1)
-    if "obstacle_density_pct" in raw:
-        normalized["obstacle_density"] = raw["obstacle_density_pct"] / 100.0
-
-    if "traversability_score" in raw:
-        normalized["traversability_score"] = raw["traversability_score"]
-
-    # Extract nested: stairs.present -> stairs_present (bool -> int)
-    if "stairs" in raw and isinstance(raw["stairs"], dict):
-        stairs_present = raw["stairs"].get("present", False)
-        normalized["stairs_present"] = 1 if stairs_present else 0
-
-    if "humans_animals" in raw and isinstance(raw["humans_animals"], dict):
-        ha = raw["humans_animals"]
-        if ha.get("detected", False) and ha.get("proximity_m", -1) > 0:
-            # Use human/animal proximity if closer
-            current = normalized.get("min_proximity_m", float('inf'))
-            normalized["min_proximity_m"] = min(current, ha["proximity_m"])
+    for key, value in raw.items():
+        # Skip non-measurement fields
+        if key in ["window_id", "observations", "reasoning", "confidence", "odd_concerns"]:
+            continue
+        normalized[key] = value
 
     return normalized
 
@@ -412,16 +447,14 @@ def _normalize_motion_measurements(raw: Dict[str, Any]) -> Dict[str, Any]:
 def _normalize_collision_measurements(raw: Dict[str, Any], window_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize collision measurements.
-    Collision agent may have empty odd_measurements but has proximity_estimate_m.
+
+    NOTE: Collision proximity_estimate_m is OBSTACLE distance (furniture, walls),
+    NOT actor (human/animal) proximity. Do NOT map to min_proximity_m.
+    Collision is ADVISORY ONLY - does not contribute ODD measurements.
     """
-    normalized = {}
-
-    # Collision agent puts proximity in the window_data, not odd_measurements
-    if "proximity_estimate_m" in window_data:
-        # This could update min_proximity_m if collision agent detected closer obstacles
-        normalized["min_proximity_m"] = window_data["proximity_estimate_m"]
-
-    return normalized
+    # Return empty - collision doesn't contribute ODD axis measurements
+    # Actor presence is handled by perception agent (human_present, animal_present)
+    return {}
 
 
 def _combine_sensor_outputs(
@@ -487,15 +520,9 @@ def _combine_sensor_outputs(
         wid = window_data["window_id"]
         if wid not in combined:
             combined[wid] = {"window_id": wid, "measurements": {}}
-        raw = window_data.get("odd_measurements",
-                              window_data.get("measurements", {}))
-        normalized = _normalize_collision_measurements(raw, window_data)
-        # Only update proximity if collision agent found something closer
-        if "min_proximity_m" in normalized:
-            current = combined[wid]["measurements"].get(
-                "min_proximity_m", float('inf'))
-            combined[wid]["measurements"]["min_proximity_m"] = min(
-                current, normalized["min_proximity_m"])
+        # Collision is ADVISORY ONLY - does not contribute ODD measurements
+        # Actor presence (human_present, animal_present) is handled by perception
+        # Collision proximity_estimate_m is obstacle distance, NOT actor proximity
 
     # Sort by window_id
     return sorted(combined.values(), key=lambda x: x["window_id"])
@@ -673,7 +700,179 @@ def _compute_region_metrics(
     if categorical_distances:
         result["categorical_semantic_distances"] = categorical_distances
 
+    # Compute boundary status (margin-to-limit analysis)
+    boundary_status = _compute_boundary_status(
+        cod_region, odd_spec, fraction_outside, categorical_distances
+    )
+    result.update(boundary_status)
+
     return result
+
+
+def _compute_boundary_status(
+    cod_region: Dict[str, Any],
+    odd_spec: Dict[str, Any],
+    fraction_outside: Dict[str, float],
+    categorical_distances: Optional[Dict[str, float]] = None
+) -> Dict[str, Any]:
+    """
+    Compute boundary detection status for verdict determination.
+
+    For each axis type:
+    - range: compute margin to RELEVANT limit based on axis semantics:
+      - Upper-bound axes (max_accel, obstacle_density): margin to upper limit
+      - Lower-bound axes (clearance_index): margin to lower limit
+      - Truly bounded axes: margin to nearest limit
+    - bool: binary (either matches or violated)
+    - enum: use semantic distance (0.0=match, 0.5=boundary, 1.0=violated)
+
+    Args:
+        cod_region: COD region envelope
+        odd_spec: ODD specification
+        fraction_outside: Pre-computed fraction outside per axis
+        categorical_distances: Semantic distances for enum axes
+
+    Returns:
+        {
+            "margin_to_limit_per_axis": {axis: margin},
+            "axes_at_boundary": [axes with margin < threshold],
+            "axes_violated": [axes with fraction_outside > 0],
+            "boundary_threshold": 0.15
+        }
+    """
+    if categorical_distances is None:
+        categorical_distances = {}
+
+    margin_per_axis = {}
+    axes_at_boundary = []
+    axes_violated = []
+
+    for axis_name, axis_spec in odd_spec.items():
+        if axis_name not in cod_region:
+            continue
+
+        cod_data = cod_region[axis_name]
+        axis_type = axis_spec.get("type")
+
+        # Check if already violated
+        if fraction_outside.get(axis_name, 0) > 0:
+            axes_violated.append(axis_name)
+            margin_per_axis[axis_name] = 0.0  # No margin - already outside
+            continue
+
+        if axis_type == "range":
+            odd_min, odd_max = axis_spec["min"], axis_spec["max"]
+            cod_min, cod_max = cod_data.get(
+                "min", odd_min), cod_data.get("max", odd_max)
+            odd_range = odd_max - odd_min
+
+            if odd_range == 0:
+                margin = 1.0  # No range to violate
+            else:
+                # Compute margins to both bounds
+                # margin_to_min: how far COD min is from ODD min (normalized)
+                margin_to_min = (cod_min - odd_min) / odd_range
+                # margin_to_max: how far COD max is from ODD max (normalized)
+                margin_to_max = (odd_max - cod_max) / odd_range
+
+                # Select relevant margin based on axis semantics
+                if axis_name in UPPER_BOUND_ONLY_AXES:
+                    # Only upper bound matters (hazard axes)
+                    # Values near 0 are safe, values near max are concerning
+                    margin = margin_to_max
+                elif axis_name in LOWER_BOUND_ONLY_AXES:
+                    # Only lower bound matters (quality axes)
+                    # Values near 1 are safe, values near min are concerning
+                    margin = margin_to_min
+                else:
+                    # Truly bounded range - check both
+                    margin = min(margin_to_min, margin_to_max)
+
+                # Clamp to [0, 1]
+                margin = max(0.0, min(1.0, margin))
+
+            margin_per_axis[axis_name] = round(margin, 4)
+
+            if margin < BOUNDARY_MARGIN_THRESHOLD:
+                axes_at_boundary.append(axis_name)
+
+        elif axis_type == "bool":
+            # Boolean: either fully compliant or violated (no boundary state)
+            # If not violated, margin = 1.0 (fully safe)
+            margin_per_axis[axis_name] = 1.0
+
+        elif axis_type == "enum":
+            # Check if this is an ordered enum (like lighting_conditions)
+            if axis_name in ORDERED_ENUM_AXES:
+                # Ordered enum: use ordinal position for margin calculation
+                ordering = ORDERED_ENUM_AXES[axis_name]
+                allowed_set = set(axis_spec.get("allowed", []))
+
+                # Find the worst (lowest index) measured value
+                measured_labels = [
+                    label for label in cod_data.keys()
+                    if label != "type" and cod_data[label] > 0
+                ]
+
+                # Get positions of measured values in the ordering
+                measured_positions = []
+                for label in measured_labels:
+                    if label in ordering:
+                        measured_positions.append(ordering.index(label))
+
+                if measured_positions:
+                    worst_measured_pos = min(measured_positions)
+
+                    # Find the boundary position (lowest allowed value in ordering)
+                    allowed_positions = [
+                        ordering.index(v) for v in allowed_set if v in ordering
+                    ]
+                    if allowed_positions:
+                        # e.g., "dim" = position 1
+                        boundary_pos = min(allowed_positions)
+                        # e.g., "bright" = position 3
+                        best_pos = max(allowed_positions)
+
+                        # Compute margin: how far from the boundary?
+                        # If measured is at boundary, margin = 0
+                        # If measured is at best, margin = 1
+                        range_size = best_pos - boundary_pos
+                        if range_size > 0:
+                            margin = (worst_measured_pos -
+                                      boundary_pos) / range_size
+                            margin = max(0.0, min(1.0, margin))
+                        else:
+                            margin = 1.0 if worst_measured_pos >= boundary_pos else 0.0
+
+                        margin_per_axis[axis_name] = round(margin, 4)
+
+                        if margin < BOUNDARY_MARGIN_THRESHOLD:
+                            axes_at_boundary.append(axis_name)
+                    else:
+                        margin_per_axis[axis_name] = 1.0
+                else:
+                    margin_per_axis[axis_name] = 1.0
+            else:
+                # Unordered enum: use semantic distance for boundary detection
+                sem_dist = categorical_distances.get(axis_name, 0.0)
+
+                if sem_dist == 0.0:
+                    # Perfect match - full margin
+                    margin_per_axis[axis_name] = 1.0
+                elif sem_dist == 0.5:
+                    # Related but not exact - boundary
+                    margin_per_axis[axis_name] = 0.1  # Low margin
+                    axes_at_boundary.append(axis_name)
+                else:
+                    # sem_dist == 1.0 would be violation, but that's caught above
+                    margin_per_axis[axis_name] = 1.0
+
+    return {
+        "margin_to_limit_per_axis": margin_per_axis,
+        "axes_at_boundary": axes_at_boundary,
+        "axes_violated": axes_violated,
+        "boundary_threshold": BOUNDARY_MARGIN_THRESHOLD,
+    }
 
 
 # =============================================================================

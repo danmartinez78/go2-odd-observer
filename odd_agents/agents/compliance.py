@@ -42,7 +42,7 @@ Return ONLY valid JSON:
     },
     "numeric_compliance": {
       "obstacle_density": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
-      "traversability_score": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
+      "clearance_index": "IN_ODD|ODD_BOUNDARY|OUT_ODD",
       "max_accel_mps2": "IN_ODD|ODD_BOUNDARY|OUT_ODD"
     },
     "overall_compliance": "IN_ODD|ODD_BOUNDARY|OUT_ODD",

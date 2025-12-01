@@ -206,7 +206,7 @@ async def run_odd_workflow(
             "A quadruped robot designed for indoor office environments. "
             "Operates on smooth, flat floors with adequate lighting (bright or dim). "
             "Maximum speed 1.5 m/s. Designed for environments with moderate obstacle "
-            "density and good traversability. Requires low collision risk conditions. "
+            "density and good clearance for navigation. Requires low collision risk conditions. "
             "Not designed for: outdoor environments, stairs, rough terrain, "
             "dark/low-light areas, or high-density obstacle fields."
         )

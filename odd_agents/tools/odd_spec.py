@@ -60,7 +60,7 @@ def create_odd_spec_tools():
                 ],
                 environment_numeric=[
                     {"name": "obstacle_density", "min": 0.0, "max": 0.7, "description": "Spatial obstacle density (0-1)"},
-                    {"name": "traversability_score", "min": 0.3, "max": 1.0, "description": "Navigation ease (0-1)"}
+                    {"name": "clearance_index", "min": 0.3, "max": 1.0, "description": "Navigation ease from BEV (0-1)"}
                 ],
                 environment_boolean=[
                     {"name": "stairs_present", "allowed": 0, "description": "Whether stairs are accessible"}

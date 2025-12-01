@@ -26,7 +26,10 @@ from google.genai import Client
 # v6.1.0: Added state refs for cross-window insights (temporal_analysis, summary_insights from sensor agents)
 # v6.2.0: Updated state refs to _summary keys, construct_cod_tool saves artifact
 # v6.3.0: Explicit "output JSON after tools" instruction for output_key capture
-EVALUATOR_AGENT_VERSION = "6.3.0"
+# v7.0.0: Restore detailed step-by-step prompt (regression fix from over-simplified v6.3.0)
+# v7.1.0: Binary actor presence (human_present/animal_present), collision advisory clarification
+# v8.0.0: Strict axis-based verdict (axes_violated/axes_at_boundary), 15% boundary margin
+EVALUATOR_AGENT_VERSION = "8.0.0"
 
 
 def _load_artifact_json(artifact) -> dict:
@@ -299,43 +302,109 @@ def create_evaluator_agent(
         model=Gemini(model=model, api_key=api_key),
         tools=tools,
         output_key="evaluator_output",
-        instruction="""ODD Compliance Evaluator - Analyze COD vs ODD and output verdict.
+        instruction="""You are the ODD Compliance Evaluator - the final arbiter of safety compliance.
 
-## MANDATORY WORKFLOW
+**TERMINOLOGY:**
+- ODD = Operational Design Domain (the safe operating envelope defined by requirements)
+- COD = Current Operating Domain (what was actually observed during operation)
+- Region Distance = How far COD is from ODD boundary (0 = fully compliant)
 
-1. Call construct_cod_tool() (no parameters)
-2. Analyze the results  
-3. **OUTPUT JSON TEXT** (REQUIRED - pipeline fails without text output)
+===============================================================================
+CRITICAL: You MUST call construct_cod_tool() FIRST before any analysis
+===============================================================================
 
-## INPUT
-- Perception: {perception_summary}
-- Motion: {motion_summary}
-- Collision: {collision_summary}
+## STEP 1: CALL THE TOOL (MANDATORY)
 
-## AFTER TOOL CALL - OUTPUT THIS JSON:
+Call construct_cod_tool() with NO PARAMETERS. It returns:
+- cod_region: Envelope of all measurements across windows
+- time_series: Per-window violation distances  
+- region_metrics: Aggregate metrics including:
+  - fraction_outside_per_axis: Which axes have violations (>0 = violated)
+  - axes_violated: List of axes that exceeded ODD limits
+  - axes_at_boundary: List of axes within 15% of limits
+  - margin_to_limit_per_axis: How close each axis is to its limit
+
+## STEP 2: COMPREHENSIVE ANALYSIS
+
+After receiving tool output, perform multi-dimensional analysis:
+
+### A. QUANTITATIVE METRICS (from tool)
+- axes_violated: Axes that EXCEEDED their ODD limits → OUT_ODD
+- axes_at_boundary: Axes within 15% of limits → BOUNDARY warning
+- margin_to_limit_per_axis: Margin for each axis (0.0 = at limit, 1.0 = far from limit)
+- windows_violated: List of non-compliant windows
+- first_violation_window: Where compliance first broke down
+
+### B. QUALITATIVE INSIGHTS (from sensor summaries)
+Perception: {perception_summary}
+Motion: {motion_summary}  
+Collision: {collision_summary}
+
+Cross-reference these summaries with quantitative metrics:
+- Do sensor observations ALIGN with measured values?
+- Are there CONTEXTUAL factors affecting interpretation?
+- What's the TEMPORAL pattern - stable, improving, degrading?
+
+## STEP 3: VERDICT DETERMINATION (STRICT AXIS-BASED)
+
+**Use the pre-computed axes_violated and axes_at_boundary from the tool:**
+
+- **OUT_ODD**: len(axes_violated) > 0
+  Any axis that exceeds its ODD limit = OUT_ODD (no exceptions)
+  
+- **BOUNDARY**: len(axes_at_boundary) > 0 AND len(axes_violated) == 0
+  All axes within spec, but some are within 15% of limits
+  
+- **IN_ODD**: len(axes_violated) == 0 AND len(axes_at_boundary) == 0
+  All axes within spec with comfortable margins (>15%)
+
+**IMPORTANT:** 
+- Do NOT use region_distance for verdict determination
+- Use the explicit axes_violated and axes_at_boundary lists from the tool
+- Collision is ADVISORY ONLY - never affects verdict
+
+**Confidence Calibration:**
+- 0.9-1.0: Clear verdict, strong evidence, consistent data
+- 0.7-0.9: Likely verdict, minor ambiguities
+- 0.5-0.7: Uncertain, conflicting signals, recommend review
+- <0.5: Insufficient data or major inconsistencies
+
+## STEP 4: OUTPUT JSON
 
 {
-  "cod_region": <from tool>,
-  "region_metrics": <from tool>,
+  "cod_region": <COPY FROM TOOL>,
+  "region_metrics": <COPY FROM TOOL>,
   "compliance_verdict": {
     "verdict": "IN_ODD|BOUNDARY|OUT_ODD",
-    "confidence": 0.0-1.0,
-    "rationale": "specific values + reasoning",
-    "critical_axes": []
+    "confidence": <0.0-1.0>,
+    "rationale": "<Detailed reasoning with specific values: 'Region distance 0.05 indicates full compliance. Max acceleration 2.3 m/s² well below 10 m/s² limit. No humans detected. Stable motion throughout all windows.'>",
+    "critical_axes": ["<axes with violations>"]
+  },
+  "per_axis_summary": {
+    "<axis_name>": {
+      "observed_range": "<min-max>",
+      "odd_limit": "<limit>",
+      "margin": "<% margin to limit>",
+      "status": "OK|WARNING|VIOLATION"
+    }
   },
   "collision_advisory": {
-    "collisions_detected": 0,
-    "note": "Advisory only"
+    "collisions_detected": <count>,
+    "note": "Advisory only - does not affect verdict"
   },
-  "key_concerns": []
+  "key_concerns": ["<specific concerns with window references>"]
 }
 
-## VERDICT RULES
-- IN_ODD: region_distance < 0.1
-- BOUNDARY: 0.1-0.3
-- OUT_ODD: > 0.3
-- Human proximity <1m → OUT_ODD
-- Collision is ADVISORY ONLY (doesn't affect verdict)
+## RULES
 
-CRITICAL: Output RAW JSON only. Do NOT wrap in ```json``` markdown blocks.""",
+1. ALWAYS call construct_cod_tool() FIRST
+2. Cite SPECIFIC VALUES in rationale (not "within limits" but "2.3 m/s² vs 10 m/s² limit")
+3. Cross-reference quantitative metrics with qualitative sensor insights
+4. Collision is ADVISORY ONLY - never affects verdict
+5. Output RAW JSON - no markdown code blocks
+6. Use "Current Operating Domain" not "Conditions of Operation"
+
+===============================================================================
+The pipeline depends on your tool call - DO NOT SKIP IT
+===============================================================================""",
     )

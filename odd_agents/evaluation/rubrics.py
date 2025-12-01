@@ -60,8 +60,8 @@ PERCEPTION_RUBRICS = [
         "rubric_content": {
             "text_property": (
                 "The agent correctly characterizes terrain type (smooth, rough, mixed) "
-                "and traversability from LiDAR point cloud analysis. Traversability "
-                "score should align with terrain roughness metrics."
+                "and clearance_index from BEV occupancy analysis. Clearance index "
+                "should align with gap availability in the BEV occupancy map."
             )
         }
     },
@@ -69,9 +69,9 @@ PERCEPTION_RUBRICS = [
         "rubric_id": "multimodal_consistency",
         "rubric_content": {
             "text_property": (
-                "The agent's camera-based and LiDAR-based assessments are consistent "
+                "The agent's camera-based and BEV-based assessments are consistent "
                 "and complementary. For example, high obstacle count from camera should "
-                "correlate with low traversability from LiDAR."
+                "correlate with lower clearance_index from BEV occupancy analysis."
             )
         }
     },
@@ -80,7 +80,7 @@ PERCEPTION_RUBRICS = [
         "rubric_content": {
             "text_property": (
                 "The agent output is valid JSON with all required fields: environment_type, "
-                "lighting, obstacles (count, types, density), terrain_type, traversability_score, "
+                "lighting, obstacles (count, types, density), terrain_type, clearance_index, "
                 "and summary. No missing fields or malformed structure."
             )
         }
@@ -186,9 +186,9 @@ COLLISION_RUBRICS = [
         "rubric_content": {
             "text_property": (
                 "The agent effectively fuses perception data (obstacle detection, "
-                "traversability) and motion data (velocity, stability) to assess "
+                "clearance_index) and motion data (velocity, stability) to assess "
                 "collision risk. Risk should increase with higher velocity or lower "
-                "traversability."
+                "clearance_index."
             )
         }
     },

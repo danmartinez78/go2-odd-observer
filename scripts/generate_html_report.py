@@ -734,20 +734,24 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                             <td class="{status_class}">{status_icon} {fraction_outside:.0%}</td>
                         </tr>"""
 
-    # Extract executive summary - try Phase 1.4.5 schema first
-    exec_summary = result.get('executive_summary', {}
-                              ).get('scenario_overview', '')
+    # Extract executive summary - try multiple schema locations
+    exec_summary = ""
+
+    # Try report.executive_summary (v14 schema - direct string)
+    report_exec = report_data.get('executive_summary', '')
+    if isinstance(report_exec, str) and report_exec:
+        exec_summary = report_exec
+    elif isinstance(report_exec, dict):
+        exec_summary = report_exec.get('scenario_overview', '')
+
+    # Fallback: compliance.summary (technical rationale)
     if not exec_summary:
-        # Try compliance rationale as fallback
-        exec_summary = compliance.get('rationale', '')
+        exec_summary = compliance.get(
+            'summary', compliance.get('rationale', ''))
+
+    # Final fallback
     if not exec_summary:
-        report_data_summary = report_data.get('executive_summary', '')
-        if not report_data_summary:
-            reports = result.get('reports', {})
-            exec_summary = reports.get('executive_summary', {}).get(
-                'scenario_overview', 'No summary available.')
-        else:
-            exec_summary = report_data_summary
+        exec_summary = "No summary available."
 
     # Build key findings HTML
     findings_html = ""
@@ -793,16 +797,47 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         if perception_artifact.get('per_window'):
             per_window_data = perception_artifact['per_window']
 
-    environment_type = "Unknown"
-    surface_type = "Unknown"
-    if per_window_data:
-        first_window = per_window_data[0] if isinstance(
-            per_window_data, list) else {}
-        # Current schema uses odd_measurements
-        measurements = first_window.get(
-            'odd_measurements', first_window.get('measurements', first_window.get('observations', {})))
-        environment_type = measurements.get('environment_type', 'Unknown')
-        surface_type = measurements.get('surface_type', 'Unknown')
+    # Extract categorical values across ALL windows to detect transitions
+    def get_categorical_display(per_window_data, field_name, fallback="Unknown"):
+        """Get display string for categorical field, showing transitions if values vary."""
+        if not per_window_data:
+            return fallback
+
+        values = []
+        for window in per_window_data:
+            measurements = window.get(
+                'odd_measurements', window.get('measurements', window.get('observations', {})))
+            val = measurements.get(field_name)
+            if val:
+                values.append(val)
+
+        if not values:
+            return fallback
+
+        # Preserve order, remove duplicates
+        unique_values = list(dict.fromkeys(values))
+
+        if len(unique_values) == 1:
+            return unique_values[0]
+        elif len(unique_values) == 2:
+            return f"{unique_values[0]} → {unique_values[1]}"
+        else:
+            return ", ".join(unique_values[:3]) + ("..." if len(unique_values) > 3 else "")
+
+    # Get terrain_type (surface) and environment from per-window data
+    surface_type = get_categorical_display(
+        per_window_data, 'terrain_type', 'Unknown')
+
+    # For environment, try report.scenario_metadata first (agent-synthesized),
+    # then fall back to per-window detection
+    report_data = result.get('report', {})
+    scenario_meta_env = report_data.get(
+        'scenario_metadata', {}).get('environment')
+    if scenario_meta_env and scenario_meta_env != 'Unknown':
+        environment_type = scenario_meta_env
+    else:
+        # No environment_type in per-window data currently, use scenario_metadata
+        environment_type = scenario_meta.get('environment', 'Unknown')
 
     # Data source info - check multiple locations in schema
     # Current schema: artifacts.perception_output.json.per_window[0].data_source
@@ -861,12 +896,12 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                         <div class="metric-label">Total Windows</div>
                     </div>
                     <div class="col-md-3 text-center border-end">
+                        <div class="metric-label">Detected Environment</div>
                         <div class="h5 mb-1">{environment_type.replace('_', ' ').title()}</div>
-                        <div class="metric-label">Environment</div>
                     </div>
                     <div class="col-md-3 text-center border-end">
+                        <div class="metric-label">Detected Surface</div>
                         <div class="h5 mb-1">{surface_type.replace('_', ' ').title()}</div>
-                        <div class="metric-label">Surface Type</div>
                     </div>
                     <div class="col-md-3 text-center">
                         <div class="h5 mb-1">{data_source_display}</div>
@@ -1202,7 +1237,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 <!-- Scenario Overview -->
 <div class="container mb-5">
     <h2 class="mb-4">🎬 Scenario Overview</h2>
-    <p class="text-muted mb-3">Representative windows from the analysis</p>
+
     <div class="row">
         {scenario_overview_html if scenario_overview_html else '<div class="col-12"><p class="text-muted">No window images available</p></div>'}
     </div>

@@ -53,10 +53,10 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 MODEL_PERCEPTION = "gemini-2.5-pro"
 MODEL_MOTION = "gemini-2.5-flash"
 MODEL_COLLISION = "gemini-2.5-flash"
-MODEL_ODD_SPEC = "gemini-2.5-flash"
-MODEL_EVALUATOR = "gemini-2.5-flash"
+MODEL_ODD_SPEC = "gemini-2.5-pro"
+MODEL_EVALUATOR = "gemini-2.5-pro"
 # Upgraded from flash-lite for reliable tool calling
-MODEL_REPORT = "gemini-2.5-flash-lite"
+MODEL_REPORT = "gemini-2.5-flash"
 
 # ============================================================================
 # ODD DESCRIPTION (Centralized in odd_agents/odd_definition.py)
@@ -70,9 +70,10 @@ def find_scenarios():
     scenarios = []
     data_dir = project_root / "data"
 
-    # Search production/ and test/ subdirectories
+    # Search production/, production/chunks/, and test/ subdirectories
     search_dirs = [
         ("production", data_dir / "production"),
+        ("chunks", data_dir / "production" / "chunks"),
         ("test", data_dir / "test"),
     ]
 
@@ -594,6 +595,7 @@ async def main():
             model_evaluator=MODEL_EVALUATOR,
             model_report=MODEL_REPORT,
             knowledge_seed=knowledge_seed,
+            debug=True,
         )
 
         if result:
@@ -604,7 +606,7 @@ async def main():
                 output_dir = output_base / scenario_name
             else:
                 # Use default timestamp-based directory
-                output_base = project_root / "data" / "archive" / \
+                output_base = project_root / "data" / "development" / \
                     "analysis_results" / "manual" / timestamp
                 output_dir = output_base / scenario_name
 
