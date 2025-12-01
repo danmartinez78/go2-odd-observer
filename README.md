@@ -7,7 +7,7 @@
 *Automatically assess if robots are operating within their design limits using vision, motion, and LiDAR fusion*
 
 [![Kaggle Agents Intensive](https://img.shields.io/badge/Kaggle-5--Day_Agents-20BEFF?style=for-the-badge&logo=kaggle)](https://www.kaggle.com/learn-guide/5-day-agents)
-[![Google ADK](https://img.shields.io/badge/Google-ADK_v1.18-4285F4?style=for-the-badge&logo=google)](https://github.com/google/generative-ai-python)
+[![Google ADK](https://img.shields.io/badge/Google-ADK_v1.18-4285F4?style=for-the-badge&logo=google)](https://google.github.io/adk-docs/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://www.python.org)
 [![ROS2 Humble](https://img.shields.io/badge/ROS2-Humble-22314E?style=for-the-badge&logo=ros)](https://docs.ros.org/en/humble/)
 
@@ -55,7 +55,7 @@ This system uses **6 pipeline agents + 4 tool agents** (10 LLM-calling entities)
 - **ODD-First Architecture**: Define safety constraints before analyzing data (not after)
 - **Parameterized Design**: No global state → fully isolated, parallel-safe execution
 - **IMU-Based Motion**: Robust motion detection using accelerometers (works when odometry fails)
-- **Cost-Optimized AI**: Smart model selection defaults to flash-lite (~70% cheaper than pro models)
+- **Multi-Modal Fusion**: Camera + LiDAR BEV + IMU combined for holistic safety assessment
 
 ---
 
@@ -82,8 +82,8 @@ python scripts/run_odd_analysis.py
 **Option A: Interactive HTML Report (Recommended)**
 ```bash
 python scripts/generate_html_report.py \
-  --input data/analysis_results/automated/latest/full_result.json \
-  --scenario-dir data/processed/test_data/real/real_03_174232 \
+  --input data/development/analysis_results/manual/latest/full_result.json \
+  --scenario-dir data/production/chunks/real_173442_chunk_000_015 \
   --output report.html
 
 open report.html  # or: $BROWSER report.html
@@ -91,11 +91,11 @@ open report.html  # or: $BROWSER report.html
 
 **Option B: JSON Analysis**
 ```bash
-jq '.odd_compliance.overall_status' data/analysis_results/automated/latest/full_result.json
-# Output: "OUT_ODD"
+jq '.report.compliance' data/development/analysis_results/manual/latest/full_result.json
+# Output: { "status": "IN_ODD", "confidence": "HIGH", ... }
 
-jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/latest/full_result.json
-# Output: "motion_smoothness", "max_accel_mps2", "collision_risk"
+jq '.reports.executive_summary.compliance.critical_axes' data/development/analysis_results/manual/latest/full_result.json
+# Output: [] or ["max_accel_mps2", "max_pitch_deg"]
 ```
 
 🌐 **Live Examples:** [https://danmartinez78.github.io/go2-odd-observer/](https://danmartinez78.github.io/go2-odd-observer/)  
@@ -114,44 +114,73 @@ jq '.odd_compliance.violations[].parameter' data/analysis_results/automated/late
 
 ## 🤖 How It Works
 
-### 6 Pipeline Agents + 4 Tool Agents
+### Multi-Agent Analysis Pipeline
 
-**Pipeline Agents** (tracked by ADK):
 ```mermaid
-graph LR
-    A[📝 ODD Spec] --> B[👁️ Perception]
-    B --> C[🎯 Motion]
-    C --> D[⚠️ Collision]
-    D --> E[⚖️ Evaluator<br/>COD + Compliance]
-    E --> F[📋 Report]
-    
-    style A fill:#e3f2fd,stroke:#333,stroke-width:2px,color:#000
-    style B fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
-    style C fill:#fff9c4,stroke:#333,stroke-width:2px,color:#000
-    style D fill:#ffccbc,stroke:#333,stroke-width:2px,color:#000
-    style E fill:#f8bbd0,stroke:#333,stroke-width:2px,color:#000
-    style F fill:#f8bbd0,stroke:#333,stroke-width:2px,color:#000
-    style G fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
+flowchart TB
+    subgraph INPUT["📥 Input"]
+        ODD["Natural Language<br/>ODD Description"]
+        DATA["Sensor Data<br/>Camera + LiDAR + IMU"]
+    end
+
+    subgraph PIPELINE["🔄 6-Agent Pipeline"]
+        direction TB
+        A["📝 ODD Spec Agent<br/><small>Parse constraints → JSON schema</small>"]
+        
+        subgraph ANALYSIS["Parallel Analysis"]
+            direction LR
+            B["👁️ Perception<br/><small>Camera + BEV</small>"]
+            C["🏃 Motion<br/><small>IMU + Odometry</small>"]
+        end
+        
+        D["⚠️ Collision Agent<br/><small>Multi-modal fusion</small>"]
+        E["⚖️ Evaluator Agent<br/><small>COD construction + compliance</small>"]
+        F["📋 Report Agent<br/><small>Executive summary</small>"]
+    end
+
+    subgraph OUTPUT["📤 Output"]
+        VERDICT["Verdict<br/>IN_ODD | BOUNDARY | OUT_ODD"]
+        REPORT["HTML Report<br/>+ JSON Export"]
+    end
+
+    ODD --> A
+    DATA --> B & C
+    A --> E
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> VERDICT & REPORT
+
+    style INPUT fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style PIPELINE fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    style OUTPUT fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style A fill:#bbdefb,stroke:#1976d2
+    style B fill:#fff9c4,stroke:#f9a825
+    style C fill:#fff9c4,stroke:#f9a825
+    style D fill:#ffccbc,stroke:#e64a19
+    style E fill:#f8bbd0,stroke:#c2185b
+    style F fill:#ce93d8,stroke:#7b1fa2
 ```
 
-**Phase 1.4.5 Architecture (Current - Dec 2025):**
+**Phase 1.6 Architecture (Current - Dec 2025):**
 
-**Two-Tier Design:**
-- **Pipeline Agents** (6 total): Orchestrated by ADK, tracked in metadata
-  - OddSpecAgent, PerceptionAgent, MotionAgent, CollisionAgent, EvaluatorAgent, ReportAgent
-- **Tool Agents** (4 total): Embedded LLM calls within tools (NOT tracked by ADK)
-  - `perception_tool` v12.2.0: Camera + 3 BEV channels → multimodal vision analysis
-  - `motion_tool` v11.0.0: IMU + derived motion → trajectory metrics, speed analysis
-  - `collision_tool` v9.0.0: Multimodal fusion → collision signatures, risk bands
-  - `cod_construction_tool` v1.6.0: Categorical micro-agent for semantic ODD matching
-  
-**Key Features:**
-- **Artifact-Based Handoff**: Reliable inter-agent data transfer via InMemoryArtifactService
-- **ODD-Schema Driven**: Agents adapt to any ODD structure (ground robots, drones, etc.)
-- **Categorical Micro-Agent**: Semantic matching ("indoor_commercial" ≈ "office")
-- **Data Source Detection**: Automatic sim vs real identification from visual cues
-- **Derived Motion**: Position-based speed/yaw-rate works reliably for sim and real data
-- **Interactive HTML Reports**: Line charts, collapsible sections, trajectory details
+| Layer | Components | Purpose |
+|-------|------------|---------|
+| **Pipeline Agents** | OddSpec, Perception, Motion, Collision, Evaluator, Report | Orchestrated by ADK, tracked in metadata |
+| **Tool Agents** | 4 embedded VLM tools | LLM calls within tools for specialized analysis |
+
+**Tool Versions:**
+- `perception_tool` v12.2.0 — Camera + 3 BEV channels (occupancy, height, roughness)
+- `motion_tool` v11.0.0 — IMU + derived motion → trajectory metrics
+- `collision_tool` v10.0.0 — Multi-modal evidence fusion (motion + visual + BEV)
+- `cod_construction_tool` v1.6.0 — Categorical micro-agent for semantic ODD matching
+
+**Key Capabilities:**
+- **Artifact-Based Handoff** — Reliable inter-agent data transfer
+- **ODD-Schema Driven** — Adapts to any ODD structure (ground robots, drones, etc.)
+- **Derived Motion** — Position-based speed/yaw-rate works for sim and real data
+- **Interactive HTML Reports** — Charts, collapsible sections, embedded images
 
 ### Multi-Modal Sensor Fusion
 
@@ -176,8 +205,8 @@ odd_description = """
 Quadruped robot designed for indoor office navigation.
 - Designed for: smooth floors, bright/dim lighting, low obstacles
 - Prohibited: outdoor, stairs, dark environments, dense clutter
-- Speed limit: 0-1.5 m/s
-- Collision risk threshold: <0.3 (low risk only)
+- Speed limit: 0-2.5 m/s
+- Max acceleration: 10 m/s², Max pitch/roll: 15°
 """
 ```
 
@@ -193,23 +222,22 @@ Quadruped robot designed for indoor office navigation.
 - ✅ **Even Window Sampling** - True even distribution for representative visualization
 
 **Production Data:**
-- 📊 **167 windows** across 9 scenarios (31 sim + 136 real robot data)
+- 📊 **145 windows** across 10 chunks (31 sim + 114 real robot data)
 - 🏭 **Auto-cropped BEVs** - 65-72% size reduction with square aspect ratio
 - ✅ **3-channel BEV fusion** - Occupancy (obstacles), Height (terrain), Roughness (variance)
 - 🤖 **Real robot support** - Odom-frame detection, proper ground filtering
 - 📦 **Knowledge layer** - Shared grounding docs (ODD/COD fundamentals, sensor interpretation)
-- 📦 **15-window chunks** - Production data chunked for scalable batch processing
 
 **Test Results:**
 - ⏱️ **~2 minutes** for 2-window analysis
-- 💰 **~$0.025/window** with current model configuration
+- 💰 **Cost varies** by model and scenario complexity
 - 🎯 **6 agents** executed successfully
-- 📊 **~40K tokens** with rich observations and cross-window reasoning
+- 📊 **Rich observations** with cross-window temporal reasoning
 
 **Test Data:**
 - 📝 **9+ scenarios** available (production chunks + test sets)
 - ⚡ **2-window quick tests** (sim_2win, real_2win)
-- 🤖 **Validated tools**: Perception v12.2.0 (3 BEV), Motion v11.0.0 (trajectory), Collision v9.0.0 (signatures)
+- 🤖 **Validated tools**: Perception v12.2.0, Motion v11.0.0, Collision v10.0.0
 
 ### 3. Interactive HTML Reports
 
@@ -226,17 +254,15 @@ python scripts/generate_all_test_reports.py  # All 7 test scenarios
 python scripts/generate_html_report.py --input ... --output ...  # Single report
 ```
 
-### 4. Cost-Optimized Execution
+### 4. Flexible Model Configuration
 
-| Agent Type | Model | Cost |
-|------------|-------|------|
-| Vision Analysis (Perception, Collision) | gemini-2.5-pro | Baseline |
-| Motion & Synthesis | gemini-2.5-flash | **~50% cheaper** |
+Models are configurable per-agent in `scripts/run_odd_analysis.py`:
 
-**Scalable Analysis:**
-- 2-window test: ~$0.02 per scenario
-- 25-window production: ~$0.15 per chunk
-- 332-window full dataset: ~$2.00 total
+| Model | Input Cost | Output Cost | Use Case |
+|-------|------------|-------------|----------|
+| gemini-2.5-pro | $1.25/1M | $10.00/1M | High-quality analysis |
+| gemini-2.5-flash | $0.30/1M | $2.50/1M | Balanced cost/quality |
+| gemini-2.0-flash-exp | $0.10/1M | $0.40/1M | Fast iteration |
 
 📊 **Details:** [docs/MODEL_SELECTION_GUIDE.md](docs/MODEL_SELECTION_GUIDE.md)
 
@@ -246,60 +272,47 @@ python scripts/generate_html_report.py --input ... --output ...  # Single report
 
 🌐 **Live Interactive Reports:** [https://danmartinez78.github.io/go2-odd-observer/](https://danmartinez78.github.io/go2-odd-observer/)
 
-### Production Scenario: Living Room Navigation (25 Windows)
+### Available Analysis Reports
 
-**Dataset:** `collection_20251122_173442_chunk_01` - Real Unitree Go2 in indoor living room
+| Scenario | Verdict | Key Findings |
+|----------|---------|---------------|
+| **real_173442** | ✅ IN_ODD | Normal indoor operation, 1 collision detected |
+| **real_174232** | ⚠️ BOUNDARY | Approaching limits, 3 collisions |
+| **real_174321** | ❌ OUT_ODD | Accel 12.63 m/s² (+26%), Pitch 16.9° (+13%) |
+| **real_174604** | ❌ OUT_ODD | Human detected 83%, Animal 75% |
+| **sim_1** | ✅ IN_ODD | Simulation baseline |
 
-### ODD Compliance Analysis
+### Example: Motion Violation (real_174321)
+
+**Verdict:** OUT_ODD — Robot exceeded dynamic stability limits
 
 ```
-Overall Status: OUT_ODD
-Windows Analyzed: 25
-Violations: 3
+Violations:
+  • max_accel_mps2: 12.63 m/s² (limit 10.0) — exceeded by 26%
+  • max_pitch_deg: 16.9° (limit 15.0) — exceeded by 13%
+  • Extreme roll: 18.44° in window w009
 
-❌ VIOLATIONS:
-   • motion_smoothness: "abrupt" (all 25 windows)
-     → Consistent jerky motion patterns across entire scenario
-   
-   • max_accel_mps2: 8.81 m/s² (limit: 5.0)
-     → Extreme acceleration detected, exceeds safe threshold
-   
-   • collision_risk: 0.652 average (threshold: 0.5)
-     → 18 high/critical collision events detected
-
-🔍 SENSOR DISCREPANCY:
-   • Camera detects low-lying obstacles (furniture legs, tables)
-   • BEV LiDAR fails to detect same obstacles (ground filtering)
-   • Risk: Undetected collision hazards in navigation path
-
-✅ IN_ODD:
-   • environment_type: indoor_living_room ✓
-   • lighting_conditions: adequate ✓
-   • terrain_type: smooth_floor ✓
+Collisions: 1 detected (w012, HIGH confidence)
+Recommendation: Tune motion control, investigate collision root cause
 ```
 
-### AI-Generated Executive Summary
+### Example: Actor Violation (real_174604)
 
-> *"The Unitree Go2 demonstrates consistent OUT_ODD status across all 25 analysis windows due to abrupt motion patterns and high collision risk. While the indoor living room environment generally aligns with the intended operational domain, the robot exhibits motion characteristics (8.81 m/s² peak acceleration) that significantly exceed design specifications. A critical sensor fusion issue exists: the camera detects low obstacles that the BEV LiDAR system fails to identify due to ground filtering, creating undetected collision hazards."*
+**Verdict:** OUT_ODD — Prohibited actors detected
 
-### Key Findings
+```
+Violations:
+  • human_present: 83.3% of windows (limit 0%)
+  • animal_present: 75% of windows (limit 0%)
+  • clearance_index: 0.2 (below 0.3 minimum)
 
-1. 🚨 **Abrupt Motion Patterns**: All 25 windows show "abrupt" motion smoothness classification
-2. ⚡ **Extreme Acceleration**: Peak of 8.81 m/s² exceeds 5.0 m/s² safety limit by 76%
-3. ⚠️ **High Collision Risk**: 18 of 25 windows (72%) at alert level, avg risk 0.652
-4. 🔍 **Sensor Fusion Gap**: BEV ground filtering (10cm threshold) misses low obstacles visible in camera
+Collisions: 0 — Robot correctly remained stationary
+Recommendation: Review deployment to minimize human-robot interaction
+```
 
-### Recommendations
+> *"The robot operated in an indoor residential setting where it encountered a person and a pet, conditions which are explicitly outside its safety design. The system correctly identified these prohibited actors and remained stationary, preventing any potential collisions."*
 
-1. **Motion Control Tuning**: Review acceleration limits and motion smoothing parameters
-2. **BEV Configuration**: Adjust ground filtering threshold or cross-check with camera data
-3. **Collision Avoidance**: Implement sensor fusion to reconcile camera vs LiDAR obstacle detection
-4. **Path Planning**: Reduce aggressive maneuvers in cluttered indoor environments
-
-📁 **View Full Reports:**
-- 🌐 [**Interactive HTML Report**](https://danmartinez78.github.io/go2-odd-observer/reports/collection_20251122_173442_chunk_01_report.html) (51MB with all images)
-- 📥 [**JSON Data**](https://danmartinez78.github.io/go2-odd-observer/reports/collection_20251122_173442_chunk_01_full_result.json) (18KB raw analysis)
-- 📊 [**Test Scenarios**](https://danmartinez78.github.io/go2-odd-observer/) (7 additional reports)
+📁 **View Full Reports:** [danmartinez78.github.io/go2-odd-observer/reports/](https://danmartinez78.github.io/go2-odd-observer/reports/)
 
 ---
 
@@ -307,29 +320,27 @@ Violations: 3
 
 ```
 go2-odd-observer/
-├── odd_agents/              # Core AI agent module (parameterized, no global state)
-│   ├── agents/              # 7 agent implementations (perception, motion, collision, etc.)
-│   ├── tools/               # Agent tool functions (Gemini API wrappers)
+├── odd_agents/              # Core AI agent module
+│   ├── agents/              # 6 pipeline agent implementations
+│   ├── tools/               # 4 tool agents (VLM wrappers)
 │   └── workflow.py          # Pipeline orchestration
 ├── scripts/
 │   ├── run_odd_analysis.py         # Interactive analysis CLI
 │   ├── generate_html_report.py     # HTML report generator
-│   ├── generate_all_test_reports.py # Batch processing for test scenarios
-│   ├── extract_windows.py          # ROS2 bag → time windows converter
-│   └── render_bev.py               # BEV LiDAR visualization
+│   ├── extract_windows.py          # ROS2 bag → time windows
+│   └── chunk_large_scenario.py     # Split scenarios into chunks
 ├── notebooks/
-│   └── odd_analysis_demo.ipynb  # Interactive analysis with visualizations
-├── tests/                   # Unit tests for each agent
+│   └── odd_analysis_demo.ipynb     # Interactive demo
+├── tests/                   # Unit + evaluation tests
 ├── data/
-│   ├── processed/
-│   │   ├── production/      # 19 production scenarios (332 windows total)
-│   │   └── test_data/       # 7 test scenarios (real + sim)
-│   └── analysis_results/    # JSON outputs from pipeline runs
+│   ├── production/          # Production data (sim + real)
+│   │   └── chunks/          # 15-window analysis chunks
+│   ├── test/                # 2-window quick test sets
+│   └── development/         # Analysis results
 └── docs/
-    ├── guides/              # Setup, usage, patterns
-    ├── reports/             # GitHub Pages HTML reports + JSON downloads
-    ├── examples/            # Sample reports
-    └── index.html           # GitHub Pages landing page
+    ├── reports/             # HTML reports for GitHub Pages
+    ├── agent_knowledge/     # Knowledge docs for agent grounding
+    └── guides/              # Setup and usage guides
 ```
 
 ---
@@ -350,51 +361,37 @@ go2-odd-observer/
 
 ## 🛠️ Use Cases
 
-### Batch Analysis of Test Scenarios
-
-```bash
-# Generate HTML reports for all test scenarios (6 real + 1 sim)
-python scripts/generate_all_test_reports.py
-
-# Reports automatically saved to:
-# - JSON: data/analysis_results/automated/test_reports_TIMESTAMP/
-# - HTML: docs/reports/{scenario_name}_report.html
-```
-
 ### Production Data Analysis
 
 ```bash
 # Run interactive CLI for scenario selection
 python scripts/run_odd_analysis.py
 
-# Or specify production scenario directly
-python scripts/run_odd_analysis.py --scenario collection_20251122_173442_chunk_01
-
 # Generate HTML report with all embedded images
 python scripts/generate_html_report.py \
-  --input data/analysis_results/manual/latest/full_result.json \
-  --scenario-dir data/processed/production/collection_20251122_173442_chunk_01 \
-  --output docs/reports/production_report.html
+  --input data/development/analysis_results/manual/latest/full_result.json \
+  --scenario-dir data/production/chunks/real_173442_chunk_000_015 \
+  --output docs/reports/my_report.html
 ```
 
 ### Post-Incident Analysis
 
 ```bash
-# Extract windows from incident rosbag
+# Extract windows from incident rosbag (source ROS2 first!)
+source /opt/ros/humble/setup.bash
 python scripts/extract_windows.py \
   --rosbag incident_2025_11_21.db3 \
-  --output data/processed/incident_analysis
+  --output data/production/incident_analysis \
+  --run-id incident_analysis
 
 # Run analysis
 python scripts/run_odd_analysis.py --scenario incident_analysis
 
-# Generate report and check violations
+# Generate report
 python scripts/generate_html_report.py \
-  --input data/analysis_results/manual/latest/full_result.json \
-  --scenario-dir data/processed/incident_analysis \
+  --input data/development/analysis_results/manual/latest/full_result.json \
+  --scenario-dir data/production/incident_analysis \
   --output incident_report.html
-
-open incident_report.html
 ```
 
 ### Custom ODD for Different Robots
@@ -416,7 +413,7 @@ Delivery robot for outdoor sidewalk navigation.
 
 client = Client(api_key=os.getenv("GOOGLE_API_KEY"))
 result = await run_odd_workflow(
-    scenario_path="data/processed/outdoor_test",
+    scenario_path="data/production/chunks/outdoor_test",
     genai_client=client,
     api_key=os.getenv("GOOGLE_API_KEY"),
     nl_odd_description=outdoor_odd
@@ -530,10 +527,10 @@ Triage:    8 windows × $0.02 + $0.01 triage = $0.17
 **2. BEV Ground Filtering Sensitivity**
 - Current 10cm threshold may miss low obstacles (furniture legs, cables)
 - Sensor fusion gap: Camera detects obstacles LiDAR filters out
-- **Mitigation:** Phase 1.4 will add cross-validation between camera and BEV
+- **Mitigation:** Cross-validation between camera and BEV under investigation
 
 **3. ~~No Velocity Estimation~~ (RESOLVED)**
-- ✅ **Fixed in v10.0.0:** Position-derived speed now computed from odometry
+- ✅ **Fixed:** Position-derived speed now computed from odometry
 - `derived_speed` field extracted from position differentiation
 - Can now distinguish stationary vs. moving robot states
 - See [REAL_DATA_MOTION_FIX.md](docs/REAL_DATA_MOTION_FIX.md) for details
@@ -547,7 +544,7 @@ Triage:    8 windows × $0.02 + $0.01 triage = $0.17
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions!
 
 **High-Priority Contributions:**
 - 🎯 **Intelligent triage agent** - Multi-stage adaptive sampling (see above)
@@ -569,7 +566,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 Built for the **[Kaggle 5-Day Agents Intensive](https://www.kaggle.com/learn-guide/5-day-agents)** program.
 
 **Powered by:**
-- 🧠 **Google Gemini 2.5 Pro & 2.0 Flash** - Multimodal AI models
+- 🧠 **Google Gemini 2.5** - Multimodal AI models (Pro, Flash, Flash-Lite)
 - 🔧 **Google ADK (Agent Development Kit)** - Agent orchestration framework
 - 🤖 **Unitree Go2** - Quadruped robot platform
 - 🔗 **ROS2 Humble** - Robotics middleware

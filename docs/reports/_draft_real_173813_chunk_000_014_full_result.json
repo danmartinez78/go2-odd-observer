@@ -1,0 +1,3133 @@
+{
+  "report": {
+    "compliance": {
+      "status": "OUT_ODD",
+      "confidence": "HIGH",
+      "summary": "The verdict is OUT_ODD with high confidence because the 'human_present' axis was violated in windows w012, w013, and w014, a zero-tolerance condition. Additionally, the 'max_accel_mps2' axis operated at the boundary of its ODD limit, reaching 9.01 m/s\u00b2 against a 10.0 m/s\u00b2 maximum."
+    },
+    "executive_summary": "The robot operated in a residential setting but failed to meet safety requirements when a person entered its vicinity, an explicit violation of its operational design. The system also exhibited jerky, aggressive motion that approached its maximum acceleration limits. These combined failures indicate the robot is not ready for deployment in environments with human presence.",
+    "key_findings": {
+      "perception": "The robot operated in a well-lit indoor residential environment on area rugs. Obstacle density was low, ranging from 12.4% to 16.0%, and path clearance was consistently high (min 0.5).",
+      "motion": "Motion was mostly stationary but included brief, sharp movements. The robot reached a peak speed of 2.04 m/s (82% of its 2.5 m/s limit) and a peak acceleration of 9.01 m/s\u00b2 (90% of its 10 m/s\u00b2 limit).",
+      "safety": "A human was detected in the final three windows, causing a critical ODD violation with zero margin. Two advisory collisions with low-profile objects were also reported. The closest margin on a non-violated axis was for acceleration, which came within 9.88% of its limit.",
+      "temporal_trends": "The scenario was stable until window w012, when a human entered the camera's view, causing a persistent and degrading safety condition for the remainder of the analysis."
+    },
+    "scenario_metadata": {
+      "windows_analyzed": 15,
+      "environment": "indoor_residential",
+      "data_quality": "complete",
+      "data_source": "real"
+    },
+    "collision_advisory": {
+      "collisions_detected": 2,
+      "risk_band": "HIGH",
+      "events": [
+        "w002: Collision detected with high confidence due to a sudden stop and visual confirmation of a low-profile obstacle.",
+        "w004: Collision detected with high confidence due to a sudden stop and visual confirmation of a low-profile obstacle."
+      ],
+      "note": "Advisory only - does not affect compliance verdict"
+    },
+    "human_animal_detection": {
+      "detected": true,
+      "type": "human",
+      "proximity_m": null,
+      "note": "A human was detected in windows w012, w013, and w014, which is a direct violation of the ODD."
+    },
+    "issues": [
+      "ODD Violation: Human presence was detected in windows w012, w013, and w014, violating a critical safety constraint that prohibits operation near humans.",
+      "Boundary Condition: Maximum acceleration reached 9.01 m/s\u00b2 in w006, operating within 10% of the 10.0 m/s\u00b2 ODD limit, suggesting overly aggressive motion.",
+      "Collision Advisory: Two collisions were detected (w002, w004) with low-profile objects that were not accurately measured by proximity sensors.",
+      "Potential ODD Violation: Perception agents raised alerts for potentially high-pile/shag rugs (w005, w008), a terrain type explicitly excluded from the ODD."
+    ],
+    "recommendations": [
+      "Investigate the system's failure to halt or take evasive action upon detecting a human, as required by the ODD.",
+      "Review motion control parameters to reduce instances of high acceleration spikes during low-speed maneuvers, improving motion smoothness and safety margins.",
+      "Improve perception capabilities for detecting low-profile objects to prevent collisions like those observed in w002 and w004.",
+      "Implement a more robust terrain classifier to correctly identify and flag out-of-ODD high-pile or shag rugs."
+    ],
+    "data_warnings": [
+      "The BEV proximity sensor failed to accurately measure the distance to low-profile objects during the collision events in w002 and w004, indicating a potential sensor limitation."
+    ]
+  },
+  "full_analysis": {
+    "cod_region": {
+      "lighting_conditions": {
+        "bright": 0.8,
+        "moderate": 0.2,
+        "type": "enum"
+      },
+      "terrain_type": {
+        "area_rugs": 1.0,
+        "type": "enum"
+      },
+      "obstacle_density": {
+        "type": "range",
+        "min": 0.124,
+        "max": 0.16
+      },
+      "clearance_index": {
+        "type": "range",
+        "min": 0.5,
+        "max": 0.9
+      },
+      "stairs_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "human_present": {
+        "type": "bool",
+        "p_0": 0.8,
+        "p_1": 0.2
+      },
+      "animal_present": {
+        "type": "bool",
+        "p_0": 1.0,
+        "p_1": 0.0
+      },
+      "max_speed_mps": {
+        "type": "range",
+        "min": 0.0041,
+        "max": 2.0437
+      },
+      "max_accel_mps2": {
+        "type": "range",
+        "min": 0.2237,
+        "max": 9.0124
+      },
+      "max_pitch_deg": {
+        "type": "range",
+        "min": 0.49,
+        "max": 3.95
+      },
+      "max_roll_deg": {
+        "type": "range",
+        "min": 0.19,
+        "max": 4.21
+      }
+    },
+    "time_series": {
+      "window_ids": [
+        "000",
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012",
+        "013",
+        "014"
+      ],
+      "violation_distances": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "margins_to_boundary": [
+        0.0016,
+        0.0034,
+        0.2086,
+        0.0052,
+        0.1073,
+        0.1825,
+        0.0366,
+        0.0347,
+        0.0293,
+        0.0333,
+        0.0144,
+        0.0079,
+        0.004,
+        0.0042,
+        0.0038
+      ],
+      "violation_flags": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ]
+    },
+    "region_metrics": {
+      "region_distance": 0.2,
+      "fraction_outside_per_axis": {
+        "lighting_conditions": 0.0,
+        "terrain_type": 0.0,
+        "obstacle_density": 0.0,
+        "clearance_index": 0.0,
+        "stairs_present": 0.0,
+        "human_present": 0.2,
+        "animal_present": 0.0,
+        "max_speed_mps": 0.0,
+        "max_accel_mps2": 0.0,
+        "max_pitch_deg": 0.0,
+        "max_roll_deg": 0.0
+      },
+      "total_windows": 15,
+      "windows_in_odd": 12,
+      "windows_violated": [
+        "012",
+        "013",
+        "014"
+      ],
+      "first_violation_window": "012",
+      "margin_to_limit_per_axis": {
+        "lighting_conditions": 0.5,
+        "terrain_type": 1.0,
+        "obstacle_density": 0.7714,
+        "clearance_index": 0.2857,
+        "stairs_present": 1.0,
+        "human_present": 0.0,
+        "animal_present": 1.0,
+        "max_speed_mps": 0.1825,
+        "max_accel_mps2": 0.0988,
+        "max_pitch_deg": 0.7367,
+        "max_roll_deg": 0.7193
+      },
+      "axes_at_boundary": [
+        "max_accel_mps2"
+      ],
+      "axes_violated": [
+        "human_present"
+      ],
+      "boundary_threshold": 0.1
+    },
+    "artifacts_loaded": {
+      "odd_spec": true,
+      "perception": true,
+      "motion": true,
+      "collision": true
+    }
+  },
+  "analysis_metadata": {
+    "pipeline_version": "2.0.0",
+    "analysis_timestamp": "2025-12-01T11:42:14.475247+00:00",
+    "analysis_duration_seconds": 997.79,
+    "total_agents_executed": 6,
+    "total_tokens_used": 144712,
+    "estimated_cost_usd": 0.211356,
+    "cost_breakdown": {
+      "total_input_tokens": 131469,
+      "total_output_tokens": 4702,
+      "input_cost_usd": 0.164336,
+      "output_cost_usd": 0.04702
+    },
+    "cost_per_agent": {
+      "OddSpecAgent": 0.011145,
+      "PerceptionAgent": 0.015524,
+      "MotionAgent": 0.03429,
+      "CollisionAgent": 0.046635,
+      "EvaluatorAgent": 0.042696,
+      "ReportAgent": 0.061066
+    }
+  },
+  "pipeline_metadata": {
+    "pipeline_version": "2.0.0",
+    "pipeline_start_time": "2025-12-01T11:42:14.475247+00:00",
+    "pipeline_duration_seconds": 997.79,
+    "odd_specification": {
+      "hash": "84b4986c6ecfa386",
+      "version": "embedded"
+    },
+    "scenario_info": {
+      "scenario_path": "/workspaces/go2-odd-observer/data/production/chunks/real_173813_chunk_000_014",
+      "scenario_name": "real_173813_chunk_000_014"
+    },
+    "agent_executions": {
+      "OddSpecAgent": {
+        "agent_name": "OddSpecAgent",
+        "version": "13.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "7e2a51ab9b44c46d",
+        "timestamp": "2025-12-01T11:42:14.485574+00:00",
+        "invocation_id": "e-55591ad0-8862-4da0-a09c-36b3f3c1438f",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 3164,
+          "completion_tokens": 719,
+          "total_tokens": 6440
+        }
+      },
+      "PerceptionAgent": {
+        "agent_name": "PerceptionAgent",
+        "version": "14.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "a20d91feffa6b384",
+        "timestamp": "2025-12-01T11:42:51.880069+00:00",
+        "invocation_id": "e-55591ad0-8862-4da0-a09c-36b3f3c1438f",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 6315,
+          "completion_tokens": 763,
+          "total_tokens": 8162
+        }
+      },
+      "MotionAgent": {
+        "agent_name": "MotionAgent",
+        "version": "12.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "5bc055bd57c79c5b",
+        "timestamp": "2025-12-01T11:50:27.733040+00:00",
+        "invocation_id": "e-55591ad0-8862-4da0-a09c-36b3f3c1438f",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 20264,
+          "completion_tokens": 896,
+          "total_tokens": 21613
+        }
+      },
+      "CollisionAgent": {
+        "agent_name": "CollisionAgent",
+        "version": "13.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "ed34a8b104a4933f",
+        "timestamp": "2025-12-01T11:53:57.273041+00:00",
+        "invocation_id": "e-55591ad0-8862-4da0-a09c-36b3f3c1438f",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 27148,
+          "completion_tokens": 1270,
+          "total_tokens": 29236
+        }
+      },
+      "EvaluatorAgent": {
+        "agent_name": "EvaluatorAgent",
+        "version": "9.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "ec3b8a75ab356936",
+        "timestamp": "2025-12-01T11:57:52.342836+00:00",
+        "invocation_id": "e-55591ad0-8862-4da0-a09c-36b3f3c1438f",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 34061,
+          "completion_tokens": 12,
+          "total_tokens": 35333
+        }
+      },
+      "ReportAgent": {
+        "agent_name": "ReportAgent",
+        "version": "15.0.0",
+        "declared_model": "gemini-2.5-pro",
+        "prompt_hash": "45760dc2549d5308",
+        "timestamp": "2025-12-01T11:58:21.955115+00:00",
+        "invocation_id": "e-55591ad0-8862-4da0-a09c-36b3f3c1438f",
+        "actual_model": "gemini-2.5-pro",
+        "token_usage": {
+          "prompt_tokens": 40517,
+          "completion_tokens": 1042,
+          "total_tokens": 43928
+        }
+      }
+    },
+    "total_agents_executed": 6
+  },
+  "reports": {
+    "executive_summary": {
+      "report_type": "executive_summary",
+      "generated_at": "2025-12-01T11:58:52.275198Z",
+      "scenario_overview": "The robot operated in a residential setting but failed to meet safety requirements when a person entered its vicinity, an explicit violation of its operational design. The system also exhibited jerky, aggressive motion that approached its maximum acceleration limits. These combined failures indicate the robot is not ready for deployment in environments with human presence.",
+      "key_observations": {
+        "perception": "The robot operated in a well-lit indoor residential environment on area rugs. Obstacle density was low, ranging from 12.4% to 16.0%, and path clearance was consistently high (min 0.5).",
+        "motion": "Motion was mostly stationary but included brief, sharp movements. The robot reached a peak speed of 2.04 m/s (82% of its 2.5 m/s limit) and a peak acceleration of 9.01 m/s\u00b2 (90% of its 10 m/s\u00b2 limit).",
+        "safety": "A human was detected in the final three windows, causing a critical ODD violation with zero margin. Two advisory collisions with low-profile objects were also reported. The closest margin on a non-violated axis was for acceleration, which came within 9.88% of its limit.",
+        "temporal_trends": "The scenario was stable until window w012, when a human entered the camera's view, causing a persistent and degrading safety condition for the remainder of the analysis."
+      },
+      "recommendations": [
+        "Investigate the system's failure to halt or take evasive action upon detecting a human, as required by the ODD.",
+        "Review motion control parameters to reduce instances of high acceleration spikes during low-speed maneuvers, improving motion smoothness and safety margins.",
+        "Improve perception capabilities for detecting low-profile objects to prevent collisions like those observed in w002 and w004.",
+        "Implement a more robust terrain classifier to correctly identify and flag out-of-ODD high-pile or shag rugs."
+      ],
+      "temporal_insights": {
+        "perception": {
+          "trend": "degrading",
+          "transitions": [
+            "w011\u2192w012: human entered the camera's field of view"
+          ],
+          "anomalies": [
+            "human appeared in w012"
+          ]
+        },
+        "motion": {
+          "motion_transitions": [
+            "stationary\u2192moving at w002",
+            "moving\u2192stationary at w003",
+            "stationary\u2192moving at w004",
+            "moving\u2192complex/turning at w006",
+            "turning\u2192stationary at w010"
+          ],
+          "stability_trend": "stable",
+          "trajectory_pattern": "wandering",
+          "anomalies": [
+            "High acceleration spike (9.0 m/s^2) during low-speed turn in w006",
+            "High acceleration spike (7.5 m/s^2) during low-speed rotation in w008"
+          ]
+        },
+        "collision": {
+          "collision_pattern": "repeated",
+          "risk_progression": "stable",
+          "evidence_quality": "strong",
+          "suspicious_events": [
+            "Collision in w002 with strong convergent evidence (sudden stop + visual proximity)",
+            "Collision in w004 with strong convergent evidence (sudden stop + visual proximity)"
+          ],
+          "sudden_stop_windows": [
+            "w002",
+            "w004",
+            "w005"
+          ]
+        }
+      },
+      "compliance": {
+        "verdict": "OUT_ODD",
+        "confidence": 1.0,
+        "region_distance": 0.2,
+        "critical_axes": [
+          "human_present"
+        ],
+        "rationale": "The verdict is OUT_ODD because the 'human_present' axis was violated. The perception system detected a human in windows w012, w013, and w014, which is explicitly prohibited by the ODD (allowed value: 0). The violation began in window w012 and persisted for the remainder of the scenario. All other axes remained within their ODD limits. Notably, max acceleration reached 9.01 m/s\u00b2 (vs 10 m/s\u00b2 limit), and max speed was 2.04 m/s (vs 2.5 m/s limit), both within specification but with the acceleration approaching its boundary."
+      },
+      "data_quality": {
+        "warnings": [],
+        "anomalies": []
+      },
+      "odd_summary": {
+        "actors_axes": [
+          "human_present",
+          "animal_present"
+        ],
+        "ego_axes": [
+          "max_speed_mps",
+          "max_accel_mps2",
+          "max_pitch_deg",
+          "max_roll_deg"
+        ],
+        "environment_axes": [
+          "lighting_conditions",
+          "terrain_type",
+          "obstacle_density",
+          "clearance_index",
+          "stairs_present"
+        ],
+        "key_limits": {
+          "max_pitch_deg": 15.0,
+          "max_speed_mps": 2.5,
+          "obstacle_density_max": 0.7
+        },
+        "total_axes": 11
+      },
+      "scenario": {
+        "name": "real_173813_chunk_000_014",
+        "windows_analyzed": 15
+      },
+      "analysis": {
+        "duration_seconds": 997.79,
+        "total_tokens": 144712,
+        "pipeline_version": "2.0.0"
+      }
+    },
+    "full_technical": {
+      "report_type": "full_technical",
+      "generated_at": "2025-12-01T11:58:52.275707Z",
+      "pipeline_version": "2.0.0",
+      "executive_summary": {
+        "scenario_overview": "",
+        "key_observations": [],
+        "recommendations": [
+          "Investigate the system's failure to halt or take evasive action upon detecting a human, as required by the ODD.",
+          "Review motion control parameters to reduce instances of high acceleration spikes during low-speed maneuvers, improving motion smoothness and safety margins.",
+          "Improve perception capabilities for detecting low-profile objects to prevent collisions like those observed in w002 and w004.",
+          "Implement a more robust terrain classifier to correctly identify and flag out-of-ODD high-pile or shag rugs."
+        ]
+      },
+      "compliance": {
+        "verdict": {
+          "verdict": "OUT_ODD",
+          "confidence": 1.0,
+          "rationale": "The verdict is OUT_ODD because the 'human_present' axis was violated. The perception system detected a human in windows w012, w013, and w014, which is explicitly prohibited by the ODD (allowed value: 0). The violation began in window w012 and persisted for the remainder of the scenario. All other axes remained within their ODD limits. Notably, max acceleration reached 9.01 m/s\u00b2 (vs 10 m/s\u00b2 limit), and max speed was 2.04 m/s (vs 2.5 m/s limit), both within specification but with the acceleration approaching its boundary.",
+          "critical_axes": [
+            "human_present"
+          ]
+        },
+        "cod_region": {
+          "lighting_conditions": {
+            "bright": 0.8,
+            "moderate": 0.2,
+            "type": "enum"
+          },
+          "terrain_type": {
+            "area_rugs": 1.0,
+            "type": "enum"
+          },
+          "obstacle_density": {
+            "type": "range",
+            "min": 0.124,
+            "max": 0.16
+          },
+          "clearance_index": {
+            "type": "range",
+            "min": 0.5,
+            "max": 0.9
+          },
+          "stairs_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "human_present": {
+            "type": "bool",
+            "p_0": 0.8,
+            "p_1": 0.2
+          },
+          "animal_present": {
+            "type": "bool",
+            "p_0": 1.0,
+            "p_1": 0.0
+          },
+          "max_speed_mps": {
+            "type": "range",
+            "min": 0.0041,
+            "max": 2.0437
+          },
+          "max_accel_mps2": {
+            "type": "range",
+            "min": 0.2237,
+            "max": 9.0124
+          },
+          "max_pitch_deg": {
+            "type": "range",
+            "min": 0.49,
+            "max": 3.95
+          },
+          "max_roll_deg": {
+            "type": "range",
+            "min": 0.19,
+            "max": 4.21
+          }
+        },
+        "region_metrics": {
+          "region_distance": 0.2,
+          "fraction_outside_per_axis": {
+            "lighting_conditions": 0.0,
+            "terrain_type": 0.0,
+            "obstacle_density": 0.0,
+            "clearance_index": 0.0,
+            "stairs_present": 0.0,
+            "human_present": 0.2,
+            "animal_present": 0.0,
+            "max_speed_mps": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_pitch_deg": 0.0,
+            "max_roll_deg": 0.0
+          },
+          "total_windows": 15,
+          "windows_in_odd": 12,
+          "windows_violated": [
+            "012",
+            "013",
+            "014"
+          ],
+          "first_violation_window": "012",
+          "margin_to_limit_per_axis": {
+            "lighting_conditions": 0.5,
+            "terrain_type": 1.0,
+            "obstacle_density": 0.7714,
+            "clearance_index": 0.2857,
+            "stairs_present": 1.0,
+            "human_present": 0.0,
+            "animal_present": 1.0,
+            "max_speed_mps": 0.1825,
+            "max_accel_mps2": 0.0988,
+            "max_pitch_deg": 0.7367,
+            "max_roll_deg": 0.7193
+          },
+          "axes_at_boundary": [
+            "max_accel_mps2"
+          ],
+          "axes_violated": [
+            "human_present"
+          ],
+          "boundary_threshold": 0.1
+        }
+      },
+      "odd_specification": {
+        "environment": {
+          "categorical": {
+            "lighting_conditions": {
+              "type": "enum",
+              "allowed": [
+                "bright",
+                "moderate",
+                "dim"
+              ],
+              "description": "Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)"
+            },
+            "terrain_type": {
+              "type": "enum",
+              "allowed": [
+                "tile",
+                "hardwood",
+                "low-pile carpet",
+                "laminate",
+                "area_rugs"
+              ],
+              "description": "Ground surface type. Assess from camera view of floor. List specific materials visible. High-pile/shag rugs are OUT OF ODD."
+            }
+          },
+          "numeric": {
+            "obstacle_density": {
+              "type": "range",
+              "min": 0,
+              "max": 0.7,
+              "description": "Fraction of BEV area occupied by obstacles (0-1). Moderate to high density is IN ODD; extreme clutter blocking paths is OUT. Computed from BEV occupancy map, not camera."
+            },
+            "clearance_index": {
+              "type": "range",
+              "min": 0.3,
+              "max": 1,
+              "description": "Navigability of paths from BEV (0-1). Measures path clearance, not general tidiness. A low value indicates blocked paths. Indoor min threshold set to 0.3."
+            }
+          },
+          "boolean": {
+            "stairs_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary check for accessible stairs. 1=stairs are detected and accessible (OUT OF ODD). 0=no accessible stairs detected (IN ODD). Assessed from camera/depth data."
+            }
+          }
+        },
+        "actors": {
+          "categorical": {},
+          "numeric": {},
+          "boolean": {
+            "human_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation."
+            },
+            "animal_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation."
+            }
+          }
+        },
+        "ego": {
+          "categorical": {},
+          "numeric": {
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0,
+              "max": 2.5,
+              "description": "Ego's maximum linear velocity. Sustained speed should not exceed 2.5 m/s."
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0,
+              "max": 10,
+              "description": "Ego's maximum linear acceleration. Brief reactive maneuvers can reach 10 m/s^2."
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Ego's maximum pitch angle, corresponding to ramp/incline limits. Absolute value should not exceed 15 degrees."
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Ego's maximum roll angle. Expected to be low on flat indoor floors. Limit set to 15 degrees to match incline tolerance."
+            }
+          },
+          "boolean": {}
+        }
+      },
+      "per_window_data": [],
+      "temporal_analysis": {
+        "perception": {
+          "trend": "degrading",
+          "transitions": [
+            "w011\u2192w012: human entered the camera's field of view"
+          ],
+          "anomalies": [
+            "human appeared in w012"
+          ]
+        },
+        "motion": {
+          "motion_transitions": [
+            "stationary\u2192moving at w002",
+            "moving\u2192stationary at w003",
+            "stationary\u2192moving at w004",
+            "moving\u2192complex/turning at w006",
+            "turning\u2192stationary at w010"
+          ],
+          "stability_trend": "stable",
+          "trajectory_pattern": "wandering",
+          "anomalies": [
+            "High acceleration spike (9.0 m/s^2) during low-speed turn in w006",
+            "High acceleration spike (7.5 m/s^2) during low-speed rotation in w008"
+          ]
+        },
+        "collision": {
+          "collision_pattern": "repeated",
+          "risk_progression": "stable",
+          "evidence_quality": "strong",
+          "suspicious_events": [
+            "Collision in w002 with strong convergent evidence (sudden stop + visual proximity)",
+            "Collision in w004 with strong convergent evidence (sudden stop + visual proximity)"
+          ],
+          "sudden_stop_windows": [
+            "w002",
+            "w004",
+            "w005"
+          ]
+        }
+      },
+      "statistics": {
+        "window_stats": {
+          "total_windows": 0,
+          "perception_windows": 0,
+          "motion_windows": 0,
+          "collision_windows": 0
+        },
+        "measurement_stats": {},
+        "compliance_stats": {
+          "verdict": "UNKNOWN",
+          "confidence": 0,
+          "critical_axes": [],
+          "fraction_outside_odd": 0,
+          "windows_violated": [
+            "012",
+            "013",
+            "014"
+          ]
+        }
+      },
+      "pipeline_metadata": {
+        "scenario": {
+          "scenario_path": "/workspaces/go2-odd-observer/data/production/chunks/real_173813_chunk_000_014",
+          "scenario_name": "real_173813_chunk_000_014"
+        },
+        "timing": {
+          "start_time": "2025-12-01T11:42:14.475247+00:00",
+          "duration_seconds": 997.79
+        },
+        "agents": [
+          {
+            "name": "OddSpecAgent",
+            "version": "13.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 6440
+          },
+          {
+            "name": "PerceptionAgent",
+            "version": "14.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 8162
+          },
+          {
+            "name": "MotionAgent",
+            "version": "12.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 21613
+          },
+          {
+            "name": "CollisionAgent",
+            "version": "13.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 29236
+          },
+          {
+            "name": "EvaluatorAgent",
+            "version": "9.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 35333
+          },
+          {
+            "name": "ReportAgent",
+            "version": "15.0.0",
+            "model": "gemini-2.5-pro",
+            "tokens": 43928
+          }
+        ],
+        "token_summary": {
+          "prompt_tokens": 131469,
+          "completion_tokens": 4702,
+          "total_tokens": 144712,
+          "estimated_cost_usd": 0.211356,
+          "cost_breakdown": {
+            "total_input_tokens": 131469,
+            "total_output_tokens": 4702,
+            "input_cost_usd": 0.164336,
+            "output_cost_usd": 0.04702
+          },
+          "cost_per_agent": {
+            "OddSpecAgent": 0.011145,
+            "PerceptionAgent": 0.015524,
+            "MotionAgent": 0.03429,
+            "CollisionAgent": 0.046635,
+            "EvaluatorAgent": 0.042696,
+            "ReportAgent": 0.061066
+          }
+        }
+      },
+      "raw_artifacts": {
+        "odd_spec": {
+          "odd_specification": {
+            "environment": {
+              "categorical": {
+                "lighting_conditions": {
+                  "type": "enum",
+                  "allowed": [
+                    "bright",
+                    "moderate",
+                    "dim"
+                  ],
+                  "description": "Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)"
+                },
+                "terrain_type": {
+                  "type": "enum",
+                  "allowed": [
+                    "tile",
+                    "hardwood",
+                    "low-pile carpet",
+                    "laminate",
+                    "area_rugs"
+                  ],
+                  "description": "Ground surface type. Assess from camera view of floor. List specific materials visible. High-pile/shag rugs are OUT OF ODD."
+                }
+              },
+              "numeric": {
+                "obstacle_density": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 0.7,
+                  "description": "Fraction of BEV area occupied by obstacles (0-1). Moderate to high density is IN ODD; extreme clutter blocking paths is OUT. Computed from BEV occupancy map, not camera."
+                },
+                "clearance_index": {
+                  "type": "range",
+                  "min": 0.3,
+                  "max": 1,
+                  "description": "Navigability of paths from BEV (0-1). Measures path clearance, not general tidiness. A low value indicates blocked paths. Indoor min threshold set to 0.3."
+                }
+              },
+              "boolean": {
+                "stairs_present": {
+                  "type": "bool",
+                  "allowed": 0,
+                  "description": "Binary check for accessible stairs. 1=stairs are detected and accessible (OUT OF ODD). 0=no accessible stairs detected (IN ODD). Assessed from camera/depth data."
+                }
+              }
+            },
+            "actors": {
+              "categorical": {},
+              "numeric": {},
+              "boolean": {
+                "human_present": {
+                  "type": "bool",
+                  "allowed": 0,
+                  "description": "Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation."
+                },
+                "animal_present": {
+                  "type": "bool",
+                  "allowed": 0,
+                  "description": "Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation."
+                }
+              }
+            },
+            "ego": {
+              "categorical": {},
+              "numeric": {
+                "max_speed_mps": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 2.5,
+                  "description": "Ego's maximum linear velocity. Sustained speed should not exceed 2.5 m/s."
+                },
+                "max_accel_mps2": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 10,
+                  "description": "Ego's maximum linear acceleration. Brief reactive maneuvers can reach 10 m/s^2."
+                },
+                "max_pitch_deg": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 15,
+                  "description": "Ego's maximum pitch angle, corresponding to ramp/incline limits. Absolute value should not exceed 15 degrees."
+                },
+                "max_roll_deg": {
+                  "type": "range",
+                  "min": 0,
+                  "max": 15,
+                  "description": "Ego's maximum roll angle. Expected to be low on flat indoor floors. Limit set to 15 degrees to match incline tolerance."
+                }
+              },
+              "boolean": {}
+            }
+          }
+        },
+        "perception": {},
+        "motion": {},
+        "collision": {},
+        "cod_construction": {
+          "cod_region": {
+            "lighting_conditions": {
+              "bright": 0.8,
+              "moderate": 0.2,
+              "type": "enum"
+            },
+            "terrain_type": {
+              "area_rugs": 1.0,
+              "type": "enum"
+            },
+            "obstacle_density": {
+              "type": "range",
+              "min": 0.124,
+              "max": 0.16
+            },
+            "clearance_index": {
+              "type": "range",
+              "min": 0.5,
+              "max": 0.9
+            },
+            "stairs_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "human_present": {
+              "type": "bool",
+              "p_0": 0.8,
+              "p_1": 0.2
+            },
+            "animal_present": {
+              "type": "bool",
+              "p_0": 1.0,
+              "p_1": 0.0
+            },
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0.0041,
+              "max": 2.0437
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0.2237,
+              "max": 9.0124
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0.49,
+              "max": 3.95
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0.19,
+              "max": 4.21
+            }
+          },
+          "time_series": {
+            "window_ids": [
+              "000",
+              "001",
+              "002",
+              "003",
+              "004",
+              "005",
+              "006",
+              "007",
+              "008",
+              "009",
+              "010",
+              "011",
+              "012",
+              "013",
+              "014"
+            ],
+            "violation_distances": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "margins_to_boundary": [
+              0.0016,
+              0.0034,
+              0.2086,
+              0.0052,
+              0.1073,
+              0.1825,
+              0.0366,
+              0.0347,
+              0.0293,
+              0.0333,
+              0.0144,
+              0.0079,
+              0.004,
+              0.0042,
+              0.0038
+            ],
+            "violation_flags": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              true,
+              true,
+              true
+            ]
+          },
+          "region_metrics": {
+            "region_distance": 0.2,
+            "fraction_outside_per_axis": {
+              "lighting_conditions": 0.0,
+              "terrain_type": 0.0,
+              "obstacle_density": 0.0,
+              "clearance_index": 0.0,
+              "stairs_present": 0.0,
+              "human_present": 0.2,
+              "animal_present": 0.0,
+              "max_speed_mps": 0.0,
+              "max_accel_mps2": 0.0,
+              "max_pitch_deg": 0.0,
+              "max_roll_deg": 0.0
+            },
+            "total_windows": 15,
+            "windows_in_odd": 12,
+            "windows_violated": [
+              "012",
+              "013",
+              "014"
+            ],
+            "first_violation_window": "012",
+            "margin_to_limit_per_axis": {
+              "lighting_conditions": 0.5,
+              "terrain_type": 1.0,
+              "obstacle_density": 0.7714,
+              "clearance_index": 0.2857,
+              "stairs_present": 1.0,
+              "human_present": 0.0,
+              "animal_present": 1.0,
+              "max_speed_mps": 0.1825,
+              "max_accel_mps2": 0.0988,
+              "max_pitch_deg": 0.7367,
+              "max_roll_deg": 0.7193
+            },
+            "axes_at_boundary": [
+              "max_accel_mps2"
+            ],
+            "axes_violated": [
+              "human_present"
+            ],
+            "boundary_threshold": 0.1
+          },
+          "artifacts_loaded": {
+            "odd_spec": true,
+            "perception": true,
+            "motion": true,
+            "collision": true
+          }
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "cod_construction.json": {
+      "cod_region": {
+        "lighting_conditions": {
+          "bright": 0.8,
+          "moderate": 0.2,
+          "type": "enum"
+        },
+        "terrain_type": {
+          "area_rugs": 1.0,
+          "type": "enum"
+        },
+        "obstacle_density": {
+          "type": "range",
+          "min": 0.124,
+          "max": 0.16
+        },
+        "clearance_index": {
+          "type": "range",
+          "min": 0.5,
+          "max": 0.9
+        },
+        "stairs_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "human_present": {
+          "type": "bool",
+          "p_0": 0.8,
+          "p_1": 0.2
+        },
+        "animal_present": {
+          "type": "bool",
+          "p_0": 1.0,
+          "p_1": 0.0
+        },
+        "max_speed_mps": {
+          "type": "range",
+          "min": 0.0041,
+          "max": 2.0437
+        },
+        "max_accel_mps2": {
+          "type": "range",
+          "min": 0.2237,
+          "max": 9.0124
+        },
+        "max_pitch_deg": {
+          "type": "range",
+          "min": 0.49,
+          "max": 3.95
+        },
+        "max_roll_deg": {
+          "type": "range",
+          "min": 0.19,
+          "max": 4.21
+        }
+      },
+      "time_series": {
+        "window_ids": [
+          "000",
+          "001",
+          "002",
+          "003",
+          "004",
+          "005",
+          "006",
+          "007",
+          "008",
+          "009",
+          "010",
+          "011",
+          "012",
+          "013",
+          "014"
+        ],
+        "violation_distances": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "margins_to_boundary": [
+          0.0016,
+          0.0034,
+          0.2086,
+          0.0052,
+          0.1073,
+          0.1825,
+          0.0366,
+          0.0347,
+          0.0293,
+          0.0333,
+          0.0144,
+          0.0079,
+          0.004,
+          0.0042,
+          0.0038
+        ],
+        "violation_flags": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      "region_metrics": {
+        "region_distance": 0.2,
+        "fraction_outside_per_axis": {
+          "lighting_conditions": 0.0,
+          "terrain_type": 0.0,
+          "obstacle_density": 0.0,
+          "clearance_index": 0.0,
+          "stairs_present": 0.0,
+          "human_present": 0.2,
+          "animal_present": 0.0,
+          "max_speed_mps": 0.0,
+          "max_accel_mps2": 0.0,
+          "max_pitch_deg": 0.0,
+          "max_roll_deg": 0.0
+        },
+        "total_windows": 15,
+        "windows_in_odd": 12,
+        "windows_violated": [
+          "012",
+          "013",
+          "014"
+        ],
+        "first_violation_window": "012",
+        "margin_to_limit_per_axis": {
+          "lighting_conditions": 0.5,
+          "terrain_type": 1.0,
+          "obstacle_density": 0.7714,
+          "clearance_index": 0.2857,
+          "stairs_present": 1.0,
+          "human_present": 0.0,
+          "animal_present": 1.0,
+          "max_speed_mps": 0.1825,
+          "max_accel_mps2": 0.0988,
+          "max_pitch_deg": 0.7367,
+          "max_roll_deg": 0.7193
+        },
+        "axes_at_boundary": [
+          "max_accel_mps2"
+        ],
+        "axes_violated": [
+          "human_present"
+        ],
+        "boundary_threshold": 0.1
+      },
+      "artifacts_loaded": {
+        "odd_spec": true,
+        "perception": true,
+        "motion": true,
+        "collision": true
+      }
+    },
+    "collision_output.json": {
+      "per_window": [
+        {
+          "window_id": "000",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.307,
+            "peak_jerk_mps3": 12.792
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.004,
+            "is_stationary": true,
+            "displacement_m": 0.001
+          },
+          "explanation": "No collision is detected. The robot is stationary, with no significant motion, acceleration (peak 0.307 m/s\u00b2), or sudden stops recorded. The BEV proximity data confirms the nearest obstacle is 0.76m away, which is well outside the critical proximity zone (<0.5m). There is no convergent evidence from motion and proximity sensors to indicate a collision event.",
+          "key_insights": []
+        },
+        {
+          "window_id": "001",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.285,
+            "peak_jerk_mps3": 10.11
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.009,
+            "is_stationary": true,
+            "displacement_m": 0.0
+          },
+          "explanation": "The robot is stationary with negligible speed (peak 0.009 m/s) and very low acceleration (peak 0.285 m/s\u00b2). There is no motion anomaly. The BEV proximity sensor reports the nearest obstacle at 0.76m, which is well outside the collision or close proximity zones. The camera image corroborates this, showing no objects in immediate contact. With no evidence from either motion or proximity sensors, a collision is not detected.",
+          "key_insights": []
+        },
+        {
+          "window_id": "002",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": true,
+          "confidence": 0.8,
+          "proximity_estimate_m": 0.75,
+          "collision_risk_band": "HIGH",
+          "evidence_summary": {
+            "motion_anomaly_present": true,
+            "visual_proximity_confirmed": true,
+            "closest_obstacle_m": 0.1
+          },
+          "collision_signatures": {
+            "sudden_stop": true,
+            "speed_drop_mps": 1.835,
+            "peak_accel_mps2": 3.861,
+            "peak_jerk_mps3": 216.595
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 1.978,
+            "is_stationary": false,
+            "displacement_m": 0.217
+          },
+          "explanation": "A significant sudden stop was detected (1.83 m/s speed drop), satisfying the motion anomaly criterion. Concurrently, the camera image clearly shows a wooden ramp obstacle extremely close to the robot, estimated to be less than 0.3m away. This provides the required visual confirmation for a likely collision. The BEV proximity data (0.75m) appears to be incorrect, possibly due to the low profile of the obstacle, but the convergent evidence from motion sensors and the camera is strong.",
+          "key_insights": []
+        },
+        {
+          "window_id": "003",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.75,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.75
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 1.94,
+            "peak_jerk_mps3": 3.425
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.013,
+            "is_stationary": true,
+            "displacement_m": 0.001
+          },
+          "explanation": "The robot is stationary, with a speed drop of 0.00 m/s and a peak acceleration of only 1.940 m/s\u00b2, neither of which qualifies as a motion anomaly. Additionally, the closest obstacle detected by the BEV system is at 0.75m, which is outside the <0.5m proximity threshold. Since there is no evidence of a motion anomaly or a close obstacle, a collision is not detected.",
+          "key_insights": []
+        },
+        {
+          "window_id": "004",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": true,
+          "confidence": 0.85,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "HIGH",
+          "evidence_summary": {
+            "motion_anomaly_present": true,
+            "visual_proximity_confirmed": true,
+            "closest_obstacle_m": 0.1
+          },
+          "collision_signatures": {
+            "sudden_stop": true,
+            "speed_drop_mps": 1.572,
+            "peak_accel_mps2": 2.866,
+            "peak_jerk_mps3": 204.106
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 1.697,
+            "is_stationary": false,
+            "displacement_m": 0.349
+          },
+          "explanation": "A significant motion anomaly was detected via a sudden stop with a speed drop of 1.57 m/s. While the BEV-derived proximity estimate is 0.76m, the camera image provides strong, conflicting evidence of a small wooden object (a ramp or toy) directly in the robot's path and extremely close to the camera, estimated at approximately 0.1m. The combination of the sudden stop and the clear visual confirmation of a very close object meets the criteria for a likely collision.",
+          "key_insights": []
+        },
+        {
+          "window_id": "005",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.1,
+          "proximity_estimate_m": 0.9,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": true,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.9
+          },
+          "collision_signatures": {
+            "sudden_stop": true,
+            "speed_drop_mps": 1.896,
+            "peak_accel_mps2": 5.536,
+            "peak_jerk_mps3": 413.336
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 2.044,
+            "is_stationary": false,
+            "displacement_m": 0.53
+          },
+          "explanation": "A strong motion anomaly was detected due to a sudden stop with a speed drop of 1.90 m/s. However, there is no corresponding visual or proximity evidence of a collision. The BEV proximity data reports the minimum obstacle distance as 0.90m, which is well outside the 0.5m threshold for collision confirmation. The camera image also shows no objects in the immediate vicinity of the robot. This pattern (sudden stop with no close obstacle) is characteristic of a commanded stop, not a collision.",
+          "key_insights": []
+        },
+        {
+          "window_id": "006",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.75,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.75
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 9.012,
+            "peak_jerk_mps3": 69.038
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.092,
+            "is_stationary": false,
+            "displacement_m": 0.048
+          },
+          "explanation": "No collision evidence was found. The motion data shows no sudden stop (0.00 m/s drop) and the peak acceleration (9.012 m/s\u00b2) is well below the impact threshold of 15 m/s\u00b2. Furthermore, the BEV proximity data indicates the nearest obstacle is 0.75m away, which is outside the critical proximity zone of <0.5m. The camera image confirms there are no immediate obstacles in the robot's path.",
+          "key_insights": []
+        },
+        {
+          "window_id": "007",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.75,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.75
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.405,
+            "peak_jerk_mps3": 12.106
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.162,
+            "is_stationary": false,
+            "displacement_m": 0.009
+          },
+          "explanation": "No collision is detected as there is no convergent evidence. The motion data shows no anomaly; there was no sudden stop (0.00 m/s drop) and the peak acceleration (0.405 m/s\u00b2) is extremely low. Additionally, there is no visual proximity confirmation; the BEV occupancy map reports the minimum obstacle distance is 0.75m, which is well outside the collision risk zone of <0.5m. The camera image confirms the robot is in an open area on a rug with no immediate obstacles.",
+          "key_insights": []
+        },
+        {
+          "window_id": "008",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.75,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.75
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 7.472,
+            "peak_jerk_mps3": 166.101
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.073,
+            "is_stationary": false,
+            "displacement_m": 0.014
+          },
+          "explanation": "There is no evidence of a collision. Motion data shows no sudden stop (0.00 m/s drop) and the peak acceleration (7.472 m/s\u00b2) is well below the high-impact threshold of 15 m/s\u00b2. Additionally, the BEV proximity sensor confirms the nearest obstacle is 0.75m away, which is outside the critical proximity zone (<0.5m). The camera image does not show any objects in immediate contact.",
+          "key_insights": []
+        },
+        {
+          "window_id": "009",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.75,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.75
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 1.329,
+            "peak_jerk_mps3": 4.005
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.16,
+            "is_stationary": false,
+            "displacement_m": 0.016
+          },
+          "explanation": "There is no evidence of a collision. The motion data shows no sudden stop (0.00 m/s speed drop) and the peak acceleration (1.329 m/s\u00b2) is far below the impact threshold. Furthermore, the BEV proximity sensor reports the nearest obstacle at 0.75m, which is well outside the collision risk zone (<0.5m). The camera image confirms this, showing objects at a safe distance. The robot is exhibiting normal, slow navigation.",
+          "key_insights": []
+        },
+        {
+          "window_id": "010",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.251,
+            "peak_jerk_mps3": 11.626
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.036,
+            "is_stationary": true,
+            "displacement_m": 0.01
+          },
+          "explanation": "No evidence of a collision was found. The robot is essentially stationary (Is stationary: true) with negligible speed, acceleration, and no sudden stop. Additionally, the closest obstacle detected by the BEV system is at 0.76m, which is well outside the proximity threshold for a collision event (<0.5m). The camera image confirms no objects are in immediate contact or very close to the robot.",
+          "key_insights": []
+        },
+        {
+          "window_id": "011",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.224,
+            "peak_jerk_mps3": 11.91
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.02,
+            "is_stationary": true,
+            "displacement_m": 0.005
+          },
+          "explanation": "There is no evidence of a collision. The motion data indicates the robot is stationary, with negligible speed (peak 0.02 m/s) and acceleration (0.224 m/s\u00b2). These values are far below the thresholds for a motion anomaly. Additionally, the BEV proximity sensor and visual analysis of the camera image confirm the nearest obstacle is 0.76m away, which is outside the critical proximity zone (<0.5m). Lacking both a motion anomaly and close proximity evidence, this is not a collision event.",
+          "key_insights": []
+        },
+        {
+          "window_id": "012",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.232,
+            "peak_jerk_mps3": 9.934
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.01,
+            "is_stationary": true,
+            "displacement_m": 0.002
+          },
+          "explanation": "The robot is stationary, with an average speed of 0.003 m/s and no sudden stop detected. The IMU data shows negligible acceleration (0.232 m/s\u00b2), far below the impact threshold. Furthermore, the closest obstacle detected in the BEV proximity map is 0.76m away, which is outside the critical proximity zone. There is no evidence from any data source to suggest a collision.",
+          "key_insights": []
+        },
+        {
+          "window_id": "013",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.276,
+            "peak_jerk_mps3": 2.98
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.01,
+            "is_stationary": true,
+            "displacement_m": 0.001
+          },
+          "explanation": "No collision is detected. The motion data confirms the robot is stationary (Is stationary: true, speed drop: 0.00 m/s) with no impact signature (Peak acceleration: 0.276 m/s\u00b2). Additionally, both the BEV proximity data and visual analysis show no close obstacles, with the nearest object being 0.76m away. There is a complete lack of convergent evidence for a collision event.",
+          "key_insights": []
+        },
+        {
+          "window_id": "014",
+          "odd_measurements": {},
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "position": "available",
+            "bev_proximity": "computed"
+          },
+          "collision_detected": false,
+          "confidence": 0.0,
+          "proximity_estimate_m": 0.76,
+          "collision_risk_band": "LOW",
+          "evidence_summary": {
+            "motion_anomaly_present": false,
+            "visual_proximity_confirmed": false,
+            "closest_obstacle_m": 0.76
+          },
+          "collision_signatures": {
+            "sudden_stop": false,
+            "speed_drop_mps": 0.0,
+            "peak_accel_mps2": 0.242,
+            "peak_jerk_mps3": 7.498
+          },
+          "motion_metrics": {
+            "peak_speed_mps": 0.009,
+            "is_stationary": true,
+            "displacement_m": 0.001
+          },
+          "explanation": "There is no evidence to support a collision. The motion data clearly indicates the robot is stationary (Is stationary: true, Displacement: 0.00m) and there are no significant acceleration or jerk events that would suggest an impact. Furthermore, the BEV proximity sensor reports the nearest obstacle is 0.76m away, which is well outside the collision confirmation threshold of 0.5m. The camera image corroborates this, showing no objects in immediate contact with the robot.",
+          "key_insights": []
+        }
+      ],
+      "windows_analyzed": 15,
+      "collision_stats": {
+        "total_windows": 15,
+        "collisions_detected": 2
+      }
+    },
+    "motion_output.json": {
+      "per_window": [
+        {
+          "window_id": "000",
+          "odd_measurements": {
+            "max_speed_mps": 0.0041,
+            "max_angular_velocity_radps": 0.0234,
+            "max_roll_deg": 0.19,
+            "max_pitch_deg": 0.5,
+            "max_accel_mps2": 0.307
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.001,
+            "path_length_m": 0.002,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0041,
+            "avg_mps": 0.0007
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed (0.0041 m/s) and average speed (0.0007 m/s) are both significantly below the stationary threshold of 0.05 m/s."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary. All motion indicators, including speed, displacement, and angular velocity, are at near-zero levels. The minimal values observed are consistent with sensor noise or minor jitter while standing still.",
+          "key_insights": [
+            "Negligible displacement (1mm) and path length (2mm) over the window confirm the lack of any meaningful movement.",
+            "Low acceleration and angular velocity readings reflect minor system dynamics or sensor noise, not intentional motion.",
+            "The robot is stable and level, indicated by the very small roll (0.19\u00b0) and pitch (0.50\u00b0) angles."
+          ]
+        },
+        {
+          "window_id": "001",
+          "odd_measurements": {
+            "max_speed_mps": 0.0086,
+            "max_angular_velocity_radps": 0.0213,
+            "max_roll_deg": 0.2,
+            "max_pitch_deg": 0.49,
+            "max_accel_mps2": 0.2848
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.0,
+            "path_length_m": 0.002,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0086,
+            "avg_mps": 0.0015
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed of 0.0086 m/s is well below the stationary threshold of 0.05 m/s."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary. The peak speed is extremely low, and the total distance traveled is negligible (0.002m) with zero net displacement. Angular velocity and orientation changes are minimal, confirming a lack of significant movement.",
+          "key_insights": [
+            "The non-zero acceleration (0.2848 m/s\u00b2) and minuscule path length, despite being stationary, likely indicate minor physical adjustments or sensor noise from leg dynamics."
+          ]
+        },
+        {
+          "window_id": "002",
+          "odd_measurements": {
+            "max_speed_mps": 1.9785,
+            "max_angular_velocity_radps": 0.3483,
+            "max_roll_deg": 4.21,
+            "max_pitch_deg": 3.17,
+            "max_accel_mps2": 3.8609
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.217,
+            "path_length_m": 0.304,
+            "efficiency": 0.71
+          },
+          "speed_metrics": {
+            "peak_mps": 1.9785,
+            "avg_mps": 0.1904
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 1.0,
+            "evidence": "Peak speed (1.9785 m/s) is significantly above the stationary threshold (0.05 m/s)."
+          },
+          "motion_state": "moving",
+          "explanation": "A short, sharp forward movement with significant acceleration. The path was mostly straight, as indicated by the trajectory efficiency of 0.71 and low angular velocity.",
+          "key_insights": [
+            "The motion is a brief, high-speed burst, as the peak speed (1.98 m/s) is over ten times the average speed (0.19 m/s) for the window."
+          ]
+        },
+        {
+          "window_id": "003",
+          "odd_measurements": {
+            "max_speed_mps": 0.0129,
+            "max_angular_velocity_radps": 0.1268,
+            "max_roll_deg": 0.56,
+            "max_pitch_deg": 0.55,
+            "max_accel_mps2": 1.9396
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.001,
+            "path_length_m": 0.006,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0129,
+            "avg_mps": 0.0052
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed (0.0129 m/s) is significantly below the stationary threshold of 0.05 m/s."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary with negligible speed and travel distance. The non-zero IMU data (acceleration and angular velocity) indicates internal body shifting or leg adjustments while maintaining position.",
+          "key_insights": [
+            "Despite the stationary classification from speed, the IMU detects significant acceleration (1.94 m/s\u00b2), likely from leg dynamics or balancing actions rather than forward motion."
+          ]
+        },
+        {
+          "window_id": "004",
+          "odd_measurements": {
+            "max_speed_mps": 1.6967,
+            "max_angular_velocity_radps": 0.2738,
+            "max_roll_deg": 2.79,
+            "max_pitch_deg": 1.61,
+            "max_accel_mps2": 2.8659
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.349,
+            "path_length_m": 0.387,
+            "efficiency": 0.9
+          },
+          "speed_metrics": {
+            "peak_mps": 1.6967,
+            "avg_mps": 0.2448
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 1.0,
+            "evidence": "Current speed (1.6967 m/s) is significantly above the 0.05 m/s stationary threshold."
+          },
+          "motion_state": "moving",
+          "explanation": "The robot is executing a short, straight-line movement. This is characterized by a high peak speed (1.70 m/s), very high trajectory efficiency (0.90), and low angular velocity.",
+          "key_insights": [
+            "The combination of high trajectory efficiency (0.90) and low angular velocity confirms the motion is almost perfectly straight, ruling out any significant turning."
+          ]
+        },
+        {
+          "window_id": "005",
+          "odd_measurements": {
+            "max_speed_mps": 2.0437,
+            "max_angular_velocity_radps": 0.3451,
+            "max_roll_deg": 3.2,
+            "max_pitch_deg": 3.95,
+            "max_accel_mps2": 5.536
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.53,
+            "path_length_m": 0.585,
+            "efficiency": 0.91
+          },
+          "speed_metrics": {
+            "peak_mps": 2.0437,
+            "avg_mps": 0.3838
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 1.0,
+            "evidence": "Peak speed of 2.0437 m/s is significantly above the stationary threshold of 0.05 m/s."
+          },
+          "motion_state": "moving",
+          "explanation": "A short, straight, and rapid forward burst of motion. The high trajectory efficiency (0.91) and low angular velocity confirm a direct path.",
+          "key_insights": [
+            "The motion is highly efficient (0.91), indicating a very straight, direct path with minimal turning.",
+            "A significant acceleration (5.5360 m/s\u00b2) resulted in a peak speed over 5 times the average, characteristic of a short, sharp burst of movement rather than sustained travel."
+          ]
+        },
+        {
+          "window_id": "006",
+          "odd_measurements": {
+            "max_speed_mps": 0.0915,
+            "max_angular_velocity_radps": 0.4442,
+            "max_roll_deg": 2.17,
+            "max_pitch_deg": 2.36,
+            "max_accel_mps2": 9.0124
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.048,
+            "path_length_m": 0.088,
+            "efficiency": 0.54
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0915,
+            "avg_mps": 0.0321
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 0.9,
+            "evidence": "Peak speed (0.0915 m/s) is greater than the stationary threshold (0.05 m/s)."
+          },
+          "motion_state": "complex",
+          "explanation": "The robot is performing a slow, turning or meandering maneuver. The movement is inefficient, as the total path length is nearly double the net displacement.",
+          "key_insights": [
+            "The low path efficiency of 0.54, combined with a non-zero angular velocity, strongly indicates a turning motion rather than straight-line travel.",
+            "Despite a low average speed, the peak speed confirms the robot is actively moving."
+          ]
+        },
+        {
+          "window_id": "007",
+          "odd_measurements": {
+            "max_speed_mps": 0.1623,
+            "max_angular_velocity_radps": 0.1097,
+            "max_roll_deg": 0.52,
+            "max_pitch_deg": 0.86,
+            "max_accel_mps2": 0.4054
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.009,
+            "path_length_m": 0.014,
+            "efficiency": 0.61
+          },
+          "speed_metrics": {
+            "peak_mps": 0.1623,
+            "avg_mps": 0.0153
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 0.9,
+            "evidence": "Peak speed of 0.1623 m/s is above the 0.05 m/s stationary threshold."
+          },
+          "motion_state": "complex",
+          "explanation": "The robot executed a very brief, low-speed movement. The high peak speed relative to the extremely low average speed and minimal path length (1.4 cm) indicates a short burst or adjustment rather than sustained travel.",
+          "key_insights": [
+            "The motion is a small positional adjustment, not continuous travel, evidenced by the tiny displacement (9 mm).",
+            "A short burst of motion occurred, indicated by the peak speed being more than 10x the average speed.",
+            "The path efficiency of 0.61 suggests the minor adjustment was not perfectly straight."
+          ]
+        },
+        {
+          "window_id": "008",
+          "odd_measurements": {
+            "max_speed_mps": 0.0732,
+            "max_angular_velocity_radps": 0.376,
+            "max_roll_deg": 0.91,
+            "max_pitch_deg": 1.3,
+            "max_accel_mps2": 7.4716
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.014,
+            "path_length_m": 0.056,
+            "efficiency": 0.24
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0732,
+            "avg_mps": 0.0178
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 0.95,
+            "evidence": "Peak speed of 0.0732 m/s is above the 0.05 m/s stationary threshold."
+          },
+          "motion_state": "rotating",
+          "explanation": "The robot is performing a slow, wandering turn or shuffle. The motion is highly inefficient (0.24), with the total path length being four times the net displacement. A significant acceleration spike indicates a jerky, dynamic start to the movement.",
+          "key_insights": [
+            "The primary characteristic is rotational or wandering motion, not linear travel, as confirmed by the very low trajectory efficiency (0.24).",
+            "A high acceleration (7.47 m/s\u00b2) combined with low average speed suggests a short, sharp, and inefficient maneuver."
+          ]
+        },
+        {
+          "window_id": "009",
+          "odd_measurements": {
+            "max_speed_mps": 0.1602,
+            "max_angular_velocity_radps": 0.1385,
+            "max_roll_deg": 0.5,
+            "max_pitch_deg": 1.08,
+            "max_accel_mps2": 1.3291
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.016,
+            "path_length_m": 0.02,
+            "efficiency": 0.77
+          },
+          "speed_metrics": {
+            "peak_mps": 0.1602,
+            "avg_mps": 0.0101
+          },
+          "is_stationary": {
+            "value": false,
+            "confidence": 1.0,
+            "evidence": "Peak speed of 0.1602 m/s is significantly above the stationary threshold of 0.05 m/s."
+          },
+          "motion_state": "moving",
+          "explanation": "The robot executed a very brief and short (2 cm) forward movement. The motion was direct and straight, as indicated by the high trajectory efficiency (0.77).",
+          "key_insights": [
+            "The movement was extremely short, covering only 2 cm, suggesting a minor positional adjustment or shuffle rather than intentional travel."
+          ]
+        },
+        {
+          "window_id": "010",
+          "odd_measurements": {
+            "max_speed_mps": 0.0359,
+            "max_angular_velocity_radps": 0.016,
+            "max_roll_deg": 0.44,
+            "max_pitch_deg": 0.61,
+            "max_accel_mps2": 0.2514
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.01,
+            "path_length_m": 0.011,
+            "efficiency": 0.99
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0359,
+            "avg_mps": 0.0108
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 0.95,
+            "evidence": "Peak speed (0.036 m/s) is well below the stationary threshold of 0.05 m/s. Displacement is negligible at 1 cm."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is effectively stationary. All speed metrics are very low, and the total displacement is only 1 cm. The non-zero acceleration is likely due to minor balancing adjustments or system noise rather than intentional motion.",
+          "key_insights": [
+            "The motion is classified as stationary based on the speed threshold, despite minimal displacement (1 cm) being recorded."
+          ]
+        },
+        {
+          "window_id": "011",
+          "odd_measurements": {
+            "max_speed_mps": 0.0198,
+            "max_angular_velocity_radps": 0.0202,
+            "max_roll_deg": 0.37,
+            "max_pitch_deg": 0.65,
+            "max_accel_mps2": 0.2237
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.005,
+            "path_length_m": 0.006,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0198,
+            "avg_mps": 0.0029
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed (0.0198 m/s) and average speed (0.0029 m/s) are both well below the stationary threshold of 0.05 m/s."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary. All motion metrics, including a peak speed of 0.0198 m/s, minimal displacement (0.005m), and low angular velocity (0.0202 rad/s), are at near-zero levels consistent with sensor noise or minor system drift while parked.",
+          "key_insights": [
+            "The robot is confirmed stationary, with speed measurements significantly under the motion threshold.",
+            "The minimal displacement (5mm) and extremely low trajectory efficiency (0.00) suggest the detected motion is random sensor noise rather than intentional movement."
+          ]
+        },
+        {
+          "window_id": "012",
+          "odd_measurements": {
+            "max_speed_mps": 0.0099,
+            "max_angular_velocity_radps": 0.0234,
+            "max_roll_deg": 0.28,
+            "max_pitch_deg": 0.66,
+            "max_accel_mps2": 0.2324
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.002,
+            "path_length_m": 0.002,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0099,
+            "avg_mps": 0.003
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed (0.0099 m/s) is well below the stationary threshold of 0.05 m/s, and net displacement is negligible (0.002m)."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary. All motion metrics, including speed, angular velocity, and displacement, are at near-zero levels, confirming a complete lack of significant movement.",
+          "key_insights": [
+            "All available sensor data (speed, position, IMU) consistently indicate a stationary state."
+          ]
+        },
+        {
+          "window_id": "013",
+          "odd_measurements": {
+            "max_speed_mps": 0.0104,
+            "max_angular_velocity_radps": 0.0192,
+            "max_roll_deg": 0.24,
+            "max_pitch_deg": 0.66,
+            "max_accel_mps2": 0.2763
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.001,
+            "path_length_m": 0.002,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0104,
+            "avg_mps": 0.0016
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed (0.0104 m/s) and average speed (0.0016 m/s) are well below the stationary threshold of 0.05 m/s. Negligible displacement (0.001m) confirms this."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary. All motion metrics, including speed, displacement, and path length, are effectively zero, indicating no significant translational movement.",
+          "key_insights": [
+            "The non-zero acceleration (0.2763 m/s\u00b2) while stationary is likely due to internal leg dynamics for balancing, rather than external motion."
+          ]
+        },
+        {
+          "window_id": "014",
+          "odd_measurements": {
+            "max_speed_mps": 0.0095,
+            "max_angular_velocity_radps": 0.0224,
+            "max_roll_deg": 0.23,
+            "max_pitch_deg": 0.7,
+            "max_accel_mps2": 0.2418
+          },
+          "data_availability": {
+            "speed": "derived",
+            "acceleration": "imu",
+            "angular_velocity": "imu",
+            "orientation": "available",
+            "position": "available"
+          },
+          "trajectory_metrics": {
+            "displacement_m": 0.001,
+            "path_length_m": 0.002,
+            "efficiency": 0.0
+          },
+          "speed_metrics": {
+            "peak_mps": 0.0095,
+            "avg_mps": 0.0018
+          },
+          "is_stationary": {
+            "value": true,
+            "confidence": 1.0,
+            "evidence": "Peak speed (0.0095 m/s) is significantly below the stationary threshold of 0.05 m/s. Trajectory data shows negligible movement (2mm path length)."
+          },
+          "motion_state": "stationary",
+          "explanation": "The robot is stationary. All motion metrics, including speed, angular velocity, and displacement, are at near-zero levels. The minimal values recorded are consistent with sensor noise or minor balancing adjustments while standing still.",
+          "key_insights": [
+            "The system is unambiguously stationary, with all primary indicators (speed, displacement) falling far below thresholds for movement."
+          ]
+        }
+      ],
+      "windows_analyzed": 15
+    },
+    "odd_spec.json": {
+      "odd_specification": {
+        "environment": {
+          "categorical": {
+            "lighting_conditions": {
+              "type": "enum",
+              "allowed": [
+                "bright",
+                "moderate",
+                "dim"
+              ],
+              "description": "Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)"
+            },
+            "terrain_type": {
+              "type": "enum",
+              "allowed": [
+                "tile",
+                "hardwood",
+                "low-pile carpet",
+                "laminate",
+                "area_rugs"
+              ],
+              "description": "Ground surface type. Assess from camera view of floor. List specific materials visible. High-pile/shag rugs are OUT OF ODD."
+            }
+          },
+          "numeric": {
+            "obstacle_density": {
+              "type": "range",
+              "min": 0,
+              "max": 0.7,
+              "description": "Fraction of BEV area occupied by obstacles (0-1). Moderate to high density is IN ODD; extreme clutter blocking paths is OUT. Computed from BEV occupancy map, not camera."
+            },
+            "clearance_index": {
+              "type": "range",
+              "min": 0.3,
+              "max": 1,
+              "description": "Navigability of paths from BEV (0-1). Measures path clearance, not general tidiness. A low value indicates blocked paths. Indoor min threshold set to 0.3."
+            }
+          },
+          "boolean": {
+            "stairs_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary check for accessible stairs. 1=stairs are detected and accessible (OUT OF ODD). 0=no accessible stairs detected (IN ODD). Assessed from camera/depth data."
+            }
+          }
+        },
+        "actors": {
+          "categorical": {},
+          "numeric": {},
+          "boolean": {
+            "human_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation."
+            },
+            "animal_present": {
+              "type": "bool",
+              "allowed": 0,
+              "description": "Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation."
+            }
+          }
+        },
+        "ego": {
+          "categorical": {},
+          "numeric": {
+            "max_speed_mps": {
+              "type": "range",
+              "min": 0,
+              "max": 2.5,
+              "description": "Ego's maximum linear velocity. Sustained speed should not exceed 2.5 m/s."
+            },
+            "max_accel_mps2": {
+              "type": "range",
+              "min": 0,
+              "max": 10,
+              "description": "Ego's maximum linear acceleration. Brief reactive maneuvers can reach 10 m/s^2."
+            },
+            "max_pitch_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Ego's maximum pitch angle, corresponding to ramp/incline limits. Absolute value should not exceed 15 degrees."
+            },
+            "max_roll_deg": {
+              "type": "range",
+              "min": 0,
+              "max": 15,
+              "description": "Ego's maximum roll angle. Expected to be low on flat indoor floors. Limit set to 15 degrees to match incline tolerance."
+            }
+          },
+          "boolean": {}
+        }
+      }
+    },
+    "perception_output.json": {
+      "per_window": [
+        {
+          "window_id": "000",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "The camera image is well-lit, in focus, and shows no significant artifacts. Fine details of the rug texture are clearly visible."
+          },
+          "observations": {
+            "scene_description": "The robot is indoors in a well-lit living room. It is positioned on a patterned, high-texture area rug. Directly in front is a small wooden object, and beyond that is a dark wooden media console. To the left is a couch/armchair, and to the right is a potted plant in a basket.",
+            "lighting": "The room is brightly lit, likely by overhead lights or daylight. Shadows are present but soft, and all surfaces are clearly visible.",
+            "terrain": "The robot is on a woven area rug with a prominent geometric pattern and significant physical texture.",
+            "obstacles": "Obstacles include a small wooden box ('EVERYMATE') in the immediate foreground, a large media console directly ahead, an armchair to the left, and a large potted plant to the right.",
+            "actors": "None visible. There are no humans or animals in the camera frame."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.16,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans are visible in the camera image.",
+            "animal_present": "No animals are visible in the camera image.",
+            "max_pitch_deg": "Not observable from a single static frame. Assumed to be 0.0 as the BEV height map shows a flat surface.",
+            "max_accel_mps2": "Not observable from a single static frame. Assumed to be 0.0.",
+            "max_roll_deg": "Not observable from a single static frame. Assumed to be 0.0 as the BEV height map shows a flat surface.",
+            "max_speed_mps": "Not observable from a single static frame. Assumed to be 0.0.",
+            "lighting_conditions": "The scene is well-illuminated, with clear details visible on both light and dark objects. This is classified as 'bright'.",
+            "terrain_type": "The robot is clearly on a decorative rug, which matches the 'area_rugs' category. The texture is confirmed by the BEV roughness map.",
+            "obstacle_density": "Using the pre-computed value of 16.0%, which corresponds to 0.16.",
+            "clearance_index": "The forward path is constrained by furniture. However, the BEV occupancy map shows a large, clear path to the robot's right. The robot can easily rotate and navigate into this open space. An index of 0.6 reflects a typical furnished room with some obstacles but clear alternative paths. The pre-computed obstacle density of 16% supports that the scene is not severely cluttered.",
+            "stairs_present": "The camera view and flat BEV height map show no evidence of stairs."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured rug, and the BEV roughness map (Image D) shows corresponding high values (bright areas), confirming the rug has physical texture and is not just a flat pattern.",
+            "The BEV occupancy map (Image B) accurately shows the layout of the larger furniture (console, chair), but the small wooden object in the immediate foreground of the camera view is not distinctly resolved, likely due to its proximity to the robot's self-filter zone.",
+            "The BEV height map (Image C) confirms the camera's observation of a flat floor, ruling out ramps or stairs."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.9
+        },
+        {
+          "window_id": "001",
+          "image_quality": {
+            "camera_quality": "moderate",
+            "artifacts_observed": [
+              "exposure_issues"
+            ],
+            "quality_notes": "The image has high contrast, with the foreground rug being overexposed (blown highlights) and the dark cabinet in the background having crushed shadows. Overall scene is still interpretable."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-lit living room, positioned on a patterned area rug. It is facing a dark wooden media console. To the left is a grey armchair, and in the immediate foreground is a small wooden object, possibly a footrest or slant board.",
+            "lighting": "The lighting is bright, possibly from an overhead source, causing some harsh highlights on the light-colored rug.",
+            "terrain": "The robot is on a light-colored, patterned area rug. The rug has a visible texture.",
+            "obstacles": "Obstacles include a large media console directly ahead, an armchair to the left, and a small wooden object in the immediate foreground. The pre-computed minimum distance to an obstacle is 0.76m.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.16,
+            "clearance_index": 0.9,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans or parts of humans are visible in the camera image.",
+            "animal_present": "No animals are visible in the camera image.",
+            "lighting_conditions": "The scene is well-illuminated, with strong light casting distinct shadows and causing overexposure on the foreground rug. This qualifies as 'bright'.",
+            "terrain_type": "The robot is situated on a large rug that covers the visible floor area. This matches the 'area_rugs' category from the ODD spec.",
+            "obstacle_density": "Using the pre-computed value of 16.0%, which is 0.16. This is well within the ODD limit of 0.7.",
+            "clearance_index": "The pre-computed obstacle density is low (16%), indicating 84% of the BEV is free space. The BEV occupancy map confirms a large, wide-open area around the robot, despite the presence of furniture at the periphery. There is ample room for navigation in multiple directions. A value of 0.9 reflects this open environment, which is well above the minimum ODD threshold of 0.3.",
+            "stairs_present": "The camera view shows a single-level indoor room. The BEV height map is uniformly flat, confirming there are no stairs or significant elevation changes."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured, patterned rug in the foreground. This visual information is strongly corroborated by the BEV roughness map (Image D), which is bright and varied, indicating the rug has a physical texture and is not just a flat printed pattern.",
+            "The BEV occupancy map (Image B) shows obstacles in a 'U' shape, which corresponds well to the furniture (console, chair) visible at the edges of the camera frame."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.9
+        },
+        {
+          "window_id": "002",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [
+              "lens_distortion",
+              "exposure_issues"
+            ],
+            "quality_notes": "The image is generally sharp and in focus. There is minor barrel distortion visible at the edges of the frame. The bright white parts of the rug have some blown highlights, but overall visibility is good."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-lit living room, positioned on a large, patterned area rug. In front of the robot is a wooden media console. To the left is an armchair, and to the right is a decorative plant. A small wooden ramp-like object is visible in the immediate foreground.",
+            "lighting": "The room is well-lit by multiple light sources, including a lamp visible in the upper left. This results in clear visibility of the environment.",
+            "terrain": "The robot is on a woven, patterned area rug with a distinct black and white design. The rug appears to be low-pile.",
+            "obstacles": "Primary obstacles include the media console directly ahead, an armchair to the left, and a plant in a basket to the right. A small, low-profile wooden object (possibly a foot ramp or pet ramp) is in the immediate foreground.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "stairs_present": 0,
+            "obstacle_density": 0.156,
+            "clearance_index": 0.6
+          },
+          "reasoning": {
+            "human_present": "No humans are visible in the camera image.",
+            "animal_present": "No animals are visible in the camera image.",
+            "lighting_conditions": "The camera image shows a well-illuminated room with clear details and defined shadows, consistent with 'bright' indoor lighting.",
+            "terrain_type": "The floor surface is a large, patterned rug, which falls under the 'area_rugs' category. The BEV roughness map is dark, indicating it is not a high-pile rug.",
+            "stairs_present": "The BEV height map shows a flat, uniform elevation, and the camera image does not show any stairs.",
+            "obstacle_density": "The pre-computed value is 0.156 (15.6%), which is well within the ODD limit of 0.7.",
+            "clearance_index": "The pre-computed metric 'Forward path blocked' is True, confirmed by the media console in the camera and the BEV occupancy map. However, the BEV map shows significant open space to the left and right, allowing the robot to easily turn and navigate. The obstacle density is low (15.6%). A score of 0.6 reflects a scene with a blocked forward path but ample alternative routes."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a high-contrast, textured pattern on the rug. The BEV roughness map (Image D) is dark and uniform in that area, correctly identifying the surface as geometrically flat and smooth for navigation. This confirms the visual pattern is not physical roughness.",
+            "The BEV occupancy map (Image B) accurately represents the large furniture (console, chair) visible in the camera image, forming a U-shape around the robot.",
+            "The small wooden object in the foreground of the camera image is not visible in the BEV occupancy map, likely because it is too low to be registered as an obstacle by the LiDAR."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.9
+        },
+        {
+          "window_id": "003",
+          "image_quality": {
+            "camera_quality": "degraded",
+            "artifacts_observed": [
+              "Exposure issues",
+              "Lens distortion"
+            ],
+            "quality_notes": "Image is significantly overexposed, causing blown highlights on the floor and rug, which washes out surface details. Minor barrel distortion is present due to the wide-angle lens."
+          },
+          "observations": {
+            "scene_description": "Robot is in a brightly lit indoor living room, positioned on a large, patterned area rug. A small wooden ramp-like object is directly in front. The room is furnished with a media console ahead, an armchair to the left, and a potted plant to the right.",
+            "lighting": "The room is very brightly lit, to the point of causing overexposure in the camera sensor.",
+            "terrain": "The robot is on a large, low-pile, patterned area rug that covers most of the visible floor.",
+            "obstacles": "Primary obstacles are furniture at the edges of the room: a media console, an armchair, and a potted plant. A small, low object (a wooden ramp) is in the immediate foreground but appears traversable.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.15,
+            "clearance_index": 0.7,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans are visible anywhere in the camera frame.",
+            "animal_present": "No animals are visible anywhere in the camera frame.",
+            "max_pitch_deg": "Assumed to be 0.0 as the robot is stationary on a flat surface, which is confirmed by the BEV height map.",
+            "max_accel_mps2": "Assumed to be 0.0 as the robot appears stationary in the images.",
+            "max_roll_deg": "Assumed to be 0.0 as the robot is stationary on a flat surface, confirmed by the BEV height map.",
+            "max_speed_mps": "Assumed to be 0.0 as the robot appears stationary in the images.",
+            "lighting_conditions": "The scene is very well-lit, resulting in overexposure. This falls under the 'bright' category, which is within ODD.",
+            "terrain_type": "The floor is covered by a large rug with a low pile, which corresponds to the 'area_rugs' category in the ODD.",
+            "obstacle_density": "Using the pre-computed value of 15.0%, which is 0.15, well within the ODD limit of 0.7.",
+            "clearance_index": "Despite the pre-computed 'Forward path blocked' metric (likely due to the media console), the BEV occupancy map shows that 85% of the area is free space. There are wide, clear paths to the robot's sides. The robot is not constrained and has ample room to maneuver. A score of 0.7 is appropriate.",
+            "stairs_present": "The camera view shows a single-level room, and the BEV height map is uniformly flat, confirming no accessible stairs are present."
+          },
+          "sensor_fusion_notes": [
+            "The camera image shows a highly complex visual pattern on the rug. However, the BEV roughness map (Image D) is relatively dark and uniform in the central area, confirming the rug is geometrically smooth and navigable.",
+            "The small wooden object in the camera's foreground is not a significant feature in the BEV occupancy map, indicating it is low enough for the robot to step over or navigate around easily.",
+            "The BEV occupancy map's C-shape of obstacles perfectly matches the furniture layout (armchair, console, plant) seen in the camera image."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.75
+        },
+        {
+          "window_id": "004",
+          "image_quality": {
+            "camera_quality": "degraded",
+            "artifacts_observed": [
+              "JPEG compression",
+              "Exposure issues"
+            ],
+            "quality_notes": "The camera image is severely overexposed, particularly on the floor, which washes out details. There are also significant blocky compression artifacts on the patterned rug, which obscure texture."
+          },
+          "observations": {
+            "scene_description": "The robot is in an indoor, furnished living room. It is positioned on a large, patterned area rug. Directly ahead is a dark wooden cabinet, to the left is a chair, and to the far right is a decorative plant or tree. There is a small, transparent object on the rug in the immediate foreground.",
+            "lighting": "The room appears to be well-lit by artificial light, likely from a lamp visible in the upper left. The camera image is overexposed, but the ambient lighting itself is sufficient.",
+            "terrain": "The robot is on a patterned area rug with a visible texture. The BEV roughness map confirms the surface is not smooth.",
+            "obstacles": "Obstacles include a cabinet directly in front of the robot, a chair to the left, and a decorative tree to the right. The BEV occupancy map shows a clear path to the robot's right.",
+            "actors": "None visible. The scene contains no humans or animals."
+          },
+          "odd_measurements": {
+            "animal_present": 0,
+            "human_present": 0,
+            "max_accel_mps2": 0.0,
+            "max_pitch_deg": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "clearance_index": 0.6,
+            "obstacle_density": 0.16,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "animal_present": "No animals are visible anywhere in the camera frame.",
+            "human_present": "No humans are visible anywhere in the camera frame.",
+            "max_accel_mps2": "The robot is stationary; value is 0.0, which is within the ODD range.",
+            "max_pitch_deg": "The robot is on a flat surface, as confirmed by the BEV height map; value is 0.0, which is within the ODD range.",
+            "max_roll_deg": "The robot is on a flat surface, as confirmed by the BEV height map; value is 0.0, which is within the ODD range.",
+            "max_speed_mps": "The robot is stationary; value is 0.0, which is within the ODD range.",
+            "clearance_index": "The pre-computed metric 'Forward path blocked (<2m): true' is accurate as a cabinet is directly ahead. However, the BEV occupancy map shows a wide open path to the right. The robot can easily rotate and navigate into this space. The obstacle density of 16% is low, indicating ample free space. A score of 0.6 reflects a partially obstructed but easily navigable environment.",
+            "obstacle_density": "The pre-computed value of 0.16 is consistent with the BEV occupancy map showing a moderately furnished room. This is well within the ODD limit of 0.7.",
+            "lighting_conditions": "The room is well-illuminated by indoor lighting. The camera image quality issue is overexposure, not a lack of ambient light. The scene is classified as 'bright'.",
+            "terrain_type": "The robot is on a large rug covering the floor. This matches the 'area_rugs' category in the ODD. The overexposed camera image and bright BEV roughness map both indicate a textured surface.",
+            "stairs_present": "The camera view shows a single-level room, and the BEV height map is uniformly flat, indicating no stairs."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured, patterned rug. The BEV roughness map is also bright, confirming a non-smooth surface. This is good agreement.",
+            "The BEV occupancy map accurately reflects the geometry of the furniture (chair, cabinet) visible in the camera image.",
+            "The BEV height map confirms the camera's view of a flat floor, ruling out ramps or stairs."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.7
+        },
+        {
+          "window_id": "005",
+          "image_quality": {
+            "camera_quality": "degraded",
+            "artifacts_observed": [
+              "JPEG compression",
+              "focus issues",
+              "exposure issues (blown highlights)",
+              "lens distortion"
+            ],
+            "quality_notes": "The image suffers from significant JPEG compression artifacts, making the foreground texture indistinct and blocky. The central light source is blown out, and the overall focus is soft. Barrel distortion is present at the edges."
+          },
+          "observations": {
+            "scene_description": "The robot is in a furnished living room, positioned on a large, white, highly textured area rug. In front of the robot is a small wedge-shaped object on the rug. The background contains a wooden console table, a chair to the left, and various decorative items.",
+            "lighting": "The room is well-lit, with some areas being overexposed by a bright light source, leading to blown highlights in the camera image.",
+            "terrain": "The robot is on a very shaggy, high-pile area rug. The texture is extremely pronounced and uneven.",
+            "obstacles": "Obstacles include furniture (console table, chair), a small object on the rug directly in front of the robot, and a decorative plant.",
+            "actors": "None visible. No humans or animals are discernible in the camera image."
+          },
+          "odd_measurements": {
+            "animal_present": 0,
+            "human_present": 0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.144,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "animal_present": "No animals are visible in the camera frame.",
+            "human_present": "No humans (including feet or legs) are visible in the camera frame.",
+            "lighting_conditions": "The scene is well-illuminated, with some light sources causing blown highlights in the camera image. This qualifies as 'bright' rather than 'moderate' or 'dim'.",
+            "terrain_type": "The floor is covered by a large area rug. While it appears to be high-pile or shag (which is noted as a concern), the closest allowed ODD category is 'area_rugs'.",
+            "obstacle_density": "The pre-computed value is 14.4%, which is well within the ODD limit of 70%.",
+            "clearance_index": "The BEV occupancy map shows obstacles ahead and to the left, but a wide, clear path exists to the right. The robot is not constrained and has multiple navigation options. The pre-computed obstacle density of 14.4% supports a mid-range clearance score. A value of 0.6 reflects a typical furnished room with clear paths available.",
+            "stairs_present": "The camera image shows a single-level floor, and the BEV height map is uniformly flat, indicating no stairs are present or accessible."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured, shaggy rug in the foreground. The BEV roughness map is correspondingly very bright in this area, confirming the surface is physically rough and not just a visual pattern. The sensors are in strong agreement on this point.",
+            "The small wedge-shaped object seen on the rug in the camera is also present as a small obstacle in the BEV occupancy map just forward of the robot.",
+            "The flat gray BEV height map confirms the camera's observation of a level floor."
+          ],
+          "odd_concerns": [
+            "terrain_type: The rug is clearly high-pile or shag, as confirmed by both the camera image and the high values in the BEV roughness map. The ODD specification for terrain_type explicitly states 'High-pile/shag rugs are OUT OF ODD'. This represents a significant ODD violation."
+          ],
+          "confidence": 0.65
+        },
+        {
+          "window_id": "006",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "The image is clear, well-focused, and properly exposed. No significant compression, blur, or distortion artifacts are visible."
+          },
+          "observations": {
+            "scene_description": "An indoor living room scene. The robot is positioned on a large, patterned, tufted area rug. In front of the robot is a dark wooden media console against a wall with wainscoting. To the left is a gray armchair. The room is well-decorated and lit by warm artificial light.",
+            "lighting": "The room has moderate, warm artificial lighting from lamps, creating some distinct shadows but providing clear visibility of the scene. It is not dim.",
+            "terrain": "The robot is on a large area rug with a geometric pattern and raised, shaggy tufts. This creates a physically rough surface, which is confirmed by the BEV roughness map.",
+            "obstacles": "Obstacles include a media console directly ahead, an armchair to the left, a small cat scratcher on the rug, a potted plant, and a bag of pet food to the far right.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "moderate",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.13,
+            "clearance_index": 0.7,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans or parts of humans are visible in the camera frame.",
+            "animal_present": "No animals are visible in the camera frame, although pet-related items (scratcher, food bag) are present.",
+            "max_pitch_deg": "Unobservable from a single static image. Assumed to be 0 as the BEV height map shows flat terrain.",
+            "max_accel_mps2": "Unobservable from a single static image. Assumed to be 0 as the robot appears stationary.",
+            "max_roll_deg": "Unobservable from a single static image. Assumed to be 0 as the BEV height map shows flat terrain.",
+            "max_speed_mps": "Unobservable from a single static image. Assumed to be 0 as the robot appears stationary.",
+            "lighting_conditions": "The environment is clearly visible under typical indoor artificial lighting, which corresponds to 'moderate'.",
+            "terrain_type": "The robot is on an area rug, which is an allowed terrain type. It is not on hardwood, tile, or other visible floor material.",
+            "obstacle_density": "The pre-computed value is 13.0%, which is well within the ODD limit of 70%.",
+            "clearance_index": "The BEV occupancy map shows that while the direct forward path is blocked by a cabinet, there are wide open paths to the left and right. The low obstacle density (13%) confirms the space is mostly clear. The robot is not constrained and has ample room to maneuver.",
+            "stairs_present": "The camera view shows a single-level room, and the BEV height map is uniformly flat, confirming no stairs are present."
+          },
+          "sensor_fusion_notes": [
+            "The high values in the BEV roughness map strongly corroborate the visually textured, tufted nature of the area rug seen in the camera.",
+            "BEV occupancy accurately maps the large furniture (console, chair) visible in the camera image.",
+            "All sensors are in agreement, providing a consistent view of the environment."
+          ],
+          "odd_concerns": [
+            "The terrain is an area rug with high-pile, shaggy tufts. The ODD specification notes that 'High-pile/shag rugs are OUT OF ODD'. While 'area_rugs' is an allowed category, the high roughness of this specific rug could be a borderline case and potentially violate the spirit of the ODD if the pile height impedes locomotion."
+          ],
+          "confidence": 0.9
+        },
+        {
+          "window_id": "007",
+          "image_quality": {
+            "camera_quality": "moderate",
+            "artifacts_observed": [
+              "lens_distortion"
+            ],
+            "quality_notes": "The image has noticeable barrel distortion at the edges, typical of a wide-angle lens. The overall focus is slightly soft, but details are still discernible. Exposure is good."
+          },
+          "observations": {
+            "scene_description": "The robot is in an indoor, well-lit living room. It is positioned on a large, patterned area rug. Directly in front of the robot is a small wooden object, possibly a pet scratcher. Beyond that is a dark wooden console table against a wall. The room is furnished with an armchair to the left and a decorative plant to the right.",
+            "lighting": "The room is well-lit by multiple artificial light sources, including a floor lamp and overhead lighting reflected in a mirror. The floor and surrounding objects are clearly visible.",
+            "terrain": "The robot is on a thick, woven area rug with a prominent geometric pattern. The texture appears raised and physically uneven.",
+            "obstacles": "Obstacles include the console table directly ahead, an armchair to the left, a decorative plant, and a large bag (possibly pet food) to the right. There is also a small wooden object on the rug in the immediate foreground.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "animal_present": 0,
+            "human_present": 0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.132,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "animal_present": "No animals are visible in the camera image.",
+            "human_present": "No humans are visible in the camera image.",
+            "lighting_conditions": "The scene is illuminated by multiple light sources, resulting in clear visibility of the floor, walls, and furniture. This qualifies as 'bright'.",
+            "terrain_type": "The robot is clearly positioned on a large rug, which is an allowed 'area_rugs' terrain type. This is distinct from the underlying floor.",
+            "obstacle_density": "Pre-computed value provided (13.2%). This is well within the ODD limit of 0.7.",
+            "clearance_index": "The BEV occupancy map shows a blockage directly in the forward path (the console table), confirmed by the 'Forward path blocked' metric. However, there is a very large, open area to the left and behind the robot. The robot is not constrained and can easily reverse and maneuver. A score of 0.6 reflects a typical furnished room where one direction is blocked but alternative paths are wide open.",
+            "stairs_present": "The camera view does not show any stairs, and the BEV height map is uniformly flat, indicating no elevation changes consistent with stairs."
+          },
+          "sensor_fusion_notes": [
+            "The highly textured and patterned rug seen in the camera (Image A) corresponds directly to the bright, patchy areas in the BEV roughness map (Image D), confirming the surface is physically uneven, not just visually patterned.",
+            "The furniture layout seen in the camera (console ahead, chair left) matches the obstacle clusters in the BEV occupancy map (Image B).",
+            "The flat floor seen in the camera is confirmed by the uniform elevation in the BEV height map (Image C)."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.85
+        },
+        {
+          "window_id": "008",
+          "image_quality": {
+            "camera_quality": "degraded",
+            "artifacts_observed": [
+              "jpeg compression",
+              "blocky patterns",
+              "color banding"
+            ],
+            "quality_notes": "Image is severely degraded with extreme blocky compression artifacts across the entire frame. Fine details are completely lost, and object shapes are distorted. Semantic interpretation is highly unreliable."
+          },
+          "observations": {
+            "scene_description": "The scene is an indoor room with furniture against the far wall. The floor is covered by a very thick, highly textured and patterned rug. The severe image artifacts make it difficult to identify specific objects.",
+            "lighting": "Despite the artifacts, the overall scene appears to be illuminated, with visible features in the background. Lighting is not dim.",
+            "terrain": "The floor is covered by what appears to be a very ornate, thick area rug with a complex, raised pattern. It looks like a high-pile or shag-style rug.",
+            "obstacles": "Obstacles include a large piece of furniture (sideboard or cabinet) directly ahead, and various items on the floor associated with the rug's texture. The BEV shows these as a cluster of obstacles in the forward direction.",
+            "actors": "None visible. The image quality is too poor to definitively rule out actors, but none are clearly identifiable."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "moderate",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.13,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans are identifiable in the severely degraded camera image.",
+            "animal_present": "No animals are identifiable in the severely degraded camera image.",
+            "max_pitch_deg": "BEV height map is flat, indicating no significant pitch angle. Assumed to be 0.",
+            "max_accel_mps2": "Not measurable from a static image. Defaulting to 0.",
+            "max_roll_deg": "BEV height map is flat, indicating no significant roll angle. Assumed to be 0.",
+            "max_speed_mps": "Not measurable from a static image. Defaulting to 0.",
+            "lighting_conditions": "The background and walls are visible despite artifacts, indicating the environment is not dark or dim.",
+            "terrain_type": "The floor is covered by a rug. 'area_rugs' is the closest allowed category. However, the rug appears to be high-pile or shag, which would violate the ODD. This is flagged as a concern.",
+            "obstacle_density": "Using the pre-computed value of 13.0%, which is 0.13. This is well within the ODD limit of 0.7.",
+            "clearance_index": "The BEV occupancy map shows obstacles clustered forward and to the left, but a wide-open navigable path exists to the robot's right. The pre-computed obstacle density (13%) is low. This indicates moderate clearance despite the forward blockage. A value of 0.6 is appropriate and well above the 0.3 minimum.",
+            "stairs_present": "The BEV height map is uniformly flat, and no stairs are visible in the camera image."
+          },
+          "sensor_fusion_notes": [
+            "The extreme visual texture seen in the camera image is strongly corroborated by the very bright patches in the BEV roughness map. This confirms the terrain is physically rough, not just a flat visual pattern.",
+            "The BEV height map confirms the floor is globally flat, ruling out ramps or stairs.",
+            "BEV occupancy provides a clear picture of navigability that is impossible to assess from the cluttered and artifact-laden camera image."
+          ],
+          "odd_concerns": [
+            "terrain_type: The rug appears to be high-pile or shag-like, based on the extreme texture in the camera image and the high values in the BEV roughness map. The ODD specification states 'High-pile/shag rugs are OUT OF ODD'."
+          ],
+          "confidence": 0.45
+        },
+        {
+          "window_id": "009",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "The camera image is well-exposed, in focus, and shows minimal artifacts. Details on the rug and furniture are sharp."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-lit indoor living space, positioned on a large, patterned area rug. The room is furnished with a console table against the far wall, an armchair to the left, and a potted plant and two large bags to the right. A small, low object (possibly a pet accessory) is on the rug directly ahead.",
+            "lighting": "The scene is well-illuminated by artificial indoor lighting. There are no harsh shadows or blown-out highlights.",
+            "terrain": "The robot is on a textured, patterned area rug that covers most of the visible floor. The rug has a low pile with a raised woven pattern.",
+            "obstacles": "Obstacles include furniture (armchair, console table), a potted plant, two large bags (likely pet food), and a small, low-profile object on the rug.",
+            "actors": "None visible. There are no humans or animals in the camera frame."
+          },
+          "odd_measurements": {
+            "human_present": 0,
+            "animal_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.141,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "No humans are visible anywhere in the camera image.",
+            "animal_present": "No animals are visible anywhere in the camera image.",
+            "max_pitch_deg": "Not observable from a static image; assumed to be 0 as the BEV height map shows a flat surface.",
+            "max_accel_mps2": "Not observable from a static image; assumed to be 0 as the robot appears stationary.",
+            "max_roll_deg": "Not observable from a static image; assumed to be 0 as the BEV height map shows a flat surface.",
+            "max_speed_mps": "Not observable from a static image; assumed to be 0 as the robot appears stationary.",
+            "lighting_conditions": "The room is clearly and evenly lit, with good detail visible on all surfaces. This qualifies as 'bright' indoor lighting.",
+            "terrain_type": "The robot is on a large rug, which is an allowed terrain type ('area_rugs'). The BEV roughness map confirms it is geometrically smooth despite its visual pattern.",
+            "obstacle_density": "Using the pre-computed value of 14.1%, which is well below the 0.7 ODD limit.",
+            "clearance_index": "The BEV occupancy map shows obstacles flanking the robot, but there is a clear, navigable path forward that is significantly wider than the robot's footprint. The pre-computed obstacle density of 14.1% supports that the scene is not tightly constrained. A value of 0.6 reflects a typical furnished room with clear paths.",
+            "stairs_present": "The camera view shows a single-level room, and the BEV height map is uniformly flat, confirming the absence of stairs."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured, visually 'rough' rug. However, the BEV roughness map is dark in this area, correctly identifying the terrain as geometrically smooth. This confirms the texture is a visual pattern, not a physical impediment.",
+            "The major obstacles seen in the camera (chair, bags, console) correlate well with the white clusters in the BEV occupancy map."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.95
+        },
+        {
+          "window_id": "010",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "The camera image is well-lit, in focus, and shows good detail without any noticeable compression artifacts, motion blur, or lens distortion."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-furnished indoor living room. The floor is covered by a large, patterned area rug. Obstacles include a console table, a chair, a decorative tree, bags of what appears to be pet food, and a small object on the rug.",
+            "lighting": "The environment is well-illuminated by multiple light sources, resulting in clear visibility and distinct shadows.",
+            "terrain": "The robot is on a large, low-pile, woven area rug with a geometric pattern.",
+            "obstacles": "Obstacles include furniture (console table, chair), large bags, a decorative plant, and a small object on the floor directly ahead of the robot.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "animal_present": 0,
+            "human_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.143,
+            "clearance_index": 0.5,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "animal_present": "No animals are visible in the camera image.",
+            "human_present": "No humans are visible in the camera image.",
+            "max_pitch_deg": "The BEV height map is uniformly gray, indicating a flat floor with no significant pitch.",
+            "max_accel_mps2": "The assessment is based on a static image; current acceleration is assumed to be 0.",
+            "max_roll_deg": "The BEV height map is uniformly gray, indicating a flat floor with no significant roll.",
+            "max_speed_mps": "The assessment is based on a static image; current speed is assumed to be 0.",
+            "lighting_conditions": "The camera image shows a well-lit room with multiple light sources and clear visibility of textures and shadows.",
+            "terrain_type": "The robot is positioned on a large woven rug, which falls under the 'area_rugs' category in the ODD.",
+            "obstacle_density": "Pre-computed value of 14.3% is used, which is within the ODD limit of 70%.",
+            "clearance_index": "The pre-computed metric 'Forward path blocked' is True, and the BEV occupancy map confirms obstacles directly ahead. However, there are clear, navigable paths to the robot's right and left. The environment is cluttered but not trapped. A score of 0.5 reflects a typical furnished room where re-routing is required. The obstacle density of 14.3% supports that the scene is mostly open space.",
+            "stairs_present": "The camera image does not show any stairs, and the BEV height map is flat, confirming no elevation changes consistent with stairs."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured, patterned rug. The BEV roughness map shows this area as dark (geometrically smooth). This indicates the rug has a low pile and its texture is purely visual, not a physical impediment."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.9
+        },
+        {
+          "window_id": "011",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [
+              "minor_lens_distortion"
+            ],
+            "quality_notes": "Image is sharp, well-exposed, and largely free of artifacts. Minor barrel distortion is present due to the wide-angle lens but does not impact interpretation."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-lit indoor living room, positioned on a large, patterned area rug. The room is furnished with a wooden cabinet, an armchair, and a decorative plant. Several objects are on the floor, including a small wooden ramp-like object and two large bags of what appears to be pet food.",
+            "lighting": "The room is brightly lit with multiple artificial light sources, resulting in good visibility and minimal harsh shadows.",
+            "terrain": "The robot is on a large, woven area rug with a prominent geometric pattern and a highly textured surface.",
+            "obstacles": "Obstacles include standard furniture (cabinet, chair), a small wooden object, and two large bags on the rug. The furniture is against the walls, while the bags and wooden object are in the main floor space.",
+            "actors": "None visible."
+          },
+          "odd_measurements": {
+            "animal_present": 0,
+            "human_present": 0,
+            "max_pitch_deg": 0.0,
+            "max_accel_mps2": 0.0,
+            "max_roll_deg": 0.0,
+            "max_speed_mps": 0.0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.124,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "animal_present": "No animals are visible in the camera image.",
+            "human_present": "No humans or parts of humans (e.g., feet, legs) are visible in the camera image.",
+            "max_pitch_deg": "BEV height map shows a flat ground plane, indicating pitch is near zero. Not directly measured from a static image.",
+            "max_accel_mps2": "Cannot be determined from a static image; nominal value 0 assumed.",
+            "max_roll_deg": "BEV height map shows a flat ground plane, indicating roll is near zero. Not directly measured from a static image.",
+            "max_speed_mps": "Cannot be determined from a static image; nominal value 0 assumed.",
+            "lighting_conditions": "The scene is well-illuminated by multiple light sources, allowing for clear visibility of floor texture, object details, and distant areas.",
+            "terrain_type": "The floor is covered by a large area rug, which is an allowed terrain type. The objects on the rug are not considered part of the terrain type.",
+            "obstacle_density": "Pre-computed value of 12.4% is consistent with a furnished room and is within the ODD limit of 70%.",
+            "clearance_index": "BEV occupancy shows that while the direct forward path is constrained by furniture, clear navigable paths exist to the left and right. The space is not wide open but offers sufficient room for maneuvering, consistent with a score of 0.6. The low obstacle density (12.4%) supports that the area is mostly free space.",
+            "stairs_present": "The camera view and flat BEV height map show no evidence of stairs in the immediate, accessible environment."
+          },
+          "sensor_fusion_notes": [
+            "The highly textured appearance of the rug in the camera image is strongly confirmed by the bright, high-variance signal in the BEV roughness map.",
+            "The locations of obstacles seen in the camera (chair, cabinet, bags) align well with the obstacle clusters detected in the BEV occupancy map.",
+            "The BEV height map confirms the visual assessment from the camera that the floor is flat, with no significant elevation changes like ramps or stairs."
+          ],
+          "odd_concerns": [],
+          "confidence": 0.95
+        },
+        {
+          "window_id": "012",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "Image is well-exposed, in focus, and does not exhibit significant compression or motion artifacts. Details of the rug and background are clear."
+          },
+          "observations": {
+            "scene_description": "The robot is in a residential living room, positioned on a large, patterned area rug. In front of the robot are several obstacles including a small wooden object and large bags (possibly pet food). The background shows a wooden sideboard, a potted tree, and an arched doorway. A person's lower legs are visible on the far right.",
+            "lighting": "The scene is lit by indoor artificial lighting. The lighting is sufficient for clear visibility, creating distinct shadows. It is neither overly bright nor dim.",
+            "terrain": "The robot is on a textured, woven area rug with a geometric pattern. The BEV roughness map confirms the surface is physically uneven, not just visually patterned.",
+            "obstacles": "Obstacles include a sideboard and chair against the back wall, a small wooden object and large bags directly in the robot's path, and a person standing on the right side of the frame.",
+            "actors": "A human is visible on the far right of the camera image, with their lower legs and feet in the frame. No animals are visible."
+          },
+          "odd_measurements": {
+            "human_present": 1,
+            "animal_present": 0,
+            "max_pitch_deg": 0,
+            "max_accel_mps2": 0,
+            "max_roll_deg": 0,
+            "max_speed_mps": 0,
+            "lighting_conditions": "moderate",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.126,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "A person's lower legs and feet are clearly visible on the right side of the camera frame. This is an ODD violation.",
+            "animal_present": "No animals are visible in the camera frame.",
+            "max_pitch_deg": "Cannot be assessed from a single static image. Assumed to be 0 as the BEV height map shows a flat surface.",
+            "max_accel_mps2": "Cannot be assessed from a single static image. Value set to 0.",
+            "max_roll_deg": "Cannot be assessed from a single static image. Assumed to be 0 as the BEV height map shows a flat surface.",
+            "max_speed_mps": "Cannot be assessed from a single static image. Value set to 0.",
+            "lighting_conditions": "The room is well-lit by interior lights, allowing for clear visibility of textures and objects. This fits the 'moderate' category for typical indoor environments.",
+            "terrain_type": "The robot is on a large rug. This matches the 'area_rugs' allowed value. The texture seen in the camera is confirmed by the BEV roughness map.",
+            "obstacle_density": "Using the pre-computed value of 12.6%, which is consistent with the visual clutter in the scene and BEV map. This is within the ODD limit of 0.7.",
+            "clearance_index": "The pre-computed obstacle density is low (12.6%), indicating ample free space. The BEV occupancy map shows that while small obstacles are directly ahead, there are wide, clear paths to the left and sufficient room to maneuver to the right. The environment is cluttered but easily navigable for the robot. A score of 0.6 reflects a typical furnished room with clear paths around obstacles.",
+            "stairs_present": "The BEV height map shows a flat, single-level environment. No stairs are visible in the camera image."
+          },
+          "sensor_fusion_notes": [
+            "The highly textured appearance of the rug in the camera image is strongly corroborated by the bright, varied signal in the BEV roughness map, confirming it is a physically uneven surface and not just a printed pattern.",
+            "Obstacles visible in the camera (sideboard, bags, small wooden object, person) correspond well with the locations of the white clusters in the BEV occupancy map."
+          ],
+          "odd_concerns": [
+            "human_present is 1, which violates the ODD specification that requires this value to be 0."
+          ],
+          "confidence": 0.9
+        },
+        {
+          "window_id": "013",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [],
+            "quality_notes": "Image is clear, well-focused, and properly exposed. Minor motion blur is visible on the moving person's leg but does not hinder scene analysis."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-lit indoor living room, positioned on a large, textured area rug. A person is visible on the right side of the frame from the waist down, moving past some bags on the floor. In the background, there is furniture including a wooden cabinet and a chair.",
+            "lighting": "The room is well-lit by interior lighting, with clear visibility of objects, textures, and shadows.",
+            "terrain": "The primary terrain is a large, patterned area rug with a noticeable physical texture or pile. The surrounding floor is not visible.",
+            "obstacles": "Obstacles include a person, two large bags (possibly pet food), a small wooden ramp-like object on the rug, and furniture in the background (cabinet, chair).",
+            "actors": "A human is visible on the right side of the camera view. No animals are visible."
+          },
+          "odd_measurements": {
+            "human_present": 1,
+            "animal_present": 0,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.125,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "human_present": "A person is clearly visible from the waist down on the right side of the camera image.",
+            "animal_present": "No animals are detected in the camera image.",
+            "lighting_conditions": "The scene is well-illuminated, with crisp details and textures visible on the floor and objects, indicating bright indoor lighting.",
+            "terrain_type": "The robot is situated on a large area rug, which is an allowed value in the ODD. The rug's texture is confirmed by both camera and BEV roughness data.",
+            "obstacle_density": "The pre-computed value is 0.125 (12.5%), which is well within the ODD limit of 0.7.",
+            "clearance_index": "Despite the pre-computed metric 'Forward path blocked (<2m): true', the BEV occupancy map shows significant open space (black area) to the robot's left and rear. The obstacle density is low (12.5%). The robot has ample room to turn and navigate around the obstacles, justifying a mid-range score. It is not constrained or trapped.",
+            "stairs_present": "The BEV height map indicates a flat ground plane, and no stairs are visible in the camera view."
+          },
+          "sensor_fusion_notes": [
+            "The camera shows a highly textured rug with a raised pattern. The BEV roughness map is correspondingly bright in this area, confirming the physical texture and ruling out a simple visual pattern on a flat surface. This indicates good sensor agreement.",
+            "The obstacles visible in the camera (person's legs, bags) are clearly represented as white areas in the BEV occupancy map."
+          ],
+          "odd_concerns": [
+            "human_present: 1. The presence of a human is an ODD violation, as the allowed value is 0. The robot should halt or engage safety protocols."
+          ],
+          "confidence": 0.95
+        },
+        {
+          "window_id": "014",
+          "image_quality": {
+            "camera_quality": "good",
+            "artifacts_observed": [
+              "minor_motion_blur"
+            ],
+            "quality_notes": "The image is generally clear and well-exposed. There is slight motion blur on the moving person, but static elements like the rug and furniture are in focus. No significant compression or distortion artifacts."
+          },
+          "observations": {
+            "scene_description": "The robot is in a well-lit indoor living room. A person is walking from right to left in the middle of the frame. The floor is covered by a large, textured area rug with a geometric pattern. Background furniture includes a console table and a chair.",
+            "lighting": "The room is brightly lit, likely by overhead indoor lighting. Details on the floor and in the background are clearly visible with distinct shadows.",
+            "terrain": "The robot is on a large, textured area rug. It appears to be a low-pile shag or a highly textured woven material.",
+            "obstacles": "Obstacles include the person, a chair to the left, a console table in the background, a small ramp-like object on the rug, and some bags or items on the far right.",
+            "actors": "A human is visible, seen from the torso down, walking across the robot's field of view."
+          },
+          "odd_measurements": {
+            "animal_present": 0,
+            "human_present": 1,
+            "lighting_conditions": "bright",
+            "terrain_type": "area_rugs",
+            "obstacle_density": 0.125,
+            "clearance_index": 0.6,
+            "stairs_present": 0
+          },
+          "reasoning": {
+            "animal_present": "No animals are visible in the camera image.",
+            "human_present": "A person is clearly visible walking in the middle of the camera frame. This is an ODD violation.",
+            "lighting_conditions": "The scene is well-illuminated, allowing for clear perception of textures, objects, and shadows. The lighting is better than 'moderate'.",
+            "terrain_type": "The floor is covered by a large rug. This falls under the 'area_rugs' category in the ODD specification.",
+            "obstacle_density": "Using the pre-computed value of 12.5%, which is consistent with the visible furniture and person in the BEV occupancy map. This is well within the ODD limit of 0.7.",
+            "clearance_index": "The pre-computed 'Forward path blocked' is likely due to the person. However, the BEV occupancy map shows clear, navigable space to the left and around the person. The obstacle density is low (12.5%). The environment is typical for a furnished room, not truly blocked, justifying a mid-range score. A score of 0.6 indicates the path is constrained but clearly passable with maneuvering.",
+            "stairs_present": "The camera view shows a flat living room floor, and the BEV height map is uniformly gray, confirming there are no stairs or significant elevation changes."
+          },
+          "sensor_fusion_notes": [
+            "The camera view of a highly textured, patterned rug is strongly corroborated by the bright, high-variance signals in the BEV roughness map (Image D).",
+            "The BEV occupancy map (Image B) accurately represents the geometry of the scene, showing obstacles corresponding to the chair on the left, the person on the right, and the background furniture.",
+            "The BEV height map (Image C) confirms the flat terrain seen in the camera, ruling out ramps or steps."
+          ],
+          "odd_concerns": [
+            "human_present is 1, which violates the ODD specification ('allowed': 0) and requires a system halt or avoidance maneuver."
+          ],
+          "confidence": 0.9
+        }
+      ],
+      "windows_analyzed": 15,
+      "tool_version": "12.2.0"
+    }
+  },
+  "session_state": {
+    "odd_spec": "{\n  \"odd_specification\": {\n    \"actors\": {\n      \"boolean\": {\n        \"animal_present\": {\n          \"allowed\": 0,\n          \"description\": \"Binary animal detection. 1=animal visible anywhere in camera frame (OUT OF ODD - halt required). 0=no animals detected (IN ODD). Assess from CAMERA only, not BEV. Any animal visible = violation.\",\n          \"type\": \"bool\"\n        },\n        \"human_present\": {\n          \"allowed\": 0,\n          \"description\": \"Binary human detection. 1=human visible anywhere in camera frame (OUT OF ODD - halt required). 0=no humans detected (IN ODD). Assess from CAMERA only, not BEV. Any person visible = violation.\",\n          \"type\": \"bool\"\n        }\n      },\n      \"categorical\": {},\n      \"numeric\": {}\n    },\n    \"ego\": {\n      \"boolean\": {},\n      \"categorical\": {},\n      \"numeric\": {\n        \"max_accel_mps2\": {\n          \"description\": \"Ego's maximum linear acceleration. Brief reactive maneuvers can reach 10 m/s^2.\",\n          \"max\": 10.0,\n          \"min\": 0.0,\n          \"type\": \"range\"\n        },\n        \"max_pitch_deg\": {\n          \"description\": \"Ego's maximum pitch angle, corresponding to ramp/incline limits. Absolute value should not exceed 15 degrees.\",\n          \"max\": 15.0,\n          \"min\": 0.0,\n          \"type\": \"range\"\n        },\n        \"max_roll_deg\": {\n          \"description\": \"Ego's maximum roll angle. Expected to be low on flat indoor floors. Limit set to 15 degrees to match incline tolerance.\",\n          \"max\": 15.0,\n          \"min\": 0.0,\n          \"type\": \"range\"\n        },\n        \"max_speed_mps\": {\n          \"description\": \"Ego's maximum linear velocity. Sustained speed should not exceed 2.5 m/s.\",\n          \"max\": 2.5,\n          \"min\": 0.0,\n          \"type\": \"range\"\n        }\n      }\n    },\n    \"environment\": {\n      \"boolean\": {\n        \"stairs_present\": {\n          \"allowed\": 0,\n          \"description\": \"Binary check for accessible stairs. 1=stairs are detected and accessible (OUT OF ODD). 0=no accessible stairs detected (IN ODD). Assessed from camera/depth data.\",\n          \"type\": \"bool\"\n        }\n      },\n      \"categorical\": {\n        \"lighting_conditions\": {\n          \"allowed\": [\n            \"bright\",\n            \"moderate\",\n            \"dim\"\n          ],\n          \"description\": \"Ambient light level for camera perception. bright=well-lit, clear visibility; moderate=typical indoor; dim=reduced but functional; dark=camera cannot function (OUT OF ODD)\",\n          \"type\": \"enum\"\n        },\n        \"terrain_type\": {\n          \"allowed\": [\n            \"tile\",\n            \"hardwood\",\n            \"low-pile carpet\",\n            \"laminate\",\n            \"area_rugs\"\n          ],\n          \"description\": \"Ground surface type. Assess from camera view of floor. List specific materials visible. High-pile/shag rugs are OUT OF ODD.\",\n          \"type\": \"enum\"\n        }\n      },\n      \"numeric\": {\n        \"clearance_index\": {\n          \"description\": \"Navigability of paths from BEV (0-1). Measures path clearance, not general tidiness. A low value indicates blocked paths. Indoor min threshold set to 0.3.\",\n          \"max\": 1.0,\n          \"min\": 0.3,\n          \"type\": \"range\"\n        },\n        \"obstacle_density\": {\n          \"description\": \"Fraction of BEV area occupied by obstacles (0-1). Moderate to high density is IN ODD; extreme clutter blocking paths is OUT. Computed from BEV occupancy map, not camera.\",\n          \"max\": 0.7,\n          \"min\": 0.0,\n          \"type\": \"range\"\n        }\n      }\n    }\n  },\n  \"summary\": {\n    \"actors_axes\": [\n      \"human_present\",\n      \"animal_present\"\n    ],\n    \"ego_axes\": [\n      \"max_speed_mps\",\n      \"max_accel_mps2\",\n      \"max_pitch_deg\",\n      \"max_roll_deg\"\n    ],\n    \"environment_axes\": [\n      \"lighting_conditions\",\n      \"terrain_type\",\n      \"obstacle_density\",\n      \"clearance_index\",\n      \"stairs_present\"\n    ],\n    \"key_limits\": {\n      \"max_pitch_deg\": 15.0,\n      \"max_speed_mps\": 2.5,\n      \"obstacle_density_max\": 0.7\n    },\n    \"total_axes\": 11\n  }\n}",
+    "perception_summary": "{\n  \"windows_analyzed\": 15,\n  \"temporal_analysis\": {\n    \"trend\": \"degrading\",\n    \"transitions\": [\n      \"w011\u2192w012: human entered the camera's field of view\"\n    ],\n    \"anomalies\": [\n      \"human appeared in w012\"\n    ]\n  },\n  \"summary\": {\n    \"dominant_environment\": \"indoor_residential\",\n    \"lighting_range\": \"bright\",\n    \"lighting_trend\": \"stable\",\n    \"max_obstacle_density_pct\": 16.0,\n    \"avg_obstacle_density_pct\": 14.1,\n    \"min_clearance_index\": 0.5,\n    \"terrain_types_observed\": [\n      \"area_rugs\"\n    ],\n    \"terrain_transitions\": 0\n  },\n  \"actor_detection\": {\n    \"human_present\": 1,\n    \"human_windows\": [\n      \"w012\",\n      \"w013\",\n      \"w014\"\n    ],\n    \"human_note\": \"Human visible in w012, w013, w014\",\n    \"animal_present\": 0,\n    \"animal_windows\": [],\n    \"animal_note\": \"No animals detected\"\n  },\n  \"odd_critical\": {\n    \"stairs_detected\": false,\n    \"stairs_windows\": [],\n    \"steep_slope_detected\": false,\n    \"lighting_below_threshold\": false\n  },\n  \"issues\": [\n    \"Human detected in w012 - OUT OF ODD\",\n    \"Human detected in w013 - OUT OF ODD\",\n    \"Human detected in w014 - OUT OF ODD\"\n  ],\n  \"alerts\": [\n    \"Terrain in window 005 and 008 appears to be high-pile/shag, which is a potential ODD violation.\"\n  ]\n}",
+    "motion_summary": "```json\n{\n  \"windows_analyzed\": 15,\n  \"temporal_analysis\": {\n    \"motion_transitions\": [\n      \"stationary\u2192moving at w002\",\n      \"moving\u2192stationary at w003\",\n      \"stationary\u2192moving at w004\",\n      \"moving\u2192complex/turning at w006\",\n      \"turning\u2192stationary at w010\"\n    ],\n    \"stability_trend\": \"stable\",\n    \"trajectory_pattern\": \"wandering\",\n    \"anomalies\": [\n      \"High acceleration spike (9.0 m/s^2) during low-speed turn in w006\",\n      \"High acceleration spike (7.5 m/s^2) during low-speed rotation in w008\"\n    ]\n  },\n  \"summary\": {\n    \"dominant_motion_state\": \"stationary\",\n    \"max_speed_mps\": 2.0437,\n    \"total_displacement_m\": 1.224,\n    \"avg_trajectory_efficiency\": 0.378,\n    \"max_roll_deg\": 4.21,\n    \"max_pitch_deg\": 3.95,\n    \"max_angular_velocity_radps\": 0.4442,\n    \"stationary_windows\": [\n      \"w000\",\n      \"w001\",\n      \"w003\",\n      \"w010\",\n      \"w011\",\n      \"w012\",\n      \"w013\",\n      \"w014\"\n    ]\n  },\n  \"data_availability_summary\": {\n    \"imu_available\": true,\n    \"position_available\": true\n  },\n  \"issues\": [],\n  \"alerts\": [\n    \"High acceleration spikes detected in w006 (9.0 m/s^2) and w008 (7.5 m/s^2) during low-speed maneuvers, suggesting jerky motion.\"\n  ]\n}\n```",
+    "collision_summary": "```json\n{\n  \"windows_analyzed\": 15,\n  \"temporal_analysis\": {\n    \"collision_pattern\": \"repeated\",\n    \"risk_progression\": \"stable\",\n    \"evidence_quality\": \"strong\",\n    \"suspicious_events\": [\n      \"Collision in w002 with strong convergent evidence (sudden stop + visual proximity)\",\n      \"Collision in w004 with strong convergent evidence (sudden stop + visual proximity)\"\n    ],\n    \"sudden_stop_windows\": [\n      \"w002\",\n      \"w004\",\n      \"w005\"\n    ]\n  },\n  \"summary\": {\n    \"total_collisions_detected\": 2,\n    \"collision_windows\": [\n      \"w002\",\n      \"w004\"\n    ],\n    \"sudden_stop_count\": 3,\n    \"max_risk_band\": \"HIGH\",\n    \"min_proximity_m\": 0.1,\n    \"avg_proximity_m\": 0.768,\n    \"max_speed_drop_mps\": 1.896,\n    \"windows_with_convergent_evidence\": 2\n  },\n  \"data_availability_summary\": {\n    \"imu_available\": true,\n    \"position_available\": true,\n    \"bev_available\": true\n  },\n  \"issues\": [\n    \"Collision detected in w002 with HIGH confidence due to sudden stop and visual confirmation of obstacle at ~0.1m.\",\n    \"Collision detected in w004 with HIGH confidence due to sudden stop and visual confirmation of obstacle at ~0.1m.\"\n  ],\n  \"alerts\": [\n    \"The BEV proximity sensor reported a minimum distance of >0.75m during the collisions in w002 and w004, while camera evidence showed an obstacle at ~0.1m. This suggests a potential limitation in detecting low-profile objects.\"\n  ],\n  \"advisory_note\": \"Collision is advisory only - does not affect ODD verdict\"\n}\n```",
+    "evaluator_output": "\n{\n  \"cod_region\": {\n    \"lighting_conditions\": {\n      \"bright\": 0.8,\n      \"moderate\": 0.2,\n      \"type\": \"enum\"\n    },\n    \"terrain_type\": {\n      \"area_rugs\": 1.0,\n      \"type\": \"enum\"\n    },\n    \"obstacle_density\": {\n      \"type\": \"range\",\n      \"min\": 0.124,\n      \"max\": 0.16\n    },\n    \"clearance_index\": {\n      \"type\": \"range\",\n      \"min\": 0.5,\n      \"max\": 0.9\n    },\n    \"stairs_present\": {\n      \"type\": \"bool\",\n      \"p_0\": 1.0,\n      \"p_1\": 0.0\n    },\n    \"human_present\": {\n      \"type\": \"bool\",\n      \"p_0\": 0.8,\n      \"p_1\": 0.2\n    },\n    \"animal_present\": {\n      \"type\": \"bool\",\n      \"p_0\": 1.0,\n      \"p_1\": 0.0\n    },\n    \"max_speed_mps\": {\n      \"type\": \"range\",\n      \"min\": 0.0041,\n      \"max\": 2.0437\n    },\n    \"max_accel_mps2\": {\n      \"type\": \"range\",\n      \"min\": 0.2237,\n      \"max\": 9.0124\n    },\n    \"max_pitch_deg\": {\n      \"type\": \"range\",\n      \"min\": 0.49,\n      \"max\": 3.95\n    },\n    \"max_roll_deg\": {\n      \"type\": \"range\",\n      \"min\": 0.19,\n      \"max\": 4.21\n    }\n  },\n  \"region_metrics\": {\n    \"region_distance\": 0.2,\n    \"fraction_outside_per_axis\": {\n      \"lighting_conditions\": 0.0,\n      \"terrain_type\": 0.0,\n      \"obstacle_density\": 0.0,\n      \"clearance_index\": 0.0,\n      \"stairs_present\": 0.0,\n      \"human_present\": 0.2,\n      \"animal_present\": 0.0,\n      \"max_speed_mps\": 0.0,\n      \"max_accel_mps2\": 0.0,\n      \"max_pitch_deg\": 0.0,\n      \"max_roll_deg\": 0.0\n    },\n    \"total_windows\": 15,\n    \"windows_in_odd\": 12,\n    \"windows_violated\": [\n      \"012\",\n      \"013\",\n      \"014\"\n    ],\n    \"first_violation_window\": \"012\",\n    \"margin_to_limit_per_axis\": {\n      \"lighting_conditions\": 0.5,\n      \"terrain_type\": 1.0,\n      \"obstacle_density\": 0.7714,\n      \"clearance_index\": 0.2857,\n      \"stairs_present\": 1.0,\n      \"human_present\": 0.0,\n      \"animal_present\": 1.0,\n      \"max_speed_mps\": 0.1825,\n      \"max_accel_mps2\": 0.0988,\n      \"max_pitch_deg\": 0.7367,\n      \"max_roll_deg\": 0.7193\n    },\n    \"axes_at_boundary\": [\n      \"max_accel_mps2\"\n    ],\n    \"axes_violated\": [\n      \"human_present\"\n    ],\n    \"boundary_threshold\": 0.1\n  },\n  \"compliance_verdict\": {\n    \"verdict\": \"OUT_ODD\",\n    \"confidence\": 1.0,\n    \"rationale\": \"The verdict is OUT_ODD because the 'human_present' axis was violated. The perception system detected a human in windows w012, w013, and w014, which is explicitly prohibited by the ODD (allowed value: 0). The violation began in window w012 and persisted for the remainder of the scenario. All other axes remained within their ODD limits. Notably, max acceleration reached 9.01 m/s\u00b2 (vs 10 m/s\u00b2 limit), and max speed was 2.04 m/s (vs 2.5 m/s limit), both within specification but with the acceleration approaching its boundary.\",\n    \"critical_axes\": [\n      \"human_present\"\n    ]\n  },\n  \"per_axis_summary\": {\n    \"human_present\": {\n      \"observed_range\": \"0 and 1\",\n      \"odd_limit\": \"0\",\n      \"margin\": \"0.0%\",\n      \"status\": \"VIOLATION\"\n    },\n    \"max_accel_mps2\": {\n      \"observed_range\": \"0.22 - 9.01\",\n      \"odd_limit\": \"10.0\",\n      \"margin\": \"9.88%\",\n      \"status\": \"WARNING\"\n    },\n    \"max_speed_mps\": {\n      \"observed_range\": \"0.00 - 2.04\",\n      \"odd_limit\": \"2.5\",\n      \"margin\": \"18.25%\",\n      \"status\": \"OK\"\n    },\n    \"max_pitch_deg\": {\n      \"observed_range\": \"0.49 - 3.95\",\n      \"odd_limit\": \"15.0\",\n      \"margin\": \"73.67%\",\n      \"status\": \"OK\"\n    },\n    \"max_roll_deg\": {\n      \"observed_range\": \"0.19 - 4.21\",\n      \"odd_limit\": \"15.0\",\n      \"margin\": \"71.93%\",\n      \"status\": \"OK\"\n    },\n    \"lighting_conditions\": {\n      \"observed_range\": \"bright, moderate\",\n      \"odd_limit\": \"bright, moderate, dim\",\n      \"margin\": \"N/A\",\n      \"status\": \"OK\"\n    },\n    \"terrain_type\": {\n      \"observed_range\": \"area_rugs\",\n      \"odd_limit\": \"tile, hardwood, low-pile carpet, laminate, area_rugs\",\n      \"margin\": \"N/A\",\n      \"status\": \"OK\"\n    },\n    \"obstacle_density\": {\n      \"observed_range\": \"0.12 - 0.16\",\n      \"odd_limit\": \"0.7\",\n      \"margin\": \"77.14%\",\n      \"status\": \"OK\"\n    },\n    \"clearance_index\": {\n      \"observed_range\": \"0.5 - 0.9\",\n      \"odd_limit\": \"0.3\",\n      \"margin\": \"28.57%\",\n      \"status\": \"OK\"\n    },\n    \"stairs_present\": {\n      \"observed_range\": \"0\",\n      \"odd_limit\": \"0\",\n      \"margin\": \"100.0%\",\n      \"status\": \"OK\"\n    },\n    \"animal_present\": {\n      \"observed_range\": \"0\",\n      \"odd_limit\": \"0\",\n      \"margin\": \"100.0%\",\n      \"status\": \"OK\"\n    }\n  },\n  \"collision_advisory\": {\n    \"collisions_detected\": 2,\n    \"note\": \"Advisory only - does not affect verdict\"\n  },\n  \"key_concerns\": [\n    \"ODD Violation: Human presence detected in windows w012, w013, w014, violating a critical safety constraint.\",\n    \"Boundary Condition: High acceleration spike (9.01 m/s\u00b2) in w006 approached the 10 m/s\u00b2 ODD limit, triggering a boundary warning.\",\n    \"Perception Alert: Perception agent raised alerts for potentially high-pile/shag rugs in windows w005 and w008, which could be an unquantified ODD violation.\",\n    \"Collision Advisory: Two collisions were detected in w002 and w004 with low-profile objects that were not accurately measured by the BEV proximity sensor.\"\n  ]\n}",
+    "report_output": "```json\n{\n  \"compliance\": {\n    \"status\": \"OUT_ODD\",\n    \"confidence\": \"HIGH\",\n    \"summary\": \"The verdict is OUT_ODD with high confidence because the 'human_present' axis was violated in windows w012, w013, and w014, a zero-tolerance condition. Additionally, the 'max_accel_mps2' axis operated at the boundary of its ODD limit, reaching 9.01 m/s\u00b2 against a 10.0 m/s\u00b2 maximum.\"\n  },\n  \"executive_summary\": \"The robot operated in a residential setting but failed to meet safety requirements when a person entered its vicinity, an explicit violation of its operational design. The system also exhibited jerky, aggressive motion that approached its maximum acceleration limits. These combined failures indicate the robot is not ready for deployment in environments with human presence.\",\n  \"key_findings\": {\n    \"perception\": \"The robot operated in a well-lit indoor residential environment on area rugs. Obstacle density was low, ranging from 12.4% to 16.0%, and path clearance was consistently high (min 0.5).\",\n    \"motion\": \"Motion was mostly stationary but included brief, sharp movements. The robot reached a peak speed of 2.04 m/s (82% of its 2.5 m/s limit) and a peak acceleration of 9.01 m/s\u00b2 (90% of its 10 m/s\u00b2 limit).\",\n    \"safety\": \"A human was detected in the final three windows, causing a critical ODD violation with zero margin. Two advisory collisions with low-profile objects were also reported. The closest margin on a non-violated axis was for acceleration, which came within 9.88% of its limit.\",\n    \"temporal_trends\": \"The scenario was stable until window w012, when a human entered the camera's view, causing a persistent and degrading safety condition for the remainder of the analysis.\"\n  },\n  \"scenario_metadata\": {\n    \"windows_analyzed\": 15,\n    \"environment\": \"indoor_residential\",\n    \"data_quality\": \"complete\",\n    \"data_source\": \"real\"\n  },\n  \"collision_advisory\": {\n    \"collisions_detected\": 2,\n    \"risk_band\": \"HIGH\",\n    \"events\": [\n      \"w002: Collision detected with high confidence due to a sudden stop and visual confirmation of a low-profile obstacle.\",\n      \"w004: Collision detected with high confidence due to a sudden stop and visual confirmation of a low-profile obstacle.\"\n    ],\n    \"note\": \"Advisory only - does not affect compliance verdict\"\n  },\n  \"human_animal_detection\": {\n    \"detected\": true,\n    \"type\": \"human\",\n    \"proximity_m\": null,\n    \"note\": \"A human was detected in windows w012, w013, and w014, which is a direct violation of the ODD.\"\n  },\n  \"issues\": [\n    \"ODD Violation: Human presence was detected in windows w012, w013, and w014, violating a critical safety constraint that prohibits operation near humans.\",\n    \"Boundary Condition: Maximum acceleration reached 9.01 m/s\u00b2 in w006, operating within 10% of the 10.0 m/s\u00b2 ODD limit, suggesting overly aggressive motion.\",\n    \"Collision Advisory: Two collisions were detected (w002, w004) with low-profile objects that were not accurately measured by proximity sensors.\",\n    \"Potential ODD Violation: Perception agents raised alerts for potentially high-pile/shag rugs (w005, w008), a terrain type explicitly excluded from the ODD.\"\n  ],\n  \"recommendations\": [\n    \"Investigate the system's failure to halt or take evasive action upon detecting a human, as required by the ODD.\",\n    \"Review motion control parameters to reduce instances of high acceleration spikes during low-speed maneuvers, improving motion smoothness and safety margins.\",\n    \"Improve perception capabilities for detecting low-profile objects to prevent collisions like those observed in w002 and w004.\",\n    \"Implement a more robust terrain classifier to correctly identify and flag out-of-ODD high-pile or shag rugs.\"\n  ],\n  \"data_warnings\": [\n    \"The BEV proximity sensor failed to accurately measure the distance to low-profile objects during the collision events in w002 and w004, indicating a potential sensor limitation.\"\n  ]\n}\n```"
+  }
+}
