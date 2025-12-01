@@ -15,6 +15,15 @@ To adapt for a new robot, you need to:
 3. Write an appropriate ODD specification
 4. (Optional) Tune tool thresholds for your platform
 
+### Important: Collision is Advisory Only
+
+The system distinguishes between **ODD compliance** and **collision detection**:
+
+- **ODD compliance** is determined by environmental, dynamic, and proximity axes (e.g., lighting, speed, humans/animals within safety zone)
+- **Collision detection** is reported separately as **advisory information** for safety awareness
+
+A collision alone does NOT make a run OUT_ODD. This separation allows the system to distinguish "operating outside design limits" (ODD violation) from "something went wrong" (collision event). Both are important, but they answer different questions.
+
 ---
 
 ## 1. Data Format Requirements

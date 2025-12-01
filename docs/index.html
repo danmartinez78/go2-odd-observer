@@ -304,10 +304,10 @@
 
 <body>
     <div class="container">
-        <div class="nav-shell" style="justify-content: center; position: relative;">
+        <div class="nav-shell" style="justify-content: center; position: relative; min-height: 56px;">
             <!-- Mobile hamburger -->
             <button id="mobileMenuToggle" class="d-md-none"
-                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; left: 1rem;">
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; left: 1rem; color: var(--fg);">
                 ☰
             </button>
             <!-- Desktop nav -->
@@ -357,6 +357,9 @@
                 <span class="phase-badge">Phase 1.6</span>
                 <span class="version-badge">Pipeline v2.1.0</span>
             </div>
+            <p class="text-center mb-0" style="font-size: 0.95rem; color: var(--muted);">
+                📄 <a href="#reports" style="color: var(--accent);">Scroll down for Analysis Reports</a>
+            </p>
         </div>
 
         <!-- ODD/COD Explanation Section -->
@@ -392,6 +395,15 @@
                         <span class="badge bg-success">IN_ODD</span> COD fully within ODD |
                         <span class="badge bg-warning text-dark">BOUNDARY</span> COD at or near edge of ODD |
                         <span class="badge bg-danger">OUT_ODD</span> COD exceeds ODD limits
+                    </div>
+                    <div class="mt-3 p-3"
+                        style="background: rgba(251, 191, 36, 0.1); border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                        <strong>⚠️ Note on Collision:</strong> Collision detection is <strong>advisory only</strong>—it
+                        does NOT affect the ODD/COD verdict.
+                        ODD compliance is determined by environmental, dynamic, and proximity axes (e.g., humans/animals
+                        within safety zone).
+                        Collision events are reported separately for safety awareness but a collision alone doesn't make
+                        a run OUT_ODD.
                     </div>
                 </div>
             </div>
@@ -620,6 +632,12 @@
                         multi-modal collision detection and position-derived motion analysis.
                         Each includes COD region analysis, compliance verdict, per-window breakdowns, and inline
                         visualizations.
+                        <br><br>
+                        <strong>⚠️ Collision is Advisory:</strong> Collision detection is reported as an <em>alert
+                            signal</em>
+                        separate from ODD/COD analysis. A collision does not affect the compliance verdict—ODD
+                        compliance
+                        is determined by environmental, dynamic, and proximity axes only.
                     </div>
 
                     <!-- Featured: Real Robot IN_ODD -->
@@ -673,7 +691,7 @@
                                 <p class="mb-2"><strong>Key Findings:</strong></p>
                                 <ul style="font-size: 0.9rem;">
                                     <li>Operating near speed limit (2.37 m/s, 95% of 2.5 limit)</li>
-                                    <li>All other axes compliant with margin</li>
+                                    <li>3 collisions detected (advisory only—doesn't affect verdict)</li>
                                     <li>Demonstrates boundary detection capability</li>
                                 </ul>
                             </div>
