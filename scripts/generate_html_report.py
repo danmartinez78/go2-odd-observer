@@ -1246,6 +1246,33 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     collision_per_window = collision_data.get('per_window', [])
     collision_data_avail = collision_data.get('data_availability_summary', {})
 
+    # Compute collision stats from per-window data if summary is empty (new schema)
+    collision_stats = collision_data.get('collision_stats', {})
+    if not collision_summary and collision_per_window:
+        # Compute from per-window data
+        sudden_stops = sum(1 for w in collision_per_window
+                           if w.get('collision_signatures', {}).get('sudden_stop', False))
+        collisions = sum(1 for w in collision_per_window if w.get(
+            'collision_detected', False))
+        proximities = [w.get('proximity_estimate_m', 999)
+                       for w in collision_per_window]
+        speed_drops = [w.get('collision_signatures', {}).get(
+            'speed_drop_mps', 0) for w in collision_per_window]
+        collision_summary = {
+            'sudden_stop_count': sudden_stops,
+            'total_collisions_detected': collision_stats.get('collisions_detected', collisions),
+            'min_proximity_m': min(proximities) if proximities else 0,
+            'max_speed_drop_mps': max(speed_drops) if speed_drops else 0,
+        }
+        # Extract data availability from first window
+        if collision_per_window:
+            first_avail = collision_per_window[0].get('data_availability', {})
+            collision_data_avail = {
+                'imu_available': first_avail.get('acceleration') == 'imu',
+                'position_available': first_avail.get('position') == 'available',
+                'bev_available': first_avail.get('bev_proximity') == 'computed',
+            }
+
     # Risk band badges per window - with collapsible for many windows
     risk_bands_visible = []
     risk_bands_hidden = []
