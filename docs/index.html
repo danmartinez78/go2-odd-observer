@@ -67,9 +67,15 @@
             box-shadow: var(--shadow);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            position: relative;
             gap: 1rem;
             margin-bottom: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
         }
 
         .nav-links a {
@@ -215,9 +221,9 @@
         .version-badge {
             background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
-            padding: 0.45rem 1rem;
-            border-radius: 20px;
-            font-size: 1rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
             font-weight: 700;
         }
 
@@ -260,8 +266,9 @@
         .phase-badge {
             background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
-            padding: 0.45rem 1rem;
-            border-radius: 20px;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
             font-weight: 700;
         }
 
@@ -297,19 +304,17 @@
 
 <body>
     <div class="container">
-        <div class="nav-shell">
-            <div class="d-flex align-items-center gap-2">
-                <span class="phase-badge">Phase 1.6</span>
-                <span class="version-badge">Pipeline v2.1.0</span>
-            </div>
+        <div class="nav-shell" style="justify-content: center;">
             <div class="d-none d-md-flex nav-links">
                 <a href="quickstart.html">Quickstart</a>
                 <a href="architecture.html">Architecture</a>
+                <a href="robot.html">Robot & Sim</a>
                 <a href="evaluation.html">Evaluation</a>
                 <a href="capstone.html">Capstone</a>
                 <a href="https://github.com/danmartinez78/go2-odd-observer">GitHub</a>
             </div>
-            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌓</button>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme"
+                style="position: absolute; right: 1.5rem;">🌓 Theme</button>
         </div>
 
         <!-- Hero Section -->
@@ -324,6 +329,8 @@
                 <span class="chip">Google ADK + Gemini 2.5</span>
                 <span class="chip">6 Pipeline Agents</span>
                 <span class="chip">Camera + LiDAR + IMU</span>
+                <span class="phase-badge">Phase 1.6</span>
+                <span class="version-badge">Pipeline v2.1.0</span>
             </div>
         </div>
 

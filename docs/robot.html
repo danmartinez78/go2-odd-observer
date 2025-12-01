@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go2 ODD Observer – Robot &amp; Simulation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 1100px;
+        }
+
+        .spec-table td:first-child {
+            font-weight: 600;
+            width: 40%;
+        }
+
+        .credit-card {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .img-placeholder {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 2px dashed rgba(99, 102, 241, 0.4);
+            border-radius: 12px;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .sensor-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .sensor-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-shell">
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="quickstart.html">Quick Start</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="robot.html">Robot & Sim</a>
+                <a href="evaluation.html">Evaluation</a>
+                <a href="capstone.html">Capstone</a>
+            </div>
+            <button id="themeToggle" class="theme-toggle">🌓 Theme</button>
+        </nav>
+
+        <div class="shell">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge-tag">Robot Platform</span>
+                    <span class="badge-tag">Simulation</span>
+                </div>
+                <a href="index.html" class="badge-tag">← Back to overview</a>
+            </div>
+
+            <h1 class="mb-2">🤖 Robot &amp; Simulation Setup</h1>
+            <p class="lead mb-4">
+                The ODD Observer system is built around the Unitree Go2 Pro quadruped robot, with both real hardware
+                and NVIDIA Isaac Sim environments for data collection.
+            </p>
+
+            <!-- Unitree Go2 Pro Section -->
+            <h2 class="section-title">1. Unitree Go2 Pro</h2>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p>
+                        The <strong>Unitree Go2 Pro</strong> is a compact, agile quadruped robot designed for research
+                        and
+                        real-world applications. It features 12 degrees of freedom, integrated sensors, and an onboard
+                        NVIDIA Jetson for edge computing.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm spec-table">
+                            <tbody>
+                                <tr>
+                                    <td>Dimensions</td>
+                                    <td>70 × 31 × 40 cm (L×W×H)</td>
+                                </tr>
+                                <tr>
+                                    <td>Weight</td>
+                                    <td>~15 kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Degrees of Freedom</td>
+                                    <td>12 (3 per leg)</td>
+                                </tr>
+                                <tr>
+                                    <td>Max Speed</td>
+                                    <td>3.5 m/s</td>
+                                </tr>
+                                <tr>
+                                    <td>Onboard Compute</td>
+                                    <td>NVIDIA Jetson Thor</td>
+                                </tr>
+                                <tr>
+                                    <td>Battery</td>
+                                    <td>~2 hours runtime</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <img src="images/go2_pro.jpg" alt="Unitree Go2 Pro quadruped robot" class="img-fluid rounded"
+                        style="border: 1px solid var(--border);">
+                </div>
+            </div>
+
+            <!-- Sensors Section -->
+            <h2 class="section-title">2. Onboard Sensors</h2>
+            <p class="mb-3">The Go2 Pro includes several sensors used by the ODD Observer pipeline:</p>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="sensor-card">
+                        <div class="sensor-icon">📹</div>
+                        <h5>Front Camera</h5>
+                        <p class="mb-0" style="font-size: 0.9rem;">
+                            Wide-angle RGB camera for visual perception, environment classification, and human/animal
+                            detection.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="sensor-card">
+                        <div class="sensor-icon">📡</div>
+                        <h5>LiDAR</h5>
+                        <p class="mb-0" style="font-size: 0.9rem;">
+                            3D LiDAR for point cloud capture, transformed into Bird's Eye View (BEV) images for obstacle
+                            and
+                            terrain analysis.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="sensor-card">
+                        <div class="sensor-icon">🧭</div>
+                        <h5>IMU (9-axis)</h5>
+                        <p class="mb-0" style="font-size: 0.9rem;">
+                            Accelerometer, gyroscope, and magnetometer for motion state estimation, collision detection,
+                            and
+                            platform stability.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- go2_ros2_sdk Credit -->
+            <h2 class="section-title">3. ROS2 Integration</h2>
+            <div class="credit-card mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">🙏 go2_ros2_sdk</h5>
+                        <p class="mb-2">
+                            ROS2 support for the Go2 is enabled by the excellent
+                            <a href="https://github.com/abizovnuralem/go2_ros2_sdk"
+                                target="_blank"><strong>go2_ros2_sdk</strong></a>
+                            by <a href="https://github.com/abizovnuralem" target="_blank">@abizovnuralem</a>.
+                        </p>
+                        <p class="mb-0" style="font-size: 0.9rem;">
+                            This SDK provides ROS2 Humble integration, enabling access to camera topics, LiDAR point
+                            clouds,
+                            IMU streams, odometry, and robot state—all essential for the ODD Observer data pipeline.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <a href="https://github.com/abizovnuralem/go2_ros2_sdk" target="_blank" class="btn btn-sm"
+                            style="background: var(--accent); color: white; border: none;">
+                            View on GitHub →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <p>Key ROS2 topics used by ODD Observer:</p>
+            <pre class="code-block mb-4" style="text-align: left;">/camera/image_raw      # Front camera RGB images
+/point_cloud           # LiDAR point cloud (transformed to BEV)
+/imu/data              # 9-axis IMU (accel, gyro, orientation)
+/odom                  # Odometry for position tracking
+/go2/robot_state       # Joint states, foot contacts</pre>
+
+            <!-- Isaac Sim Section -->
+            <h2 class="section-title">4. Simulation: NVIDIA Isaac Sim</h2>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p>
+                        For controlled testing and scenario generation, we use <strong>NVIDIA Isaac Sim 4.5.0</strong>
+                        with the
+                        <a href="https://github.com/abizovnuralem/go2_omniverse"
+                            target="_blank"><strong>go2_omniverse</strong></a>
+                        integration (also by <a href="https://github.com/abizovnuralem"
+                            target="_blank">@abizovnuralem</a>).
+                    </p>
+                    <p>
+                        The simulation environment provides:
+                    </p>
+                    <ul>
+                        <li>Photorealistic office environment with furniture, corridors, and varied lighting</li>
+                        <li>Accurate Go2 robot model with joint dynamics</li>
+                        <li>Simulated camera, LiDAR, and IMU sensors</li>
+                        <li>ROS2 bridge for seamless topic publishing</li>
+                        <li>Deterministic scenarios for testing edge cases</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <img src="images/isaacsim_office.png" alt="Go2 robot in NVIDIA Isaac Sim office environment"
+                        class="img-fluid rounded" style="border: 1px solid var(--border);">
+                </div>
+            </div>
+
+            <div class="callout mb-4">
+                <h6 class="mb-2">🎮 Simulation Setup</h6>
+                <ul class="mb-0" style="font-size: 0.9rem;">
+                    <li><strong>Isaac Sim Version:</strong> 4.5.0</li>
+                    <li><strong>Environment:</strong> Office scene with desks, chairs, corridors</li>
+                    <li><strong>Integration:</strong> <a href="https://github.com/abizovnuralem/go2_omniverse"
+                            target="_blank">go2_omniverse</a></li>
+                    <li><strong>Data Export:</strong> ROS2 bag recording via <code>ros2 bag record</code></li>
+                </ul>
+            </div>
+
+            <!-- Sim vs Real -->
+            <h2 class="section-title">5. Sim vs Real Data</h2>
+            <p class="mb-3">
+                The ODD Observer pipeline automatically detects whether data comes from simulation or real hardware.
+                Key differences:
+            </p>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Simulation</th>
+                            <th>Real Robot</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Image Quality</td>
+                            <td>Clean, consistent lighting</td>
+                            <td>Compression artifacts, motion blur</td>
+                        </tr>
+                        <tr>
+                            <td>LiDAR Point Cloud</td>
+                            <td>Sensor frame, requires TF transform</td>
+                            <td>Often pre-transformed to odom frame</td>
+                        </tr>
+                        <tr>
+                            <td>IMU Noise</td>
+                            <td>Minimal, predictable</td>
+                            <td>Real sensor noise, drift</td>
+                        </tr>
+                        <tr>
+                            <td>Environment</td>
+                            <td>Controlled office scene</td>
+                            <td>Varied residential/lab environments</td>
+                        </tr>
+                        <tr>
+                            <td>Edge Cases</td>
+                            <td>Can be deliberately created</td>
+                            <td>Occur naturally, less controlled</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Acknowledgments -->
+            <div class="callout" style="background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
+                <h6 class="mb-2">🙏 Acknowledgments</h6>
+                <p class="mb-0">
+                    Special thanks to <a href="https://github.com/abizovnuralem"
+                        target="_blank"><strong>@abizovnuralem</strong></a>
+                    for the <a href="https://github.com/abizovnuralem/go2_ros2_sdk" target="_blank">go2_ros2_sdk</a> and
+                    <a href="https://github.com/abizovnuralem/go2_omniverse" target="_blank">go2_omniverse</a> projects,
+                    which made ROS2 integration and Isaac Sim simulation possible for the Go2 platform.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const toggle = document.getElementById('themeToggle');
+            const stored = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) document.body.classList.add('dark');
+            toggle?.addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            });
+        })();
+    </script>
+</body>
+
+</html>
