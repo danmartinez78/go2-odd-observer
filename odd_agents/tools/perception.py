@@ -24,7 +24,8 @@ from .common import list_available_windows, get_window_file_paths
 # v10.1.0: Reinforced actor proximity guidance - camera-only assessment, read ODD spec descriptions
 # v10.2.0: Traversability calibration - indoor clutter is navigable, not impassable
 # v10.3.0: Camera artifact guidance - ignore JPEG compression, blur, distortion as debris
-PERCEPTION_TOOL_VERSION = "10.3.0"
+# v11.0.0: Sensor fusion reasoning, image quality pre-check, terrain type clarification, confidence calibration
+PERCEPTION_TOOL_VERSION = "11.0.0"
 
 # Hardcoded robot and sensor knowledge - this is constant across all analyses
 ROBOT_SENSOR_KNOWLEDGE = """
@@ -32,6 +33,27 @@ ROBOT_SENSOR_KNOWLEDGE = """
 - Camera height: ~35cm off ground (LOW angle perspective)
 - Camera FOV: ~120° horizontal
 - Footprint: 0.65m length × 0.31m width
+
+## STEP 0: IMAGE QUALITY ASSESSMENT (DO THIS FIRST)
+
+Before analyzing content, assess camera image (Image A) quality:
+
+**Check for these artifacts:**
+- JPEG compression: Blocky patterns, color banding, mosquito noise around edges
+- Motion blur: Smeared edges, ghosting
+- Lens distortion: Warped straight lines at image edges
+- Exposure issues: Blown highlights, crushed shadows, too dark/bright overall
+- Focus issues: Soft edges, lack of fine detail
+
+**Record your assessment:**
+- image_quality: "good" | "moderate" | "degraded"
+- If degraded: note which artifacts are present
+- This DIRECTLY affects your confidence score (degraded images → lower confidence)
+
+**CRITICAL: Do NOT misinterpret artifacts as scene content:**
+- Blocky compression patterns are NOT debris or texture
+- Color banding is NOT surface variation
+- Soft focus is NOT fog or smoke
 
 ## SENSOR INTERPRETATION
 
@@ -41,17 +63,8 @@ ROBOT_SENSOR_KNOWLEDGE = """
   - Humans MEDIUM: Legs up to waist visible, person looms over camera
   - Humans FAR: Full body visible head to toe (requires 6m+ distance)
   - Animals (dogs/cats): At similar height to camera, eye-level when close
-- Use for: Semantic understanding, ACTOR DETECTION (humans/animals), surface type, lighting
+- Use for: Semantic understanding, ACTOR DETECTION (humans/animals), floor MATERIAL type, lighting
 - CANNOT measure exact distances - reason from visual cues only
-
-⚠️ CAMERA ARTIFACTS TO IGNORE:
-- JPEG compression artifacts: blocky patterns, color banding - NOT debris
-- Motion blur: smeared edges - NOT damage or hazards
-- Lens distortion at edges: warped straight lines - NOT actual terrain deformation
-- Exposure variations: bright/dark patches - NOT surface texture changes
-- Shadow patterns: dark areas under furniture - NOT holes or hazards
-- Reflections on shiny floors: NOT obstacles
-DO NOT interpret image compression or camera artifacts as "debris", "damage", or hazards.
 
 ### BEV Occupancy (Image B)
 - Robot at CENTER, facing UP (forward = top of image)
@@ -70,9 +83,56 @@ DO NOT interpret image compression or camera artifacts as "debris", "damage", or
 ### BEV Roughness (Image D)
 - Terrain height variance per pixel
 - Brighter = rougher/more uneven surface
-- Use for: traversability assessment
+- Use for: traversability assessment, validating camera observations
 
-## TRAVERSABILITY CALIBRATION (CRITICAL)
+## SENSOR FUSION: CROSS-REFERENCE ALL DATA
+
+You have FOUR sensor views - use them TOGETHER to disambiguate ambiguous observations:
+
+**Camera vs BEV Roughness (resolve texture ambiguity):**
+- Camera shows unusual texture BUT BEV roughness is LOW (dark) → Likely camera artifact, visual pattern, or patterned rug - NOT actual rough terrain
+- Camera shows smooth floor BUT BEV roughness is HIGH (bright) → Actual terrain variation camera didn't capture
+
+**Camera vs BEV Occupancy (resolve obstacle ambiguity):**
+- Camera shows something on floor BUT BEV occupancy shows FREE space → Flat object, shadow, or camera artifact
+- Camera shows clear path BUT BEV occupancy shows obstacle → Low object camera didn't see
+
+**Camera vs BEV Height (resolve elevation ambiguity):**
+- Camera suggests terrain change BUT BEV height is FLAT → Visual illusion, pattern, or artifact
+- Camera shows flat floor BUT BEV height varies → Actual elevation change
+
+**When sensors disagree:**
+- Trust BEV for GEOMETRY (height, obstacles, roughness) - it's from LiDAR, immune to visual artifacts
+- Trust camera for SEMANTICS (what things are) - but only if image quality is good
+- If camera quality is degraded, weight BEV interpretation more heavily
+- Note disagreements in sensor_fusion_notes
+
+## TERRAIN TYPE IS FLOOR MATERIAL (NOT OBJECTS)
+
+terrain_type refers to the UNDERLYING FLOOR MATERIAL the robot stands/moves on.
+You MUST output one of the allowed values from the ODD specification.
+
+**Terrain type IS:**
+- The floor surface material: tile, hardwood, carpet, laminate, vinyl, concrete, area rug
+- What the robot's feet physically contact
+
+**Terrain type IS NOT:**
+- Objects ON the floor (toys, papers, cables, debris)
+- Visual patterns or textures in the material
+- Things that could be moved or cleaned up
+
+**Examples:**
+- Patterned rug with complex design → terrain_type: "area_rug" (it's the material, ignore the pattern)
+- Hardwood floor with papers scattered → terrain_type: "hardwood" (ignore papers)
+- Carpet with toys on it → terrain_type: "low-pile carpet" (ignore toys)
+- Floor with unusual visual texture but flat BEV → probably a patterned surface, use best material match
+
+**DO NOT invent terrain types:**
+- "shredded paper", "debris", "clutter" are NOT terrain types - they're objects
+- Always output one of the allowed values from the ODD spec
+- If uncertain, cross-reference with BEV roughness and pick best material match
+
+## TRAVERSABILITY CALIBRATION
 
 traversability_score measures PATH NAVIGABILITY for a quadruped robot, NOT tidiness:
 - 0.9-1.0: Clear open path (empty hallway, open floor)
@@ -87,19 +147,36 @@ traversability_score measures PATH NAVIGABILITY for a quadruped robot, NOT tidin
 - A "messy room" is NOT "rocky outcropping" - calibrate accordingly
 - Only use 0.0-0.2 for genuinely blocked paths (robot physically cannot pass)
 
-## CRITICAL: ACTOR PROXIMITY vs OBSTACLE DISTANCE
+## ACTOR DETECTION (BINARY)
 
 ⚠️ ACTORS (humans/animals) are assessed ONLY from CAMERA image:
-- Look at what body parts are visible and how much they fill the frame
-- Use proximity bands: none/far/medium/close/immediate
-- Read the ODD spec description for human_proximity_band/animal_proximity_band for guidance
+- human_present: 1 if ANY human visible, 0 otherwise
+- animal_present: 1 if ANY animal visible, 0 otherwise
+- Do NOT estimate distances - just presence/absence
 
-⚠️ OBSTACLES are assessed from BEV occupancy:
-- "min_obstacle_distance_m" from BEV metrics is to ANY obstacle (furniture, walls, etc.)
-- This is NOT actor proximity - do not confuse them
+⚠️ OBSTACLES in BEV are NOT actors:
+- "min_obstacle_distance_m" from BEV is to furniture/walls, NOT humans
 - A chair 0.5m away is NOT a human proximity violation
 
-⚠️ DO NOT report fake precision like "human at 0.76m" - camera cannot measure distance
+## CONFIDENCE CALIBRATION
+
+Your confidence score reflects BOTH certainty in observations AND data quality:
+
+**Base on image quality:**
+- Good quality + clear observations → 0.85-0.95
+- Good quality + some ambiguity → 0.70-0.85
+- Moderate quality (minor artifacts) → 0.60-0.75
+- Degraded quality (significant artifacts) → 0.40-0.60
+
+**Adjust for sensor agreement:**
+- All sensors agree → +0.05 to +0.10
+- Sensors partially disagree → no adjustment
+- Sensors strongly disagree → -0.10 to -0.15
+
+**Never claim high confidence (>0.85) if:**
+- Image quality is degraded
+- Sensors disagree significantly
+- You're uncertain about terrain type or actor presence
 """
 
 
@@ -159,26 +236,45 @@ def create_perception_tools(scenario_path: Union[str, Path], genai_client: genai
 
 ## YOUR TASK FOR WINDOW {window_id}
 
-Analyze all four sensor images and provide measurements for EACH AXIS defined in the ODD specification above.
+Analyze all four sensor images using this workflow:
 
-WORKFLOW:
-1. Read each axis in the ODD spec (categorical, numeric, boolean)
-2. Use the axis "description" field for guidance on HOW to assess it
-3. Output a measurement for that axis using the EXACT axis name from the spec
+### STEP 1: Assess Image Quality (Camera Image A)
+Before analyzing content, check for artifacts (JPEG compression, blur, distortion, exposure issues).
+Record image_quality as "good", "moderate", or "degraded".
 
-For categorical axes: output one of the allowed values (or your best match)
-For numeric axes: output a number within the specified range
+### STEP 2: Cross-Reference Sensors
+Look at ALL FOUR images together. Note where they agree or disagree:
+- Does camera texture match BEV roughness?
+- Do camera obstacles match BEV occupancy?
+- Are there visual artifacts the BEV doesn't show?
+
+### STEP 3: Make ODD Measurements
+For each axis in the ODD spec:
+- Read the axis "description" for HOW to assess it
+- Use sensor fusion to resolve ambiguities
+- Output using EXACT axis name from spec
+
+For categorical axes (like terrain_type): output one of the ALLOWED values only
+For numeric axes: output a number
 For boolean axes: output 0 or 1
+
+### STEP 4: Calibrate Confidence
+Adjust confidence based on image quality and sensor agreement (see guidance above).
 
 OUTPUT FORMAT (JSON only, no markdown):
 {{
   "window_id": "{window_id}",
+  "image_quality": {{
+    "camera_quality": "good|moderate|degraded",
+    "artifacts_observed": ["list any artifacts found"],
+    "quality_notes": "brief note on image quality"
+  }},
   "observations": {{
     "scene_description": "Overall description of what you see",
     "lighting": "Describe lighting conditions",
-    "terrain": "Describe floor/ground surface",
+    "terrain": "Describe floor MATERIAL (not objects on floor)",
     "obstacles": "Describe obstacles visible",
-    "actors": "Describe humans/animals - body parts visible, apparent proximity. Say 'None visible' if none."
+    "actors": "Describe humans/animals visible. Say 'None visible' if none."
   }},
   "odd_measurements": {{
     "<axis_name_from_spec>": "<measured_value>",
@@ -188,15 +284,18 @@ OUTPUT FORMAT (JSON only, no markdown):
     "<axis_name>": "Brief reasoning for this measurement",
     "...": "..."
   }},
-  "odd_concerns": ["List any potential ODD violations"],
+  "sensor_fusion_notes": [
+    "Note any cross-sensor observations, e.g. 'Camera shows texture but BEV roughness is low - patterned rug'"
+  ],
+  "odd_concerns": ["List any potential ODD violations - only real concerns, not artifacts"],
   "confidence": 0.0-1.0
 }}
 
-IMPORTANT:
-- Use EXACT axis names from the ODD spec in odd_measurements
-- Read the description field for each axis - it tells you HOW to assess it
-- For actor proximity axes: assess from CAMERA only (not BEV obstacle distance)
-- BEV obstacle distance ({bev_metrics.get('min_obstacle_distance_m', 'N/A')}m) is to furniture/walls, NOT humans/animals"""
+CRITICAL REMINDERS:
+- terrain_type is FLOOR MATERIAL (tile, hardwood, carpet, etc.) - NOT objects on floor
+- DO NOT invent terrain types like "shredded paper" or "debris"
+- If image quality is degraded, trust BEV more than camera for geometry
+- BEV obstacle distance ({bev_metrics.get('min_obstacle_distance_m', 'N/A')}m) is to furniture/walls, NOT actors"""
 
             response = genai_client.models.generate_content(
                 model=model,
