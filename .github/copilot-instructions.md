@@ -90,10 +90,21 @@ Motion JSON files include position-derived fields that work reliably for both si
 - `gyro_x/y/z` - Angular velocity
 - `roll/pitch/yaw` - Orientation
 
-**Motion Tool v10.0.0 Strategy:**
+**Motion Tool v11.0.0 Strategy:**
 - Speed: Always from `derived_speed` (more reliable than odom velocity)
 - Acceleration: From IMU if available, else `None`
 - Angular velocity: From IMU if available, else `derived_yaw_rate`
+- Trajectory metrics: displacement, path_length, efficiency per window
+
+**Collision Tool v9.0.0 Features:**
+- Uses `derived_speed` for collision signatures
+- Tracks `collision_signatures`: sudden_stop, speed_drop_mps, peak_accel_mps2
+- Reports `data_availability`: speed_source, acceleration_source
+
+**Perception Tool v12.2.0 Features:**
+- Camera + 3 BEV channels (occupancy, height, roughness)
+- Data source detection (sim vs real)
+- Environment classification with confidence
 
 ## Knowledge Layer
 
@@ -117,6 +128,12 @@ python scripts/run_odd_analysis.py --scenario sim_2win
 source /opt/ros/humble/setup.bash
 source /workspaces/go2-odd-observer/go2_ros2_sdk/install/setup.bash
 python scripts/extract_windows.py --rosbag <path> --output data/production/<name> --run-id <name>
+
+# Generate HTML report from analysis results
+python scripts/generate_html_report.py \
+  --input data/report_candidates/<timestamp>/<scenario>/full_result.json \
+  --scenario-dir data/production/chunks/<scenario> \
+  --output docs/reports/<scenario>_report.html
 
 # Regenerate all production data
 bash scripts/regenerate_all_data.sh

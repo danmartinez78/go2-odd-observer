@@ -1299,7 +1299,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Build scenario overview (representative windows)
     total_windows = len(windows)
-    
+
     # Sample windows evenly for display (use windows_with_images which is already sampled)
     # But re-sample from the full list to get true even spacing
     MAX_DISPLAY_CARDS = 4
@@ -1308,19 +1308,23 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     else:
         # True even spacing: first, last, and evenly distributed middle
         step = (total_windows - 1) / (MAX_DISPLAY_CARDS - 1)
-        display_window_ids = [windows[int(round(i * step))] for i in range(MAX_DISPLAY_CARDS)]
-    
+        display_window_ids = [windows[int(round(i * step))]
+                              for i in range(MAX_DISPLAY_CARDS)]
+
     # Get images for display windows
-    display_windows = [w for w in windows_with_images if w['id'] in display_window_ids]
+    display_windows = [
+        w for w in windows_with_images if w['id'] in display_window_ids]
     # If some weren't in windows_with_images, try to load them
     if len(display_windows) < len(display_window_ids):
         for wid in display_window_ids:
             if wid not in [w['id'] for w in display_windows]:
-                images = find_window_images(scenario_dir, wid, image_scenario_name)
+                images = find_window_images(
+                    scenario_dir, wid, image_scenario_name)
                 if images:
                     display_windows.append({'id': wid, 'images': images})
         # Sort by window id to maintain order
-        display_windows.sort(key=lambda w: windows.index(w['id']) if w['id'] in windows else 999)
+        display_windows.sort(key=lambda w: windows.index(
+            w['id']) if w['id'] in windows else 999)
 
     # Extract environment info from per-window data or artifacts
     per_window_data = result.get('per_window_data', [])

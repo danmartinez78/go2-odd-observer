@@ -134,22 +134,24 @@ graph LR
     style G fill:#c8e6c9,stroke:#333,stroke-width:2px,color:#000
 ```
 
-**Phase 1.4.5 Architecture (Current - Nov 2025):**
+**Phase 1.4.5 Architecture (Current - Dec 2025):**
 
 **Two-Tier Design:**
 - **Pipeline Agents** (6 total): Orchestrated by ADK, tracked in metadata
   - OddSpecAgent, PerceptionAgent, MotionAgent, CollisionAgent, EvaluatorAgent, ReportAgent
 - **Tool Agents** (4 total): Embedded LLM calls within tools (NOT tracked by ADK)
-  - `perception_tool`: Camera + 3 BEV channels → multimodal vision analysis
-  - `motion_tool`: IMU + camera → motion state with reasoning
-  - `collision_tool`: Multimodal fusion → binary collision detection
-  - `cod_construction_tool`: Categorical micro-agent for semantic ODD matching
+  - `perception_tool` v12.2.0: Camera + 3 BEV channels → multimodal vision analysis
+  - `motion_tool` v11.0.0: IMU + derived motion → trajectory metrics, speed analysis
+  - `collision_tool` v9.0.0: Multimodal fusion → collision signatures, risk bands
+  - `cod_construction_tool` v1.6.0: Categorical micro-agent for semantic ODD matching
   
 **Key Features:**
 - **Artifact-Based Handoff**: Reliable inter-agent data transfer via InMemoryArtifactService
 - **ODD-Schema Driven**: Agents adapt to any ODD structure (ground robots, drones, etc.)
 - **Categorical Micro-Agent**: Semantic matching ("indoor_commercial" ≈ "office")
 - **Data Source Detection**: Automatic sim vs real identification from visual cues
+- **Derived Motion**: Position-based speed/yaw-rate works reliably for sim and real data
+- **Interactive HTML Reports**: Line charts, collapsible sections, trajectory details
 
 ### Multi-Modal Sensor Fusion
 
@@ -181,34 +183,33 @@ Quadruped robot designed for indoor office navigation.
 
 ### 2. Real-World Performance
 
-**Current Status:** Phase 1.4.2 Complete (Three-Tier Intelligence Architecture)
+**Current Status:** Phase 1.6 Complete (Production Data + HTML Reports)
 
-**Latest Features (Nov 2025):**
-- ✅ **ODD-Schema Driven** - Agents adapt to any robot domain (tested: ground robots + drones)
-- ✅ **Dynamic COD Mapping** - Measurements auto-align with ODD dimensions
-- ✅ **Three-Tier Intelligence** - Tool agents (grounded) → Loop agents (temporal) → Summary agents (structural)
-- ✅ **Flexible Observations** - Rich narrative + quantitative metrics
-- ✅ **Intelligent ODD Filtering** - Loop agents decide what's relevant, not hardcoded rules
-- ✅ **Sensor Anomaly Detection** - Automatically flags sparse LiDAR, IMU drift, etc.
-- ✅ **Multimodal Collision Detection** - IMU + camera + BEV fusion with LLM reasoning
+**Latest Features (Dec 2025):**
+- ✅ **Derived Motion Fields** - Position-based speed/yaw-rate for reliable sim+real analysis
+- ✅ **Enhanced Tool Output** - Trajectory metrics, collision signatures, data availability tracking
+- ✅ **Interactive HTML Reports** - Line charts, collapsible sections, trajectory details
+- ✅ **Production Data Chunking** - 15-window chunks for scalable batch processing
+- ✅ **Even Window Sampling** - True even distribution for representative visualization
 
 **Production Data:**
-- 📊 **167 windows** across 7 scenarios (31 sim + 136 real robot data)
+- 📊 **167 windows** across 9 scenarios (31 sim + 136 real robot data)
 - 🏭 **Auto-cropped BEVs** - 65-72% size reduction with square aspect ratio
 - ✅ **3-channel BEV fusion** - Occupancy (obstacles), Height (terrain), Roughness (variance)
 - 🤖 **Real robot support** - Odom-frame detection, proper ground filtering
 - 📦 **Knowledge layer** - Shared grounding docs (ODD/COD fundamentals, sensor interpretation)
+- 📦 **15-window chunks** - Production data chunked for scalable batch processing
 
 **Test Results:**
-- ⏱️ **~4 minutes** for 2-window analysis
-- 💰 **~$0.05** per 2-window test (~$0.025/window)
+- ⏱️ **~2 minutes** for 2-window analysis
+- 💰 **~$0.025/window** with current model configuration
 - 🎯 **6 agents** executed successfully
-- 📊 **38K tokens** with rich observations and cross-window reasoning
+- 📊 **~40K tokens** with rich observations and cross-window reasoning
 
 **Test Data:**
-- 📝 **9 scenarios** available (7 production + 2 test)
+- 📝 **9+ scenarios** available (production chunks + test sets)
 - ⚡ **2-window quick tests** (sim_2win, real_2win)
-- 🤖 **Validated agents**: Perception (3 BEV), Motion (IMU+camera), Collision (binary detection)
+- 🤖 **Validated tools**: Perception v12.2.0 (3 BEV), Motion v11.0.0 (trajectory), Collision v9.0.0 (signatures)
 
 ### 3. Interactive HTML Reports
 

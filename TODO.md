@@ -4,25 +4,33 @@ See [`docs/ARCHITECTURE_REDESIGN.md`](docs/ARCHITECTURE_REDESIGN.md) for detaile
 
 ---
 
-**Last Updated**: November 28, 2025  
+**Last Updated**: December 1, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.6 - Real Data BEV Fix (feature branch ready for merge)
+**Status**: Phase 1.6 - Production Data + HTML Reports Complete
 
-**Current Focus**: Validate real data pipeline, then merge `feature/real-data-bev-fix` to `dev`
+**Current Focus**: Batch processing production chunks, generating reports
 
 ## 🎯 Next Steps
 
-**In Progress:** Manual pipeline validation on 2-window test sets
+**In Progress:** Generating HTML reports for production scenarios
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
-| HIGH | Pipeline Validation | 🔄 IN PROGRESS | Testing sim_2win and real_2win test sets |
-| HIGH | Merge Feature Branch | ⏳ NEXT | Merge `feature/real-data-bev-fix` → `dev` after validation |
-| HIGH | Batch Production Run | ⏳ NEXT | Process all 167 windows overnight |
-| MEDIUM | Sporadic Window Failures RCA | 📋 TODO | Check results of batch run for failures |
+| HIGH | HTML Report Generation | 🔄 IN PROGRESS | Line charts, trajectory details, collapsible sections |
+| HIGH | Production Batch Runs | ⏳ NEXT | Process all 167 windows in 15-window chunks |
 | MEDIUM | Token Accounting Bug Fix | 📋 TODO | Cost reporting accuracy (workaround: 3x estimate) |
 | MEDIUM | HTML Report Time-Based Display | 📋 TODO | Show timeline with time labels instead of window IDs |
 | LOW | Memory Layer (Phase 2.2) | 📋 DEFERRED | Cross-run context (nice-to-have) |
+
+### Recent Completions (Dec 1, 2025)
+- ✅ **Derived Motion Fields** - `derived_speed`, `derived_yaw_rate` from position data
+- ✅ **Motion Tool v11.0.0** - Trajectory metrics (displacement, path_length, efficiency)
+- ✅ **Collision Tool v9.0.0** - Collision signatures, data availability tracking
+- ✅ **HTML Report Line Charts** - Speed and proximity line graphs (scale with window count)
+- ✅ **Trajectory Details Card** - Per-window breakdown with efficiency color-coding
+- ✅ **Collapsible Sections** - Motion states, risk bands collapse for >6 windows
+- ✅ **Even Window Sampling** - True even distribution (first, last, evenly spaced middle)
+- ✅ **Production Data Chunking** - 15-window chunks for scalable batch processing
 
 ### HTML Report Time-Based Display 📋 TODO
 
@@ -281,15 +289,15 @@ The key insight: **Don't debug via full pipeline runs**. Use isolated agent test
 | CollisionAgent | 7.3.0 | gemini-2.5-flash |
 | EvaluatorAgent | 5.0.0 | gemini-2.5-pro |
 | ReportAgent | 9.1.0 | gemini-2.5-flash |
-| CODTool | 1.1.0 | gemini-2.5-flash (categorical micro-agent) |
+| CODTool | 1.6.0 | gemini-2.5-flash (categorical micro-agent) |
 
-**Tool Versions (v1.4.5)**:
+**Tool Versions (v1.6.0)**:
 | Tool | Version | Description |
 |------|---------|-------------|
-| PerceptionTool | 5.1.0 | Multimodal analysis + data source detection |
-| MotionTool | 5.0.0 | IMU analysis + motion state |
-| CollisionTool | 5.0.0 | Multimodal collision detection |
-| CODTool | 1.1.0 | Categorical micro-agent for semantic matching |
+| PerceptionTool | 12.2.0 | Camera + 3 BEV + data source detection |
+| MotionTool | 11.0.0 | Derived motion + trajectory metrics |
+| CollisionTool | 9.0.0 | Collision signatures + data availability |
+| CODTool | 1.6.0 | Categorical micro-agent for semantic matching |
 
 **Suggested Next Phases**:
 | Phase | Focus | Description | Priority |
@@ -1472,33 +1480,31 @@ Total windows: 8 (vs 12 uniform) but better event coverage
 
 ---
 
-**Last Updated**: November 27, 2025  
+**Last Updated**: December 1, 2025  
 **Project**: Go2 ODD Observer - Kaggle ADK Agent Capstone  
-**Status**: Phase 1.4.5 Complete, HTML Reports v2.0 deployed
+**Status**: Phase 1.6 Complete, HTML Reports v2.0 deployed
 
-**Current Focus**: RAG knowledge base, then production testing
+**Current Focus**: Production batch runs, report generation
 
-**Recent Completions (Nov 27, 2025)**:
-- ✅ HTML Reports v2.0: Inline SVG charts, data source detection, Phase 1.4.5 schema
-- ✅ GitHub Pages Update: ODD/COD explanation, pipeline diagram, 3 production reports
-- ✅ Terminology Fixes: COD/BOUNDARY definitions corrected across all agents
-- ✅ Phase 1.4.5: Artifact Handoff, Categorical Reasoning, Data Source Detection
+**Recent Completions (Dec 1, 2025)**:
+- ✅ Derived Motion: `derived_speed`, `derived_yaw_rate` from position differentiation
+- ✅ Motion Tool v11.0.0: Trajectory metrics (displacement, path_length, efficiency)
+- ✅ Collision Tool v9.0.0: Collision signatures, data availability tracking
+- ✅ HTML Reports: Line charts, trajectory details card, collapsible sections
+- ✅ Even window sampling: True distribution for representative visualization
+- ✅ Production chunking: 15-window chunks for batch processing
 
-**Agent Versions (v1.4.5)**:
-| Agent | Version | Model |
-|-------|---------|-------|
-| OddSpecAgent | 6.1.0 | gemini-2.5-flash |
-| PerceptionAgent | 7.4.0 | gemini-2.5-flash |
-| MotionAgent | 7.3.0 | gemini-2.5-flash |
-| CollisionAgent | 7.3.0 | gemini-2.5-flash |
-| EvaluatorAgent | 5.0.0 | gemini-2.5-pro |
-| ReportAgent | 9.1.0 | gemini-2.5-flash |
-| CODTool | 1.1.0 | gemini-2.5-flash (categorical micro-agent) |
+**Tool Versions (Current)**:
+| Tool | Version | Key Feature |
+|------|---------|-------------|
+| PerceptionTool | 12.2.0 | Camera + 3 BEV + data source detection |
+| MotionTool | 11.0.0 | Derived motion + trajectory metrics |
+| CollisionTool | 9.0.0 | Collision signatures + data availability |
+| CODTool | 1.6.0 | Categorical micro-agent |
 
 **Suggested Next Phases**:
 | Phase | Focus | Description | Priority |
 |-------|-------|-------------|----------|
-| 1.6 | Test updates | Update unit tests for new API (loop→consolidated agents) | MEDIUM |
-| 1.7 | Full production run | Run on all sim_1_0 chunks (100 windows) | HIGH |
+| 1.7 | Full production run | Process all chunks with HTML reports | HIGH |
 | 2.0 | Performance optimization | Visual/LiDAR odometry, tool splitting | LOW |
-| 2.1 | Real data validation | Test on real robot data (not sim) | HIGH |
+| 2.1 | Real data validation | Validate on more real robot scenarios | MEDIUM |
