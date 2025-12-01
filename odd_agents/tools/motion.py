@@ -20,7 +20,9 @@ from .common import list_available_windows, get_window_file_paths
 # Tool version
 # v7.3.0: IMU-only analysis - removed camera VLM call
 # v8.0.0: Single-call batch - analyze_all_motion_tool processes all windows, auto-saves artifact
-MOTION_TOOL_AGENT_VERSION = "8.0.0"
+# v9.0.0: Use position-derived velocity/accel when IMU data is zeros (real robot fix)
+# v10.0.0: Simplified - always use derived_speed, IMU for accel/gyro when available, clear unavailable flags
+MOTION_TOOL_VERSION = "10.0.0"
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -39,7 +41,14 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
         scenario_path, str) else scenario_path
 
     async def _analyze_single_window(window_id: str, odd_context: dict) -> dict:
-        """Internal: Analyze one window's IMU data (called by batch tool)."""
+        """Internal: Analyze one window's motion data (called by batch tool).
+
+        Data sources:
+        - Speed: ALWAYS from derived_speed (position-based, accurate)
+        - Acceleration: IMU when valid, else unavailable
+        - Angular velocity: IMU gyro when valid, else derived_yaw_rate
+        - Roll/Pitch: Always from orientation (reliable in both sim/real)
+        """
         try:
             file_paths = get_window_file_paths(scenario_path, window_id)
             motion_file = file_paths["motion"]
@@ -50,61 +59,102 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             with open(motion_file, 'r') as f:
                 motion_data = json.load(f)
 
-            # Extract IMU data
-            accel_x = motion_data["accel_x"]
-            accel_y = motion_data["accel_y"]
-            gyro_x = motion_data["gyro_x"]
-            gyro_y = motion_data["gyro_y"]
-            gyro_z = motion_data["gyro_z"]
-            roll = motion_data["roll"]
-            pitch = motion_data["pitch"]
-            timestamps = motion_data["timestamps"]
+            # Extract data
+            accel_x = motion_data.get("accel_x", [])
+            accel_y = motion_data.get("accel_y", [])
+            gyro_z = motion_data.get("gyro_z", [])
+            roll = motion_data.get("roll", [])
+            pitch = motion_data.get("pitch", [])
+            timestamps = motion_data.get("timestamps", [])
 
-            # Calculate horizontal acceleration magnitude
-            horiz_accel = [math.sqrt(ax**2 + ay**2) for ax, ay in zip(accel_x, accel_y)
-                           if abs(ax) > 1e-6 or abs(ay) > 1e-6]
+            # Derived values from position differentiation
+            derived_speed = motion_data.get("derived_speed", [])
+            derived_yaw_rate = motion_data.get("derived_yaw_rate", [])
 
-            peak_horiz_accel = max(horiz_accel) if horiz_accel else 0.0
-            avg_horiz_accel = sum(horiz_accel) / \
-                len(horiz_accel) if horiz_accel else 0.0
+            # Check data availability
+            imu_accel_valid = any(
+                abs(ax) > 1e-6 for ax in accel_x) or any(abs(ay) > 1e-6 for ay in accel_y)
+            imu_gyro_valid = any(abs(gz) > 1e-6 for gz in gyro_z)
+            has_derived_speed = bool(derived_speed) and any(
+                s > 1e-6 for s in derived_speed)
+            has_derived_yaw = bool(derived_yaw_rate)
 
-            # Angular velocity analysis
-            gyro_z_valid = [gz for gz in gyro_z if abs(gz) > 1e-6]
-            peak_gyro_z = max(abs(gz)
-                              for gz in gyro_z_valid) if gyro_z_valid else 0.0
-            peak_gyro_x = max(abs(gx) for gx in gyro_x if abs(
-                gx) > 1e-6) if any(abs(gx) > 1e-6 for gx in gyro_x) else 0.0
-            peak_gyro_y = max(abs(gy) for gy in gyro_y if abs(
-                gy) > 1e-6) if any(abs(gy) > 1e-6 for gy in gyro_y) else 0.0
+            # === SPEED: Always use derived_speed (position-based, most accurate) ===
+            peak_speed = 0.0
+            avg_speed = 0.0
+            if has_derived_speed:
+                speed_valid = [s for s in derived_speed if s > 1e-6]
+                peak_speed = max(speed_valid) if speed_valid else 0.0
+                avg_speed = sum(derived_speed) / \
+                    len(derived_speed) if derived_speed else 0.0
 
-            # Platform orientation
+            # === ACCELERATION: IMU only (derived accel is too noisy) ===
+            peak_accel = None  # None means unavailable
+            if imu_accel_valid:
+                horiz_accel = [math.sqrt(ax**2 + ay**2) for ax, ay in zip(accel_x, accel_y)
+                               if abs(ax) > 1e-6 or abs(ay) > 1e-6]
+                peak_accel = max(horiz_accel) if horiz_accel else 0.0
+
+            # === ANGULAR VELOCITY: IMU gyro preferred, fallback to derived_yaw_rate ===
+            peak_angular_vel = 0.0
+            angular_vel_source = "unavailable"
+            if imu_gyro_valid:
+                gyro_valid = [abs(gz) for gz in gyro_z if abs(gz) > 1e-6]
+                peak_angular_vel = max(gyro_valid) if gyro_valid else 0.0
+                angular_vel_source = "imu"
+            elif has_derived_yaw:
+                yaw_valid = [abs(yr)
+                             for yr in derived_yaw_rate if abs(yr) > 1e-6]
+                peak_angular_vel = max(yaw_valid) if yaw_valid else 0.0
+                angular_vel_source = "derived"
+
+            # === ORIENTATION: Always available from odometry ===
             max_roll = max(abs(r) for r in roll) if roll else 0.0
             max_pitch = max(abs(p) for p in pitch) if pitch else 0.0
 
-            # Calculate jerk
-            jerk_samples = []
-            if len(horiz_accel) > 1 and len(timestamps) > 1:
-                for i in range(1, len(horiz_accel)):
-                    dt = timestamps[i] - timestamps[i-1]
-                    if dt > 1e-6:
-                        jerk_samples.append(
-                            abs(horiz_accel[i] - horiz_accel[i-1]) / dt)
-            peak_jerk = max(jerk_samples) if jerk_samples else 0.0
+            # === STATIONARY DETECTION: Based on speed (most reliable) ===
+            is_stationary = peak_speed < 0.05  # Less than 5 cm/s
+
+            # Build data availability summary for LLM
+            data_status = []
+            if has_derived_speed:
+                data_status.append("speed:OK")
+            else:
+                data_status.append("speed:UNAVAILABLE")
+            if imu_accel_valid:
+                data_status.append("accel:IMU")
+            else:
+                data_status.append("accel:UNAVAILABLE")
+            if angular_vel_source != "unavailable":
+                data_status.append(f"angular:{angular_vel_source}")
+            else:
+                data_status.append("angular:UNAVAILABLE")
 
             # LLM prompt for motion state interpretation
-            prompt = f"""Motion analyst for window {window_id}. IMU-ONLY.
+            accel_str = f"{peak_accel:.4f}" if peak_accel is not None else "N/A"
+            prompt = f"""Motion analyst for window {window_id}.
 
-IMU: Peak accel={peak_horiz_accel:.4f} m/s², Avg={avg_horiz_accel:.4f}, Peak gyro_z={peak_gyro_z:.4f} rad/s
-Angles: roll={max_roll:.2f}°, pitch={max_pitch:.2f}°, Jerk={peak_jerk:.4f} m/s³
+DATA AVAILABILITY: {', '.join(data_status)}
 
-STATIONARY HEURISTIC: avg_accel<0.5 AND peak_gyro<0.1 AND peak_jerk<5 → likely stationary
+MEASUREMENTS:
+- Speed: peak={peak_speed:.4f} m/s, avg={avg_speed:.4f} m/s
+- Acceleration: {accel_str} m/s² (from IMU, includes leg dynamics)
+- Angular velocity: {peak_angular_vel:.4f} rad/s ({angular_vel_source})
+- Orientation: roll={max_roll:.2f}°, pitch={max_pitch:.2f}°
+
+STATIONARY DETECTION: speed < 0.05 m/s → stationary
+Current: {"STATIONARY" if is_stationary else "MOVING"} (speed={peak_speed:.4f} m/s)
+
+NOTE: If accel/angular show "N/A" or "UNAVAILABLE", the IMU data was not recorded.
+This is common for real robot data - use speed and orientation for analysis.
+
 MOTION STATES: stationary | moving | rotating | complex
 
 OUTPUT (JSON only):
 {{
   "motion_state": "stationary|moving|rotating|complex",
-  "is_stationary": {{"value": bool, "confidence": 0.0-1.0, "evidence": "reason"}},
-  "explanation": "brief",
+  "is_stationary": {{"value": {str(is_stationary).lower()}, "confidence": 0.0-1.0, "evidence": "reason"}},
+  "explanation": "brief motion description",
   "key_insights": ["insight1"]
 }}"""
 
@@ -112,20 +162,33 @@ OUTPUT (JSON only):
                 model=model, contents=[types.Part(text=prompt)])
             llm_data = extract_json_block(response.text or "")
 
-            # Deterministic ODD measurements from sensor data
+            # Build ODD measurements - use None for unavailable values
+            odd_measurements = {
+                "max_speed_mps": round(peak_speed, 4),
+                "max_angular_velocity_radps": round(peak_angular_vel, 4),
+                "max_roll_deg": round(max_roll, 2),
+                "max_pitch_deg": round(max_pitch, 2),
+            }
+
+            # Only include accel if available (None means unavailable)
+            if peak_accel is not None:
+                odd_measurements["max_accel_mps2"] = round(peak_accel, 4)
+            else:
+                # Explicitly unavailable
+                odd_measurements["max_accel_mps2"] = None
+
             return {
                 "window_id": window_id,
-                "odd_measurements": {
-                    "max_accel_mps2": round(peak_horiz_accel, 4),
-                    "max_speed_mps": 0.0,
-                    "max_angular_velocity_radps": round(peak_gyro_z, 4),
-                    "max_roll_deg": round(max_roll, 2),
-                    "max_pitch_deg": round(max_pitch, 2),
-                    "peak_jerk_mps3": round(peak_jerk, 4),
+                "odd_measurements": odd_measurements,
+                "data_availability": {
+                    "speed": "derived" if has_derived_speed else "unavailable",
+                    "acceleration": "imu" if imu_accel_valid else "unavailable",
+                    "angular_velocity": angular_vel_source,
+                    "orientation": "available",
                 },
-                "is_stationary": llm_data.get("is_stationary", {"value": False, "confidence": 0.5, "evidence": "Not determined"}),
-                "motion_state": llm_data.get("motion_state", "unknown"),
-                "explanation": llm_data.get("explanation", "Motion analysis from IMU"),
+                "is_stationary": llm_data.get("is_stationary", {"value": is_stationary, "confidence": 0.9, "evidence": f"speed={peak_speed:.4f} m/s"}),
+                "motion_state": llm_data.get("motion_state", "stationary" if is_stationary else "moving"),
+                "explanation": llm_data.get("explanation", "Motion analysis"),
                 "key_insights": llm_data.get("key_insights", []),
             }
 

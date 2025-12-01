@@ -1,8 +1,0 @@
-scenario_id,data_source,windows,index_csv
-real_173442,real,31,index_real_173442.csv
-real_173813,real,30,index_real_173813.csv
-real_174232,real,11,index_real_174232.csv
-real_174321,real,29,index_real_174321.csv
-real_174503,real,11,index_real_174503.csv
-real_174604,real,24,index_real_174604.csv
-sim_1,sim,31,index_sim_1.csv

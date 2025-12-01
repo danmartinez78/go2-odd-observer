@@ -98,6 +98,10 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
 IMU: accel={peak_accel:.3f} m/s² (>10=collision), gyro={peak_gyro:.3f} rad/s (>5=collision), jerk={peak_jerk:.3f}
 BEV: min_dist={min_dist}m (<0.3m + IMU spike = collision)
 
+Consider the camera image as well for context. If a single object takes up the majority of the view, it may indicate a collision.
+NOTE: IN simulation environments, there may be insatnces of large gray areas with no surface texture, this is the boundary of the simulation environment and NOT indicatiive of a collision. 
+Use BEV images, distances, and the camera image to reason about collision and collison risk.
+
 OUTPUT (JSON only):
 {{
   "collision_detected": bool,

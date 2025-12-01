@@ -50,11 +50,11 @@ warnings.filterwarnings('ignore', message='.*Event loop is closed.*')
 # Phase 1.4.4 - Type-driven COD construction
 # Using 2.5-flash-lite for all agents (cheaper, testing reliability)
 # NOTE: 2.5-flash-lite may not reliably call tools - monitor carefully
-MODEL_PERCEPTION = "gemini-2.5-flash"
-MODEL_MOTION = "gemini-2.5-flash-lite"
-MODEL_COLLISION = "gemini-2.5-flash"
+MODEL_PERCEPTION = "gemini-2.5-pro"
+MODEL_MOTION = "gemini-2.5-flash"
+MODEL_COLLISION = "gemini-2.5-pro"
 MODEL_ODD_SPEC = "gemini-2.5-flash"
-MODEL_EVALUATOR = "gemini-2.5-flash"
+MODEL_EVALUATOR = "gemini-2.5-pro"
 # Upgraded from flash-lite for reliable tool calling
 MODEL_REPORT = "gemini-2.5-flash"
 

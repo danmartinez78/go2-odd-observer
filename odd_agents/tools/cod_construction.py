@@ -29,7 +29,7 @@ COD_TOOL_VERSION = "1.6.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
 
 # Boundary detection threshold (15% margin = approaching limit)
-BOUNDARY_MARGIN_THRESHOLD = 0.15
+BOUNDARY_MARGIN_THRESHOLD = 0.10
 
 # Axes where we only care about upper bound (hazard accumulation axes)
 # Values near 0 are SAFE, values near max are concerning

@@ -16,12 +16,17 @@ import argparse
 import json
 import os
 import sys
+import math
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import numpy as np
 import pandas as pd
 from collections import defaultdict
 from scipy.spatial.transform import Rotation as R
+
+# Minimum time delta for derived motion calculations (seconds)
+# Below this threshold, dt values are unreliable (duplicate timestamps, etc.)
+MIN_DT_THRESHOLD = 0.01  # 10ms
 
 # Import BEV utilities
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -421,20 +426,20 @@ class WindowExtractor:
 
     def _compute_derived_motion(self, motion_data: dict):
         """
-        Compute velocity and acceleration from position differences.
+        Compute speed and yaw rate from position/orientation differences.
 
-        This provides backup motion data when IMU values are zeros,
-        which is common in real robot rosbag data where IMU may not
-        be publishing on the expected topic.
+        This provides motion data derived from odometry position when IMU 
+        values are zeros (common in real robot rosbag data).
 
         Adds to motion_data:
-        - derived_vx, derived_vy: Velocity from position differentiation
-        - derived_speed: Speed magnitude sqrt(vx² + vy²)
-        - derived_accel: Acceleration magnitude from velocity differentiation
-        - derived_yaw_rate: Angular velocity from yaw differentiation
-        """
-        import math
+        - derived_speed: Speed magnitude from position differentiation (m/s)
+        - derived_yaw_rate: Angular velocity from yaw differentiation (rad/s)
 
+        Note: We intentionally do NOT compute derived_accel because:
+        - Double-differentiation of position is very noisy
+        - IMU acceleration (when available) is more accurate
+        - For real data where IMU is zeros, accel is simply unavailable
+        """
         timestamps = motion_data.get("timestamps", [])
         pos_x = motion_data.get("pos_x", [])
         pos_y = motion_data.get("pos_y", [])
@@ -442,55 +447,41 @@ class WindowExtractor:
 
         if len(timestamps) < 2:
             # Not enough data to compute derivatives
-            motion_data["derived_vx"] = []
-            motion_data["derived_vy"] = []
             motion_data["derived_speed"] = []
-            motion_data["derived_accel"] = []
             motion_data["derived_yaw_rate"] = []
             return
 
-        # Compute velocity by finite differences (with simple smoothing)
-        derived_vx = []
-        derived_vy = []
+        # Maximum plausible speed for Go2 robot (~3.5 m/s max, use 5 for margin)
+        MAX_PLAUSIBLE_SPEED = 5.0  # m/s
 
+        # Compute speed by finite differences of position
+        derived_speed = []
+        last_valid_speed = 0.0
         for i in range(len(timestamps) - 1):
             dt = timestamps[i + 1] - timestamps[i]
-            if dt > 1e-6:
+            if dt >= MIN_DT_THRESHOLD:
                 vx = (pos_x[i + 1] - pos_x[i]) / dt
                 vy = (pos_y[i + 1] - pos_y[i]) / dt
+                speed = math.sqrt(vx**2 + vy**2)
+                # Clamp to plausible range
+                if speed > MAX_PLAUSIBLE_SPEED:
+                    speed = last_valid_speed  # Use previous valid value
+                else:
+                    last_valid_speed = speed
             else:
-                vx, vy = 0.0, 0.0
-            derived_vx.append(vx)
-            derived_vy.append(vy)
+                # dt too small - use last valid speed
+                speed = last_valid_speed
+            derived_speed.append(speed)
 
         # Pad last value to match length
-        derived_vx.append(derived_vx[-1] if derived_vx else 0.0)
-        derived_vy.append(derived_vy[-1] if derived_vy else 0.0)
-
-        # Compute speed magnitude
-        derived_speed = [math.sqrt(vx**2 + vy**2)
-                         for vx, vy in zip(derived_vx, derived_vy)]
-
-        # Compute acceleration by differentiating velocity
-        derived_accel = []
-        for i in range(len(timestamps) - 1):
-            dt = timestamps[i + 1] - timestamps[i]
-            if dt > 1e-6 and i + 1 < len(derived_vx):
-                ax = (derived_vx[i + 1] - derived_vx[i]) / dt
-                ay = (derived_vy[i + 1] - derived_vy[i]) / dt
-                accel_mag = math.sqrt(ax**2 + ay**2)
-            else:
-                accel_mag = 0.0
-            derived_accel.append(accel_mag)
-
-        # Pad last value
-        derived_accel.append(derived_accel[-1] if derived_accel else 0.0)
+        derived_speed.append(derived_speed[-1] if derived_speed else 0.0)
 
         # Compute yaw rate from yaw differentiation (convert deg to rad/s)
         derived_yaw_rate = []
+        last_valid_yaw_rate = 0.0
         for i in range(len(timestamps) - 1):
             dt = timestamps[i + 1] - timestamps[i]
-            if dt > 1e-6 and i + 1 < len(yaw):
+            if dt >= MIN_DT_THRESHOLD and i + 1 < len(yaw):
                 # Handle wraparound at ±180°
                 dyaw = yaw[i + 1] - yaw[i]
                 if dyaw > 180:
@@ -498,19 +489,19 @@ class WindowExtractor:
                 elif dyaw < -180:
                     dyaw += 360
                 yaw_rate = math.radians(dyaw) / dt  # Convert to rad/s
+                last_valid_yaw_rate = yaw_rate
             else:
-                yaw_rate = 0.0
+                yaw_rate = last_valid_yaw_rate  # Use last valid for tiny dt
             derived_yaw_rate.append(yaw_rate)
+
+        # Pad last value
 
         # Pad last value
         derived_yaw_rate.append(
             derived_yaw_rate[-1] if derived_yaw_rate else 0.0)
 
-        # Store in motion_data
-        motion_data["derived_vx"] = derived_vx
-        motion_data["derived_vy"] = derived_vy
+        # Store in motion_data (only speed and yaw_rate - simplified)
         motion_data["derived_speed"] = derived_speed
-        motion_data["derived_accel"] = derived_accel
         motion_data["derived_yaw_rate"] = derived_yaw_rate
 
     def _extract_camera_frame(self, window_id: int, center_time: float):

@@ -363,10 +363,10 @@ Cross-reference these summaries with quantitative metrics:
   Any axis that exceeds its ODD limit = OUT_ODD (no exceptions)
   
 - **BOUNDARY**: len(axes_at_boundary) > 0 AND len(axes_violated) == 0
-  All axes within spec, but some are within 15% of limits
+  All axes within spec, but some are within 10% of limits
   
 - **IN_ODD**: len(axes_violated) == 0 AND len(axes_at_boundary) == 0
-  All axes within spec with comfortable margins (>15%)
+  All axes within spec with comfortable margins (>10%)
 
 **IMPORTANT:** 
 - Do NOT use region_distance for verdict determination
