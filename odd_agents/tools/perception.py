@@ -25,14 +25,18 @@ from .common import list_available_windows, get_window_file_paths
 # v10.2.0: Traversability calibration - indoor clutter is navigable, not impassable
 # v10.3.0: Camera artifact guidance - ignore JPEG compression, blur, distortion as debris
 # v11.0.0: Sensor fusion reasoning, image quality pre-check, terrain type clarification, confidence calibration
-PERCEPTION_TOOL_VERSION = "11.0.0"
+# v11.1.0: Robot size in BEV pixels, BEV-based traversability assessment, quadruped capabilities
+PERCEPTION_TOOL_VERSION = "11.1.0"
 
 # Hardcoded robot and sensor knowledge - this is constant across all analyses
 ROBOT_SENSOR_KNOWLEDGE = """
 ## ROBOT PLATFORM: Unitree Go2 Quadruped
 - Camera height: ~35cm off ground (LOW angle perspective)
 - Camera FOV: ~120° horizontal
-- Footprint: 0.65m length × 0.31m width
+- Physical footprint: 0.65m length × 0.31m width
+- **In BEV images: ~13 pixels long × 6 pixels wide** (at 0.05m/pixel resolution)
+- Robot is at CENTER of BEV, facing UP (top of image = forward)
+- Quadruped can step over small obstacles (<15cm height) and navigate tight spaces
 
 ## STEP 0: IMAGE QUALITY ASSESSMENT (DO THIS FIRST)
 
@@ -132,20 +136,36 @@ You MUST output one of the allowed values from the ODD specification.
 - Always output one of the allowed values from the ODD spec
 - If uncertain, cross-reference with BEV roughness and pick best material match
 
-## TRAVERSABILITY CALIBRATION
+## TRAVERSABILITY ASSESSMENT (USE BEV OCCUPANCY!)
 
-traversability_score measures PATH NAVIGABILITY for a quadruped robot, NOT tidiness:
-- 0.9-1.0: Clear open path (empty hallway, open floor)
-- 0.7-0.9: Minor obstacles easily navigated (some furniture to go around)
-- 0.5-0.7: Moderate clutter, navigable with care (typical lived-in room, cables, toys)
-- 0.3-0.5: Significant obstacles but passable (crowded space, narrow gaps)
-- 0.1-0.3: Barely passable, very tight gaps
-- 0.0-0.1: Truly impassable (doorway blocked, cliff edge, dense boulder field)
+traversability_score measures PATH NAVIGABILITY for this quadruped robot.
+**Use BEV Occupancy (Image B) as your PRIMARY source** - it shows actual obstacle geometry.
 
-⚠️ INDOOR CLUTTER IS NOT IMPASSABLE:
-- Rugs, toys, cables on floor = 0.5-0.7 (the robot can walk over/around them)
-- A "messy room" is NOT "rocky outcropping" - calibrate accordingly
-- Only use 0.0-0.2 for genuinely blocked paths (robot physically cannot pass)
+### How to assess from BEV Occupancy:
+1. Robot is at CENTER (ignore 15px radius self-hit zone)
+2. Robot footprint is ~13×6 pixels - look for gaps WIDER than this
+3. Forward = TOP of image - is there a path forward?
+4. Look for BLACK (free) space the robot can navigate through
+
+### Traversability Scale (based on BEV gap analysis):
+- 0.9-1.0: Wide open space, >70% of BEV is free (black), clear paths in all directions
+- 0.7-0.9: Mostly open, obstacles clustered at edges, clear forward path (>20px wide gaps)
+- 0.5-0.7: Multiple navigable paths exist, gaps >10px (~0.5m) available, typical furnished room
+- 0.3-0.5: Tight but passable, gaps 6-10px (~0.3-0.5m), robot can squeeze through
+- 0.1-0.3: Very constrained, gaps barely wider than robot (6px), requires precise navigation
+- 0.0-0.1: No viable path, obstacles block all directions, gaps smaller than robot width
+
+### Quadruped Capabilities (be generous!):
+- Can step OVER small obstacles (<15cm) - don't count low clutter as blocking
+- Can navigate around furniture - look for ANY viable path, not just straight ahead
+- Can handle uneven surfaces - BEV roughness ≠ impassable
+- Rugs, toys, cables = easily traversed (0.6-0.8 range)
+
+### Cross-reference Camera + BEV:
+- Camera tells you WHAT obstacles are (semantic understanding)
+- BEV tells you WHERE they are and if there's SPACE to navigate
+- If BEV shows open space but camera looks cluttered → trust BEV geometry
+- Indoor "messy room" with scattered items but clear BEV paths = 0.6-0.8, NOT 0.3
 
 ## ACTOR DETECTION (BINARY)
 
