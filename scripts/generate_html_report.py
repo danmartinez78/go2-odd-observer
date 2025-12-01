@@ -96,6 +96,20 @@ def get_compliance_verdict(result: Dict[str, Any]) -> Dict[str, Any]:
         if 'status' in compliance_data and 'verdict' not in compliance_data:
             compliance_data['verdict'] = compliance_data['status']
 
+    # Check reports.executive_summary.compliance (primary source for critical_axes)
+    reports = result.get('reports', {})
+    exec_summary = reports.get('executive_summary', {})
+    exec_compliance = exec_summary.get('compliance', {})
+    if exec_compliance:
+        if 'critical_axes' in exec_compliance and not compliance_data.get('critical_axes'):
+            compliance_data['critical_axes'] = exec_compliance['critical_axes']
+        if 'rationale' in exec_compliance and not compliance_data.get('rationale'):
+            compliance_data['rationale'] = exec_compliance['rationale']
+        if 'verdict' in exec_compliance and not compliance_data.get('verdict'):
+            compliance_data['verdict'] = exec_compliance['verdict']
+        if 'confidence' in exec_compliance and not compliance_data.get('confidence'):
+            compliance_data['confidence'] = exec_compliance['confidence']
+
     # Try to get rationale from evaluator's compliance_verdict (more detailed)
     # Check artifacts first
     artifacts = result.get('artifacts', {})
@@ -1126,6 +1140,33 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
     motion_temporal = motion_data.get('temporal_analysis', {})
     motion_per_window = motion_data.get('per_window', [])
     motion_data_avail = motion_data.get('data_availability_summary', {})
+
+    # Compute motion stats from per-window data if summary is empty (new schema)
+    if not motion_summary and motion_per_window:
+        speeds = [w.get('speed_metrics', {}).get('peak_mps', 0)
+                  for w in motion_per_window]
+        displacements = [w.get('trajectory_metrics', {}).get(
+            'displacement_m', 0) for w in motion_per_window]
+        efficiencies = [w.get('trajectory_metrics', {}).get(
+            'efficiency', 0) for w in motion_per_window]
+        pitches = [w.get('odd_measurements', {}).get(
+            'max_pitch_deg', 0) for w in motion_per_window]
+        rolls = [w.get('odd_measurements', {}).get('max_roll_deg', 0)
+                 for w in motion_per_window]
+        motion_summary = {
+            'max_speed_mps': max(speeds) if speeds else 0,
+            'total_displacement_m': sum(displacements),
+            'avg_trajectory_efficiency': sum(efficiencies) / len(efficiencies) if efficiencies else 0,
+            'max_pitch_deg': max(pitches) if pitches else 0,
+            'max_roll_deg': max(rolls) if rolls else 0,
+        }
+        # Extract data availability from first window
+        if motion_per_window:
+            first_avail = motion_per_window[0].get('data_availability', {})
+            motion_data_avail = {
+                'imu_available': first_avail.get('acceleration') == 'imu',
+                'position_available': first_avail.get('position') == 'available',
+            }
 
     # Motion state badges per window - with collapsible for many windows
     MAX_VISIBLE_BADGES = 6
