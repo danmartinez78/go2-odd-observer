@@ -466,35 +466,45 @@
                                         📋 <strong>OddSpecAgent</strong>
                                     </div>
                                 </div>
-                                <div class="text-center text-muted mb-2">↓ odd_spec.json</div>
+                                <div class="text-center text-muted mb-2">↓</div>
 
-                                <!-- Stage 2 - Parallel -->
-                                <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
-                                    <div class="px-2 py-1"
-                                        style="background: #28a745; color: white; border-radius: 6px; font-size: 0.85rem;">
-                                        👁️ Perception
-                                    </div>
-                                    <div class="px-2 py-1"
-                                        style="background: #28a745; color: white; border-radius: 6px; font-size: 0.85rem;">
-                                        🏃 Motion
-                                    </div>
-                                    <div class="px-2 py-1"
-                                        style="background: #28a745; color: white; border-radius: 6px; font-size: 0.85rem;">
-                                        💥 Collision
+                                <!-- Stage 2 -->
+                                <div class="text-center mb-2">
+                                    <div class="d-inline-block px-3 py-2"
+                                        style="background: #28a745; color: white; border-radius: 8px;">
+                                        👁️ <strong>PerceptionAgent</strong>
                                     </div>
                                 </div>
-                                <div class="text-center text-muted mb-2">↓ artifacts</div>
+                                <div class="text-center text-muted mb-2">↓</div>
 
                                 <!-- Stage 3 -->
+                                <div class="text-center mb-2">
+                                    <div class="d-inline-block px-3 py-2"
+                                        style="background: #28a745; color: white; border-radius: 8px;">
+                                        🏃 <strong>MotionAgent</strong>
+                                    </div>
+                                </div>
+                                <div class="text-center text-muted mb-2">↓</div>
+
+                                <!-- Stage 4 -->
+                                <div class="text-center mb-2">
+                                    <div class="d-inline-block px-3 py-2"
+                                        style="background: #e65100; color: white; border-radius: 8px;">
+                                        💥 <strong>CollisionAgent</strong>
+                                    </div>
+                                </div>
+                                <div class="text-center text-muted mb-2">↓</div>
+
+                                <!-- Stage 5 -->
                                 <div class="text-center mb-2">
                                     <div class="d-inline-block px-3 py-2"
                                         style="background: #764ba2; color: white; border-radius: 8px;">
                                         ⚖️ <strong>EvaluatorAgent</strong>
                                     </div>
                                 </div>
-                                <div class="text-center text-muted mb-2">↓ COD + compliance</div>
+                                <div class="text-center text-muted mb-2">↓</div>
 
-                                <!-- Stage 4 -->
+                                <!-- Stage 6 -->
                                 <div class="text-center">
                                     <div class="d-inline-block px-3 py-2"
                                         style="background: #dc3545; color: white; border-radius: 8px;">
@@ -506,7 +516,7 @@
                                 <h6>Key Features:</h6>
                                 <ul class="feature-list" style="font-size: 0.9rem;">
                                     <li>Artifact-based data handoff</li>
-                                    <li>Parallel sensor agent execution</li>
+                                    <li>Sequential agent execution</li>
                                     <li>Type-driven COD construction</li>
                                     <li>Temporal stability tracking</li>
                                 </ul>
@@ -585,7 +595,8 @@
                     <div class="alert alert-info mb-4">
                         <strong>Note:</strong> Reports below were generated with the Phase 1.6 pipeline featuring
                         multi-modal collision detection and position-derived motion analysis.
-                        Each includes COD region analysis, compliance verdict, per-window breakdowns, and inline visualizations.
+                        Each includes COD region analysis, compliance verdict, per-window breakdowns, and inline
+                        visualizations.
                     </div>
 
                     <!-- Featured: Real Robot IN_ODD -->
@@ -596,7 +607,8 @@
                                     <h3 class="mb-0">🌟 real_173442 (15 windows)</h3>
                                     <span class="badge bg-success">Featured</span>
                                 </div>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot |
+                                    <strong>Environment:</strong> Indoor Residential</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
@@ -625,7 +637,8 @@
                         <div class="row align-items-center">
                             <div class="col-md-8">
                                 <h3 class="mb-2">real_174232 (14 windows)</h3>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot |
+                                    <strong>Environment:</strong> Indoor Residential</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-boundary badge-status me-2">⚠️ BOUNDARY</span>
@@ -653,7 +666,8 @@
                         <div class="row align-items-center">
                             <div class="col-md-8">
                                 <h3 class="mb-2">real_174321 (14 windows)</h3>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot |
+                                    <strong>Environment:</strong> Indoor Residential</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-violation badge-status me-2">❌ OUT_ODD</span>
@@ -681,7 +695,8 @@
                         <div class="row align-items-center">
                             <div class="col-md-8">
                                 <h3 class="mb-2">real_174604 (11 windows)</h3>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot | <strong>Environment:</strong> Indoor Residential</p>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Real Robot |
+                                    <strong>Environment:</strong> Indoor Residential</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-violation badge-status me-2">❌ OUT_ODD</span>
@@ -709,7 +724,8 @@
                         <div class="row align-items-center">
                             <div class="col-md-8">
                                 <h3 class="mb-2">sim_1 (15 windows)</h3>
-                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Environment:</strong> Outdoor Grass</p>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation |
+                                    <strong>Environment:</strong> Outdoor Grass</p>
 
                                 <div class="mb-3">
                                     <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>

@@ -123,19 +123,14 @@ flowchart TB
         DATA["Sensor Data<br/>Camera + LiDAR + IMU"]
     end
 
-    subgraph PIPELINE["🔄 6-Agent Pipeline"]
+    subgraph PIPELINE["🔄 Sequential 6-Agent Pipeline"]
         direction TB
-        A["📝 ODD Spec Agent<br/><small>Parse constraints → JSON schema</small>"]
-        
-        subgraph ANALYSIS["Parallel Analysis"]
-            direction LR
-            B["👁️ Perception<br/><small>Camera + BEV</small>"]
-            C["🏃 Motion<br/><small>IMU + Odometry</small>"]
-        end
-        
-        D["⚠️ Collision Agent<br/><small>Multi-modal fusion</small>"]
-        E["⚖️ Evaluator Agent<br/><small>COD construction + compliance</small>"]
-        F["📋 Report Agent<br/><small>Executive summary</small>"]
+        A["📝 ODD Spec Agent<br/>Parse constraints → JSON schema"]
+        B["👁️ Perception Agent<br/>Camera + BEV analysis"]
+        C["🏃 Motion Agent<br/>IMU + Odometry"]
+        D["⚠️ Collision Agent<br/>Multi-modal fusion"]
+        E["⚖️ Evaluator Agent<br/>COD construction + compliance"]
+        F["📋 Report Agent<br/>Executive summary"]
     end
 
     subgraph OUTPUT["📤 Output"]
@@ -144,23 +139,23 @@ flowchart TB
     end
 
     ODD --> A
-    DATA --> B & C
-    A --> E
-    B --> D
+    DATA --> B
+    A --> B
+    B --> C
     C --> D
     D --> E
     E --> F
     F --> VERDICT & REPORT
 
-    style INPUT fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style PIPELINE fill:#fff8e1,stroke:#f9a825,stroke-width:2px
-    style OUTPUT fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style A fill:#bbdefb,stroke:#1976d2
-    style B fill:#fff9c4,stroke:#f9a825
-    style C fill:#fff9c4,stroke:#f9a825
-    style D fill:#ffccbc,stroke:#e64a19
-    style E fill:#f8bbd0,stroke:#c2185b
-    style F fill:#ce93d8,stroke:#7b1fa2
+    style INPUT fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    style PIPELINE fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#bf360c
+    style OUTPUT fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    style A fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+    style B fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style C fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+    style D fill:#ffccbc,stroke:#d84315,color:#bf360c
+    style E fill:#e1bee7,stroke:#7b1fa2,color:#4a148c
+    style F fill:#d1c4e9,stroke:#512da8,color:#311b92
 ```
 
 **Phase 1.6 Architecture (Current - Dec 2025):**
