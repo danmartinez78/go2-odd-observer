@@ -24,7 +24,8 @@ import math
 # 1.3.0: Removed collision→proximity mapping (collision is advisory only, not actor proximity)
 # 1.4.0: Added boundary detection with margin_to_limit, axes_at_boundary, axes_violated
 # 1.5.0: Semantic boundary detection - only check relevant bound (max vs min semantics)
-COD_TOOL_VERSION = "1.5.0"
+# 1.6.0: Ordered enum support - lighting_conditions uses ordinal position for boundary detection
+COD_TOOL_VERSION = "1.6.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
 
 # Boundary detection threshold (15% margin = approaching limit)
@@ -45,6 +46,15 @@ UPPER_BOUND_ONLY_AXES = {
 LOWER_BOUND_ONLY_AXES = {
     "clearance_index",     # High clearance = safe
     "min_proximity_m",     # High proximity = safe
+}
+
+# Ordered enum axes with their value ordering (low to high quality/safety)
+# These enums have implicit ordering - position matters for boundary detection
+# Format: {axis_name: [worst_value, ..., best_value]}
+ORDERED_ENUM_AXES = {
+    "lighting_conditions": ["dark", "dim", "moderate", "bright"],
+    # Add others as needed, e.g.:
+    # "weather": ["heavy_rain", "light_rain", "overcast", "clear"],
 }
 
 
@@ -792,19 +802,70 @@ def _compute_boundary_status(
             margin_per_axis[axis_name] = 1.0
 
         elif axis_type == "enum":
-            # Use semantic distance for boundary detection
-            sem_dist = categorical_distances.get(axis_name, 0.0)
+            # Check if this is an ordered enum (like lighting_conditions)
+            if axis_name in ORDERED_ENUM_AXES:
+                # Ordered enum: use ordinal position for margin calculation
+                ordering = ORDERED_ENUM_AXES[axis_name]
+                allowed_set = set(axis_spec.get("allowed", []))
 
-            if sem_dist == 0.0:
-                # Perfect match - full margin
-                margin_per_axis[axis_name] = 1.0
-            elif sem_dist == 0.5:
-                # Related but not exact - boundary
-                margin_per_axis[axis_name] = 0.1  # Low margin
-                axes_at_boundary.append(axis_name)
+                # Find the worst (lowest index) measured value
+                measured_labels = [
+                    label for label in cod_data.keys()
+                    if label != "type" and cod_data[label] > 0
+                ]
+
+                # Get positions of measured values in the ordering
+                measured_positions = []
+                for label in measured_labels:
+                    if label in ordering:
+                        measured_positions.append(ordering.index(label))
+
+                if measured_positions:
+                    worst_measured_pos = min(measured_positions)
+
+                    # Find the boundary position (lowest allowed value in ordering)
+                    allowed_positions = [
+                        ordering.index(v) for v in allowed_set if v in ordering
+                    ]
+                    if allowed_positions:
+                        # e.g., "dim" = position 1
+                        boundary_pos = min(allowed_positions)
+                        # e.g., "bright" = position 3
+                        best_pos = max(allowed_positions)
+
+                        # Compute margin: how far from the boundary?
+                        # If measured is at boundary, margin = 0
+                        # If measured is at best, margin = 1
+                        range_size = best_pos - boundary_pos
+                        if range_size > 0:
+                            margin = (worst_measured_pos -
+                                      boundary_pos) / range_size
+                            margin = max(0.0, min(1.0, margin))
+                        else:
+                            margin = 1.0 if worst_measured_pos >= boundary_pos else 0.0
+
+                        margin_per_axis[axis_name] = round(margin, 4)
+
+                        if margin < BOUNDARY_MARGIN_THRESHOLD:
+                            axes_at_boundary.append(axis_name)
+                    else:
+                        margin_per_axis[axis_name] = 1.0
+                else:
+                    margin_per_axis[axis_name] = 1.0
             else:
-                # sem_dist == 1.0 would be violation, but that's caught above
-                margin_per_axis[axis_name] = 1.0
+                # Unordered enum: use semantic distance for boundary detection
+                sem_dist = categorical_distances.get(axis_name, 0.0)
+
+                if sem_dist == 0.0:
+                    # Perfect match - full margin
+                    margin_per_axis[axis_name] = 1.0
+                elif sem_dist == 0.5:
+                    # Related but not exact - boundary
+                    margin_per_axis[axis_name] = 0.1  # Low margin
+                    axes_at_boundary.append(axis_name)
+                else:
+                    # sem_dist == 1.0 would be violation, but that's caught above
+                    margin_per_axis[axis_name] = 1.0
 
     return {
         "margin_to_limit_per_axis": margin_per_axis,
