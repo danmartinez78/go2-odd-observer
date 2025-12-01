@@ -736,18 +736,19 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Extract executive summary - try multiple schema locations
     exec_summary = ""
-    
+
     # Try report.executive_summary (v14 schema - direct string)
     report_exec = report_data.get('executive_summary', '')
     if isinstance(report_exec, str) and report_exec:
         exec_summary = report_exec
     elif isinstance(report_exec, dict):
         exec_summary = report_exec.get('scenario_overview', '')
-    
+
     # Fallback: compliance.summary (technical rationale)
     if not exec_summary:
-        exec_summary = compliance.get('summary', compliance.get('rationale', ''))
-    
+        exec_summary = compliance.get(
+            'summary', compliance.get('rationale', ''))
+
     # Final fallback
     if not exec_summary:
         exec_summary = "No summary available."
@@ -895,12 +896,12 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                         <div class="metric-label">Total Windows</div>
                     </div>
                     <div class="col-md-3 text-center border-end">
-                        <div class="h5 mb-1">{environment_type.replace('_', ' ').title()}</div>
                         <div class="metric-label">Detected Environment</div>
+                        <div class="h5 mb-1">{environment_type.replace('_', ' ').title()}</div>
                     </div>
                     <div class="col-md-3 text-center border-end">
-                        <div class="h5 mb-1">{surface_type.replace('_', ' ').title()}</div>
                         <div class="metric-label">Detected Surface</div>
+                        <div class="h5 mb-1">{surface_type.replace('_', ' ').title()}</div>
                     </div>
                     <div class="col-md-3 text-center">
                         <div class="h5 mb-1">{data_source_display}</div>
@@ -1236,7 +1237,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 <!-- Scenario Overview -->
 <div class="container mb-5">
     <h2 class="mb-4">🎬 Scenario Overview</h2>
-    <p class="text-muted mb-3">Representative windows from the analysis</p>
+
     <div class="row">
         {scenario_overview_html if scenario_overview_html else '<div class="col-12"><p class="text-muted">No window images available</p></div>'}
     </div>
