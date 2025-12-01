@@ -36,6 +36,8 @@ body {
     min-height: 100vh;
     padding: 2rem 0 4rem 0;
     color: var(--fg);
+    font-size: 1.05rem;
+    line-height: 1.7;
     transition: background 0.3s ease, color 0.3s ease;
 }
 
@@ -62,8 +64,9 @@ body.dark {
 .nav-links a {
     color: var(--muted);
     font-weight: 600;
+    font-size: 1rem;
     text-decoration: none;
-    margin-right: 1rem;
+    margin-right: 1.25rem;
 }
 
 .nav-links a:hover {
@@ -89,7 +92,7 @@ body.dark .theme-toggle {
 .section-shell {
     background: var(--card);
     border-radius: 16px;
-    padding: 2rem;
+    padding: 2.5rem;
     margin-bottom: 2.5rem;
     transition: transform 0.3s, box-shadow 0.3s, background 0.3s ease, color 0.3s ease, border 0.3s ease;
     border: 1px solid var(--border);
@@ -455,8 +458,8 @@ body.dark .badge.bg-secondary {
 }
 
 .feature-list li {
-    padding: 0.45rem 0;
-    font-size: 1rem;
+    padding: 0.5rem 0;
+    font-size: 1.05rem;
 }
 
 .feature-list li::before {
@@ -464,6 +467,28 @@ body.dark .badge.bg-secondary {
     color: #28a745;
     font-weight: bold;
     margin-right: 0.5rem;
+}
+
+/* General content */
+p,
+li {
+    font-size: 1.05rem;
+}
+
+h1 {
+    font-size: 2.25rem;
+}
+
+h2 {
+    font-size: 1.75rem;
+}
+
+h3 {
+    font-size: 1.35rem;
+}
+
+h4 {
+    font-size: 1.15rem;
 }
 
 /* Responsive */
