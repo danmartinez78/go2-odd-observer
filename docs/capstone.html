@@ -59,11 +59,15 @@
       font-weight: 600;
     }
 
-    h1, h2, h3 {
+    h1,
+    h2,
+    h3 {
       color: #1f2937;
     }
 
-    body.dark h1, body.dark h2, body.dark h3 {
+    body.dark h1,
+    body.dark h2,
+    body.dark h3 {
       color: #f9fafb;
     }
 
@@ -258,9 +262,12 @@
       <p class="mb-2">We use Google ADK + Gemini 2.5 Pro to orchestrate six agents:</p>
       <ul>
         <li><strong>ODD Spec Agent</strong> – parses the natural‑language ODD into axes and limits.</li>
-        <li><strong>Perception Agent</strong> – reads camera + BEV and estimates lighting, terrain, obstacle density, stairs, humans, and data source (sim/real).</li>
-        <li><strong>Motion Agent</strong> – uses IMU + camera to classify motion state and quantify dynamic limits (accel, jerk, angular velocity).</li>
-        <li><strong>Collision Agent</strong> – fuses IMU spikes, BEV obstacles, and camera evidence to detect collisions or near‑misses.</li>
+        <li><strong>Perception Agent</strong> – reads camera + BEV and estimates lighting, terrain, obstacle density,
+          stairs, humans, and data source (sim/real).</li>
+        <li><strong>Motion Agent</strong> – uses IMU + camera to classify motion state and quantify dynamic limits
+          (accel, jerk, angular velocity).</li>
+        <li><strong>Collision Agent</strong> – fuses IMU spikes, BEV obstacles, and camera evidence to detect collisions
+          or near‑misses.</li>
         <li><strong>Evaluator Agent</strong> – constructs the COD region and checks COD ⊆ ODD.</li>
         <li><strong>Report Agent</strong> – synthesizes a narrative report and saves it as an artifact.</li>
       </ul>
@@ -269,32 +276,34 @@
         explicit prompts. Agent instructions focus on tool sequencing and aggregating outputs.
       </p>
 
-      <!-- Sample results strip (placeholders for now) -->
-      <h2 class="section-title">2.1 Sample Outcomes (snapshot)</h2>
+      <!-- Sample results from Phase 1.6 production runs -->
+      <h2 class="section-title">2.1 Sample Outcomes (Phase 1.6)</h2>
       <div class="row g-3 mb-2">
         <div class="col-md-4">
           <div class="result-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="pill pill-sim">Sim</span>
+              <span class="pill pill-real">Real</span>
               <span class="result-pill result-pill-in">IN_ODD</span>
             </div>
-            <h6 class="mb-1">Indoor clean run</h6>
+            <h6 class="mb-1"><a href="reports/real_173442_chunk_000_015_report.html">Indoor residential (173442)</a>
+            </h6>
             <ul class="mb-0" style="font-size: 0.85rem;">
-              <li>Stable lighting, smooth floor.</li>
-              <li>No collisions; low obstacle density.</li>
+              <li>All parameters within design limits.</li>
+              <li>Max speed 1.78 m/s (limit 2.5), stable motion.</li>
             </ul>
           </div>
         </div>
         <div class="col-md-4">
           <div class="result-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="pill pill-sim">Sim</span>
+              <span class="pill pill-real">Real</span>
               <span class="result-pill result-pill-out">OUT_ODD</span>
             </div>
-            <h6 class="mb-1">Deliberate collision</h6>
+            <h6 class="mb-1"><a href="reports/real_174604_chunk_000_011_report.html">Human &amp; animal detected
+                (174604)</a></h6>
             <ul class="mb-0" style="font-size: 0.85rem;">
-              <li>IMU spike far beyond ODD limits.</li>
-              <li>BEV + camera confirm obstacle impact.</li>
+              <li>Human present 83% of scenario (forbidden).</li>
+              <li>Animal also detected – zero-tolerance violations.</li>
             </ul>
           </div>
         </div>
@@ -304,16 +313,59 @@
               <span class="pill pill-real">Real</span>
               <span class="result-pill result-pill-boundary">BOUNDARY</span>
             </div>
-            <h6 class="mb-1">Real indoor logs</h6>
+            <h6 class="mb-1"><a href="reports/real_174232_report.html">Near‑limit operation (174232)</a></h6>
             <ul class="mb-0" style="font-size: 0.85rem;">
-              <li>Compression artifacts, dim lighting.</li>
-              <li>COD approaches ODD limits but stays mostly within.</li>
+              <li>Max speed 2.30 m/s (8% margin to limit).</li>
+              <li>No violations, but approached boundaries.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3 mb-2">
+        <div class="col-md-4">
+          <div class="result-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="pill pill-real">Real</span>
+              <span class="result-pill result-pill-out">OUT_ODD</span>
+            </div>
+            <h6 class="mb-1"><a href="reports/real_174321_chunk_000_014_report.html">Motion instability (174321)</a>
+            </h6>
+            <ul class="mb-0" style="font-size: 0.85rem;">
+              <li>Accel 12.6 m/s² (limit 10), pitch 16.9° (limit 15).</li>
+              <li>Multiple ego-motion axes violated.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="result-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="pill pill-sim">Sim</span>
+              <span class="result-pill result-pill-boundary">BOUNDARY</span>
+            </div>
+            <h6 class="mb-1"><a href="reports/sim_1_chunk_000_015_report.html">Simulated indoor (sim_1)</a></h6>
+            <ul class="mb-0" style="font-size: 0.85rem;">
+              <li>No collisions or forbidden actors.</li>
+              <li>Lighting spanned full ODD range (bright→dim).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="result-card" style="opacity: 0.6;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="pill pill-real">Real</span>
+              <span class="result-pill result-pill-out">OUT_ODD</span>
+            </div>
+            <h6 class="mb-1">Human detection (173813) – draft</h6>
+            <ul class="mb-0" style="font-size: 0.85rem;">
+              <li>Human detected, zero-tolerance violation.</li>
+              <li>Similar to 174604, not featured.</li>
             </ul>
           </div>
         </div>
       </div>
       <p class="text-secondary" style="font-size: 0.85rem;">
-        (Numbers above are representative; see archived runs in <code>data/archive/analysis_results/</code> for full details.)
+        Full HTML reports and JSON results are in <code>docs/reports/</code>. See the <a
+          href="index.html#reports">Featured Reports</a> section.
       </p>
 
       <!-- Data & scenarios stub -->
@@ -326,11 +378,14 @@
         We evaluate on both simulated and real Go2 runs, windowed into short time slices:
       </p>
       <ul>
-        <li>Simulation: curated scenarios (e.g., indoor residential, deliberate collisions) with known expected behavior.</li>
-        <li>Real: bagfile‑derived runs with compression artifacts, lighting changes, and real terrain irregularities.</li>
+        <li>Simulation: curated scenarios (e.g., indoor residential, deliberate collisions) with known expected
+          behavior.</li>
+        <li>Real: bagfile‑derived runs with compression artifacts, lighting changes, and real terrain irregularities.
+        </li>
       </ul>
       <p class="mb-0">
-        Each window bundles synchronized camera frames, BEV images, and IMU signals, giving all loop agents an aligned view
+        Each window bundles synchronized camera frames, BEV images, and IMU signals, giving all loop agents an aligned
+        view
         of the robot&rsquo;s state.
       </p>
 
@@ -346,7 +401,8 @@
         <div class="flow-box">Report</div>
       </div>
       <p class="text-secondary mt-2" style="font-size: 0.85rem;">
-        Loop agents operate per window and write artifacts; downstream agents consume those artifacts instead of raw traces.
+        Loop agents operate per window and write artifacts; downstream agents consume those artifacts instead of raw
+        traces.
       </p>
 
       <!-- Implementation & reproducibility stub -->
@@ -354,7 +410,8 @@
       <p class="mb-2">Key commands (run from the repo root):</p>
       <ul>
         <li><span class="code-pill">python scripts/run_odd_analysis.py</span> – interactive single‑scenario run.</li>
-        <li><span class="code-pill">python scripts/run_odd_batch_analysis.py</span> – batch runs over multiple scenarios.</li>
+        <li><span class="code-pill">python scripts/run_odd_batch_analysis.py</span> – batch runs over multiple
+          scenarios.</li>
         <li><span class="code-pill">pytest tests/test_adk_evaluation.py -q</span> – rubric‑based agent evaluation.</li>
       </ul>
       <p class="mb-0">
@@ -365,7 +422,8 @@
       <!-- Link to full report -->
       <h2 class="section-title">5. Full Capstone Report</h2>
       <p class="mb-3">
-        The full report covers architecture, tools, evaluation setup, limitations, and future work. It is written to match
+        The full report covers architecture, tools, evaluation setup, limitations, and future work. It is written to
+        match
         the Kaggle submission format and can be dropped into a notebook or PDF.
       </p>
       <a class="btn btn-outline-light btn-sm" href="guides/KAGGLE_CAPSTONE_REPORT.md">
@@ -375,23 +433,23 @@
       <!-- JSON glimpse -->
       <h2 class="section-title">6. Output Glimpse</h2>
       <p class="text-secondary mb-2">
-        A typical per‑scenario summary (trimmed) from <code>full_result.json</code> looks like:
+        A typical <code>full_result.json</code> report structure (trimmed):
       </p>
       <div class="code-block mb-0">
-{
-  "full_analysis": {
-    "cod_region": {
-      "environment": "indoor_residential",
-      "lighting": "bright → dim",
-      "terrain": "smooth",
-      "collision_detected": true
-    },
-    "compliance_verdict": {
-      "status": "OUT_ODD",
-      "reason": "Impact acceleration exceeded ODD limit on window 011."
-    }
-  }
-}
+        {
+        "report": {
+        "compliance": {
+        "status": "OUT_ODD",
+        "confidence": "HIGH",
+        "summary": "The verdict is OUT_ODD due to violations..."
+        },
+        "executive_summary": "The robot operated outside its safety limits...",
+        "collision_advisory": {"collisions_detected": 1},
+        "human_animal_detection": {"humans_detected": false}
+        },
+        "full_analysis": {...},
+        "analysis_metadata": {"scenario": "real_174321", "version": "1.6.0"}
+        }
       </div>
     </div>
   </div>
