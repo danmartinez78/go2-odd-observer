@@ -26,7 +26,8 @@ from .common import list_available_windows, get_window_file_paths
 # v8.0.0: Single-call batch - analyze_all_motion_tool processes all windows, auto-saves artifact
 # v9.0.0: Use position-derived velocity/accel when IMU data is zeros (real robot fix)
 # v10.0.0: Simplified - always use derived_speed, IMU for accel/gyro when available, clear unavailable flags
-MOTION_TOOL_VERSION = "10.0.0"
+# v11.0.0: Added trajectory metrics (displacement, path_length, efficiency) from position data
+MOTION_TOOL_VERSION = "11.0.0"
 
 
 def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -75,6 +76,11 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             derived_speed = motion_data.get("derived_speed", [])
             derived_yaw_rate = motion_data.get("derived_yaw_rate", [])
 
+            # Position data for trajectory analysis
+            pos_x = motion_data.get("pos_x", [])
+            pos_y = motion_data.get("pos_y", [])
+            pos_z = motion_data.get("pos_z", [])
+
             # Check data availability
             imu_accel_valid = any(
                 abs(ax) > 1e-6 for ax in accel_x) or any(abs(ay) > 1e-6 for ay in accel_y)
@@ -82,6 +88,7 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             has_derived_speed = bool(derived_speed) and any(
                 s > 1e-6 for s in derived_speed)
             has_derived_yaw = bool(derived_yaw_rate)
+            has_position = bool(pos_x) and bool(pos_y)
 
             # === SPEED: Always use derived_speed (position-based, most accurate) ===
             peak_speed = 0.0
@@ -119,6 +126,28 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
             # === STATIONARY DETECTION: Based on speed (most reliable) ===
             is_stationary = peak_speed < 0.05  # Less than 5 cm/s
 
+            # === TRAJECTORY METRICS (from position data) ===
+            displacement = 0.0
+            path_length = 0.0
+            # displacement / path_length (1.0 = straight line)
+            trajectory_efficiency = 0.0
+
+            if has_position and len(pos_x) > 1:
+                # Net displacement (start to end)
+                dx = pos_x[-1] - pos_x[0]
+                dy = pos_y[-1] - pos_y[0]
+                displacement = math.sqrt(dx**2 + dy**2)
+
+                # Path length (sum of all movements)
+                for i in range(1, len(pos_x)):
+                    seg_dx = pos_x[i] - pos_x[i-1]
+                    seg_dy = pos_y[i] - pos_y[i-1]
+                    path_length += math.sqrt(seg_dx**2 + seg_dy**2)
+
+                # Trajectory efficiency (1.0 = perfectly straight, <1.0 = wandering/turning)
+                if path_length > 0.01:  # Avoid div by zero
+                    trajectory_efficiency = displacement / path_length
+
             # Build data availability summary for LLM
             data_status = []
             if has_derived_speed:
@@ -133,9 +162,21 @@ def create_motion_tools(scenario_path: Union[str, Path], genai_client: genai.Cli
                 data_status.append(f"angular:{angular_vel_source}")
             else:
                 data_status.append("angular:UNAVAILABLE")
+            if has_position:
+                data_status.append("position:OK")
+            else:
+                data_status.append("position:UNAVAILABLE")
 
             # LLM prompt for motion state interpretation
             accel_str = f"{peak_accel:.4f}" if peak_accel is not None else "N/A"
+            trajectory_str = ""
+            if has_position:
+                trajectory_str = f"""
+TRAJECTORY:
+- Displacement: {displacement:.3f}m (net start-to-end distance)
+- Path length: {path_length:.3f}m (total distance traveled)
+- Efficiency: {trajectory_efficiency:.2f} (1.0=straight, <0.5=wandering/turning)"""
+
             prompt = f"""Motion analyst for window {window_id}.
 
 DATA AVAILABILITY: {', '.join(data_status)}
@@ -145,6 +186,7 @@ MEASUREMENTS:
 - Acceleration: {accel_str} m/s² (from IMU, includes leg dynamics)
 - Angular velocity: {peak_angular_vel:.4f} rad/s ({angular_vel_source})
 - Orientation: roll={max_roll:.2f}°, pitch={max_pitch:.2f}°
+{trajectory_str}
 
 STATIONARY DETECTION: speed < 0.05 m/s → stationary
 Current: {"STATIONARY" if is_stationary else "MOVING"} (speed={peak_speed:.4f} m/s)
@@ -152,7 +194,11 @@ Current: {"STATIONARY" if is_stationary else "MOVING"} (speed={peak_speed:.4f} m
 NOTE: If accel/angular show "N/A" or "UNAVAILABLE", the IMU data was not recorded.
 This is common for real robot data - use speed and orientation for analysis.
 
-MOTION STATES: stationary | moving | rotating | complex
+MOTION STATES: 
+- stationary: speed < 0.05 m/s
+- moving: significant speed, efficiency > 0.7 (mostly straight)
+- rotating: high angular velocity or efficiency < 0.5
+- complex: combination of above
 
 OUTPUT (JSON only):
 {{
@@ -189,6 +235,16 @@ OUTPUT (JSON only):
                     "acceleration": "imu" if imu_accel_valid else "unavailable",
                     "angular_velocity": angular_vel_source,
                     "orientation": "available",
+                    "position": "available" if has_position else "unavailable",
+                },
+                "trajectory_metrics": {
+                    "displacement_m": round(displacement, 3),
+                    "path_length_m": round(path_length, 3),
+                    "efficiency": round(trajectory_efficiency, 2),
+                },
+                "speed_metrics": {
+                    "peak_mps": round(peak_speed, 4),
+                    "avg_mps": round(avg_speed, 4),
                 },
                 "is_stationary": llm_data.get("is_stationary", {"value": is_stationary, "confidence": 0.9, "evidence": f"speed={peak_speed:.4f} m/s"}),
                 "motion_state": llm_data.get("motion_state", "stationary" if is_stationary else "moving"),
