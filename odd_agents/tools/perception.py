@@ -23,7 +23,8 @@ from .common import list_available_windows, get_window_file_paths
 # v10.0.0: Observation-first architecture - hardcoded robot/sensor knowledge, reasoned assessments
 # v10.1.0: Reinforced actor proximity guidance - camera-only assessment, read ODD spec descriptions
 # v10.2.0: Traversability calibration - indoor clutter is navigable, not impassable
-PERCEPTION_TOOL_VERSION = "10.2.0"
+# v10.3.0: Camera artifact guidance - ignore JPEG compression, blur, distortion as debris
+PERCEPTION_TOOL_VERSION = "10.3.0"
 
 # Hardcoded robot and sensor knowledge - this is constant across all analyses
 ROBOT_SENSOR_KNOWLEDGE = """
@@ -42,6 +43,15 @@ ROBOT_SENSOR_KNOWLEDGE = """
   - Animals (dogs/cats): At similar height to camera, eye-level when close
 - Use for: Semantic understanding, ACTOR DETECTION (humans/animals), surface type, lighting
 - CANNOT measure exact distances - reason from visual cues only
+
+⚠️ CAMERA ARTIFACTS TO IGNORE:
+- JPEG compression artifacts: blocky patterns, color banding - NOT debris
+- Motion blur: smeared edges - NOT damage or hazards
+- Lens distortion at edges: warped straight lines - NOT actual terrain deformation
+- Exposure variations: bright/dark patches - NOT surface texture changes
+- Shadow patterns: dark areas under furniture - NOT holes or hazards
+- Reflections on shiny floors: NOT obstacles
+DO NOT interpret image compression or camera artifacts as "debris", "damage", or hazards.
 
 ### BEV Occupancy (Image B)
 - Robot at CENTER, facing UP (forward = top of image)
