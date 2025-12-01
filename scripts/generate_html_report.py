@@ -734,20 +734,23 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
                             <td class="{status_class}">{status_icon} {fraction_outside:.0%}</td>
                         </tr>"""
 
-    # Extract executive summary - try Phase 1.4.5 schema first
-    exec_summary = result.get('executive_summary', {}
-                              ).get('scenario_overview', '')
+    # Extract executive summary - try multiple schema locations
+    exec_summary = ""
+    
+    # Try report.executive_summary (v14 schema - direct string)
+    report_exec = report_data.get('executive_summary', '')
+    if isinstance(report_exec, str) and report_exec:
+        exec_summary = report_exec
+    elif isinstance(report_exec, dict):
+        exec_summary = report_exec.get('scenario_overview', '')
+    
+    # Fallback: compliance.summary (technical rationale)
     if not exec_summary:
-        # Try compliance rationale as fallback
-        exec_summary = compliance.get('rationale', '')
+        exec_summary = compliance.get('summary', compliance.get('rationale', ''))
+    
+    # Final fallback
     if not exec_summary:
-        report_data_summary = report_data.get('executive_summary', '')
-        if not report_data_summary:
-            reports = result.get('reports', {})
-            exec_summary = reports.get('executive_summary', {}).get(
-                'scenario_overview', 'No summary available.')
-        else:
-            exec_summary = report_data_summary
+        exec_summary = "No summary available."
 
     # Build key findings HTML
     findings_html = ""
@@ -798,7 +801,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
         """Get display string for categorical field, showing transitions if values vary."""
         if not per_window_data:
             return fallback
-        
+
         values = []
         for window in per_window_data:
             measurements = window.get(
@@ -806,12 +809,13 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             val = measurements.get(field_name)
             if val:
                 values.append(val)
-        
+
         if not values:
             return fallback
-        
-        unique_values = list(dict.fromkeys(values))  # Preserve order, remove duplicates
-        
+
+        # Preserve order, remove duplicates
+        unique_values = list(dict.fromkeys(values))
+
         if len(unique_values) == 1:
             return unique_values[0]
         elif len(unique_values) == 2:
@@ -820,12 +824,14 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             return ", ".join(unique_values[:3]) + ("..." if len(unique_values) > 3 else "")
 
     # Get terrain_type (surface) and environment from per-window data
-    surface_type = get_categorical_display(per_window_data, 'terrain_type', 'Unknown')
-    
-    # For environment, try report.scenario_metadata first (agent-synthesized), 
+    surface_type = get_categorical_display(
+        per_window_data, 'terrain_type', 'Unknown')
+
+    # For environment, try report.scenario_metadata first (agent-synthesized),
     # then fall back to per-window detection
     report_data = result.get('report', {})
-    scenario_meta_env = report_data.get('scenario_metadata', {}).get('environment')
+    scenario_meta_env = report_data.get(
+        'scenario_metadata', {}).get('environment')
     if scenario_meta_env and scenario_meta_env != 'Unknown':
         environment_type = scenario_meta_env
     else:
