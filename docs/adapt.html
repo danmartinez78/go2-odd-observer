@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go2 ODD Observer – Adapt to New Robots</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 960px;
+        }
+
+        .step-card {
+            background: rgba(99, 102, 241, 0.04);
+            border-radius: 12px;
+            padding: 1.25rem 1.4rem;
+            border: 1px solid var(--border);
+            height: 100%;
+            transition: background 0.3s ease, border 0.3s ease, transform 0.2s;
+        }
+
+        .step-card:hover {
+            transform: translateY(-2px);
+        }
+
+        body.dark .step-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-right: 0.75rem;
+        }
+
+        .format-table {
+            font-size: 0.85rem;
+        }
+
+        .format-table th {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        body.dark .format-table th {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .odd-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .odd-section strong {
+            color: var(--accent);
+        }
+
+        .future-note {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(253, 230, 138, 0.1));
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        body.dark .future-note {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(253, 230, 138, 0.05));
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav-shell">
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="quickstart.html">Quick Start</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="robot.html">Robot & Sim</a>
+                <a href="evaluation.html">Evaluation</a>
+                <a href="capstone.html">Kaggle Capstone</a>
+            </div>
+            <button id="themeToggle" class="theme-toggle">🌓 Theme</button>
+        </nav>
+
+        <div class="shell">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge-tag">Adaptation Guide</span>
+                    <span class="badge-tag">New Robots</span>
+                </div>
+                <a href="index.html" class="badge-tag">← Back to overview</a>
+            </div>
+
+            <h1 class="mb-2">🔧 Adapting to New Robots</h1>
+            <p class="lead mb-4">
+                The ODD Observer pipeline is <strong>robot and application agnostic</strong> at the reasoning level.
+                This guide explains how to apply it to different platforms and domains.
+            </p>
+
+            <!-- What You Need -->
+            <h2 class="section-title">What the Pipeline Expects</h2>
+            <p class="mb-3">Agents work with three sensor modalities:</p>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="step-card text-center">
+                        <div class="mb-2" style="font-size: 2rem;">📷</div>
+                        <h6>Camera Images</h6>
+                        <p class="mb-0" style="font-size: 0.85rem;">Forward-facing RGB for environment classification,
+                            human/animal detection</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step-card text-center">
+                        <div class="mb-2" style="font-size: 2rem;">📡</div>
+                        <h6>LiDAR BEV</h6>
+                        <p class="mb-0" style="font-size: 0.85rem;">Bird's eye view images (occupancy, height,
+                            roughness) for obstacle/terrain analysis</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step-card text-center">
+                        <div class="mb-2" style="font-size: 2rem;">🧭</div>
+                        <h6>IMU / Motion</h6>
+                        <p class="mb-0" style="font-size: 0.85rem;">Acceleration, angular velocity, orientation for
+                            motion state and collision detection</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Four Steps -->
+            <h2 class="section-title">Adaptation Steps</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <h5><span class="step-number">1</span>Prepare Data</h5>
+                        <p class="mb-2" style="font-size: 0.9rem;">
+                            Convert your sensor data into the expected directory structure with windowed files.
+                        </p>
+                        <pre class="code-block" style="font-size: 0.75rem; text-align: left; margin: 0;">my_scenario/
+├── index_my_scenario.csv
+├── cam_my_scenario_w000.png
+├── bev_occupancy_my_scenario_w000.png
+├── bev_height_my_scenario_w000.png
+├── motion_my_scenario_w000.json
+└── ...</pre>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <h5><span class="step-number">2</span>Create Robot Profile</h5>
+                        <p class="mb-2" style="font-size: 0.9rem;">
+                            Add a knowledge document describing your robot's specs and typical operating patterns.
+                        </p>
+                        <p class="mb-0" style="font-size: 0.85rem;">
+                            <strong>Location:</strong>
+                            <code>docs/agent_knowledge/profiles/ROBOT_&lt;NAME&gt;_PROFILE.md</code>
+                        </p>
+                        <p class="mb-0 mt-2" style="font-size: 0.85rem;">
+                            Include: dimensions, sensors, locomotion type, typical speeds, terrain handling.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <h5><span class="step-number">3</span>Write ODD Specification</h5>
+                        <p class="mb-2" style="font-size: 0.9rem;">
+                            Define your robot's safe operating boundaries in natural language.
+                        </p>
+                        <p class="mb-0" style="font-size: 0.85rem;">
+                            The ODD Spec Agent parses this into structured axes for compliance checking.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <h5><span class="step-number">4</span>Tune Thresholds</h5>
+                        <p class="mb-2" style="font-size: 0.9rem;">
+                            Adjust tool parameters for your platform's characteristics.
+                        </p>
+                        <p class="mb-0" style="font-size: 0.85rem;">
+                            Collision detection, BEV analysis, and motion thresholds may need calibration.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ODD Structure -->
+            <h2 class="section-title">Writing Effective ODD Specifications</h2>
+            <p class="mb-3">The key to a good ODD spec is <strong>clarity and measurability</strong>. Agents need
+                concrete thresholds they can evaluate against sensor data.</p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="step-card" style="border-left: 3px solid #22c55e;">
+                        <h6 class="text-success mb-2">✅ Good ODD Statements</h6>
+                        <ul class="mb-0" style="font-size: 0.85rem; padding-left: 1.2rem;">
+                            <li>"Maximum speed: 2.5 m/s" — clear threshold</li>
+                            <li>"Gentle ramps (&lt;15 degree incline)" — specific angle</li>
+                            <li>"Humans within 0.5-1m = OUT OF ODD" — boundary + consequence</li>
+                            <li>"Lighting 200-1000 lux; &lt;50 lux = OUT" — range with exclusion</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card" style="border-left: 3px solid #ef4444;">
+                        <h6 class="text-danger mb-2">❌ Poor ODD Statements</h6>
+                        <ul class="mb-0" style="font-size: 0.85rem; padding-left: 1.2rem;">
+                            <li>"Normal indoor lighting" — too vague</li>
+                            <li>"Don't go too fast" — no threshold</li>
+                            <li>"Avoid rough terrain" — undefined roughness</li>
+                            <li>"Be careful around people" — no actionable rule</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="callout mb-4">
+                <strong>💡 Writing Tips:</strong>
+                <ul class="mb-0 mt-2" style="font-size: 0.9rem;">
+                    <li><strong>Use SI units consistently</strong> — m/s for speed, m/s² for acceleration, degrees for
+                        angles</li>
+                    <li><strong>Define both "designed for" AND "not designed for"</strong> — explicit negatives help
+                        agents identify violations</li>
+                    <li><strong>Explain expected behaviors</strong> — "Brief acceleration during obstacle avoidance is
+                        normal" prevents false positives</li>
+                    <li><strong>Use progressive severity</strong>: "Designed for" → "Can handle" → "NOT designed for" →
+                        "DEFINITELY NOT"</li>
+                </ul>
+            </div>
+
+            <h3 class="h5 mt-4 mb-3">ODD Structure Sections</h3>
+            <p class="mb-3" style="font-size: 0.9rem;">Follow the structure from
+                <code>odd_agents/odd_definition.py</code>. Each section maps to evaluation axes:
+            </p>
+            <div class="odd-section"><strong>ROBOT PHYSICAL SPECIFICATIONS:</strong> Footprint, height, clearance
+                requirements — <em>Used for clearance analysis</em></div>
+            <div class="odd-section"><strong>ENVIRONMENT:</strong> Indoor/outdoor, lighting ranges (in lux), typical
+                conditions — <em>Used for environment classification</em></div>
+            <div class="odd-section"><strong>OBSTACLE HANDLING:</strong> Expected density, navigation constraints —
+                <em>Used for obstacle density evaluation</em>
+            </div>
+            <div class="odd-section"><strong>MOTION CHARACTERISTICS:</strong> Max speed (m/s), acceleration (m/s²),
+                pitch/roll limits — <em>Used for motion compliance</em></div>
+            <div class="odd-section"><strong>TERRAIN:</strong> Acceptable surfaces, incline limits, exclusions —
+                <em>Used for traversability assessment</em>
+            </div>
+            <div class="odd-section"><strong>HUMAN/ANIMAL PROXIMITY:</strong> Distance thresholds with consequences —
+                <em>Used for safety zone evaluation</em>
+            </div>
+            <div class="odd-section mb-4"><strong>DEFINITELY NOT DESIGNED FOR:</strong> Hard constraints — <em>Any match
+                    = immediate OUT_ODD</em></div>
+
+            <!-- Data Format Table -->
+            <h2 class="section-title">Data Format Summary</h2>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm format-table">
+                    <thead>
+                        <tr>
+                            <th>File Type</th>
+                            <th>Format</th>
+                            <th>Content</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Camera</td>
+                            <td>PNG/JPEG</td>
+                            <td>Forward-facing RGB, any resolution</td>
+                        </tr>
+                        <tr>
+                            <td>BEV Occupancy</td>
+                            <td>Grayscale PNG</td>
+                            <td>Obstacles only (ground filtered), robot-centered</td>
+                        </tr>
+                        <tr>
+                            <td>BEV Height</td>
+                            <td>Grayscale PNG</td>
+                            <td>Full terrain elevation map</td>
+                        </tr>
+                        <tr>
+                            <td>BEV Roughness</td>
+                            <td>Grayscale PNG</td>
+                            <td>Height variance per cell</td>
+                        </tr>
+                        <tr>
+                            <td>Motion</td>
+                            <td>JSON</td>
+                            <td>Position, orientation, IMU samples, derived_speed</td>
+                        </tr>
+                        <tr>
+                            <td>Index</td>
+                            <td>CSV</td>
+                            <td>Window ID, timestamps, file paths</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Future Architecture Note -->
+            <div class="future-note mb-4">
+                <h6 class="mb-2">🔮 Future Architecture</h6>
+                <p class="mb-0" style="font-size: 0.9rem;">
+                    Planned improvements will enable tools to access the knowledge base directly, allowing VLM prompts
+                    to
+                    automatically incorporate robot profiles and ODD context. This will reduce manual threshold
+                    tuning—tools
+                    will adapt based on the knowledge layer rather than hardcoded values.
+                </p>
+            </div>
+
+            <!-- Example: Drone -->
+            <h2 class="section-title">Example: Adapting for a Drone</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <h6>Data Differences</h6>
+                        <ul class="mb-0" style="font-size: 0.85rem;">
+                            <li>BEV from downward depth/LiDAR instead of outward</li>
+                            <li>Roll/pitch can be large (banking maneuvers)</li>
+                            <li>Speed range 0-15+ m/s vs 0-3 m/s</li>
+                            <li>Altitude becomes a critical ODD axis</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <h6>ODD Adjustments</h6>
+                        <ul class="mb-0" style="font-size: 0.85rem;">
+                            <li>Add altitude limits (e.g., 5-50m AGL)</li>
+                            <li>Include weather constraints (wind, visibility)</li>
+                            <li>Define airspace restrictions</li>
+                            <li>GPS quality as ODD axis</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Documentation Link -->
+            <div class="callout">
+                <h6 class="mb-2">📄 Full Documentation</h6>
+                <p class="mb-0">
+                    For complete details including motion JSON schema, robot profile template, and troubleshooting, see
+                    <a href="https://github.com/danmartinez78/go2-odd-observer/blob/main/docs/guides/ADAPTING_TO_NEW_ROBOTS.md"
+                        target="_blank">
+                        <strong>docs/guides/ADAPTING_TO_NEW_ROBOTS.md</strong>
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const toggle = document.getElementById('themeToggle');
+            const stored = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) document.body.classList.add('dark');
+            toggle?.addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            });
+        })();
+    </script>
+</body>
+
+</html>
