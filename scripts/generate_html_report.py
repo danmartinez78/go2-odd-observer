@@ -695,6 +695,113 @@ def generate_svg_bar_chart(labels: list, values: list, max_val: float = None,
     </svg>'''
 
 
+def generate_svg_line_chart(
+    labels: List[str],
+    values: List[float],
+    max_val: float = None,
+    title: str = "",
+    color: str = "#667eea",
+    unit: str = "",
+    show_area: bool = True
+) -> str:
+    """Generate an SVG line chart for time-series data."""
+    if not values or all(v == 0 for v in values):
+        return f'<div class="text-muted text-center p-4">No {title.lower()} data</div>'
+
+    n_points = len(values)
+
+    # Chart dimensions
+    width = 450
+    height = 180
+    margin_left = 50
+    margin_right = 20
+    margin_top = 35
+    margin_bottom = 40
+
+    chart_width = width - margin_left - margin_right
+    chart_height = height - margin_top - margin_bottom
+
+    # Calculate scales
+    if max_val is None:
+        max_val = max(values) * 1.2 if max(values) > 0 else 1
+    min_val = 0
+
+    # Generate points
+    points = []
+    for i, val in enumerate(values):
+        x = margin_left + (i / max(n_points - 1, 1)) * chart_width
+        y = margin_top + chart_height - (val / max_val) * chart_height
+        points.append((x, y))
+
+    # Build path
+    path_d = f"M {points[0][0]:.1f} {points[0][1]:.1f}"
+    for x, y in points[1:]:
+        path_d += f" L {x:.1f} {y:.1f}"
+
+    # Area fill path (closed polygon)
+    area_d = path_d + \
+        f" L {points[-1][0]:.1f} {margin_top + chart_height} L {points[0][0]:.1f} {margin_top + chart_height} Z"
+
+    svg = f'''<svg viewBox="0 0 {width} {height}" class="svg-chart" style="width:100%;height:auto;">
+        <text x="{width/2}" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text-primary)">{title}</text>
+        
+        <!-- Grid lines -->
+        <line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{margin_top + chart_height}" stroke="var(--border-color)" stroke-width="1"/>
+        <line x1="{margin_left}" y1="{margin_top + chart_height}" x2="{margin_left + chart_width}" y2="{margin_top + chart_height}" stroke="var(--border-color)" stroke-width="1"/>
+        '''
+
+    # Add horizontal grid lines and y-axis labels
+    for i in range(5):
+        y = margin_top + (i / 4) * chart_height
+        val = max_val * (1 - i / 4)
+        svg += f'''
+        <line x1="{margin_left}" y1="{y:.1f}" x2="{margin_left + chart_width}" y2="{y:.1f}" stroke="var(--border-color)" stroke-width="0.5" opacity="0.5"/>
+        <text x="{margin_left - 5}" y="{y + 4:.1f}" text-anchor="end" font-size="10" fill="var(--text-secondary)">{val:.2f}</text>'''
+
+    # Area fill (gradient effect)
+    if show_area:
+        svg += f'''
+        <defs>
+            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:{color};stop-opacity:0.3"/>
+                <stop offset="100%" style="stop-color:{color};stop-opacity:0.05"/>
+            </linearGradient>
+        </defs>
+        <path d="{area_d}" fill="url(#areaGradient)"/>'''
+
+    # Line
+    svg += f'''
+        <path d="{path_d}" fill="none" stroke="{color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'''
+
+    # Data points
+    for i, (x, y) in enumerate(points):
+        val = values[i]
+        svg += f'''
+        <circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{color}" stroke="white" stroke-width="1.5"/>'''
+
+    # X-axis labels (show subset if too many)
+    if n_points <= 8:
+        label_indices = range(n_points)
+    else:
+        # Show first, last, and evenly spaced
+        step = max(1, n_points // 6)
+        label_indices = list(range(0, n_points, step))
+        if n_points - 1 not in label_indices:
+            label_indices.append(n_points - 1)
+
+    for i in label_indices:
+        x = margin_left + (i / max(n_points - 1, 1)) * chart_width
+        svg += f'''
+        <text x="{x:.1f}" y="{height - 10}" text-anchor="middle" font-size="10" fill="var(--text-secondary)">{labels[i]}</text>'''
+
+    # Unit label
+    svg += f'''
+        <text x="{margin_left - 5}" y="{margin_top - 8}" text-anchor="end" font-size="9" fill="var(--text-secondary)">{unit}</text>
+    </svg>'''
+
+    return svg
+
+
 def generate_motion_charts(motion_data: Dict[str, Any]) -> Dict[str, str]:
     """Generate SVG charts for motion analysis section."""
     charts = {}
@@ -727,31 +834,19 @@ def generate_motion_charts(motion_data: Dict[str, Any]) -> Dict[str, str]:
         peak_speeds.append(speed.get('peak_mps', 0))
         avg_speeds.append(speed.get('avg_mps', 0))
 
-    # Generate trajectory bar chart
-    if any(path_lengths):
-        max_path = max(path_lengths) if path_lengths else 1
-        charts['trajectory_svg'] = generate_svg_bar_chart(
-            [f"W{wid}" for wid in window_ids],
-            path_lengths,
-            max_val=max_path * 1.2,
-            title="Path Length per Window",
-            color="#667eea",
-            unit="m"
-        )
-    else:
-        charts['trajectory_svg'] = '<div class="text-muted text-center p-4">No trajectory data available</div>'
-
-    # Generate speed bar chart
+    # Generate speed line chart
     if any(peak_speeds):
         max_speed = max(peak_speeds) if peak_speeds else 1
-        charts['speed_svg'] = generate_svg_bar_chart(
-            [f"W{wid}" for wid in window_ids],
+        # Use compact labels - just window index number
+        compact_labels = [str(int(wid)) if wid.isdigit(
+        ) else wid.lstrip('0') or '0' for wid in window_ids]
+        charts['speed_svg'] = generate_svg_line_chart(
+            compact_labels,
             peak_speeds,
-            # Min scale to show small values
             max_val=max(max_speed * 1.2, 0.1),
             title="Peak Speed per Window",
             color="#28a745",
-            unit=" m/s"
+            unit="m/s"
         )
     else:
         charts['speed_svg'] = '<div class="text-muted text-center p-4">No speed data available</div>'
@@ -773,13 +868,13 @@ def generate_collision_charts(collision_data: Dict[str, Any]) -> Dict[str, str]:
     window_ids = [w.get('window_id', str(i)) for i, w in enumerate(per_window)]
     proximities = [w.get('proximity_estimate_m', 0) for w in per_window]
 
-    # Risk band colors
-    risk_colors = {'LOW': '#28a745', 'MEDIUM': '#ffc107', 'HIGH': '#dc3545'}
-
     if any(proximities):
         max_prox = max(proximities) if proximities else 3
-        charts['proximity_svg'] = generate_svg_bar_chart(
-            [f"W{wid}" for wid in window_ids],
+        # Use compact labels - just window index number
+        compact_labels = [str(int(wid)) if wid.isdigit(
+        ) else wid.lstrip('0') or '0' for wid in window_ids]
+        charts['proximity_svg'] = generate_svg_line_chart(
+            compact_labels,
             proximities,
             max_val=max(max_prox * 1.2, 3),
             title="Proximity to Obstacles per Window",
@@ -1129,7 +1224,8 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Build trajectory details HTML (with header)
     if trajectory_rows_visible:
-        trajectory_details_html = trajectory_header + ''.join(trajectory_rows_visible)
+        trajectory_details_html = trajectory_header + \
+            ''.join(trajectory_rows_visible)
         if trajectory_rows_hidden:
             trajectory_details_html += f'''
                 <div class="collapse" id="trajectoryCollapse">
@@ -1203,7 +1299,28 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
 
     # Build scenario overview (representative windows)
     total_windows = len(windows)
-    display_windows = windows_with_images[:4]  # Show first 4 windows
+    
+    # Sample windows evenly for display (use windows_with_images which is already sampled)
+    # But re-sample from the full list to get true even spacing
+    MAX_DISPLAY_CARDS = 4
+    if total_windows <= MAX_DISPLAY_CARDS:
+        display_window_ids = windows
+    else:
+        # True even spacing: first, last, and evenly distributed middle
+        step = (total_windows - 1) / (MAX_DISPLAY_CARDS - 1)
+        display_window_ids = [windows[int(round(i * step))] for i in range(MAX_DISPLAY_CARDS)]
+    
+    # Get images for display windows
+    display_windows = [w for w in windows_with_images if w['id'] in display_window_ids]
+    # If some weren't in windows_with_images, try to load them
+    if len(display_windows) < len(display_window_ids):
+        for wid in display_window_ids:
+            if wid not in [w['id'] for w in display_windows]:
+                images = find_window_images(scenario_dir, wid, image_scenario_name)
+                if images:
+                    display_windows.append({'id': wid, 'images': images})
+        # Sort by window id to maintain order
+        display_windows.sort(key=lambda w: windows.index(w['id']) if w['id'] in windows else 999)
 
     # Extract environment info from per-window data or artifacts
     per_window_data = result.get('per_window_data', [])
@@ -1536,6 +1653,22 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             width: 100%;
         }}
         
+        .chart-container-compact {{
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        
+        .chart-container-compact svg {{
+            width: 100%;
+            height: auto;
+        }}
+        
         .compliance-table {{
             background-color: var(--bg-secondary);
             border-radius: 8px;
@@ -1746,7 +1879,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="chart-container">
+            <div class="chart-container-compact">
                 {charts.get('speed_svg', '<div class="text-muted text-center p-4">No speed data</div>')}
             </div>
         </div>
@@ -1809,7 +1942,7 @@ def generate_html_report(result: Dict[str, Any], scenario_dir: Path, output_path
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="chart-container">
+            <div class="chart-container-compact">
                 {charts.get('proximity_svg', '<div class="text-muted text-center p-4">No proximity data</div>')}
             </div>
         </div>
