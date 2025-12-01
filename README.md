@@ -16,6 +16,8 @@
 
 </div>
 
+> ⚠️ **Note:** Design docs in `docs/` are pending cleanup—some may be out of date. The [Live Demo](https://danmartinez78.github.io/go2-odd-observer/) and code are current.
+
 ---
 
 ## 🎯 What This Does
