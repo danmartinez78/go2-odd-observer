@@ -187,6 +187,15 @@ h3 {
     color: var(--muted);
 }
 
+/* Override Bootstrap text-secondary for dark mode */
+.text-secondary {
+    color: var(--muted) !important;
+}
+
+.text-muted {
+    color: var(--muted) !important;
+}
+
 .section-header {
     font-weight: 800;
     letter-spacing: 0.01em;
