@@ -1,60 +1,49 @@
 # ODD Analysis Notebooks
 
-This directory contains Jupyter notebooks for interactive ODD (Operational Design Domain) compliance analysis.
+Interactive notebooks for ODD (Operational Design Domain) compliance analysis.
 
-## Current Notebook
+## Quick Start
 
-### `odd_analysis_demo.ipynb` - **RECOMMENDED**
+### `odd_analysis_demo.ipynb`
 
-**Clean, parameterized notebook for running ODD analysis with model configuration.**
+Demonstrates the 6-agent pipeline for robot safety analysis.
 
-Features:
-- ✅ Uses parameterized `odd_agents` module (no global state)
-- ✅ Per-agent model selection for cost optimization
-- ✅ Clear step-by-step instructions with configuration cells
-- ✅ Customizable ODD specifications via natural language
-- ✅ Built-in visualizations (collision risk, motion detection)
-- ✅ Complete workflow demonstration
+**Requirements:**
+- Google Gemini API key ([get free key](https://aistudio.google.com/app/apikey))
+- Set key in `.env` file: `GOOGLE_API_KEY=your-key-here`
 
-**What you need:**
-- Google Gemini API key (free at https://aistudio.google.com/app/apikey)
-- Preprocessed scenario data (included: `sim_run_test` with 2 windows)
-
-**Quick start:**
+**Usage:**
 1. Open `odd_analysis_demo.ipynb`
-2. Set API key in cell 2: `GOOGLE_API_KEY = "your-key-here"`
-3. Configure models in cell 5 (optional - defaults to flash-lite)
-4. Run all cells
+2. Run setup cells (1-4)
+3. Select scenario (default: `sim_2win`)
+4. Run analysis or explore data
 
-**Model Configuration:**
-```python
-# Configure per-agent models for cost/quality tradeoff
-MODEL_PERCEPTION = "gemini-2.5-pro"      # High-quality vision
-MODEL_MOTION = "gemini-2.0-flash-lite"   # Default (cost-effective)
-MODEL_COLLISION = "gemini-2.5-pro"       # Critical safety analysis
-# ... etc
-```
+**Sections:**
+1. Setup & API config
+2. ODD/COD concepts
+3. Available scenarios
+4. Explore window data (camera, BEV, motion)
+5. Run analysis pipeline
+6. Review results
+7. Generate HTML report
 
-See [`../docs/MODEL_SELECTION_GUIDE.md`](../docs/MODEL_SELECTION_GUIDE.md) for recommendations.
+## Available Scenarios
 
-## Archived Notebooks
-
-Historical notebooks moved to [`../.archive/notebooks/`](../.archive/notebooks/):
-
-- `odd_workflow_minimal.ipynb` - Minimal version (superseded)
-- `odd_workflow_educational.ipynb` - Extended educational version (superseded)
-- `odd_cod_misc.ipynb` - Miscellaneous experiments
-- `odd_cod_workflow_ARCHIVED.ipynb` - Original workflow
-
-**Note:** Archived notebooks use old architecture (config.py, non-parameterized) and are not maintained. Use `odd_analysis_demo.ipynb` instead.
+| Scenario | Type | Windows | Description |
+|----------|------|---------|-------------|
+| `sim_2win` | Test | 2 | Simulation quick test |
+| `real_2win` | Test | 2 | Real robot quick test |
+| `real_173442_2win` | Test | 2 | Real robot (173442) |
+| `sim_outdoor_*` | Prod | 16 | Full simulation runs |
+| `real_173442_*` | Prod | 16 | Full real robot runs |
 
 ## For Developers
 
-To understand the implementation:
-- **Module structure**: `../odd_agents/` (tools, agents, workflow)
-- **Agent implementations**: `../odd_agents/agents/`
-- **Workflow orchestration**: `../odd_agents/workflow.py`
-- **Production script**: `../scripts/odd_workflow.py` (same API as notebook)
-- **Architecture guide**: `../docs/MODEL_SELECTION_GUIDE.md`
+- **Pipeline runner**: `scripts/run_odd_analysis.py`
+- **Agent implementations**: `odd_agents/agents/`
+- **Tools**: `odd_agents/tools/`
+- **Architecture**: `docs/index.html`
 
-Everything uses the same parameterized `odd_agents` module - single source of truth!
+## Archived
+
+Old notebooks in `.archive/notebooks/` - use `odd_analysis_demo.ipynb` instead.

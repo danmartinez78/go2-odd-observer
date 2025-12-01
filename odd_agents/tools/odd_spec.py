@@ -72,7 +72,7 @@ def create_odd_spec_tools():
                 actors_boolean=[],
                 ego_categorical=[],
                 ego_numeric=[
-                    {"name": "max_speed_mps", "min": 0.0, "max": 1.5, "description": "Max linear velocity"},
+                    {"name": "max_speed_mps", "min": 0.0, "max": 2.5, "description": "Max linear velocity"},
                     {"name": "max_accel_mps2", "min": 0.0, "max": 10.0, "description": "Max acceleration"}
                 ],
                 ego_boolean=[]

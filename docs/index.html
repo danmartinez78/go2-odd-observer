@@ -299,8 +299,8 @@
     <div class="container">
         <div class="nav-shell">
             <div class="d-flex align-items-center gap-2">
-                <span class="phase-badge">Phase 1.4.5</span>
-                <span class="version-badge">Pipeline v2.0.0</span>
+                <span class="phase-badge">Phase 1.6</span>
+                <span class="version-badge">Pipeline v2.1.0</span>
             </div>
             <div class="d-none d-md-flex nav-links">
                 <a href="#reports">Reports</a>
@@ -381,23 +381,23 @@
         <!-- What's New Section -->
         <div class="row content-section">
             <div class="col-12 col-lg-10 offset-lg-1">
-                <h2 class="text-white mb-4 section-header">✨ What's New in Phase 1.4.5</h2>
+                <h2 class="text-white mb-4 section-header">✨ What's New in Phase 1.6</h2>
                 <div class="section-shell">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <h5 class="text-primary">🎯 Artifact Handoff</h5>
-                            <p class="mb-0">Agents pass structured data via artifacts instead of context injection.
-                                Cleaner, more reliable pipeline.</p>
+                            <h5 class="text-primary">📊 Interactive HTML Reports</h5>
+                            <p class="mb-0">Rich HTML reports with inline SVG charts, collapsible sections, and
+                                evenly-sampled window displays for large scenarios.</p>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <h5 class="text-primary">🏷️ Categorical Reasoning</h5>
-                            <p class="mb-0">Type-driven COD construction with separate handling for categorical vs
-                                numeric ODD axes.</p>
+                            <h5 class="text-primary">🔄 Multi-Modal Collision</h5>
+                            <p class="mb-0">Collision detection now requires convergent evidence: BOTH motion anomaly
+                                AND visual proximity for collision verdict.</p>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <h5 class="text-primary">🔍 Data Source Detection</h5>
-                            <p class="mb-0">Automatic sim vs real detection from sensor patterns. High confidence
-                                classification.</p>
+                            <h5 class="text-primary">🏃 Real Robot Support</h5>
+                            <p class="mb-0">Full support for real robot data with position-derived motion metrics and
+                                automatic sim/real detection.</p>
                         </div>
                     </div>
                 </div>
@@ -409,7 +409,8 @@
             <div class="col-12 col-lg-10 offset-lg-1">
                 <h2 class="text-white mb-4 section-header">🧪 Agent Evaluation</h2>
                 <div class="section-shell">
-                    <p class="mb-3">Rubric-based ADK evaluations for all agents using the sim_test_w010_w011 scenario and shared fixtures.</p>
+                    <p class="mb-3">Rubric-based ADK evaluations for all agents using the sim_test_w010_w011 scenario
+                        and shared fixtures.</p>
                     <ul class="feature-list">
                         <li>Tool-use + final-response rubrics; hallucination checks where supported</li>
                         <li>Run locally: <code>pytest tests/test_adk_evaluation.py -q</code></li>
@@ -429,21 +430,21 @@
                         <div class="col-md-6">
                             <h5 class="mb-3">6 Pipeline Agents</h5>
                             <div class="agent-card">
-                                <strong>OddSpecAgent</strong> <span class="badge bg-secondary">v6.1.0</span>
+                                <strong>OddSpecAgent</strong> <span class="badge bg-secondary">v13.0.0</span>
                                 <br><small class="text-muted">Parses natural language ODD → structured spec</small>
                             </div>
                             <div class="agent-card">
-                                <strong>PerceptionAgent</strong> <span class="badge bg-secondary">v7.4.0</span>
+                                <strong>PerceptionAgent</strong> <span class="badge bg-secondary">v12.2.0</span>
                                 <br><small class="text-muted">Camera + LiDAR BEV analysis, data source detection</small>
                             </div>
                             <div class="agent-card">
-                                <strong>MotionAgent</strong> <span class="badge bg-secondary">v7.3.0</span>
-                                <br><small class="text-muted">IMU analysis, reasoning-based motion
-                                    classification</small>
+                                <strong>MotionAgent</strong> <span class="badge bg-secondary">v11.0.0</span>
+                                <br><small class="text-muted">Position-derived motion, trajectory metrics</small>
                             </div>
                             <div class="agent-card">
-                                <strong>CollisionAgent</strong> <span class="badge bg-secondary">v7.3.0</span>
-                                <br><small class="text-muted">Proximity assessment with ego vehicle awareness</small>
+                                <strong>CollisionAgent</strong> <span class="badge bg-secondary">v13.0.0</span>
+                                <br><small class="text-muted">Multi-modal collision detection with evidence
+                                    fusion</small>
                             </div>
                             <div class="agent-card">
                                 <strong>EvaluatorAgent</strong> <span class="badge bg-secondary">v5.0.0</span>
@@ -582,199 +583,205 @@
 
                 <div class="section-shell">
                     <div class="alert alert-info mb-4">
-                        <strong>Note:</strong> Reports below were generated with the Phase 1.4.5 pipeline.
-                        Each includes COD region analysis, compliance verdict, agent execution details, and cost breakdown.
+                        <strong>Note:</strong> Reports below were generated with the Phase 1.6 pipeline featuring
+                        multi-modal collision detection and HTML report generation.
+                        Each includes COD region analysis, compliance verdict, agent execution details, and cost
+                        breakdown.
                     </div>
 
-                <!-- Featured: 10-Window Production Run -->
-                <div class="section-shell" style="border-color: #28a745; border-width: 3px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <h3 class="mb-0">🌟 sim_1_0_chunk_000_009</h3>
-                                <span class="badge bg-success">Featured</span>
+                    <!-- Featured: 10-Window Production Run -->
+                    <div class="section-shell" style="border-color: #28a745; border-width: 3px;">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <h3 class="mb-0">🌟 sim_1_0_chunk_000_009</h3>
+                                    <span class="badge bg-success">Featured</span>
+                                </div>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong>
+                                    10
+                                    (w000-w009)</p>
+
+                                <div class="mb-3">
+                                    <span class="badge badge-boundary badge-status me-2">⚠️ BOUNDARY</span>
+                                    <span class="badge bg-success badge-status me-2">95% Confidence</span>
+                                    <span class="badge bg-info badge-status">STABLE</span>
+                                </div>
+
+                                <p class="mb-2"><strong>Key Findings:</strong></p>
+                                <ul style="font-size: 0.9rem;">
+                                    <li>Well-lit indoor environments with smooth, traversable floors</li>
+                                    <li>Motion from stationary to dynamic patterns including rotations</li>
+                                    <li>No collisions detected, safe distances maintained</li>
+                                </ul>
+
+                                <p class="mb-0" style="font-size: 0.85rem;">
+                                    <strong>Critical Axis:</strong> <code>environment_type</code> (office detected vs
+                                    expected residential)
+                                </p>
                             </div>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
-                                (w000-w009)</p>
-
-                            <div class="mb-3">
-                                <span class="badge badge-boundary badge-status me-2">⚠️ BOUNDARY</span>
-                                <span class="badge bg-success badge-status me-2">95% Confidence</span>
-                                <span class="badge bg-info badge-status">STABLE</span>
+                            <div class="col-md-4 text-center">
+                                <a href="reports/sim_1_0_chunk_000_009_report.html"
+                                    class="btn btn-success btn-view-report w-100 mb-2">
+                                    View Report →
+                                </a>
+                                <div class="text-muted" style="font-size: 0.85rem;">
+                                    <div>💰 $0.037 USD / 70K tokens</div>
+                                </div>
                             </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul style="font-size: 0.9rem;">
-                                <li>Well-lit indoor environments with smooth, traversable floors</li>
-                                <li>Motion from stationary to dynamic patterns including rotations</li>
-                                <li>No collisions detected, safe distances maintained</li>
-                            </ul>
-
-                            <p class="mb-0" style="font-size: 0.85rem;">
-                                <strong>Critical Axis:</strong> <code>environment_type</code> (office detected vs
-                                expected residential)
-                            </p>
                         </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/sim_1_0_chunk_000_009_report.html"
-                                class="btn btn-success btn-view-report w-100 mb-2">
-                                View Report →
-                            </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>💰 $0.037 USD / 70K tokens</div>
+                    </div>
+
+                    <!-- chunk_020_029 -->
+                    <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="mb-2">sim_1_0_chunk_020_029</h3>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong>
+                                    10
+                                    (w020-w029)</p>
+
+                                <div class="mb-3">
+                                    <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
+                                    <span class="badge bg-success badge-status me-2">100% Confidence</span>
+                                    <span class="badge bg-info badge-status">STABLE</span>
+                                </div>
+
+                                <p class="mb-2"><strong>Key Findings:</strong></p>
+                                <ul style="font-size: 0.9rem;">
+                                    <li>Bright indoor commercial environment, smooth terrain</li>
+                                    <li>Stationary to low-speed operation, zero speed violations</li>
+                                    <li>All ODD axes fully compliant with zero region distance</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <a href="reports/sim_1_0_chunk_020_029_report.html"
+                                    class="btn btn-success btn-view-report w-100 mb-2">
+                                    View Report →
+                                </a>
+                                <div class="text-muted" style="font-size: 0.85rem;">
+                                    <div>💰 $0.079 USD / 63K tokens</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- chunk_040_049 -->
+                    <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="mb-2">sim_1_0_chunk_040_049</h3>
+                                <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong>
+                                    10
+                                    (w040-w049)</p>
+
+                                <div class="mb-3">
+                                    <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
+                                    <span class="badge bg-success badge-status me-2">95% Confidence</span>
+                                    <span class="badge bg-info badge-status">STABLE</span>
+                                </div>
+
+                                <p class="mb-2"><strong>Key Findings:</strong></p>
+                                <ul style="font-size: 0.9rem;">
+                                    <li>Consistent indoor commercial conditions throughout</li>
+                                    <li>Minor semantic note on environment_type (indoor_commercial ≈ commercial)</li>
+                                    <li>All numeric ODD axes well within boundaries</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <a href="reports/sim_1_0_chunk_040_049_report.html"
+                                    class="btn btn-success btn-view-report w-100 mb-2">
+                                    View Report →
+                                </a>
+                                <div class="text-muted" style="font-size: 0.85rem;">
+                                    <div>💰 $0.090 USD / 71K tokens</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- chunk_020_029 -->
-                <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3 class="mb-2">sim_1_0_chunk_020_029</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
-                                (w020-w029)</p>
+            <!-- Technical Details -->
+            <div class="row content-section">
+                <div class="col-12 col-lg-10 offset-lg-1">
+                    <div class="section-shell">
+                        <h2 class="mb-4">🔬 Technical Details</h2>
 
-                            <div class="mb-3">
-                                <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
-                                <span class="badge bg-success badge-status me-2">100% Confidence</span>
-                                <span class="badge bg-info badge-status">STABLE</span>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="text-primary">ODD Specification</h5>
+                                <ul class="feature-list">
+                                    <li>Natural language → structured spec</li>
+                                    <li>Categorical axes (terrain, lighting, environment)</li>
+                                    <li>Numeric axes (acceleration, distance, velocity)</li>
+                                    <li>Boolean axes (collision, blocked path)</li>
+                                </ul>
                             </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul style="font-size: 0.9rem;">
-                                <li>Bright indoor commercial environment, smooth terrain</li>
-                                <li>Stationary to low-speed operation, zero speed violations</li>
-                                <li>All ODD axes fully compliant with zero region distance</li>
-                            </ul>
+                            <div class="col-md-6">
+                                <h5 class="text-primary">COD Construction</h5>
+                                <ul class="feature-list">
+                                    <li>Per-window measurements</li>
+                                    <li>Type-driven aggregation</li>
+                                    <li>Semantic distance for categoricals</li>
+                                    <li>Fraction outside per axis</li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/sim_1_0_chunk_020_029_report.html"
-                                class="btn btn-success btn-view-report w-100 mb-2">
-                                View Report →
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Compliance Verdict</h5>
+                                <ul class="feature-list">
+                                    <li>IN_ODD / ODD_BOUNDARY / OUT_ODD</li>
+                                    <li>Confidence score (0-1)</li>
+                                    <li>Critical axes identification</li>
+                                    <li>Temporal stability (STABLE/MIXED/DEGRADING)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="text-primary">Models Used</h5>
+                                <ul class="feature-list">
+                                    <li><code>gemini-2.5-flash</code> - Sensor agents</li>
+                                    <li><code>gemini-2.5-pro</code> - Evaluator (reasoning)</li>
+                                    <li>Vision-enabled for image analysis</li>
+                                    <li>~$0.02/scenario (2 windows)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <a href="https://github.com/danmartinez78/go2-odd-observer"
+                                class="btn btn-dark btn-lg me-3">
+                                💻 View on GitHub
                             </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>💰 $0.079 USD / 63K tokens</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- chunk_040_049 -->
-                <div class="section-shell" style="border-color: #28a745; border-width: 2px;">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3 class="mb-2">sim_1_0_chunk_040_049</h3>
-                            <p class="text-muted mb-2"><strong>Type:</strong> Simulation | <strong>Windows:</strong> 10
-                                (w040-w049)</p>
-
-                            <div class="mb-3">
-                                <span class="badge badge-in-odd badge-status me-2">✅ IN_ODD</span>
-                                <span class="badge bg-success badge-status me-2">95% Confidence</span>
-                                <span class="badge bg-info badge-status">STABLE</span>
-                            </div>
-
-                            <p class="mb-2"><strong>Key Findings:</strong></p>
-                            <ul style="font-size: 0.9rem;">
-                                <li>Consistent indoor commercial conditions throughout</li>
-                                <li>Minor semantic note on environment_type (indoor_commercial ≈ commercial)</li>
-                                <li>All numeric ODD axes well within boundaries</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <a href="reports/sim_1_0_chunk_040_049_report.html"
-                                class="btn btn-success btn-view-report w-100 mb-2">
-                                View Report →
+                            <a href="agents/README.md" class="btn btn-outline-dark btn-lg">
+                                📖 Agent Documentation
                             </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                <div>💰 $0.090 USD / 71K tokens</div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Technical Details -->
-        <div class="row content-section">
-            <div class="col-12 col-lg-10 offset-lg-1">
-                <div class="section-shell">
-                    <h2 class="mb-4">🔬 Technical Details</h2>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h5 class="text-primary">ODD Specification</h5>
-                            <ul class="feature-list">
-                                <li>Natural language → structured spec</li>
-                                <li>Categorical axes (terrain, lighting, environment)</li>
-                                <li>Numeric axes (acceleration, distance, velocity)</li>
-                                <li>Boolean axes (collision, blocked path)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h5 class="text-primary">COD Construction</h5>
-                            <ul class="feature-list">
-                                <li>Per-window measurements</li>
-                                <li>Type-driven aggregation</li>
-                                <li>Semantic distance for categoricals</li>
-                                <li>Fraction outside per axis</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h5 class="text-primary">Compliance Verdict</h5>
-                            <ul class="feature-list">
-                                <li>IN_ODD / ODD_BOUNDARY / OUT_ODD</li>
-                                <li>Confidence score (0-1)</li>
-                                <li>Critical axes identification</li>
-                                <li>Temporal stability (STABLE/MIXED/DEGRADING)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h5 class="text-primary">Models Used</h5>
-                            <ul class="feature-list">
-                                <li><code>gemini-2.5-flash</code> - Sensor agents</li>
-                                <li><code>gemini-2.5-pro</code> - Evaluator (reasoning)</li>
-                                <li>Vision-enabled for image analysis</li>
-                                <li>~$0.02/scenario (2 windows)</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <a href="https://github.com/danmartinez78/go2-odd-observer" class="btn btn-dark btn-lg me-3">
-                            💻 View on GitHub
-                        </a>
-                        <a href="agents/README.md" class="btn btn-outline-dark btn-lg">
-                            📖 Agent Documentation
-                        </a>
-                    </div>
-                </div>
+            <!-- Footer -->
+            <div class="text-center mt-5 text-white">
+                <p class="mb-0">Built with ❤️ for the Kaggle ADK Agent Capstone</p>
+                <p class="small mb-0">Powered by Google Gemini 2.5 + Multi-Agent AI</p>
+                <p class="small">Phase 1.6 - December 2025</p>
             </div>
         </div>
-
-        <!-- Footer -->
-        <div class="text-center mt-5 text-white">
-            <p class="mb-0">Built with ❤️ for the Kaggle ADK Agent Capstone</p>
-            <p class="small mb-0">Powered by Google Gemini 2.5 + Multi-Agent AI</p>
-            <p class="small">Phase 1.4.5 - November 2025</p>
-        </div>
-    </div>
-    <script>
-        const toggle = document.getElementById('themeToggle');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const saved = localStorage.getItem('odd-theme');
-        if (saved === 'dark' || (!saved && prefersDark)) {
-            document.body.classList.add('dark');
-        }
-        toggle?.addEventListener('click', () => {
-            document.body.classList.toggle('dark');
-            localStorage.setItem('odd-theme', document.body.classList.contains('dark') ? 'dark' : 'light');
-        });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            const toggle = document.getElementById('themeToggle');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const saved = localStorage.getItem('odd-theme');
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.body.classList.add('dark');
+            }
+            toggle?.addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                localStorage.setItem('odd-theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            });
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

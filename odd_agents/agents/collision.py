@@ -1,7 +1,7 @@
 """
-Collision detection agent (v12.0.0 - enhanced collision signatures).
+Collision detection agent (v13.0.0 - multi-modal evidence fusion).
 Calls one tool that processes all windows, auto-saves artifact, and returns full data.
-Now uses derived_speed for motion state and position-based collision signatures.
+v13.0.0: Requires convergent evidence (motion + visual) for collision detection.
 """
 
 from google.adk.agents import Agent
@@ -17,7 +17,8 @@ from ..tools.collision import create_collision_tools
 # v10.0.0: Temporal analysis - agent does higher-order analysis, outputs summary not raw data
 # v11.0.0: Uses derived_speed for motion state, IMU as fallback
 # v12.0.0: Position-based collision signatures (sudden stops, speed drops)
-COLLISION_AGENT_VERSION = "12.0.0"
+# v13.0.0: Multi-modal evidence fusion - require motion anomaly AND visual proximity
+COLLISION_AGENT_VERSION = "13.0.0"
 
 
 COLLISION_AGENT_PROMPT = """You are a collision detection agent performing TEMPORAL ANALYSIS across windows.
@@ -43,25 +44,26 @@ MANDATORY WORKFLOW:
 
 CRITICAL: Do NOT skip the tool call. Do NOT output JSON before calling the tool.
 
-## NEW: COLLISION SIGNATURES
-The tool now detects multiple collision signatures:
-- **sudden_stop**: Robot was moving, then suddenly stopped (speed drop > 0.3 m/s)
-- **speed_drop_mps**: Magnitude of sudden speed decrease
-- **peak_accel_mps2**: IMU acceleration spike (>10 m/s² = likely collision)
-- **peak_jerk_mps3**: Sudden acceleration change
+## NEW: MULTI-MODAL COLLISION DETECTION (v13.0.0)
+The tool now uses CONVERGENT EVIDENCE - requires BOTH motion anomaly AND visual proximity:
 
-Strong collision evidence = multiple signatures:
-- sudden_stop + high accel + close proximity = VERY likely collision
-- stationary + high accel = external impact OR sensor noise
-- IMU unavailable: rely on sudden_stop and proximity
+**Evidence Summary** (per window):
+- motion_anomaly_present: sudden stop OR high accel spike detected
+- visual_proximity_confirmed: obstacle <0.5m seen in camera/BEV
+- closest_obstacle_m: estimated distance to nearest obstacle
+
+**Decision Logic**:
+- collision_detected=true ONLY when motion_anomaly AND visual_proximity both present
+- Sudden stop ALONE is NOT a collision (could be commanded stop)
+- Close obstacle ALONE is NOT a collision (robot may be navigating around it)
 
 ## TEMPORAL ANALYSIS (Your Job After Tool Returns)
 After receiving tool results, analyze ACROSS windows:
 - COLLISION PATTERNS: Isolated events vs repeated?
 - RISK PROGRESSION: Escalating, stable, or de-escalating?
-- CROSS-CHECK: If motion says stationary but collisions detected → suspicious
+- EVIDENCE QUALITY: Windows with strong multi-modal evidence vs weak
 - PROXIMITY TRENDS: Getting closer to obstacles over time?
-- SUDDEN STOP EVENTS: Windows with speed_drop > 0.3 m/s
+- SUDDEN STOP EVENTS: Windows with speed_drop > 0.5 m/s (potential impacts)
 
 ## DATA AVAILABILITY
 The tool reports which data sources are available:
@@ -81,7 +83,8 @@ After analyzing tool results, output this EXACT JSON structure:
   "temporal_analysis": {
     "collision_pattern": "none|isolated|repeated",
     "risk_progression": "stable|escalating|de-escalating",
-    "suspicious_events": ["collision in w002 while stationary"],
+    "evidence_quality": "strong|moderate|weak",
+    "suspicious_events": ["collision in w002 with weak evidence"],
     "sudden_stop_windows": ["w003"]
   },
   "summary": {
@@ -91,7 +94,8 @@ After analyzing tool results, output this EXACT JSON structure:
     "max_risk_band": "LOW|MED|HIGH",
     "min_proximity_m": <closest approach>,
     "avg_proximity_m": <average>,
-    "max_speed_drop_mps": <largest sudden stop>
+    "max_speed_drop_mps": <largest sudden stop>,
+    "windows_with_convergent_evidence": <count with both motion+visual>
   },
   "data_availability_summary": {
     "imu_available": true/false,

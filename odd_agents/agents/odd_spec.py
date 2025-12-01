@@ -69,7 +69,7 @@ After the tool call completes, you MUST output this JSON structure:
     "actors_axes": ["axis1"],
     "ego_axes": ["axis1", "axis2"],
     "key_limits": {
-      "max_speed_mps": 1.5,
+      "max_speed_mps": 2.5,
       "max_roll_deg": 15.0,
       "obstacle_density_max": 0.5
     }

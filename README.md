@@ -31,7 +31,7 @@ This system uses **6 pipeline agents + 4 tool agents** (10 LLM-calling entities)
 ### Key Concepts
 
 **🎯 ODD (Operational Design Domain)**
-> The specific conditions and environments a robot is **designed** to operate in. Think of it as the robot's "safe operating zone" - like speed limits, terrain types, and obstacle densities it was built to handle.
+> The specific conditions and environments a robot is **designed** to operate in. Think of it as the robot's "safe operating zone" - like speed limits, terrain types, and obstacle densities it was designed to handle.
 
 **📊 COD (Current Operating Domain)**  
 > The actual conditions the robot is **currently experiencing**, measured from its sensors. This is "where the robot actually is" at any moment.

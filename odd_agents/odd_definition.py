@@ -5,6 +5,10 @@ This module provides the single source of truth for the robot's ODD description.
 All scripts should import DEFAULT_ODD_DESCRIPTION from here rather than defining
 their own copies.
 
+Version: 2.1.0 (2025-12-01)
+Changes:
+- Added explicit max_speed_mps: 2.5 m/s limit (increased from implicit 1.5 m/s)
+
 Version: 2.0.0 (2025-11-29)
 Changes:
 - Added human/animal proximity constraint
@@ -14,7 +18,7 @@ Changes:
 """
 
 # Version tracking for ODD definition changes
-ODD_DEFINITION_VERSION = "2.0.0"
+ODD_DEFINITION_VERSION = "2.1.0"
 
 DEFAULT_ODD_DESCRIPTION = """
 The Unitree Go2 is a quadruped robot designed for general indoor navigation in 
@@ -43,6 +47,7 @@ are blocked, doorways are obstructed, or the floor is covered with scattered obj
 
 MOTION CHARACTERISTICS:
 The robot uses dynamic motion control appropriate for agile quadruped navigation:
+- Maximum operational speed: 2.5 m/s (normal indoor navigation)
 - Smooth motion during open navigation in hallways and clear spaces
 - Quick reactive maneuvers when avoiding obstacles (acceleration up to 10 m/s²)
 - Brief "abrupt" motion is normal and expected during:
@@ -51,6 +56,7 @@ The robot uses dynamic motion control appropriate for agile quadruped navigation
   * Emergency stops when unexpected obstacles appear
   
 The robot is NOT designed for:
+- Speeds exceeding 2.5 m/s (high-speed operation outside indoor design limits)
 - Aggressive high-speed racing or sustained high acceleration
 - Violent or erratic motion when operating in open, obstacle-free spaces
 
@@ -90,6 +96,6 @@ ODD_SUMMARY = """
 Indoor quadruped robot for residential/commercial navigation.
 - Environment: Indoor, furniture-dense, adequate lighting
 - Terrain: Smooth floors, low-pile carpet, gentle ramps (<15°)
-- Motion: Agile with reactive maneuvers up to 10 m/s²
+- Motion: Max 2.5 m/s speed, agile with reactive maneuvers up to 10 m/s²
 - Constraints: No stairs, no outdoor, no humans/animals within 0.5-1m
 """

@@ -2,6 +2,12 @@
 Collision detection tools.
 Factory functions that create tools with specific configuration.
 
+v10.0.0: Multi-modal collision detection with convergent evidence:
+- Requires BOTH motion anomaly AND visual/BEV proximity for collision
+- Sudden stop alone is NOT sufficient - must see close obstacle
+- Enhanced VLM prompt with explicit decision logic
+- New evidence_summary in output for transparency
+
 v9.0.0: Enhanced collision detection:
 - Uses derived_speed for motion state detection (works for real robot)
 - Position-based collision signatures (sudden stops, trajectory anomalies)
@@ -25,7 +31,8 @@ from .common import list_available_windows, get_window_file_paths
 # v7.3.0: Removed BEV images - uses camera + IMU + pre-computed metrics only
 # v8.0.0: Single-call batch - analyze_all_collision_tool processes all windows, auto-saves artifact
 # v9.0.0: Use derived_speed for motion state, add position-based collision detection, data_availability
-COLLISION_TOOL_AGENT_VERSION = "9.0.0"
+# v10.0.0: Multi-modal reasoning - require convergent evidence (motion + visual) for collision detection
+COLLISION_TOOL_AGENT_VERSION = "10.0.0"
 
 
 def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.Client, model: str):
@@ -161,44 +168,88 @@ def create_collision_tools(scenario_path: Union[str, Path], genai_client: genai.
                 "bev_proximity": "computed" if bev_metrics.get("computed") else "unavailable",
             }
 
-            # === MOTION STATE STRING FOR LLM ===
-            motion_str = ""
-            if is_stationary:
-                motion_str = "STATIONARY (speed < 0.05 m/s) - require strong collision evidence"
-            elif sudden_stop_detected:
-                motion_str = f"⚠️ SUDDEN STOP DETECTED (speed drop: {speed_drop:.2f} m/s) - possible collision signature"
-
             # Build metrics string based on availability
             accel_str = f"{peak_accel:.3f}" if peak_accel is not None else "N/A"
             gyro_str = f"{peak_gyro:.3f}" if peak_gyro is not None else "N/A"
             jerk_str = f"{peak_jerk:.3f}" if peak_jerk is not None else "N/A"
 
-            prompt = f"""Collision detection for window {window_id}. ADVISORY ONLY.
+            prompt = f"""COLLISION DETECTION for window {window_id}. ADVISORY ONLY.
 
-DATA AVAILABILITY: {', '.join(f'{k}:{v}' for k,v in data_availability.items())}
+You have MULTIPLE data sources. Analyze ALL of them before deciding.
 
-{motion_str}
-SPEED: peak={peak_speed:.3f} m/s, avg={avg_speed:.3f} m/s (from position)
-IMU: accel={accel_str} m/s² (>10=collision), gyro={gyro_str} rad/s (>5=collision), jerk={jerk_str}
-BEV: min_dist={min_dist:.2f}m (<0.3m + impact signature = collision)
-POSITION: displacement={total_displacement:.2f}m, sudden_stop={sudden_stop_detected}
+═══════════════════════════════════════════════════════════════════════════════
+DATA SOURCES AVAILABLE
+═══════════════════════════════════════════════════════════════════════════════
+{', '.join(f'{k}: {v}' for k,v in data_availability.items())}
 
-COLLISION SIGNATURES:
-- High accel spike (>10 m/s²) + close proximity → likely collision
-- Sudden speed drop (>0.3 m/s) while moving → impact event
-- Stationary + high accel → external impact or sensor noise
-- If IMU unavailable, rely on speed changes and BEV proximity
+MOTION DATA:
+- Speed: peak={peak_speed:.3f} m/s, avg={avg_speed:.3f} m/s (position-derived)
+- Sudden stop detected: {sudden_stop_detected} (speed drop: {speed_drop:.2f} m/s)
+- Displacement: {total_displacement:.2f}m
+- Is stationary: {is_stationary}
 
-Consider the camera image as well for context.
-NOTE: In simulation environments, large gray areas without texture are sim boundaries, NOT collisions.
+IMU DATA (if available):
+- Peak acceleration: {accel_str} m/s²
+- Peak angular velocity: {gyro_str} rad/s  
+- Peak jerk: {jerk_str} m/s³
 
-OUTPUT (JSON only):
+BEV PROXIMITY:
+- Minimum obstacle distance: {min_dist:.2f}m (from occupancy map)
+
+═══════════════════════════════════════════════════════════════════════════════
+COLLISION DECISION LOGIC - MULTI-MODAL EVIDENCE REQUIRED
+═══════════════════════════════════════════════════════════════════════════════
+
+A collision requires CONVERGENT EVIDENCE from multiple sources:
+
+✅ COLLISION LIKELY (confidence >0.7) - requires BOTH:
+   1. Motion anomaly: sudden stop (>0.5 m/s drop) OR high impact accel (>15 m/s²)
+   2. Visual confirmation: obstacle <0.3m in BEV OR camera shows contact/very close object
+
+✅ COLLISION POSSIBLE (confidence 0.4-0.7) - requires BOTH:
+   1. Motion anomaly: sudden stop OR unusual deceleration
+   2. Proximity evidence: obstacle <0.5m in BEV OR camera shows close obstacle
+
+❌ NOT A COLLISION - any of these:
+   - Sudden stop but NO close obstacles visible (<0.5m) → commanded stop
+   - Close obstacle but NO motion anomaly → normal navigation
+   - Robot stationary with no impact signature
+   - Motion changes are gradual, not sudden
+
+⚠️ CRITICAL: A sudden stop ALONE is NOT collision evidence!
+   Robots frequently stop quickly due to commands or path planning.
+   You MUST see something close (<0.5m) in camera or BEV to confirm collision.
+
+═══════════════════════════════════════════════════════════════════════════════
+IMAGE ANALYSIS REQUIREMENTS  
+═══════════════════════════════════════════════════════════════════════════════
+
+CAMERA IMAGE - Examine carefully for:
+- Objects very close to camera (large in frame, near bottom edge)
+- Signs of contact (blur, object touching/filling frame)
+- Context: tight space vs open area?
+
+BEV OCCUPANCY - Look for:
+- Occupied pixels within 0.3m of center = collision zone
+- Occupied pixels 0.3-0.5m = close proximity zone
+- Note: Small clusters at robot center may be self-hits (ignore)
+
+SIMULATION NOTE: Large uniform gray areas are sim boundaries, NOT obstacles.
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT (JSON only)
+═══════════════════════════════════════════════════════════════════════════════
 {{
-  "collision_detected": bool,
-  "confidence": 0.0-1.0,
+  "collision_detected": <true ONLY if motion anomaly AND visual proximity both present>,
+  "confidence": <0.0-1.0>,
+  "evidence_summary": {{
+    "motion_anomaly_present": <true if sudden stop or high accel>,
+    "visual_proximity_confirmed": <true if obstacle <0.5m in camera/BEV>,
+    "closest_obstacle_m": <your estimate from BEV/camera>
+  }},
   "proximity_estimate_m": {min_dist:.2f},
   "collision_risk_band": "LOW|MED|HIGH",
-  "explanation": "brief"
+  "explanation": "<state what motion AND visual evidence you found, or why evidence was insufficient>"
 }}"""
 
             prompt_parts = [types.Part(text=prompt)]
@@ -214,6 +265,16 @@ OUTPUT (JSON only):
                 model=model, contents=prompt_parts)
             llm_data = extract_json_block(response.text or "")
 
+            # Extract evidence summary from LLM response (with defaults)
+            evidence_summary = llm_data.get("evidence_summary", {})
+            if not evidence_summary:
+                # Fallback if LLM didn't provide evidence_summary
+                evidence_summary = {
+                    "motion_anomaly_present": sudden_stop_detected or (peak_accel is not None and peak_accel > 10),
+                    "visual_proximity_confirmed": min_dist < 0.5,
+                    "closest_obstacle_m": min_dist
+                }
+
             return {
                 "window_id": window_id,
                 "odd_measurements": {},
@@ -222,6 +283,7 @@ OUTPUT (JSON only):
                 "confidence": llm_data.get("confidence", 0.0),
                 "proximity_estimate_m": llm_data.get("proximity_estimate_m", min_dist),
                 "collision_risk_band": llm_data.get("collision_risk_band", "LOW"),
+                "evidence_summary": evidence_summary,
                 "collision_signatures": {
                     "sudden_stop": sudden_stop_detected,
                     "speed_drop_mps": round(speed_drop, 3),

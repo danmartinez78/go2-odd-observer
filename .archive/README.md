@@ -6,6 +6,7 @@ This directory contains historical exploration, development files, and planning 
 
 ```
 .archive/
+├── agent_exploration/    # Early ADK experiments (toy images, color poem tests)
 ├── development_notes/    # Debug findings, agent fixes, migration notes
 ├── docs/                 # Old documentation (factory pattern, IMU updates, reference patterns)
 ├── experimental_agents/  # Early agent implementations and debugging scripts
@@ -13,8 +14,21 @@ This directory contains historical exploration, development files, and planning 
 ├── exploration/          # ADK pattern testing and proof-of-concepts
 ├── notebooks/           # Archived notebooks (educational, minimal, old workflows)
 ├── planning/            # Planning docs (refactor plans, TODO lists, project plans)
-└── scripts/             # Old workflow scripts and backups
+├── reports/             # Old analysis reports (meta_analysis, test_v3_baseline)
+└── scripts/             # Old workflow scripts, test scripts, and backups
 ```
+
+## Recent Archive Actions (December 2025)
+
+### Phase 1.6 Cleanup
+- **`agent_exploration/`** - Early ADK toy experiments (not ODD-related)
+- **`reports/`** - Old meta_analysis and test_v3_baseline results
+- **`scripts/generate_html_report_old.py`** - Replaced by v2.0 with line charts
+- **`scripts/test_*.py`** - Manual test scripts (test_adk_artifacts, test_adk_blackboard, test_categorical_agent, test_event_metadata)
+
+### Data Archive
+- `data/archive/production_backup_20251201_092247/` - Production data backup
+- `data/archive/html_reports_20251129.tar.gz` - Compressed old HTML reports (was 258MB)
 
 ## Purpose
 
