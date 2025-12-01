@@ -531,10 +531,11 @@ Triage:    8 windows × $0.02 + $0.01 triage = $0.17
 - Sensor fusion gap: Camera detects obstacles LiDAR filters out
 - **Mitigation:** Phase 1.4 will add cross-validation between camera and BEV
 
-**3. No Velocity Estimation**
-- Robot odometry not available in current data
-- Cannot distinguish stationary vs. slow motion
-- **Planned:** Phase 2 will add visual/LiDAR odometry computation
+**3. ~~No Velocity Estimation~~ (RESOLVED)**
+- ✅ **Fixed in v10.0.0:** Position-derived speed now computed from odometry
+- `derived_speed` field extracted from position differentiation
+- Can now distinguish stationary vs. moving robot states
+- See [REAL_DATA_MOTION_FIX.md](docs/REAL_DATA_MOTION_FIX.md) for details
 
 **4. Single-Window Collision Detection**
 - Thresholds checked per window (may miss gradual degradation)

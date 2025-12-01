@@ -2,7 +2,11 @@
 Motion analysis tools.
 Factory functions that create tools with specific configuration.
 
-v8.0.0: Single-call batch analysis - one tool call processes all windows and auto-saves artifact.
+v10.0.0: Simplified motion metrics:
+- Speed: Always from derived_speed (position differentiation)
+- Acceleration: IMU only (derived accel is too noisy)
+- Angular velocity: IMU gyro preferred, fallback to derived_yaw_rate
+- Reports data_availability dict for transparency
 """
 
 import json

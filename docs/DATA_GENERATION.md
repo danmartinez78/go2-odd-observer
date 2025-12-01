@@ -161,6 +161,48 @@ window_id,start_time,end_time,motion_path,cam_image_path,bev_occupancy_path,bev_
 
 ---
 
+## Motion JSON Structure
+
+Motion JSON files contain IMU data and derived motion metrics:
+
+```json
+{
+    "start_time": 0.0,
+    "end_time": 2.0,
+    "timestamps": [0.0, 0.02, 0.04, ...],
+    
+    // IMU measurements
+    "accel_x": [...], "accel_y": [...], "accel_z": [...],
+    "gyro_x": [...], "gyro_y": [...], "gyro_z": [...],
+    "roll": [...], "pitch": [...], "yaw": [...],
+    
+    // Odometry position (raw)
+    "pos_x": [...], "pos_y": [...], "pos_z": [...],
+    
+    // Derived motion (computed from position)
+    "derived_speed": [...],     // Speed magnitude (m/s)
+    "derived_yaw_rate": [...]   // Angular velocity (rad/s)
+}
+```
+
+### Derived Motion Fields
+
+| Field | Source | Description |
+|-------|--------|-------------|
+| `derived_speed` | Position differentiation | Magnitude of velocity vector |
+| `derived_yaw_rate` | Yaw differentiation | Angular velocity from heading change |
+
+**Why derived fields?**
+- Real robot odometry velocity is often zeros
+- Position-derived speed is more reliable
+- Provides consistent measurement across sim and real data
+
+**Implementation details:**
+- `MIN_DT_THRESHOLD` (10ms): Filters unrealistic speeds from duplicate timestamps
+- `MAX_PLAUSIBLE_SPEED` (5 m/s): Clips values above Go2's max speed (~3.5 m/s)
+
+---
+
 ## BEV Channels
 
 The tool generates three BEV channels from LiDAR data:
@@ -241,10 +283,11 @@ python scripts/extract_windows.py \
 
 | Date | Change |
 |------|--------|
+| 2025-12-01 | Added derived motion fields: `derived_speed` and `derived_yaw_rate` |
 | 2025-11-28 | Real data BEV fix: unified rotation, auto-detect odom frame point cloud |
 | 2025-11-28 | Added no-overlap recommendation, clarified auto-transformation for sim data |
 | 2025-11-25 | Initial BEV transformation work, TF integration |
 
 ---
 
-**Last Updated:** November 28, 2025
+**Last Updated:** December 1, 2025

@@ -19,22 +19,22 @@ This document tracks versions of processed data and the processing parameters us
 
 ### Sim Data
 
-| Version | Date | Windows | Window Settings | BEV Settings | Notes |
-|---------|------|---------|-----------------|--------------|-------|
-| `sim_1` | Nov 28 | 31 | 2.0s window, 2.0s stride (no overlap) | auto (sim default) | Production: regenerated with improved BEV |
+| Version | Date | Windows | Window Settings | BEV Settings | Motion Fields | Notes |
+|---------|------|---------|-----------------|--------------|---------------|-------|
+| `sim_1` | Nov 28 | 31 | 2.0s window, 2.0s stride | auto (sim default) | derived_speed, derived_yaw_rate | Production: with derived motion |
 
 **Note:** Sim data uses automatic BEV transformations (TF + 90° CCW rotation hardcoded in `extract_windows.py`). Do NOT specify `--bev-rotation` or `--bev-flip-horizontal` for sim data.
 
 ### Real Data
 
-| Version | Date | Windows | BEV Settings | Notes |
-|---------|------|---------|--------------|-------|
-| `real_173442` | Nov 28 | 31 | auto (real default) | Office environment, full traversal |
-| `real_173813` | Nov 28 | 30 | auto (real default) | Office environment |
-| `real_174232` | Nov 28 | 11 | auto (real default) | Shorter sequence |
-| `real_174321` | Nov 28 | 29 | auto (real default) | Office environment |
-| `real_174503` | Nov 28 | 11 | auto (real default) | Shorter sequence |
-| `real_174604` | Nov 28 | 24 | auto (real default) | Office environment |
+| Version | Date | Windows | BEV Settings | Motion Fields | Notes |
+|---------|------|---------|--------------|---------------|-------|
+| `real_173442` | Dec 1 | 31 | auto (real default) | derived_speed, derived_yaw_rate | Office environment, full traversal |
+| `real_173813` | Dec 1 | 30 | auto (real default) | derived_speed, derived_yaw_rate | Office environment |
+| `real_174232` | Dec 1 | 11 | auto (real default) | derived_speed, derived_yaw_rate | Shorter sequence |
+| `real_174321` | Dec 1 | 29 | auto (real default) | derived_speed, derived_yaw_rate | Office environment |
+| `real_174503` | Dec 1 | 11 | auto (real default) | derived_speed, derived_yaw_rate | Shorter sequence |
+| `real_174604` | Dec 1 | 24 | auto (real default) | derived_speed, derived_yaw_rate | Office environment |
 
 **Total production windows:** 167 (31 sim + 136 real)
 
@@ -70,25 +70,38 @@ This document tracks versions of processed data and the processing parameters us
 
 ## Version Changelog
 
-### v1 (Planned)
-**Target Date**: TBD  
+### v1 (Current)
+**Date**: December 1, 2025  
 **Changes**:
-- Update BEV density normalization (log scale or percentile-based)
-- Apply ground filtering (10cm height threshold)
-- Regenerate all sim production data
+- Added derived motion fields: `derived_speed`, `derived_yaw_rate`
+- Added position fields: `pos_x`, `pos_y`, `pos_z`
+- Real data motion fix: source go2_ros2_sdk for IMU types
+- MIN_DT_THRESHOLD (10ms) to filter unrealistic speeds
+- Standardized stride to 2.0s (no overlap)
 
 **Command**:
 ```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/go2-odd-observer/go2_ros2_sdk/install/setup.bash
+
 python scripts/extract_windows.py \
   --rosbag data/raw_rosbags/sim/1/sim_1_0.db3 \
-  --output data/production \
-  --window-length 2.0 --stride 1.0 \
-  --data-source sim \
-  --bev-rotation 90 --bev-flip-horizontal \
-  --data-version v1
+  --output data/production/sim_1 \
+  --window-length 2.0 --stride 2.0 \
+  --run-id sim_1 \
+  --data-source sim
 ```
 
-### v0 (Current)
+**Motion JSON Fields (new)**:
+```json
+{
+  "pos_x": [...], "pos_y": [...], "pos_z": [...],
+  "derived_speed": [...],
+  "derived_yaw_rate": [...]
+}
+```
+
+### v0 (Legacy)
 **Date**: November 25, 2025  
 **Changes**:
 - Initial BEV auto-crop implementation (65-72% size reduction)
@@ -180,5 +193,5 @@ Each processed scenario directory should include a `metadata.json` file:
 
 ---
 
-**Last Updated**: November 25, 2025  
+**Last Updated**: December 1, 2025  
 **Maintainer**: Check git log for contributors

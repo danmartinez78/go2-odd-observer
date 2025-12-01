@@ -72,6 +72,28 @@ Small occupied pixel clusters very near the robot center (~15px radius) in BEV m
 - **Sim:** Point cloud in sensor frame, requires TF transform
 - **Real:** Point cloud often already in odom frame (auto-detected)
 - Real data is noisier than simulation
+- **IMPORTANT:** Always source `go2_ros2_sdk` before extraction (for IMU message types)
+
+## Motion Data Fields
+
+### Derived Motion (Position-Based)
+Motion JSON files include position-derived fields that work reliably for both sim and real:
+
+| Field | Description | Source |
+|-------|-------------|--------|
+| `derived_speed` | Speed magnitude (m/s) | Position differentiation |
+| `derived_yaw_rate` | Angular velocity (rad/s) | Yaw differentiation |
+| `pos_x/y/z` | Odometry position | Raw from odom |
+
+### IMU Data (When Available)
+- `accel_x/y/z` - Linear acceleration
+- `gyro_x/y/z` - Angular velocity
+- `roll/pitch/yaw` - Orientation
+
+**Motion Tool v10.0.0 Strategy:**
+- Speed: Always from `derived_speed` (more reliable than odom velocity)
+- Acceleration: From IMU if available, else `None`
+- Angular velocity: From IMU if available, else `derived_yaw_rate`
 
 ## Knowledge Layer
 
@@ -91,8 +113,13 @@ python scripts/run_odd_analysis.py
 # Run specific scenario
 python scripts/run_odd_analysis.py --scenario sim_2win
 
-# Extract windows from bagfile
+# Extract windows from bagfile (IMPORTANT: source ROS2 first!)
+source /opt/ros/humble/setup.bash
+source /workspaces/go2-odd-observer/go2_ros2_sdk/install/setup.bash
 python scripts/extract_windows.py --rosbag <path> --output data/production/<name> --run-id <name>
+
+# Regenerate all production data
+bash scripts/regenerate_all_data.sh
 
 # Run tests
 pytest tests/ -v

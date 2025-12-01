@@ -43,7 +43,7 @@ odd_agents/
 ├── tools/               # Tool functions
 │   ├── common.py        # Shared tool utilities
 │   ├── perception.py    # Camera + LiDAR BEV analysis
-│   ├── motion.py        # IMU sensor analysis
+│   ├── motion.py        # IMU sensor analysis (v10.0.0)
 │   ├── collision.py     # Collision detection
 │   └── cod_construction.py  # Python COD construction functions
 └── agents/              # Agent definitions
@@ -53,6 +53,32 @@ odd_agents/
     ├── collision.py     # Collision agent (v5.0.0)
     ├── evaluator.py     # Evaluator agent (v1.0.0) - COD + compliance
     └── report.py        # Report agent (v4.0.0)
+```
+
+## Tools
+
+### Motion Tool (v10.0.0)
+
+Analyzes IMU data and derived motion fields:
+
+| Metric | Source | Notes |
+|--------|--------|-------|
+| `max_speed_mps` | `derived_speed` | From position differentiation |
+| `max_accel_mps2` | IMU `accel_x/y` | None if unavailable |
+| `max_angular_velocity_radps` | IMU `gyro_z` or `derived_yaw_rate` | IMU preferred |
+| `max_tilt_deg` | `roll`, `pitch` | Always available |
+| `is_stationary` | `derived_speed < 0.05` | Position-based |
+
+**Output includes `data_availability` dict:**
+```json
+{
+  "data_availability": {
+    "speed": "derived",
+    "acceleration": "imu",       // or "unavailable"
+    "angular_velocity": "imu",   // or "derived"
+    "orientation": "available"
+  }
+}
 ```
 
 ## Agent Pipeline
