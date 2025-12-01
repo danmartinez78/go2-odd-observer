@@ -234,34 +234,44 @@ RULES:
 - Do NOT report numeric distances
 ```
 
-### Change 7: Remove Traversability from Hardcoded Examples
+### Change 7: Fix Traversability Threshold and Perception Calibration
 
 **Files:** 
-- `odd_agents/tools/odd_spec.py` (line 63)
-- `odd_agents/tools/perception.py` (line 84)
+- `odd_agents/tools/odd_spec.py`
+- `odd_agents/agents/perception.py`
 
-**Problem:** traversability_score is hardcoded in examples, causing agents to output it even when it's NOT in the ODD spec.
+**Problem:** 
+1. ODD Spec may set traversability min too high (e.g., 0.7)
+2. Perception reports 0.1 for indoor clutter when it should be ~0.6-0.7
 
-**Fix odd_spec.py:** Remove from example or add NOTE:
+**What traversability ACTUALLY means:**
+- **0.0-0.2:** Truly impassable - rocky outcroppings, steep drops, dense brush
+- **0.3-0.5:** Difficult terrain - outdoor uneven ground, construction debris
+- **0.6-0.8:** Normal indoor - carpet with clutter, furniture to navigate around
+- **0.9-1.0:** Clear path - empty hallway, open floor
+
+**Fix odd_spec.py - Add guidance:**
 ```
-NOTE: traversability_score is OPTIONAL. Only include if the NL ODD mentions path quality/navigation ease.
-Most indoor ODDs do NOT need this - obstacle_density covers clutter.
+For traversability_score:
+- Indoor ODDs: min=0.3 (only truly blocked paths are OUT OF ODD)
+- Outdoor ODDs: min=0.2 (rougher terrain expected)
+- Do NOT set min=0.7+ unless robot requires perfectly clear paths
 ```
 
-**Fix perception.py:** Remove hardcoded traversability output:
+**Fix perception.py - Calibrate scoring:**
 ```
-# REMOVE THIS:
-"traversability_score": 0.0-1.0,
+## TRAVERSABILITY CALIBRATION
 
-# The perception tool should ONLY output axes that exist in the ODD spec.
-# Do NOT output traversability_score unless it appears in odd_spec.environment.numeric
-```
+traversability_score reflects path navigability, NOT tidiness:
+- 0.9-1.0: Clear, open path (empty room, hallway)
+- 0.7-0.9: Minor obstacles easily avoided (some furniture)
+- 0.5-0.7: Moderate clutter, navigable with care (typical lived-in room)
+- 0.3-0.5: Significant obstacles but passable (crowded space)
+- 0.1-0.3: Barely passable (dense clutter, narrow gaps)
+- 0.0-0.1: Impassable (blocked doorway, cliff edge, dense rocks)
 
-**Fix cod_construction.py:** Remove traversability normalization (lines 379-380):
-```python
-# REMOVE:
-if "traversability_score" in raw:
-    normalized["traversability_score"] = raw["traversability_score"]
+Indoor clutter (rugs, toys, cables) = 0.5-0.7, NOT 0.1
+A messy room is NOT the same as a rocky outcropping.
 ```
 
 ---
@@ -293,11 +303,11 @@ After implementing changes, verify:
 
 1. [ ] ODD spec agent NEVER creates `min_proximity_m` numeric axis
 2. [ ] ODD spec agent ALWAYS creates `human_proximity_band` and `animal_proximity_band` as categorical
-3. [ ] Perception tool outputs categorical bands, NOT numeric distances
-4. [ ] Perception tool outputs EXACT allowed values for terrain_type
-5. [ ] Perception tool does NOT output traversability_score unless in ODD spec
-6. [ ] COD construction does NOT map obstacle distance to actor proximity
-7. [ ] COD construction does NOT normalize traversability unless in ODD spec
+3. [ ] ODD spec agent sets traversability_score min ~0.3 for indoor ODDs (not 0.7+)
+4. [ ] Perception tool outputs categorical bands, NOT numeric distances
+5. [ ] Perception tool outputs EXACT allowed values for terrain_type
+6. [ ] Perception tool reports ~0.6-0.7 traversability for typical indoor clutter (not 0.1)
+7. [ ] COD construction does NOT map obstacle distance to actor proximity
 8. [ ] Real scenario with no humans → "none" band → no proximity violation
 9. [ ] Terrain "carpet" matches "low_pile_carpet" with distance 0.0
 
@@ -307,11 +317,11 @@ After implementing changes, verify:
 
 | File | Change | Risk |
 |------|--------|------|
-| `odd_agents/agents/odd_spec.py` | Harden proximity band + remove traversability example | Low |
-| `odd_agents/tools/perception.py` | Strict ODD axis output + remove traversability | Low |
-| `odd_agents/tools/cod_construction.py` | Remove collision→proximity + traversability mapping | Low |
+| `odd_agents/agents/odd_spec.py` | Harden proximity band + traversability threshold guidance | Low |
+| `odd_agents/tools/perception.py` | Strict ODD axis output rules | Low |
+| `odd_agents/tools/cod_construction.py` | Remove collision→proximity mapping + superset examples | Low |
 | `odd_agents/agents/evaluator.py` | Add actor proximity clarity | Low |
-| `odd_agents/agents/perception.py` | Reinforce categorical band output | Low |
+| `odd_agents/agents/perception.py` | Reinforce categorical band output + traversability calibration | Low |
 
 ---
 
