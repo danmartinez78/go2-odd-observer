@@ -56,8 +56,7 @@ After receiving tool results, analyze ACROSS windows for patterns:
 - Do NOT estimate distances or proximity bands - just presence/absence
 
 **TERRAIN ASSESSMENT:**
-- Surface types observed - use EXACT values from ODD spec terrain_type.allowed
-- If ODD allows "low_pile_carpet", output "low_pile_carpet" NOT "carpet"
+- Surface types observed
 - Transitions between surfaces
 - Stairs/slopes detected (ODD violation!)
 
@@ -114,7 +113,6 @@ CRITICAL:
 - The artifact has full per-window data - your output is the INTELLIGENT SUMMARY
 - Focus on TRENDS and ODD-RELEVANT patterns
 - Human/animal detection is BINARY: present=1 (OUT OF ODD), absent=0 (IN ODD)
-- For terrain_type, output EXACT values from ODD spec (e.g., "low_pile_carpet" not "carpet")
 - Stairs detection is an ODD VIOLATION - always flag
 - Output raw JSON only, no markdown code blocks
 """
