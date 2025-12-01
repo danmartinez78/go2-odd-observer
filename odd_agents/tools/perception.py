@@ -28,7 +28,8 @@ from .common import list_available_windows, get_window_file_paths
 # v11.1.0: Robot size in BEV pixels, BEV-based traversability assessment, quadruped capabilities
 # v12.0.0: Rename traversability_score → clearance_index for semantic clarity
 # v12.1.0: Added rotate-in-place capability, "BLOCKED FORWARD ≠ TRAPPED" guidance
-PERCEPTION_TOOL_VERSION = "12.1.0"
+# v12.2.0: Lighting vs dark objects guidance - distinguish dim room from dark furniture in view
+PERCEPTION_TOOL_VERSION = "12.2.0"
 
 # Hardcoded robot and sensor knowledge - this is constant across all analyses
 ROBOT_SENSOR_KNOWLEDGE = """
@@ -60,6 +61,26 @@ Before analyzing content, assess camera image (Image A) quality:
 - Blocky compression patterns are NOT debris or texture
 - Color banding is NOT surface variation
 - Soft focus is NOT fog or smoke
+
+## LIGHTING vs DARK OBJECTS (DO NOT CONFUSE!)
+
+**Dim lighting** means the ROOM/ENVIRONMENT has insufficient illumination.
+**Dark objects** are furniture/walls with dark colors (couches, cabinets, dark paint).
+
+How to distinguish:
+- DIM ROOM: Everything is dark, including floor and walls visible in frame. Shadows are indistinct.
+- DARK OBJECT IN VIEW: The dark area has distinct edges/boundaries. Floor or other areas AROUND it are properly lit.
+- LARGE DARK FURNITURE: If a couch, cabinet, or furniture piece fills most of the frame but you can see the floor/edges are lit → lighting is FINE, just a dark object in view
+
+**Example:**
+- Robot camera looks at a dark brown couch that fills 70% of frame → lighting is FINE (assess from the visible floor/walls)
+- Robot in hallway where ceiling lights are off → lighting is DIM (everything uniformly dark)
+- Dark furniture + good lighting → lighting_conditions = "moderate" or "bright" (based on visible lit areas)
+
+**When assessing lighting_conditions:**
+- Look at the FLOOR and VISIBLE ROOM AREAS, not the dominant object color
+- If floor is well-lit but large dark furniture fills frame → lighting is adequate
+- If unable to see floor texture/detail due to darkness → lighting may be dim
 
 ## SENSOR INTERPRETATION
 

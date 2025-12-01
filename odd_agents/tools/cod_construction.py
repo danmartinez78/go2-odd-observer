@@ -23,11 +23,29 @@ import math
 # 1.2.0: Updated to handle odd_measurements schema and normalize field names
 # 1.3.0: Removed collision→proximity mapping (collision is advisory only, not actor proximity)
 # 1.4.0: Added boundary detection with margin_to_limit, axes_at_boundary, axes_violated
-COD_TOOL_VERSION = "1.4.0"
+# 1.5.0: Semantic boundary detection - only check relevant bound (max vs min semantics)
+COD_TOOL_VERSION = "1.5.0"
 CATEGORICAL_AGENT_MODEL = "gemini-2.5-flash"
 
 # Boundary detection threshold (15% margin = approaching limit)
 BOUNDARY_MARGIN_THRESHOLD = 0.15
+
+# Axes where we only care about upper bound (hazard accumulation axes)
+# Values near 0 are SAFE, values near max are concerning
+UPPER_BOUND_ONLY_AXES = {
+    "max_accel_mps2",      # Low acceleration = safe
+    "max_speed_mps",       # Low speed = safe
+    "max_roll_deg",        # Low roll = safe
+    "max_pitch_deg",       # Low pitch = safe
+    "obstacle_density",    # Low density = safe
+}
+
+# Axes where we only care about lower bound (quality/clearance axes)
+# Values near 1.0 are SAFE, values near min are concerning
+LOWER_BOUND_ONLY_AXES = {
+    "clearance_index",     # High clearance = safe
+    "min_proximity_m",     # High proximity = safe
+}
 
 
 def _flatten_odd_spec(odd_spec: Dict[str, Any]) -> Dict[str, Any]:
@@ -691,7 +709,10 @@ def _compute_boundary_status(
     Compute boundary detection status for verdict determination.
 
     For each axis type:
-    - range: compute margin to nearest limit (min or max)
+    - range: compute margin to RELEVANT limit based on axis semantics:
+      - Upper-bound axes (max_accel, obstacle_density): margin to upper limit
+      - Lower-bound axes (clearance_index): margin to lower limit
+      - Truly bounded axes: margin to nearest limit
     - bool: binary (either matches or violated)
     - enum: use semantic distance (0.0=match, 0.5=boundary, 1.0=violated)
 
@@ -738,12 +759,25 @@ def _compute_boundary_status(
             if odd_range == 0:
                 margin = 1.0  # No range to violate
             else:
-                # Margin to lower bound (how far is cod_min from odd_min)
+                # Compute margins to both bounds
+                # margin_to_min: how far COD min is from ODD min (normalized)
                 margin_to_min = (cod_min - odd_min) / odd_range
-                # Margin to upper bound (how far is cod_max from odd_max)
+                # margin_to_max: how far COD max is from ODD max (normalized)
                 margin_to_max = (odd_max - cod_max) / odd_range
-                # Take minimum (closest to any limit)
-                margin = min(margin_to_min, margin_to_max)
+
+                # Select relevant margin based on axis semantics
+                if axis_name in UPPER_BOUND_ONLY_AXES:
+                    # Only upper bound matters (hazard axes)
+                    # Values near 0 are safe, values near max are concerning
+                    margin = margin_to_max
+                elif axis_name in LOWER_BOUND_ONLY_AXES:
+                    # Only lower bound matters (quality axes)
+                    # Values near 1 are safe, values near min are concerning
+                    margin = margin_to_min
+                else:
+                    # Truly bounded range - check both
+                    margin = min(margin_to_min, margin_to_max)
+
                 # Clamp to [0, 1]
                 margin = max(0.0, min(1.0, margin))
 
