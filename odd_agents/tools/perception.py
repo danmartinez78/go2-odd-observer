@@ -141,11 +141,17 @@ You MUST output one of the allowed values from the ODD specification.
 traversability_score measures PATH NAVIGABILITY for this quadruped robot.
 **Use BEV Occupancy (Image B) as your PRIMARY source** - it shows actual obstacle geometry.
 
+### FOCUS ON THE FORWARD REGION (TOP HALF OF BEV)
+- Robot is at CENTER, facing UP (top = forward direction of travel)
+- **Assess traversability in the FORWARD CONE** - the top half/upper portion of the BEV
+- Behind the robot (bottom of BEV) is where it came from - less relevant
+- Sides matter for maneuvering room, but forward path is PRIMARY
+
 ### How to assess from BEV Occupancy:
 1. Robot is at CENTER (ignore 15px radius self-hit zone)
 2. Robot footprint is ~13×6 pixels - look for gaps WIDER than this
-3. Forward = TOP of image - is there a path forward?
-4. Look for BLACK (free) space the robot can navigate through
+3. **FOCUS ON TOP HALF**: Is there a navigable path AHEAD of the robot?
+4. Look for BLACK (free) space in the forward direction
 
 ### Traversability Scale (based on BEV gap analysis):
 - 0.9-1.0: Wide open space, >70% of BEV is free (black), clear paths in all directions
