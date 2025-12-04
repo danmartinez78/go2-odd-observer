@@ -81,6 +81,8 @@ data/examples/**
 !tests/evaluation/report/*.json
 !tests/evaluation/fixtures/**.json
 *.png
+# But allow PNG files in docs/images for GitHub Pages
+!docs/images/*.png
 *.csv
 # But allow CSV files in root and tests
 !*.csv
